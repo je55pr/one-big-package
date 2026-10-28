@@ -159,7 +159,7 @@ public partial class OBPGame
             // Only texture uploads and scene attachment run on the main thread.
             var data = preparation.Completion.GetAwaiter().GetResult();
             _fusionAssets = new(data);
-            if (_playerAvatarView is not null) AttachFusionWeaponViews(_playerAvatarView);
+            if (_avatarPresentation.View is not null) AttachFusionWeaponViews(_avatarPresentation.View);
             BindPlayerEquipmentPresentation();
             foreach (var problem in _fusionAssets.Problems.Values) GD.Print("[fusion] " + problem);
             GD.Print($"[fusion] shared weapon preparation complete; reused {data.ReusedVerifications}/3 saved verifications; retained for this source session");
@@ -438,7 +438,7 @@ public partial class OBPGame
 
     private void StepFusionWeaponViews(Rac1PlayerAnimationPresentationController controller)
     {
-        if (_fusion is null || _fusionAssets is null || _playerAvatar is null) return;
+        if (_fusion is null || _fusionAssets is null || _avatarPresentation.Avatar is null) return;
         _fusionModelAge++;
         foreach (var (key, view) in _fusionHeldViews)
         {
@@ -450,7 +450,7 @@ public partial class OBPGame
             var hand = controller.CurrentAttachmentPose(PlayerEquipmentPose.HandAttachmentKey);
             if (hand is not null)
             {
-                Vector3 Point(double x, double y, double z) => PlayerAvatarView.ToGodotLocal(hand.Transform(new(x, y, z)), _playerAvatar.Axes, _playerAvatar.BaseHeight, true);
+                Vector3 Point(double x, double y, double z) => PlayerAvatarView.ToGodotLocal(hand.Transform(new(x, y, z)), _avatarPresentation.Avatar.Axes, _avatarPresentation.Avatar.BaseHeight, true);
                 Vector3 origin = Point(0, 0, 0);
                 // Convert the held mesh's reflected X / swapped YZ axes back
                 // through the avatar's native coordinate frame exactly once.

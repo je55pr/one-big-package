@@ -146,7 +146,7 @@ public partial class OBPGame
         _rac1EquipmentViews.Clear(); _rac1StagedEquipment.Clear();
         foreach (var profile in Rac1WeaponProfiles.Additional)
         {
-            var view = new Rac1EquipmentView(_rac1EquipmentAssets.Models[profile.ModelClass], _rac1EquipmentMaterials, _playerAvatar);
+            var view = new Rac1EquipmentView(_rac1EquipmentAssets.Models[profile.ModelClass], _rac1EquipmentMaterials, _avatarPresentation.Avatar);
             avatarView.AddChild(view); view.Visible = false; _rac1EquipmentViews.Add(profile.Item, view);
             if (profile.Item is Rac1WeaponId.MineGlove or Rac1WeaponId.GloveOfDoom)
             {
@@ -253,9 +253,9 @@ public partial class OBPGame
 
     private Vector3 EquipmentMuzzle(Rac1WeaponId weapon, int socket = 0)
     {
-        if (_playerAvatarView is not null && _rac1EquipmentViews.TryGetValue(weapon, out var view))
+        if (_avatarPresentation.View is not null && _rac1EquipmentViews.TryGetValue(weapon, out var view))
         {
-            var muzzle = _playerAvatarView.ToGlobal(view.MuzzleAt(socket));
+            var muzzle = _avatarPresentation.View.ToGlobal(view.MuzzleAt(socket));
             var start = _player!.GlobalPosition + Vector3.Up * .8f;
             var ray = PhysicsRayQueryParameters3D.Create(start, muzzle); ray.Exclude = [_player.GetRid()];
             var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(ray);
@@ -385,7 +385,7 @@ public partial class OBPGame
     {
         PlayPlayerEquipmentSound(0, 26, _player!.GlobalPosition); // hero_sound_start(0x1a,0), shared glove throw.
         float yaw = (float)_player!.Rac1CurrentYaw;
-        NVector3 body = ToEffectNative(_player.GlobalPosition) + new NVector3(0, 0, (float)-(_playerAvatar?.BaseHeight ?? -.7));
+        NVector3 body = ToEffectNative(_player.GlobalPosition) + new NVector3(0, 0, (float)-(_avatarPresentation.Avatar?.BaseHeight ?? -.7));
         var origin = Rac1BombProjectileSession.LaunchOrigin(body, yaw);
         var target = ToEffectNative(EquipmentAim(FromEffectNative(origin), 8.5f, .94f));
         var velocity = Rac1BombProjectileSession.LaunchVelocity(origin, target, yaw);

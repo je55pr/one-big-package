@@ -146,7 +146,7 @@ public partial class OBPGame
         if (!_rac1BombParticleMeshes.TryGetValue(poolType, out var mesh))
         {
             var texture = _rac1EquipmentAssets?.ParticleTextures.GetValueOrDefault(poolType) ??
-                _rac1BombGloveAsset!.ParticleTexturesByPoolType[poolType];
+                _avatarPresentation.GloveAsset!.ParticleTexturesByPoolType[poolType];
             var image = Image.CreateFromData(texture.Width, texture.Height, false, Image.Format.Rgba8, texture.Rgba);
             var material = new ShaderMaterial { Shader = new Shader { Code = """
             shader_type spatial;

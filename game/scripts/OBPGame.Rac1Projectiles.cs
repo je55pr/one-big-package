@@ -68,7 +68,7 @@ public partial class OBPGame
         if (_sceneResult is null || _player is null) return;
         float yaw = (float)_player.Rac1CurrentYaw;
         // Host feet-to-native body-origin mapping, shared with avatar alignment.
-        NVector3 body = ToEffectNative(_player.GlobalPosition) + new NVector3(0, 0, (float)-(_playerAvatar?.BaseHeight ?? -.7));
+        NVector3 body = ToEffectNative(_player.GlobalPosition) + new NVector3(0, 0, (float)-(_avatarPresentation.Avatar?.BaseHeight ?? -.7));
         NVector3 origin = Rac1BombProjectileSession.LaunchOrigin(body, yaw);
         NVector3 forward = new(MathF.Cos(yaw), MathF.Sin(yaw), 0);
         NVector3 target = origin + forward * 8.5f;

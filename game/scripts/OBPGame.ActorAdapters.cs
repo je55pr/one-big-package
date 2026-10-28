@@ -35,7 +35,7 @@ public partial class OBPGame
     private void EnsureRac1ActorPickupBank(RuntimeWorld library)
     {
         if (_rac1PickupAssets is not null) return;
-        _rac1PickupAssets = _selectedRac1PresentationAssets ?? throw new InvalidDataException("R&C1 actor's original sound/pickup bank is unavailable.");
+        _rac1PickupAssets = _equipmentPresentation.SelectedAssets ?? throw new InvalidDataException("R&C1 actor's original sound/pickup bank is unavailable.");
         _rac1PickupMaterials = new(library with { Textures = _rac1PickupAssets.Textures });
         _actors!.RegisterUpdateGroup("rac1/actor-pickups", _ => TickRac1Pickups(1d / 60));
     }

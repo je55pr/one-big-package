@@ -194,7 +194,7 @@ public partial class OBPGame
             Text("player.phase", p.Rac1MovementPhase.ToString());
             Text("player.animation", p.AnimationState.ToString());
             Numbers("player.avatar", CurrentPlayerAvatarSourceSequence() ?? -1,
-                _playerAvatarView?.CurrentFrame ?? -1, _playerAvatarView?.FramesPerSecond ?? 0);
+                _avatarPresentation.View?.CurrentFrame ?? -1, _avatarPresentation.View?.FramesPerSecond ?? 0);
             Text("player.step", p.Rac1SmallStepDecision);
             Text("player.action", JsonSerializer.Serialize(_rac1Nanotech.Actions.Probe()));
             Text("player.wrench", JsonSerializer.Serialize(p.Rac1WrenchFrame));

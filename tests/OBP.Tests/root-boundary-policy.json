@@ -2560,44 +2560,47 @@
     }
   ],
   "Composition": [
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::field:_modals:UiModalCoordinator ?:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"e119d8d4877493ac77c5e4fb35fb23fa456d9feaf3d20992c07f3764d7832c19"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:ClosePauseMenu():void:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"8670127a9f1001e0f13eb2b06133de2463799c30e955f6634e153dc3fb0c59d1"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:CloseWeaponQuickSelect(:SourceWeaponKey ?):void:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"5de988f21fc4a44ad509365fb9b0fdcc83ff529b31b92d63f223d814afcd09c9"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:CreateModalCoordinator():UiModalCoordinator:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"d452602f50a24a3ae3e5b9f2a602d59bec15ca5fd5b0040d25cfbaa76b59413e"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:CreatePauseMenuPresentation():PauseMenuUi:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"45c9f7098ce8475fcf0807dfeb145cb8596999afe144cf61aaef5d5faafea5f1"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:ReadWeaponQuickSelectEntries():WeaponQuickSelectUi . Entry [  ]:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"8096663d1d5c63083effad01cfa9aa31ec2aa7639eb878a5e85de39eebcc9f28"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:ReturnToWorldsFromPause():void:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"ac75a4987c655f03395d201f7f4bdfa171b844228af22d2ddff25c0b11f48fde"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:SetDebugOutputEnabled(:bool):void:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"11c76a97a6b3660f5c2bb5cf5621d3f2837780df394ae2a0d2a26caee50a2c07"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:ShowControllerSettingsFromMenu():void:public","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"42166724ab69879d820aa5163f8bae58988ee5a96c69b4f00d46c9788f7d670c"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:TearDownInteractiveOverlays():void:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"66740377bdb9f41fb6e50fea85f2a3ea70aabad337df35bcb5c0dddb387b6e53"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:TryCloseControllerSettings():bool:public","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"7b1d5bf308eb5f3e179d9e7bf27616243f1e6d70fca341397ca6d741aa313ad1"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:TryClosePauseMenu():bool:public","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"2192e51bffa90affac297f521bd0f44d58fc57170c93567297f6fb5654916d7c"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:TryOpenPauseMenu():bool:public","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"3a18eeb7aef1ac1845dcdda97a143d7445719339d78cb55f5f7c89aeb7ddbb83"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:TryOpenWeaponQuickSelect(:InputEvent):bool:public","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"5fe1e023da16b4f581ad0c553bfa90d961c2a91d634b3f1ed451d84b63637dce"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:ControllerSettingsOpen:bool:get/:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"4d26a3b950d0eb2d305b5c96c3d67be0e6c8e7f6fb547edd702ead52e28e4a8d"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:CurrentWeaponKey:SourceWeaponKey:get/:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"5a531af058d5c46a924e25b1c8655c6dcbce4b2282609dae588b82f2e4d9b85d"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:Modals:UiModalCoordinator:get/:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"5a3840d023c3a57c3fdb0f0debf910d88d1eff9cfda041e0d4b9da1c0a6bc2f5"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:PauseMenuOpen:bool:get/:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"cbd92e22c5d29a0fb56e811ed425b3c517a0d8ac1a1fd8e721e73765d388bd6e"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:QuickSelectOpen:bool:get/:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"475b322aad61fea82962a0c47386a8ee6e41a7c1ed9589dc47f31ef6b8cd116b"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:_debugOutputEnabled:bool:get/:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"73d19c2b7f9027731ba58a1eaf930bf6b16fbbab384eceeffa829e6355fdbaa5"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:_lastQuickSelectTap:ulong:set/:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"cad2e3bfa3732298ae070e3212a958a48b092bdffdddb41dca5b45e5896ffd6e"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:_pauseMenu:PauseMenuUi ?:get/:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"3b0c6103086cc05a8b9162af2975a3b697e268dfe016e065c28a0e476a00c2b8"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:_previousSelectedWeapon:SourceWeaponKey ?:get/,set/:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"17ada4fcec9ca0ff6f7e4cf86123197aa487edd857bc0ab58f7c26d2c305707f"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:_quickSelect:WeaponQuickSelectUi ?:get/:private","Owner":"#348","Rationale":"Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.","ExpiresWith":"#376","Hash":"2f03013ac905e7a7473a63a0d1e952898250ac621a9ad3cbb2f4a67a09c9314d"},
-
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateUiDiagnosticHarness():UiDiagnosticHarness:private",
-      "Owner": "#337",
-      "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
-      "ExpiresWith": "#348",
-      "Hash": "d32c5e53aeb91fe1ba5c008fa9daad1c7c8eb4bc63508c8c88aad98971eb7944"
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_avatarPresentation:PlayerAvatarPresentationHost:private,readonly",
+      "Owner": "#350",
+      "Rationale": "Single read-only composition reference to owned source-verified avatar assets and world-scoped visual lifetime.",
+      "ExpiresWith": "#376",
+      "Hash": "988652423447acf39e1b5a8ec05a63a39f0cfb96798b36e701c81692fbfa2858"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunRac1VeldinRetailPauseSmokeAsync():Task:private",
-      "Owner": "#337",
-      "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates.",
-      "ExpiresWith": "#340",
-      "Hash": "b87f685890d9c65491f929226699505eb999d28302a03f172ab7ea813f0b0759"
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_captureDiagnostics:CaptureDiagnosticHarness ?:private",
+      "Owner": "#344",
+      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
+      "ExpiresWith": "#356",
+      "Hash": "010acffa3c86b93e7f35f06446fe313e805c7d3e8c3cec69474d1cb20cf4eb63"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_equipmentPresentation:PlayerEquipmentPresentationBinder:private,readonly",
+      "Owner": "#350",
+      "Rationale": "Single read-only composition reference to owned selected equipment asset bindings and world-scoped material caches.",
+      "ExpiresWith": "#376",
+      "Hash": "80105866b6feec8935410228833fad5f3c29f4f2dcd86d17dafe381a0e46d017"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_modals:UiModalCoordinator ?:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "e119d8d4877493ac77c5e4fb35fb23fa456d9feaf3d20992c07f3764d7832c19"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_navigation:ApplicationNavigationCoordinator:private",
+      "Owner": "#347",
+      "Rationale": "Single temporary navigation-owner reference; application page state lives outside the root and the existing world/session leases remain authoritative.",
+      "ExpiresWith": "#376",
+      "Hash": "88747dfdaebff70a48ead75f4ccf5db4d67bdb6213201850b9311eb680acab2f"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_persistentPlayer:PlayerSessionHost:private,readonly",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "93637fdc58f6eb3ff204e0b944598fadf8d05209b4b8b31e85ccae50903e9c2d"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::field:_playerAudioDiagnosticEvents:DiagnosticPlayerAudioCollector:private,readonly",
@@ -2607,11 +2610,25 @@
       "Hash": "bf1b82ae06e6a7b56ab1c8651f209decb06e2ffad4cfa13e8449983e0ea50abd"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlayerDiagnosticHarness():PlayerSessionDiagnosticHarness:private",
-      "Owner": "#338",
-      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
-      "ExpiresWith": "#359",
-      "Hash": "deb3e03c6784eb294915214633a4f4e8aa9935344bf48d1464769d8f0092dcef"
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_profileCoordinator:ProfileCoordinator ?:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "cf5a2ad510edc1602616dd06eafbf3aa317ff4e0819cb64780b891729d0b8a36"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_sourceSetup:SourceSetupController ?:private",
+      "Owner": "#346",
+      "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. Source state, admission and repair live outside the root; final world-entry composition removes this bridge.",
+      "ExpiresWith": "#376",
+      "Hash": "f0865cc5a5d91692a09573b5723bed5432968122bbf60003f4e6b1fee2f8adf6"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:AbandonFailedRac1Travel():void:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "7cb1d65e6605a21d6d97feefa0a157a652d0d4ce2fdf6c9d033adb4f9484fa3c"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:AddSyntheticTraversalMesh(:Node3D,:string,:int,params:( Vector3 A , Vector3 B , Vector3 C ) [  ]):void:private,static",
@@ -2621,11 +2638,39 @@
       "Hash": "8d32d715d1ab2e11a61cb81b5a4d5d8bc272071e8433b37ad4ca8beca4b54d8e"
     },
     {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ApplySharedProfile(:ObpProfile):void:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "f003598de7523e5d2ba04261b803e432b9deab6f8589dabfe8c608fd4711134f"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CaptureProfileSources():IReadOnlyList < ProfileSource >:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "a86ce667a982c2b5a6fc22b7d47f353da57aaaeb5ca7d8358f8876f7ff7b7af8"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CaptureSharedProfile():ObpProfile:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "2dc1a471afda573f5d0ea6f3100ed12868129daea00a11e973955aed4f74ac42"
+    },
+    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CheckControllerWeaponInputAsync():Task:internal",
       "Owner": "#339",
       "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
       "ExpiresWith": "#348",
       "Hash": "f638499040963141463a3f0aeafa269534b1d6c319144eed70c185618de044da"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ClearFusionLabStatus():void:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "e23ba97f7a6ffc9497a76eb116adafadc42395b5dde3b30b41219d48736bbdaf"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ClearMovementSmokeInput():void:private,static",
@@ -2635,74 +2680,74 @@
       "Hash": "706a2e8596906c2ead963d034b79f267904720a9b28f1c609046641ef690182d"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateMovementDiagnosticHarness():MovementDiagnosticHarness:private",
-      "Owner": "#339",
-      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
-      "ExpiresWith": "#359",
-      "Hash": "afdd26dfcf8ad0889722cef4bf0056c5d3d38e3a0437f0ae3beefac4f42b9e91"
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ClearTitleScreen():void:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "d52d15841b01d3b9d12e76129d5fb59c968948e52e450820487b34918399106b"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetAnalogueSmokeInput(:float,:float):void:private,static",
-      "Owner": "#339",
-      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
-      "ExpiresWith": "#358",
-      "Hash": "34ceeb7b8a92509d26af616dbdcf1ed2ca32b991a965310712c6414c3f842d88"
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ClosePauseMenu():void:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "8670127a9f1001e0f13eb2b06133de2463799c30e955f6634e153dc3fb0c59d1"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetRac1SmokeConditionedInput(:double,:double):void:private,static",
-      "Owner": "#339",
-      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
-      "ExpiresWith": "#354",
-      "Hash": "5b4698bb376a67c89ed5d6da33e427d5a8ea1031e3c536e5d26151bdff1b0dfe"
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CloseWeaponQuickSelect(:SourceWeaponKey ?):void:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "5de988f21fc4a44ad509365fb9b0fdcc83ff529b31b92d63f223d814afcd09c9"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetSyntheticNativeHeading(:PlayerHost,:double,:double):void:private,static",
-      "Owner": "#339",
-      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
-      "ExpiresWith": "#343",
-      "Hash": "5c1e15615efb5fdc85feb786b19b39b591420fc723429a624756c3e4916309e3"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1EncounterDiagnosticHarness():Rac1EncounterDiagnosticHarness:private",
-      "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R\u0026C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
-      "ExpiresWith": "#359",
-      "Hash": "7b0868a4e58b3bcd82332d44226c704d6d102b061be01beb69c68a85221fbb31"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AridiaDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1AridiaDiagnosticFixture:private",
-      "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R\u0026C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
-      "ExpiresWith": "#359",
-      "Hash": "bf7eb16d1f36981f6ed6293bc697372ac5a1fae153f0ea6e6559e972c6076463"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1CombatDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1CombatDiagnosticFixture:private",
-      "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R\u0026C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
-      "ExpiresWith": "#359",
-      "Hash": "cd67a6058bd1d8aee403f9f665129862d91a9052c76585545eea5345c32a8fad"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1FrogDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1FrogDiagnosticFixture:private",
-      "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R\u0026C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
-      "ExpiresWith": "#359",
-      "Hash": "1c9404a903d1c90296d71eece3657e3a6954f6bb97f5e16caef173de279a0818"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1QueenDiagnosticBindings():GodotRac1QueenDiagnosticBindings:private",
-      "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R\u0026C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
-      "ExpiresWith": "#359",
-      "Hash": "c76a67bdd06d7a806133152253c4b89ea35ea32e53a2858e81fa8f8af3dc31af"
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateCaptureDiagnosticHarness():CaptureDiagnosticHarness:private",
+      "Owner": "#344",
+      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
+      "ExpiresWith": "#356",
+      "Hash": "6cc7534b0d46f1b22810ec1a768d799b3993925bc9bf2ce2a73639f3332c08fc"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateFusionWeaponDiagnosticHarness():FusionWeaponDiagnosticHarness:private",
       "Owner": "#341",
       "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
       "ExpiresWith": "#352",
-      "Hash": "5f3aef501524b5ae77298079c203d663a34f000fb90861595cddc9ef2d857c73"
+      "Hash": "b1ffcd785665e9b2f76df2b81b678ffe5fb18161adf1a982d812042ea74897e2"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateModalCoordinator():UiModalCoordinator:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "d452602f50a24a3ae3e5b9f2a602d59bec15ca5fd5b0040d25cfbaa76b59413e"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateMovementDiagnosticHarness():MovementDiagnosticHarness:private",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
+      "ExpiresWith": "#359",
+      "Hash": "fa22383df6c3f21d923729e5ce067cb5a46121abd6e61162b78be17db739fdd5"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateMovementStateDiagnosticFixture():IMovementStateDiagnosticFixture:private",
+      "Owner": "#344",
+      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
+      "ExpiresWith": "#358",
+      "Hash": "55c2b93df48af357f38281763ee741906ed43693f5d8218d669108de2ea45b21"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePauseMenuPresentation():PauseMenuUi:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "45c9f7098ce8475fcf0807dfeb145cb8596999afe144cf61aaef5d5faafea5f1"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlayerDiagnosticHarness():PlayerSessionDiagnosticHarness:private",
+      "Owner": "#338",
+      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
+      "ExpiresWith": "#359",
+      "Hash": "cf98b0e2f6e8d946576b1bac0f90eea86c24faed34c0d5f11c42cbcec08979c6"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AdditionalWeaponDiagnosticFixture(:IDiagnosticWorldObservations):GodotRac1AdditionalWeaponDiagnosticFixture:private",
@@ -2712,18 +2757,18 @@
       "Hash": "5b752bde547c9b804f549fb9f37fe05fe835c9e7e7500fdf33e4283fe34b9f30"
     },
     {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AridiaDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1AridiaDiagnosticFixture:private",
+      "Owner": "#340",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
+      "ExpiresWith": "#359",
+      "Hash": "bf7eb16d1f36981f6ed6293bc697372ac5a1fae153f0ea6e6559e972c6076463"
+    },
+    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1ArsenalDiagnosticFixture(:IDiagnosticWorldObservations,:GodotRac1WeaponTargetFixture):GodotRac1ArsenalDiagnosticFixture:private",
       "Owner": "#341",
       "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters.",
       "ExpiresWith": "#367",
       "Hash": "c04cc08cabad940494e164d4b16af8be676a52042877d78e8fe4e33c92b3aaaf"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateWeaponDiagnosticHarness():WeaponDiagnosticHarness:private",
-      "Owner": "#341",
-      "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters.",
-      "ExpiresWith": "#367",
-      "Hash": "b6c1895f360fbbb737bc3b9e2368d2d608c046985db2036ccacc3becc683e591"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1CampaignDiagnosticHarness():Rac1CampaignDiagnosticHarness:private",
@@ -2733,11 +2778,39 @@
       "Hash": "b7c0acc86bfb6b56c12f7f6b1e4daf3ddb3ade5860a953a7882775e344bc7ba5"
     },
     {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1CombatDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1CombatDiagnosticFixture:private",
+      "Owner": "#340",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
+      "ExpiresWith": "#359",
+      "Hash": "0114cf9cd904ff98f751b23caecd2183896dfcede135d0ab015c8afe842a566e"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1EncounterDiagnosticHarness():Rac1EncounterDiagnosticHarness:private",
+      "Owner": "#340",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
+      "ExpiresWith": "#359",
+      "Hash": "7b0868a4e58b3bcd82332d44226c704d6d102b061be01beb69c68a85221fbb31"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1FrogDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1FrogDiagnosticFixture:private",
+      "Owner": "#340",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
+      "ExpiresWith": "#359",
+      "Hash": "1c9404a903d1c90296d71eece3657e3a6954f6bb97f5e16caef173de279a0818"
+    },
+    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1LootDiagnosticHarness():Rac1LootDiagnosticHarness:private",
       "Owner": "#342",
       "Rationale": "Invocation-only campaign/checkpoint/mission or crate/pickup diagnostic fixture composition. Immutable source-qualified observations and explicit fixture actions retain native sessions, actors and save paths inside their owners.",
       "ExpiresWith": "#369",
       "Hash": "0a90aac89178623d8c1c44f33ab9c01e547c781ab8961959b5ae79f5d88a0535"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1QueenDiagnosticBindings():GodotRac1QueenDiagnosticBindings:private",
+      "Owner": "#340",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
+      "ExpiresWith": "#359",
+      "Hash": "c76a67bdd06d7a806133152253c4b89ea35ea32e53a2858e81fa8f8af3dc31af"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1TaxiDiagnosticFixture():IRac1TaxiDiagnosticFixture:private",
@@ -2754,25 +2827,25 @@
       "Hash": "bb2cb94128255c3380dc727937219b06ccce26703afb5bfa9f99b97a79b945e8"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_captureDiagnostics:CaptureDiagnosticHarness ?:private",
-      "Owner": "#344",
-      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateShotListCliService():ShotListCliService:private",
+      "Owner": "#345",
+      "Rationale": "Temporary screenshot composition over existing source admission, navigation, camera and post-draw metadata ports. The CLI service owns list control flow; retire this root factory when the capture owner supplies the remaining presentation binding.",
       "ExpiresWith": "#356",
-      "Hash": "010acffa3c86b93e7f35f06446fe313e805c7d3e8c3cec69474d1cb20cf4eb63"
+      "Hash": "8d94fd2363513639b3573eb6d74ca93ce18a3f3f98ad729f505d2537d9c01245"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateCaptureDiagnosticHarness():CaptureDiagnosticHarness:private",
-      "Owner": "#344",
-      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
-      "ExpiresWith": "#356",
-      "Hash": "cd67ca4e87b55c44b03d5426cd493230d9c83d0d3c33bd9adbc2011f8d49bb5c"
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateSourceSetup():SourceSetupController:private",
+      "Owner": "#346",
+      "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. Source state, admission and repair live outside the root; final world-entry composition removes this bridge.",
+      "ExpiresWith": "#376",
+      "Hash": "150cfbea2b7d88106306713a473c3efce461d364b8074e2682f47f4fc74424d0"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateMovementStateDiagnosticFixture():IMovementStateDiagnosticFixture:private",
-      "Owner": "#344",
-      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
-      "ExpiresWith": "#358",
-      "Hash": "55c2b93df48af357f38281763ee741906ed43693f5d8218d669108de2ea45b21"
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateStressSwitchCliService():StressSwitchCliService:private",
+      "Owner": "#345",
+      "Rationale": "Temporary stress CLI composition for immutable world-generation/node witnesses, campaign observation and the existing rejected-import boundary. The service owns traversal/cancellation; retire the root binding with final world-entry composition.",
+      "ExpiresWith": "#376",
+      "Hash": "a6715993cf384861b115c720752a36c41645cfc3d9461d33832574619f03e2c0"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateTrilogyActorDiagnosticFixture():ITrilogyActorDiagnosticFixture:private",
@@ -2786,105 +2859,21 @@
       "Owner": "#344",
       "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
       "ExpiresWith": "#359",
-      "Hash": "a83aa5565a13beb4ce7be32a92d759dd52abae2fef3081721fe0db4197d36481"
+      "Hash": "1d8dc6f2ff28d033f0c3a486e731ca1e4ab2f66c40b10ee79b30ce1decf6c3cf"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateShotListCliService():ShotListCliService:private",
-      "Owner": "#345",
-      "Rationale": "Temporary screenshot composition over existing source admission, navigation, camera and post-draw metadata ports. The CLI service owns list control flow; retire this root factory when the capture owner supplies the remaining presentation binding.",
-      "ExpiresWith": "#356",
-      "Hash": "8d94fd2363513639b3573eb6d74ca93ce18a3f3f98ad729f505d2537d9c01245"
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateUiDiagnosticHarness():UiDiagnosticHarness:private",
+      "Owner": "#337",
+      "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
+      "ExpiresWith": "#348",
+      "Hash": "3d001bae31782ae4a09797383c822b014c850cc86b0c458b3b4a84ba39562ced"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateStressSwitchCliService():StressSwitchCliService:private",
-      "Owner": "#345",
-      "Rationale": "Temporary stress CLI composition for immutable world-generation/node witnesses, campaign observation and the existing rejected-import boundary. The service owns traversal/cancellation; retire the root binding with final world-entry composition.",
-      "ExpiresWith": "#376",
-      "Hash": "a6715993cf384861b115c720752a36c41645cfc3d9461d33832574619f03e2c0"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:StartFusionLabTraversalSmoke(:PlayerHost):void:private",
-      "Owner": "#345",
-      "Rationale": "Temporary explicit Lab fixture composition. The scoped scenario owns input, traversal and deferred reload; retire this binding with Lab navigation ownership.",
-      "ExpiresWith": "#347",
-      "Hash": "4322f3a787b640ca5b3605d2c4e90cca1b480fd29aad6c5285729724f14f1c47"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_sourceSetup:SourceSetupController ?:private",
-      "Owner": "#346",
-      "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. Source state, admission and repair live outside the root; final world-entry composition removes this bridge.",
-      "ExpiresWith": "#376",
-      "Hash": "f0865cc5a5d91692a09573b5723bed5432968122bbf60003f4e6b1fee2f8adf6"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateSourceSetup():SourceSetupController:private",
-      "Owner": "#346",
-      "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. Source state, admission and repair live outside the root; final world-entry composition removes this bridge.",
-      "ExpiresWith": "#376",
-      "Hash": "150cfbea2b7d88106306713a473c3efce461d364b8074e2682f47f4fc74424d0"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RememberCommandLineSource(:ObpSourceGame,:string,:bool):void:public",
-      "Owner": "#346",
-      "Rationale": "Existing bootstrap/controller compatibility port delegates to SourceSetupController without source state or policy. Navigation ownership removes the root bridge in #347.",
-      "ExpiresWith": "#347",
-      "Hash": "4f3a5f6acbb67b5ea318bdebc68c9babd7399565d888de3286b8144acdbc13b6"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RequireStartupSetup():bool:public",
-      "Owner": "#346",
-      "Rationale": "Existing bootstrap/controller compatibility port delegates to SourceSetupController without source state or policy. Navigation ownership removes the root bridge in #347.",
-      "ExpiresWith": "#347",
-      "Hash": "9fbe3083e29d91f08d7ff3eb8d21f7f523a1b027c1384aac5a339455e23e2ec4"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ShowSourceManagerFromBootstrap():void:public",
-      "Owner": "#346",
-      "Rationale": "Existing bootstrap/controller compatibility port delegates to SourceSetupController without source state or policy. Navigation ownership removes the root bridge in #347.",
-      "ExpiresWith": "#347",
-      "Hash": "f0c779c68f84cde6a8fbc6d6cdb4499f1b63d21eeeb2aaedfb1c5c76739a7c4b"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Sources:SourceSetupController:get/:private",
-      "Owner": "#346",
-      "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. Source state, admission and repair live outside the root; final world-entry composition removes this bridge.",
-      "ExpiresWith": "#376",
-      "Hash": "f066fa120be074e32846b992f08b41e0889b1b7bed1a0ca6dee6fb3c0cc76025"
-    },
-    {
-      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:WorldOptions(:RuntimeWorld):WorldHost . Options:private",
-      "Owner": "#347",
-      "Rationale": "Existing world host presentation options moved beside world preparation; no new world loading policy or alternative lifetime.",
-      "ExpiresWith": "#376",
-      "Hash": "cab8f9e61e114d005f78f50e39c91672e2f7d3a1f868335648587447c55b91f2"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_navigation:ApplicationNavigationCoordinator:private",
-      "Owner": "#347",
-      "Rationale": "Single temporary navigation-owner reference; application page state lives outside the root and the existing world/session leases remain authoritative.",
-      "ExpiresWith": "#376",
-      "Hash": "88747dfdaebff70a48ead75f4ccf5db4d67bdb6213201850b9311eb680acab2f"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:AbandonFailedRac1Travel():void:private",
-      "Owner": "#347",
-      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
-      "ExpiresWith": "#376",
-      "Hash": "7cb1d65e6605a21d6d97feefa0a157a652d0d4ce2fdf6c9d033adb4f9484fa3c"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ClearFusionLabStatus():void:private",
-      "Owner": "#347",
-      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
-      "ExpiresWith": "#376",
-      "Hash": "e23ba97f7a6ffc9497a76eb116adafadc42395b5dde3b30b41219d48736bbdaf"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ClearTitleScreen():void:private",
-      "Owner": "#347",
-      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
-      "ExpiresWith": "#376",
-      "Hash": "d52d15841b01d3b9d12e76129d5fb59c968948e52e450820487b34918399106b"
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateWeaponDiagnosticHarness():WeaponDiagnosticHarness:private",
+      "Owner": "#341",
+      "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters.",
+      "ExpiresWith": "#367",
+      "Hash": "514497ee38fc9d77060e47a258e3ff727cd3e4a346b03113cdc89b4db96dca70"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:DecorateFusionLab(:FusionLabDefinition,:bool):void:private",
@@ -2901,6 +2890,13 @@
       "Hash": "44a47405800a71d5e2d55750f20982d6604146420224ad68f0ce8599679009b7"
     },
     {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:EnsurePlayerSession():void:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "bc1da72068e0a7baf38d9f4499477132091e1c50cc451ffa7c6b93574a57c3a5"
+    },
+    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:EnterFusionLab():bool:private",
       "Owner": "#347",
       "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
@@ -2913,6 +2909,13 @@
       "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
       "ExpiresWith": "#376",
       "Hash": "15e2c3fb78df64b5bc73cc5bac148e44b2604ca759d56df92d29e2d7da4dffe6"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:InitializeSharedProfile():void:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "25880c427e054e842e27276889872105bf5507e7b8b9780eeb3a1ba8f815d84c"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:OnDestinationChosen(:ObpDestination):bool:private",
@@ -2943,11 +2946,95 @@
       "Hash": "e916803c56c100ca2bdcf45e4fc5e78b7578921572d5938bc4ae10a5958d630e"
     },
     {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ReadWeaponQuickSelectEntries():WeaponQuickSelectUi . Entry [  ]:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "8096663d1d5c63083effad01cfa9aa31ec2aa7639eb878a5e85de39eebcc9f28"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RefreshPlayerSourceAvailability():void:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "a97a748d913f2f9d9b602fe2337019ca40ec7de9383a51aa9440153e3fd47849"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RememberCommandLineSource(:ObpSourceGame,:string,:bool):void:public",
+      "Owner": "#346",
+      "Rationale": "Existing bootstrap/controller compatibility port delegates to SourceSetupController without source state or policy. Navigation ownership removes the root bridge in #347.",
+      "ExpiresWith": "#347",
+      "Hash": "4f3a5f6acbb67b5ea318bdebc68c9babd7399565d888de3286b8144acdbc13b6"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RequireStartupSetup():bool:public",
+      "Owner": "#346",
+      "Rationale": "Existing bootstrap/controller compatibility port delegates to SourceSetupController without source state or policy. Navigation ownership removes the root bridge in #347.",
+      "ExpiresWith": "#347",
+      "Hash": "9fbe3083e29d91f08d7ff3eb8d21f7f523a1b027c1384aac5a339455e23e2ec4"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ReturnToWorldsFromPause():void:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "ac75a4987c655f03395d201f7f4bdfa171b844228af22d2ddff25c0b11f48fde"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunRac1VeldinRetailPauseSmokeAsync():Task:private",
+      "Owner": "#337",
+      "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates.",
+      "ExpiresWith": "#340",
+      "Hash": "b87f685890d9c65491f929226699505eb999d28302a03f172ab7ea813f0b0759"
+    },
+    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunRac2StressSwitchFromBootstrap(:string):void:public",
       "Owner": "#347",
       "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
       "ExpiresWith": "#376",
       "Hash": "8ff4a0b05788c78e2674837191711f0d7235747693ff21ae830f69ff0b62635b"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SaveSharedProfile(:string):bool:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "bb5c81944352846751d114d6c48f0937493620019cad585e614327d0c1dd3e34"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetAnalogueSmokeInput(:float,:float):void:private,static",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#358",
+      "Hash": "34ceeb7b8a92509d26af616dbdcf1ed2ca32b991a965310712c6414c3f842d88"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetDebugOutputEnabled(:bool):void:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "11c76a97a6b3660f5c2bb5cf5621d3f2837780df394ae2a0d2a26caee50a2c07"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetRac1SmokeConditionedInput(:double,:double):void:private,static",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#354",
+      "Hash": "5b4698bb376a67c89ed5d6da33e427d5a8ea1031e3c536e5d26151bdff1b0dfe"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetSyntheticNativeHeading(:PlayerHost,:double,:double):void:private,static",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#343",
+      "Hash": "5c1e15615efb5fdc85feb786b19b39b591420fc723429a624756c3e4916309e3"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ShowControllerSettingsFromMenu():void:public",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "42166724ab69879d820aa5163f8bae58988ee5a96c69b4f00d46c9788f7d670c"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ShowDestinationSelector():void:private",
@@ -2964,6 +3051,13 @@
       "Hash": "176d1e1f3f82decedf8bc45711ecd314f28a140346769f5762ce8e09adf8a588"
     },
     {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ShowSourceManagerFromBootstrap():void:public",
+      "Owner": "#346",
+      "Rationale": "Existing bootstrap/controller compatibility port delegates to SourceSetupController without source state or policy. Navigation ownership removes the root bridge in #347.",
+      "ExpiresWith": "#347",
+      "Hash": "f0c779c68f84cde6a8fbc6d6cdb4499f1b63d21eeeb2aaedfb1c5c76739a7c4b"
+    },
+    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ShowTitleFromBootstrap():void:public",
       "Owner": "#347",
       "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
@@ -2978,11 +3072,46 @@
       "Hash": "368da910762bc05b22c019b5af2003ede400b094126ef3b5a46488b647ecc402"
     },
     {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:StartFusionLabTraversalSmoke(:PlayerHost):void:private",
+      "Owner": "#345",
+      "Rationale": "Temporary explicit Lab fixture composition. The scoped scenario owns input, traversal and deferred reload; retire this binding with Lab navigation ownership.",
+      "ExpiresWith": "#347",
+      "Hash": "4322f3a787b640ca5b3605d2c4e90cca1b480fd29aad6c5285729724f14f1c47"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:TearDownInteractiveOverlays():void:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "66740377bdb9f41fb6e50fea85f2a3ea70aabad337df35bcb5c0dddb387b6e53"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:TickSharedProfile(:double):void:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "a15f70d412dd17c6084b1dccae7f33ce35ce10ec228497c6e43af42f635fce82"
+    },
+    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:TravelRac1CampaignTo(:int):Rac1PlanetTravelStartResult:public",
       "Owner": "#347",
       "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
       "ExpiresWith": "#376",
       "Hash": "37bfdcc4865dfc47793f29c30818b32ddad0764e561be78f3d8b6ac33ca9b037"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:TryCloseControllerSettings():bool:public",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "7b1d5bf308eb5f3e179d9e7bf27616243f1e6d70fca341397ca6d741aa313ad1"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:TryClosePauseMenu():bool:public",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "2192e51bffa90affac297f521bd0f44d58fc57170c93567297f6fb5654916d7c"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:TryCloseRac1PlanetMap():bool:public",
@@ -2992,11 +3121,32 @@
       "Hash": "d4ca3f027eed7227b6196a27c4856b0bd156148aa89154b55d4445e862e6910e"
     },
     {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:TryOpenPauseMenu():bool:public",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "3a18eeb7aef1ac1845dcdda97a143d7445719339d78cb55f5f7c89aeb7ddbb83"
+    },
+    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:TryOpenRac1PlanetMap():bool:public",
       "Owner": "#347",
       "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
       "ExpiresWith": "#376",
       "Hash": "1c8fa7a90ca83a30f8234b33e674d9064c8980799c64fe495aabf437bcdebd44"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:TryOpenWeaponQuickSelect(:InputEvent):bool:public",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "5fe1e023da16b4f581ad0c553bfa90d961c2a91d634b3f1ed451d84b63637dce"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:TryResumeSharedProfileFromBootstrap():bool:public",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "0b236e2bfcc667b9a4fb16942f4a5f930ea2e311b7f9dba5e9331e20c69138e7"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:TryReturnSelectorToMenu():bool:public",
@@ -3020,18 +3170,18 @@
       "Hash": "ac8d57409d0f43fc6be2b07fb027c6eaa74da7398cb5c52bcffd1e987cd68fdd"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Rac1PlanetMapOpen:bool:get/:private",
-      "Owner": "#347",
-      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
-      "ExpiresWith": "#376",
-      "Hash": "706c75fc2580e4e696e70d0450c318562194bb4495fddda0c2228ef95874a1ed"
-    },
-    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:_activeDestination:ObpDestination ?:get/:private",
       "Owner": "#347",
       "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
       "ExpiresWith": "#376",
       "Hash": "654cb034f02762ca4f4cc18cdadaa63e802d9b75d88523999a78cd360e291165"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_avatarSourceStamp:( long Length , long Written ) ?:get/,set/:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "04f92c7f785b428cf6ab8ce7e9e55fa0f6fc5fba12fe68ac84dcc14fb60bddf4"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:_currentDestinationId:string ?:get/:private",
@@ -3040,117 +3190,425 @@
       "ExpiresWith": "#376",
       "Hash": "b0a20898ae7b9586aca05bfd072682607dcf2de8f3f64f51f5260444467a2054"
     },
-    {"Key":"game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::method:PrepareSelectedPlayerAssets():void:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"18bbf49a337cb2f044e511f5f42ca5204f04d5db2833e9f47988dfae3b19f9cb"},
-    {"Key":"game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::property:SelectedPlayerConfiguration:PlayerSessionConfiguration:get/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"4983cfcd1916271b96ece51e676a39beb00981f78ac1ed9fdc00a38a2ca88017"},
-    {"Key":"game/scripts/OBPGame.PlayerHealth.cs::OBPGame::method:PublishPersistentPlayerHud(params:HudFeedbackDraft [  ]):void:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"77861fbb2c4351eb6a171997d811ddd1a69f196e137e6925f97d1d58324dd0c4"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::field:_persistentPlayer:PlayerSessionHost:private,readonly","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"93637fdc58f6eb3ff204e0b944598fadf8d05209b4b8b31e85ccae50903e9c2d"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::field:_profileCoordinator:ProfileCoordinator ?:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"cf5a2ad510edc1602616dd06eafbf3aa317ff4e0819cb64780b891729d0b8a36"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:ApplySharedProfile(:ObpProfile):void:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"f003598de7523e5d2ba04261b803e432b9deab6f8589dabfe8c608fd4711134f"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:CaptureProfileSources():IReadOnlyList < ProfileSource >:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"a86ce667a982c2b5a6fc22b7d47f353da57aaaeb5ca7d8358f8876f7ff7b7af8"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:CaptureSharedProfile():ObpProfile:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"2dc1a471afda573f5d0ea6f3100ed12868129daea00a11e973955aed4f74ac42"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:EnsurePlayerSession():void:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"bc1da72068e0a7baf38d9f4499477132091e1c50cc451ffa7c6b93574a57c3a5"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:InitializeSharedProfile():void:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"25880c427e054e842e27276889872105bf5507e7b8b9780eeb3a1ba8f815d84c"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:RefreshPlayerSourceAvailability():void:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"a97a748d913f2f9d9b602fe2337019ca40ec7de9383a51aa9440153e3fd47849"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:SaveSharedProfile(:string):bool:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"bb5c81944352846751d114d6c48f0937493620019cad585e614327d0c1dd3e34"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:TickSharedProfile(:double):void:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"a15f70d412dd17c6084b1dccae7f33ce35ce10ec228497c6e43af42f635fce82"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:TryResumeSharedProfileFromBootstrap():bool:public","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"0b236e2bfcc667b9a4fb16942f4a5f930ea2e311b7f9dba5e9331e20c69138e7"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:OrdinaryPlayerSession:bool:get/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"4f496c1054de98d7741f043aacc4a7a59bfb78074bc825e1418957f111524e93"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:PlayerEntryMode:WorldEntryMode:get/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"09a03169ae9845fb4dd652d445fe539f04ff58edc61801083faa769deeeef8f3"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:PlayerSaveNotice:string ?:get/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"b09c6a70121489c4ab0f5cffa2fd859c055bb017d498120c1ce2488c1cce8168"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:ProfileRecoveryRequired:bool:get/:internal","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"f2a220f993e02321b9f6e9c8455b5b78427d3d55614abfe1296c615615d769ee"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:Profiles:ProfileCoordinator:get/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"dc2f475f142ba0e6c27dcf1072e9c6b4de05906c4da2d283ded4dc1217f0b161"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:SharedProfilePath:string ?:get/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"be929802c0505a6bb59550bbcc24b30ec6ccec629aa41b7f698a39ceb6dac015"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:_avatarSourceStamp:( long Length , long Written ) ?:get/,set/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"04f92c7f785b428cf6ab8ce7e9e55fa0f6fc5fba12fe68ac84dcc14fb60bddf4"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:_lastCommittedProfileDestination:string ?:get/,set/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"97fd57c5b50381371b657ca64ec3df9b12626b614289329db5c10be8f9102692"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:_playerAnimationProfile:PlayerAnimationProfile ?:get/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"5e8ae863f40c24cc88a2b448ad1a31cdf81176bedddbed18860d9603b0ea5ec5"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:_playerControlProfile:PlayerControlProfile ?:get/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"8f4630e10e3fd908584d6d23c8882c73ba8a1e73967d22832fdc69fec3241819"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:_playerNative:PlayerSessionNativeState ?:get/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"0a244b73693199da3c848c75c098d9f25a03821ab20306f800785c9f48dc6af6"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:_playerSession:ObpPlayerSession ?:get/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"726a2cd2305fedd400ca5238a1034a615a09a437d03d40721c7a91d6dab93613"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:_profileDocument:ObpProfile ?:get/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"f6493899141fad233cbfbaab4b3075508dc91b1520a6d2fc11adf0d06d539d05"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:_profileStatus:string ?:get/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"8d5b926460e0d969a7737502267ed8da4cf236e640469f59f9eca8b2e2914bbe"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:_profileWriteBlocked:bool:get/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"23990d27895f46f21f5f83afb69190a418ac61b58eb739bf0e90f08e64e61609"},
-    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:_worldEntries:WorldEntrySession ?:get/:private","Owner":"#349","Rationale":"Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.","ExpiresWith":"#376","Hash":"89a632fbd96d09e6353e3c62239512f1acfdacdd9f3f832d8544fa80f88eaa52"}
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_debugOutputEnabled:bool:get/:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "73d19c2b7f9027731ba58a1eaf930bf6b16fbbab384eceeffa829e6355fdbaa5"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_lastCommittedProfileDestination:string ?:get/,set/:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "97fd57c5b50381371b657ca64ec3df9b12626b614289329db5c10be8f9102692"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_lastQuickSelectTap:ulong:set/:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "cad2e3bfa3732298ae070e3212a958a48b092bdffdddb41dca5b45e5896ffd6e"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_pauseMenu:PauseMenuUi ?:get/:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "3b0c6103086cc05a8b9162af2975a3b697e268dfe016e065c28a0e476a00c2b8"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_playerAnimationProfile:PlayerAnimationProfile ?:get/:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "5e8ae863f40c24cc88a2b448ad1a31cdf81176bedddbed18860d9603b0ea5ec5"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_playerControlProfile:PlayerControlProfile ?:get/:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "8f4630e10e3fd908584d6d23c8882c73ba8a1e73967d22832fdc69fec3241819"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_playerNative:PlayerSessionNativeState ?:get/:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "0a244b73693199da3c848c75c098d9f25a03821ab20306f800785c9f48dc6af6"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_playerSession:ObpPlayerSession ?:get/:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "726a2cd2305fedd400ca5238a1034a615a09a437d03d40721c7a91d6dab93613"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_previousSelectedWeapon:SourceWeaponKey ?:get/,set/:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "17ada4fcec9ca0ff6f7e4cf86123197aa487edd857bc0ab58f7c26d2c305707f"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_profileDocument:ObpProfile ?:get/:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "f6493899141fad233cbfbaab4b3075508dc91b1520a6d2fc11adf0d06d539d05"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_profileStatus:string ?:get/:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "8d5b926460e0d969a7737502267ed8da4cf236e640469f59f9eca8b2e2914bbe"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_profileWriteBlocked:bool:get/:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "23990d27895f46f21f5f83afb69190a418ac61b58eb739bf0e90f08e64e61609"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_quickSelect:WeaponQuickSelectUi ?:get/:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "2f03013ac905e7a7473a63a0d1e952898250ac621a9ad3cbb2f4a67a09c9314d"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_worldEntries:WorldEntrySession ?:get/:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "89a632fbd96d09e6353e3c62239512f1acfdacdd9f3f832d8544fa80f88eaa52"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:ControllerSettingsOpen:bool:get/:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "4d26a3b950d0eb2d305b5c96c3d67be0e6c8e7f6fb547edd702ead52e28e4a8d"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:CurrentWeaponKey:SourceWeaponKey:get/:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "5a531af058d5c46a924e25b1c8655c6dcbce4b2282609dae588b82f2e4d9b85d"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Modals:UiModalCoordinator:get/:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "5a3840d023c3a57c3fdb0f0debf910d88d1eff9cfda041e0d4b9da1c0a6bc2f5"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:OrdinaryPlayerSession:bool:get/:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "4f496c1054de98d7741f043aacc4a7a59bfb78074bc825e1418957f111524e93"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:PauseMenuOpen:bool:get/:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "cbd92e22c5d29a0fb56e811ed425b3c517a0d8ac1a1fd8e721e73765d388bd6e"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:PlayerEntryMode:WorldEntryMode:get/:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "09a03169ae9845fb4dd652d445fe539f04ff58edc61801083faa769deeeef8f3"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:PlayerSaveNotice:string ?:get/:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "b09c6a70121489c4ab0f5cffa2fd859c055bb017d498120c1ce2488c1cce8168"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:ProfileRecoveryRequired:bool:get/:internal",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "f2a220f993e02321b9f6e9c8455b5b78427d3d55614abfe1296c615615d769ee"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Profiles:ProfileCoordinator:get/:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "dc2f475f142ba0e6c27dcf1072e9c6b4de05906c4da2d283ded4dc1217f0b161"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:QuickSelectOpen:bool:get/:private",
+      "Owner": "#348",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "ExpiresWith": "#376",
+      "Hash": "475b322aad61fea82962a0c47386a8ee6e41a7c1ed9589dc47f31ef6b8cd116b"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Rac1PlanetMapOpen:bool:get/:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "706c75fc2580e4e696e70d0450c318562194bb4495fddda0c2228ef95874a1ed"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:SharedProfilePath:string ?:get/:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "be929802c0505a6bb59550bbcc24b30ec6ccec629aa41b7f698a39ceb6dac015"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Sources:SourceSetupController:get/:private",
+      "Owner": "#346",
+      "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. Source state, admission and repair live outside the root; final world-entry composition removes this bridge.",
+      "ExpiresWith": "#376",
+      "Hash": "f066fa120be074e32846b992f08b41e0889b1b7bed1a0ca6dee6fb3c0cc76025"
+    },
+    {
+      "Key": "game/scripts/OBPGame.PlayerHealth.cs::OBPGame::method:PublishPersistentPlayerHud(params:HudFeedbackDraft [  ]):void:private",
+      "Owner": "#349",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "77861fbb2c4351eb6a171997d811ddd1a69f196e137e6925f97d1d58324dd0c4"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_playerAudioBankLevel:int:private",
+      "Owner": "#350",
+      "Rationale": "Pre-existing player audio trace/bank diagnostic state moved to the already existing audio partial as part of the #350 file retirement; #354 owns the pending audio extraction.",
+      "ExpiresWith": "#354",
+      "Hash": "d7637bae691d25bb2b67bea833c5241759387626521a3cbd60950fa16736373f"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_playerAudioDiagnostics:List < string >:private,readonly",
+      "Owner": "#350",
+      "Rationale": "Pre-existing player audio trace/bank diagnostic state moved to the already existing audio partial as part of the #350 file retirement; #354 owns the pending audio extraction.",
+      "ExpiresWith": "#354",
+      "Hash": "7ee94fb7cf7f67e6c067f11790f4b7859008b2bb1709c23f278ef03c766c29a5"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_selectedPlayerAudioTrace:List < ( string Source , string Build , int Level , int Class , int Sound , bool Loop , bool LevelSound , long Tick ) >:private,readonly",
+      "Owner": "#350",
+      "Rationale": "Pre-existing player audio trace/bank diagnostic state moved to the already existing audio partial as part of the #350 file retirement; #354 owns the pending audio extraction.",
+      "ExpiresWith": "#354",
+      "Hash": "310f9352321e4eba85ed8858406882e1cf15343b224d089e1d1bc6016d25cb70"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:BindPlayerEquipmentPresentation():void:private",
+      "Owner": "#350",
+      "Rationale": "Existing catalogue/hand-selection composition retained temporarily while the equipment facade migrates; model and binding caches now belong to the presentation binder.",
+      "ExpiresWith": "#351",
+      "Hash": "e9eefa307fc4f15412849b1a68308237eda825a3d4f54b2a941c7a678a71b335"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:ConfigurePlayerEquipmentPresentation(:RuntimeWorld):void:private",
+      "Owner": "#350",
+      "Rationale": "Existing selected-player audio/presentation bridge remains stable pending the dedicated audio ownership migration; decoded data and effect binding moved to owned components.",
+      "ExpiresWith": "#354",
+      "Hash": "293348b910fd16c4b625fa072d0f17083a00fa9a887a13197ee80dd2931bf777"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:CreateEquipmentAppearancePreview(:EquipmentCatalogEntry):Control ?:private",
+      "Owner": "#350",
+      "Rationale": "Existing catalogue/hand-selection composition retained temporarily while the equipment facade migrates; model and binding caches now belong to the presentation binder.",
+      "ExpiresWith": "#351",
+      "Hash": "ea6c65176ac2583ccb7695cef93adbd9bd3fdda8b65ba59ca6121e9e5a38fac9"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:CreatePlayerEquipmentEffectNode(:int,:string):Node3D:private",
+      "Owner": "#350",
+      "Rationale": "Existing selected-player audio/presentation bridge remains stable pending the dedicated audio ownership migration; decoded data and effect binding moved to owned components.",
+      "ExpiresWith": "#354",
+      "Hash": "15f0b4e5240f15e71be6fc3415efc3b287a866df78feaa2d151076b362bd11e2"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:PlayerEquipmentModelAvailable(:SourceWeaponKey):bool:private",
+      "Owner": "#350",
+      "Rationale": "Existing catalogue/hand-selection composition retained temporarily while the equipment facade migrates; model and binding caches now belong to the presentation binder.",
+      "ExpiresWith": "#351",
+      "Hash": "23d34ab3ffb7b357c80659138f8d4021f31a62202793ec3f9d0f82a383d4e06b"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:PlayPlayerEquipmentSound(:int,:int,:Vector3):void:private",
+      "Owner": "#350",
+      "Rationale": "Existing selected-player audio/presentation bridge remains stable pending the dedicated audio ownership migration; decoded data and effect binding moved to owned components.",
+      "ExpiresWith": "#354",
+      "Hash": "f0e2bcbca4249992236f770f07150d8222e26dd0bf35b84cdf22866c244ccb28"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:ReportPlayerAudioMissing(:int,:int):void:private",
+      "Owner": "#350",
+      "Rationale": "Existing selected-player audio/presentation bridge remains stable pending the dedicated audio ownership migration; decoded data and effect binding moved to owned components.",
+      "ExpiresWith": "#354",
+      "Hash": "3d8afda2aedd9e782023fba0c8fff11e3c62be7f1d726590fee1b8782d498f80"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:SetPlayerAudioPaused(:bool):void:private",
+      "Owner": "#350",
+      "Rationale": "Existing selected-player audio/presentation bridge remains stable pending the dedicated audio ownership migration; decoded data and effect binding moved to owned components.",
+      "ExpiresWith": "#354",
+      "Hash": "9aa91a9b55313f0af06159e0408dff8caf15e35f672fcef0507546a05975dd8a"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:TraceSelectedPlayerAudio(:int,:int,:bool,:bool):void:private",
+      "Owner": "#350",
+      "Rationale": "Existing selected-player audio/presentation bridge remains stable pending the dedicated audio ownership migration; decoded data and effect binding moved to owned components.",
+      "ExpiresWith": "#354",
+      "Hash": "64a3ef2a0eac92a99d9b77cbde43093a748a21702df2ce2080dceb1187bc6f1f"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::property:PlayerPresentationAssets:Rac1PickupAssets . Catalogue ?:get/:private",
+      "Owner": "#350",
+      "Rationale": "Existing selected-player audio/presentation bridge remains stable pending the dedicated audio ownership migration; decoded data and effect binding moved to owned components.",
+      "ExpiresWith": "#354",
+      "Hash": "07b74c5e671674ac28548e69e078cf70f7cd4331fdb16f4b19175164e3e9611c"
+    },
+    {
+      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:AttachPlayerAvatarVisual(:PlayerHost):void:private",
+      "Owner": "#350",
+      "Rationale": "The host now owns state and presentation; this pre-existing root member forwards world/lifetime integration until the final thin-root composition.",
+      "ExpiresWith": "#376",
+      "Hash": "ada094a0a29890547a17d73927a877da9be8aab63c02287e14e8c91937799ae5"
+    },
+    {
+      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:ClearPlayerAvatarView():void:private",
+      "Owner": "#350",
+      "Rationale": "The host now owns state and presentation; this pre-existing root member forwards world/lifetime integration until the final thin-root composition.",
+      "ExpiresWith": "#376",
+      "Hash": "00c6322c113455ea068c6fd58b9e0ec3f89c51dce857ef4f7d5413f45c8d0b4f"
+    },
+    {
+      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:CurrentPlayerAvatarSourceSequence():int ?:private",
+      "Owner": "#350",
+      "Rationale": "The host now owns state and presentation; this pre-existing root member forwards world/lifetime integration until the final thin-root composition.",
+      "ExpiresWith": "#376",
+      "Hash": "daf657db541ca7fb00152eb4bc4dc43f8cc5c8af18bfdc683b8938b51dc9dd3d"
+    },
+    {
+      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:HideAuthoredWorldRatchetPresentation():void:private",
+      "Owner": "#350",
+      "Rationale": "The host now owns state and presentation; this pre-existing root member forwards world/lifetime integration until the final thin-root composition.",
+      "ExpiresWith": "#376",
+      "Hash": "637c9917e01f004025325d024952d7ece8c6ad83fbb62a1b3e13db5d9cdea1c6"
+    },
+    {
+      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:HoldSelectedRac1HandItem():void:private",
+      "Owner": "#350",
+      "Rationale": "The host now owns state and presentation; this pre-existing root member forwards world/lifetime integration until the final thin-root composition.",
+      "ExpiresWith": "#376",
+      "Hash": "8ddec72f8a632eef0f4f79308a6dd26574f60e169c3e766601da911814d95de5"
+    },
+    {
+      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:IsRac1HandEquipmentVisible(:OBP . RAC1 . Gameplay . Rac1WeaponId):bool:private",
+      "Owner": "#350",
+      "Rationale": "Existing catalogue/hand-selection composition retained temporarily while the equipment facade migrates; model and binding caches now belong to the presentation binder.",
+      "ExpiresWith": "#351",
+      "Hash": "1a452993346c6a279734b93e7e44938d96d67e5c74a3afd2f6838ee5bcc3e7d6"
+    },
+    {
+      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:PlayerAvatarPresentationIsSynchronized():bool:private",
+      "Owner": "#350",
+      "Rationale": "The host now owns state and presentation; this pre-existing root member forwards world/lifetime integration until the final thin-root composition.",
+      "ExpiresWith": "#376",
+      "Hash": "3252723869b20f1e29d4cc2b5e43676d5259fccff646a1703726a32594c5b54a"
+    },
+    {
+      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:PrepareSelectedPlayerAssets():void:private",
+      "Owner": "#350",
+      "Rationale": "The host now owns state and presentation; this pre-existing root member forwards world/lifetime integration until the final thin-root composition.",
+      "ExpiresWith": "#376",
+      "Hash": "1212f22073ef88a362bb7ed951a84762aa066c95ff28bf523a6066c8c9fbd42f"
+    },
+    {
+      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:RefreshRac1HeldItem(:int ?):void:private",
+      "Owner": "#350",
+      "Rationale": "Existing catalogue/hand-selection composition retained temporarily while the equipment facade migrates; model and binding caches now belong to the presentation binder.",
+      "ExpiresWith": "#351",
+      "Hash": "51b6375e73961fad752d93d6df4681c4c9a184df764d31ba260e32103a90b11d"
+    },
+    {
+      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:RefreshRac1WrenchPresentationVisibility():void:private",
+      "Owner": "#350",
+      "Rationale": "The host now owns state and presentation; this pre-existing root member forwards world/lifetime integration until the final thin-root composition.",
+      "ExpiresWith": "#376",
+      "Hash": "1a7a07607435adae826b9c6523dedbf606cd3be33def253d4dc77abf30ee071b"
+    },
+    {
+      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:ResetPlayerAvatarPhysics():void:private",
+      "Owner": "#350",
+      "Rationale": "Existing 60Hz game/weapon callback order remains on the host until registered source-game tick scheduling; avatar clock, pose sampling and view lifetimes are owned by PlayerAvatarPresentationHost.",
+      "ExpiresWith": "#375",
+      "Hash": "4335202b6dffde3ba5b380fccc24857e7d946fd6abf701ee1ee74b7baf691c24"
+    },
+    {
+      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:StepPlayerAvatarPhysics(:double,:PlayerAnimationState,:Rac1LocomotionAnimationInput):void:private",
+      "Owner": "#350",
+      "Rationale": "Existing 60Hz game/weapon callback order remains on the host until registered source-game tick scheduling; avatar clock, pose sampling and view lifetimes are owned by PlayerAvatarPresentationHost.",
+      "ExpiresWith": "#375",
+      "Hash": "a4a77ebcb02cd5b321dd5c90ee94679bc294d65a2144171aed00eac4dcf7822c"
+    },
+    {
+      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:WorldOptions(:RuntimeWorld):WorldHost . Options:private",
+      "Owner": "#347",
+      "Rationale": "Existing world host presentation options moved beside world preparation; no new world loading policy or alternative lifetime.",
+      "ExpiresWith": "#376",
+      "Hash": "cab8f9e61e114d005f78f50e39c91672e2f7d3a1f868335648587447c55b91f2"
+    },
+    {
+      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::property:SelectedPlayerConfiguration:PlayerSessionConfiguration:get/:private",
+      "Owner": "#350",
+      "Rationale": "The host now owns state and presentation; this pre-existing root member forwards world/lifetime integration until the final thin-root composition.",
+      "ExpiresWith": "#376",
+      "Hash": "4983cfcd1916271b96ece51e676a39beb00981f78ac1ed9fdc00a38a2ca88017"
+    }
   ],
   "RetiredMembers": [
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_controllerSettings:ControllerSettingsUi ?:private",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_controllerSettingsFromPause:bool:private",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_debugOutputEnabled:bool:private",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_pauseMenu:PauseMenuUi ?:private",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_pauseOwnsTreePause:bool:private",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_prePauseHeldButtons:int:private",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_prePauseMouseMode:Input . MouseModeEnum:private",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_settingsReturnFocus:Control ?:private",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:CloseControllerSettings():void:private",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:ClosePauseMenu():void:private",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:OpenControllerSettings(:bool):void:private",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:ReturnToWorldsFromPause():void:private",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:SetDebugOutputEnabled(:bool):void:private",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:ShowControllerSettingsFromMenu():void:public",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:TearDownInteractiveOverlays():void:private",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:TryCloseControllerSettings():bool:public",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:TryClosePauseMenu():bool:public",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:TryOpenPauseMenu():bool:public",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::property:ControllerSettingsOpen:bool:get/:private",
-    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::property:PauseMenuOpen:bool:get/:private",
-    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::field:_lastQuickSelectTap:ulong:private",
-    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::field:_preQuickSelectHeldButtons:int:private",
-    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::field:_preQuickSelectMouse:Input . MouseModeEnum:private",
-    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::field:_previousSelectedWeapon:SourceWeaponKey ?:private",
-    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::field:_quickSelect:WeaponQuickSelectUi ?:private",
-    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::method:CloseWeaponQuickSelect(:SourceWeaponKey ?):void:private",
-    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::method:TryOpenWeaponQuickSelect(:InputEvent):bool:public",
-    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::property:CurrentWeaponKey:SourceWeaponKey:get/:private",
-    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::property:QuickSelectOpen:bool:get/:private",
-
+    "game/diagnostics/ControllerSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/ControllerSmoke.cs::OBPGame::method:CheckControllerWeaponInputAsync():Task:async,internal",
     "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame+AcceptanceCheck::declaration:RecordDeclaration:private,sealed:::( string Id , string ? Destination , bool Passed , string Detail )",
     "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame::field:_acceptanceChecks:List < AcceptanceCheck >:private,readonly",
     "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame::method:AcceptanceAssert(:bool,:string,:string):void:private",
     "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame::method:FinishAcceptanceFailure(:string,:Exception,:string):void:private",
     "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame::method:WriteAcceptanceEvidence(:string,:Exception ?):void:private",
-    "game/diagnostics/OBPGame.SmokeDispatch.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.SmokeDispatch.cs::OBPGame::method:DispatchRequestedWorldSmokes(:ObpDestination):void:private",
-    "game/diagnostics/OBPGame.OrdinaryUiSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.OrdinaryUiSmoke.cs::OBPGame::method:CheckOrdinaryUiStartupAsync():Task:async,private",
-    "game/diagnostics/OBPGame.OrdinaryUiSmoke.cs::OBPGame::method:RunOrdinaryUiSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1StartupVisibilitySmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1StartupVisibilitySmoke.cs::OBPGame::method:AssertNoStartupPlaceholderVisible(:string):void:private",
-    "game/diagnostics/OBPGame.Rac1StartupVisibilitySmoke.cs::OBPGame::method:AssertRac1StartupGameplayReady():void:private",
-    "game/diagnostics/OBPGame.Rac1StartupVisibilitySmoke.cs::OBPGame::method:RunRac1StartupVisibilitySmokeAsync():System . Threading . Tasks . Task:async,private",
-    "game/diagnostics/OBPGame.Rac1StartupVisibilitySmoke.cs::OBPGame::method:RunRac1StartupVisibilitySmokeFromBootstrap():void:public",
-    "game/diagnostics/OBPGame.Rac1VeldinRetailPauseSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1VeldinRetailPauseSmoke.cs::OBPGame::method:RunRac1VeldinRetailPauseSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::field:_retailReviewInputGuard:Rac1PauseSmokeInputGuard ?:private",
-    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:EnumerateControls(:Node):IEnumerable < Control >:private,static",
-    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:ReviewFrames(:int):Task:async,private",
-    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:ReviewPage(:PauseMenuUi,:Rac1RetailMenuPage,:string):Task:async,private",
-    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:ReviewTap(:JoyButton):Task:async,private",
-    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:RunRac1WorldRetailNavigationSmokeAsync(:string):Task:async,private",
-    "game/diagnostics/OBPGame.SourceSetupCheck.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.SourceSetupCheck.cs::OBPGame::method:RunSourceSetupCheckAsync():Task:async,private",
-    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame+CapabilitySample::declaration:RecordDeclaration:private,sealed:::( int Tick , string ? Sequence , int ? Frame , string Pose , string Attachment , double Facing , double [  ] Position , double [  ] Camera , double Clock )",
-    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:CaptureCapabilityTrialAsync(:PlayerHost):Task < CapabilitySample [  ] >:async,private",
-    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:CheckCapabilityHealthAsync():Task:async,private",
-    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:CheckCapabilityMenuMaskAsync(:PlayerHost):Task:async,private",
-    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:CheckCapabilitySourceRecoveryAsync():Task:async,private",
-    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:Coordinates(:Vector3):double [  ]:private,static",
-    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:PoseDigest(:double [  ]):string:private,static",
-    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:RunPlayerCapabilitiesSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::method:CheckDeferredWorldEntryOwnershipAsync():Task:async,private",
-    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::method:CheckHostOperationCancellationAsync():Task:async,private",
-    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::method:CheckPlayerSessionLabControlsAsync():Task:async,private",
-    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::method:CheckPlayerSessionLabMovementAsync(:SourceWeaponKey):Task:async,private",
-    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::method:RunPlayerSessionSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1PlayerAudioSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1PlayerAudioSmoke.cs::OBPGame::method:RunRac1PlayerAudioSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.SharedProfileSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.SharedProfileSmoke.cs::OBPGame::method:RunSharedProfileSmokeAsync():Task:async,private",
-    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1PlayerSoundTrace:List < ( Rac1PlayerAudioSession . Cue Cue , bool Loop ) >:private,readonly",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:BugFrames(:int):Task:async,private",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:BugKey(:Key):Task:async,private",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:BugPad(:JoyButton):Task:async,private",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:CaptureBugUi(:string):Task:async,private",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:ClickBugButton(:string):Task:async,private",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:RunBugReporterSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:WaitBugAsync(:Func < bool >,:string,:int):Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:CaptureFusionAsync(:string):Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:CaptureFusionProfileAsync(:string):Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:CheckFusionJumpAttachmentAsync(:bool):Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:CheckFusionMovementTransitionsAsync():Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:FusionCheckWrenchPersistenceAsync():Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:FusionFireInputAsync(:int):Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:FusionKey(:Key,:bool):void:private,static",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:FusionMarkAsync():Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:RequireFusionGunAlignment():void:private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:RequireFusionHandAttachment():void:private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:RequireFusionTransitionContinuity(:Transform3D,:double [  ] ?,ref:int):void:private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:RunFusionRecordingSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:RunFusionWeaponsSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:SelectFusionByInputAsync(:int):Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:WaitForSharedWeaponsSmokeAsync():Task:async,private",
     "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:ClearMovementSmokeInput():void:private,static",
     "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:HorizontalDistance(:Vector3,:Vector3):float:private,static",
@@ -3175,43 +3633,52 @@
     "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:WaitForGroundedCancelableAsync(:PlayerHost,:int,:CancellationToken):Task:async,private",
     "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:WaitForPlayerAvatarSequenceAsync(:int,:int,:string):System . Threading . Tasks . Task:async,private",
     "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:WrapAngle(:double):double:private,static",
+    "game/diagnostics/OBPGame.MovementStateSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.MovementStateSmoke.cs::OBPGame::method:RunMovementStateSmokeAsync(:CancellationToken):Task:async,private",
+    "game/diagnostics/OBPGame.OrdinaryUiSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.OrdinaryUiSmoke.cs::OBPGame::method:CheckOrdinaryUiStartupAsync():Task:async,private",
+    "game/diagnostics/OBPGame.OrdinaryUiSmoke.cs::OBPGame::method:RunOrdinaryUiSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame+CapabilitySample::declaration:RecordDeclaration:private,sealed:::( int Tick , string ? Sequence , int ? Frame , string Pose , string Attachment , double Facing , double [  ] Position , double [  ] Camera , double Clock )",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:CaptureCapabilityTrialAsync(:PlayerHost):Task < CapabilitySample [  ] >:async,private",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:CheckCapabilityHealthAsync():Task:async,private",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:CheckCapabilityMenuMaskAsync(:PlayerHost):Task:async,private",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:CheckCapabilitySourceRecoveryAsync():Task:async,private",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:Coordinates(:Vector3):double [  ]:private,static",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:PoseDigest(:double [  ]):string:private,static",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:RunPlayerCapabilitiesSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::method:CheckDeferredWorldEntryOwnershipAsync():Task:async,private",
+    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::method:CheckHostOperationCancellationAsync():Task:async,private",
+    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::method:CheckPlayerSessionLabControlsAsync():Task:async,private",
+    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::method:CheckPlayerSessionLabMovementAsync(:SourceWeaponKey):Task:async,private",
+    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::method:RunPlayerSessionSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.PlaytestSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.PlaytestSmoke.cs::OBPGame::method:RunPlaytestRecordingSmokeAsync():Task:async,private",
     "game/diagnostics/OBPGame.Rac1AirborneSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/OBPGame.Rac1AirborneSmoke.cs::OBPGame::method:RequireRac1AirborneSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
-    "game/diagnostics/OBPGame.Rac1EnvironmentalDeathSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1EnvironmentalDeathSmoke.cs::OBPGame::method:RunRac1NaturalVeldinFallRespawnSmokeAsync(:Vector3):Task:async,private",
-    "game/diagnostics/OBPGame.Rac1LandingRegressionSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1LandingRegressionSmoke.cs::OBPGame::method:RequireRac1LandingRegressionSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
-    "game/diagnostics/OBPGame.Rac1NovalisSwimSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1NovalisSwimSmoke.cs::OBPGame::method:RunRac1NovalisSwimSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1SlopeJumpSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1SlopeJumpSmoke.cs::OBPGame::method:RequireRac1SlopeJumpSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
-    "game/diagnostics/OBPGame.Rac1SmallStepSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1SmallStepSmoke.cs::OBPGame::method:CheckSmallStepRouteAsync(:PlayerHost,:string,:Vector3,:double,:Func < Vector3 , bool >,:bool,:double,:int,:bool):System . Threading . Tasks . Task:async,private",
-    "game/diagnostics/OBPGame.Rac1SmallStepSmoke.cs::OBPGame::method:RequireRac1SmallStepSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
-    "game/diagnostics/OBPGame.Rac1SwingshotSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1SwingshotSmoke.cs::OBPGame::method:RequireRac1SwingshotSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
-    "game/diagnostics/OBPGame.Rac1SwingshotSmoke.cs::OBPGame::method:SyntheticTraversalTarget(:int,:int,:Vector3):RuntimeDynamicObject:private,static",
-    "game/diagnostics/OBPGame.Rac1TraversalContactSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1TraversalContactSmoke.cs::OBPGame::method:AddSyntheticTraversalMesh(:Node3D,:string,:int,params:( Vector3 A , Vector3 B , Vector3 C ) [  ]):void:private,static",
-    "game/diagnostics/OBPGame.Rac1TraversalContactSmoke.cs::OBPGame::method:RequireRac1TraversalContactSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
-    "game/diagnostics/OBPGame.Rac1TraversalContactSmoke.cs::OBPGame::method:SetSyntheticNativeHeading(:PlayerHost,:double,:double):void:private,static",
-    "game/diagnostics/ControllerSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/ControllerSmoke.cs::OBPGame::method:CheckControllerWeaponInputAsync():Task:async,internal",
-    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::method:CaptureRac1EnemiesAsync(:string,:Vector3):Task:async,private",
-    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::method:EnemySmokeDistanceToRoute(:IReadOnlyList < System . Numerics . Vector3 >,:System . Numerics . Vector3):float:private,static",
-    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::method:EnemySmokeGroundSeparation(:Rac1HostedEnemy):float ?:private",
-    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::method:RunRac1EnemySmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::method:RunRac1ToadGroundingSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1NovalisBirdbotSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1NovalisBirdbotSmoke.cs::OBPGame::method:RunRac1NovalisBirdbotSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1NovalisPeckbotSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1NovalisPeckbotSmoke.cs::OBPGame::method:RunRac1NovalisPeckbotSmokeAsync():Task:async,private",
     "game/diagnostics/OBPGame.Rac1AridiaConstructorbotSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/OBPGame.Rac1AridiaConstructorbotSmoke.cs::OBPGame::method:Rac1AridiaSmokeWaitNativeFramesAsync(:Func < bool >,:int,:string,:Func < string > ?):Task:async,private",
     "game/diagnostics/OBPGame.Rac1AridiaConstructorbotSmoke.cs::OBPGame::method:RunRac1AridiaConstructorbotSmokeAsync():Task:async,private",
     "game/diagnostics/OBPGame.Rac1AridiaConstructorbotSmoke.cs::OBPGame::method:VerifyAridiaConstructorbotEdgeSupportAsync(:Rac1HostedEnemy):Task:async,private",
     "game/diagnostics/OBPGame.Rac1AridiaConstructorbotSmoke.cs::OBPGame::method:VerifyAridiaSharkTwoCycleAuthoredHome():void:private",
+    "game/diagnostics/OBPGame.Rac1ArsenalSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1ArsenalSmoke.cs::OBPGame::method:RunRac1ArsenalSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1BombGloveSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1BombGloveSmoke.cs::OBPGame::method:CaptureRac1BombAsync(:string,:Vector3,:bool):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1BombGloveSmoke.cs::OBPGame::method:RunRac1BombGloveSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1BombGloveSmoke.cs::OBPGame::method:RunRac1SavedBombReproAsync(:string):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:ExerciseRecoveredLevel2CheckpointRestart():void:private",
+    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:Rac1CampaignSmokeTravelAsync(:int):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:ReloadCurrentRac1CampaignSmokeLevelAsync(:int):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:RequireFreshRac1CheckpointSmoke(:int):void:private",
+    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:RequirePersistedRac1CampaignSmokeState(:int,:int [  ]):void:private",
+    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:RequireRac1CampaignSmoke(:bool,:string):void:private,static",
+    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:RequireRac1CampaignSmokeState(:int,:int [  ]):void:private",
+    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:RunFreshRac1CampaignSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:RunRac1CampaignSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:RunRestoredRac1CampaignSmokeAsync():Task:async,private",
     "game/diagnostics/OBPGame.Rac1CombatContractSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/OBPGame.Rac1CombatContractSmoke.cs::OBPGame::method:AssertRac1SmokeHudWeapon(:string,:int ?):void:private",
     "game/diagnostics/OBPGame.Rac1CombatContractSmoke.cs::OBPGame::method:AssertRac1SmokeWrenchPresentation(:bool,:string):void:private",
@@ -3229,8 +3696,63 @@
     "game/diagnostics/OBPGame.Rac1CombatContractSmoke.cs::OBPGame::method:RunRac1CombatContractSmokeAsync():Task:async,private",
     "game/diagnostics/OBPGame.Rac1CombatContractSmoke.cs::OBPGame::method:RunRac1HostileLifecycleSmokeAsync(:int):Task:async,private",
     "game/diagnostics/OBPGame.Rac1CombatContractSmoke.cs::OBPGame::method:RunRac1Level18Class749GateSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1CrateSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1CrateSmoke.cs::OBPGame::method:CaptureRac1CratesAsync(:string,:Vector3):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1CrateSmoke.cs::OBPGame::method:RunRac1CrateSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1CrateSmoke.cs::OBPGame::method:StageRac1CrateForSmoke(:RuntimeWorldScene . DynamicObjectNode,:Vector3):void:private",
+    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::method:CaptureRac1EnemiesAsync(:string,:Vector3):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::method:EnemySmokeDistanceToRoute(:IReadOnlyList < System . Numerics . Vector3 >,:System . Numerics . Vector3):float:private,static",
+    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::method:EnemySmokeGroundSeparation(:Rac1HostedEnemy):float ?:private",
+    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::method:RunRac1EnemySmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::method:RunRac1ToadGroundingSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1EnvironmentalDeathSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1EnvironmentalDeathSmoke.cs::OBPGame::method:RunRac1NaturalVeldinFallRespawnSmokeAsync(:Vector3):Task:async,private",
     "game/diagnostics/OBPGame.Rac1FrogSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/OBPGame.Rac1FrogSmoke.cs::OBPGame::method:RunRac1FrogSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1LandingRegressionSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1LandingRegressionSmoke.cs::OBPGame::method:RequireRac1LandingRegressionSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.Rac1MetropolisTaxiSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1MetropolisTaxiSmoke.cs::OBPGame::method:RequireTaxiFacesMovingRouteAsync(:Node3D,:string,:int):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1MetropolisTaxiSmoke.cs::OBPGame::method:RunRac1MetropolisTaxiSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1MetropolisTaxiSmoke.cs::OBPGame::method:WaitForTaxiSmokeStateAsync(:Func < bool >,:int,:string):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1MissionPlaySmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1MissionPlaySmoke.cs::OBPGame::method:ObserveRac1MissionPlayAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1MissionPlaySmoke.cs::OBPGame::method:RequireMissionPlayAdmissions(:int,:int [  ]):void:private",
+    "game/diagnostics/OBPGame.Rac1MissionPlaySmoke.cs::OBPGame::method:RequireMissionPlayPlumberRetired():void:private",
+    "game/diagnostics/OBPGame.Rac1MissionPlaySmoke.cs::OBPGame::method:RunRac1MissionPlaySmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1NovalisBirdbotSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1NovalisBirdbotSmoke.cs::OBPGame::method:RunRac1NovalisBirdbotSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1NovalisMusicSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1NovalisMusicSmoke.cs::OBPGame::method:RunRac1NovalisMusicSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1NovalisPeckbotSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1NovalisPeckbotSmoke.cs::OBPGame::method:RunRac1NovalisPeckbotSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1NovalisRouteSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1NovalisRouteSmoke.cs::OBPGame::method:RunRac1NovalisRouteSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1NovalisSwimSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1NovalisSwimSmoke.cs::OBPGame::method:RunRac1NovalisSwimSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1PlacedBoltSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1PlacedBoltSmoke.cs::OBPGame::method:RunRac1PlacedBoltSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1PlacedBoltSmoke.cs::OBPGame::method:StageRac1PlacedBoltForSmoke(:Rac1PlacedBoltSession . Registration,:Vector3):void:private",
+    "game/diagnostics/OBPGame.Rac1PlayerAudioSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1PlayerAudioSmoke.cs::OBPGame::method:RunRac1PlayerAudioSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1SlopeJumpSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1SlopeJumpSmoke.cs::OBPGame::method:RequireRac1SlopeJumpSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.Rac1SmallStepSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1SmallStepSmoke.cs::OBPGame::method:CheckSmallStepRouteAsync(:PlayerHost,:string,:Vector3,:double,:Func < Vector3 , bool >,:bool,:double,:int,:bool):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.Rac1SmallStepSmoke.cs::OBPGame::method:RequireRac1SmallStepSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.Rac1StartupVisibilitySmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1StartupVisibilitySmoke.cs::OBPGame::method:AssertNoStartupPlaceholderVisible(:string):void:private",
+    "game/diagnostics/OBPGame.Rac1StartupVisibilitySmoke.cs::OBPGame::method:AssertRac1StartupGameplayReady():void:private",
+    "game/diagnostics/OBPGame.Rac1StartupVisibilitySmoke.cs::OBPGame::method:RunRac1StartupVisibilitySmokeAsync():System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.Rac1StartupVisibilitySmoke.cs::OBPGame::method:RunRac1StartupVisibilitySmokeFromBootstrap():void:public",
+    "game/diagnostics/OBPGame.Rac1SwingshotSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1SwingshotSmoke.cs::OBPGame::method:RequireRac1SwingshotSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.Rac1SwingshotSmoke.cs::OBPGame::method:SyntheticTraversalTarget(:int,:int,:Vector3):RuntimeDynamicObject:private,static",
+    "game/diagnostics/OBPGame.Rac1TraversalContactSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1TraversalContactSmoke.cs::OBPGame::method:AddSyntheticTraversalMesh(:Node3D,:string,:int,params:( Vector3 A , Vector3 B , Vector3 C ) [  ]):void:private,static",
+    "game/diagnostics/OBPGame.Rac1TraversalContactSmoke.cs::OBPGame::method:RequireRac1TraversalContactSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.Rac1TraversalContactSmoke.cs::OBPGame::method:SetSyntheticNativeHeading(:PlayerHost,:double,:double):void:private,static",
     "game/diagnostics/OBPGame.Rac1VeldinPlaySmoke.cs::OBPGame+Rac1SmokeGridNode::declaration:RecordStructDeclaration:private,readonly:::( int X , int Z )",
     "game/diagnostics/OBPGame.Rac1VeldinPlaySmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/OBPGame.Rac1VeldinPlaySmoke.cs::OBPGame::method:AssertRac1VeldinEphemeralOpening():void:private",
@@ -3249,142 +3771,56 @@
     "game/diagnostics/OBPGame.Rac1VeldinPlaySmoke.cs::OBPGame::method:SetRac1CameraSmokeInput(:float,:float):void:private,static",
     "game/diagnostics/OBPGame.Rac1VeldinPlaySmoke.cs::OBPGame::method:TapRac1PrimaryActionAsync():Task:async,private",
     "game/diagnostics/OBPGame.Rac1VeldinPlaySmoke.cs::OBPGame::method:TryPlanRac1SmokeWalkRoute(:Vector3,out:IReadOnlyList < Vector3 >):bool:private",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:CaptureFusionAsync(:string):Task:async,private",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:CaptureFusionProfileAsync(:string):Task:async,private",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:CheckFusionJumpAttachmentAsync(:bool):Task:async,private",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:CheckFusionMovementTransitionsAsync():Task:async,private",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:FusionCheckWrenchPersistenceAsync():Task:async,private",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:FusionFireInputAsync(:int):Task:async,private",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:FusionKey(:Key,:bool):void:private,static",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:FusionMarkAsync():Task:async,private",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:RequireFusionGunAlignment():void:private",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:RequireFusionHandAttachment():void:private",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:RequireFusionTransitionContinuity(:Transform3D,:double [  ] ?,ref:int):void:private",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:RunFusionRecordingSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:RunFusionWeaponsSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:SelectFusionByInputAsync(:int):Task:async,private",
-    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:WaitForSharedWeaponsSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1ArsenalSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1ArsenalSmoke.cs::OBPGame::method:RunRac1ArsenalSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1BombGloveSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1BombGloveSmoke.cs::OBPGame::method:CaptureRac1BombAsync(:string,:Vector3,:bool):Task:async,private",
-    "game/diagnostics/OBPGame.Rac1BombGloveSmoke.cs::OBPGame::method:RunRac1BombGloveSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1BombGloveSmoke.cs::OBPGame::method:RunRac1SavedBombReproAsync(:string):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1VeldinRetailPauseSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1VeldinRetailPauseSmoke.cs::OBPGame::method:RunRac1VeldinRetailPauseSmokeAsync():Task:async,private",
     "game/diagnostics/OBPGame.Rac1WeaponsSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/OBPGame.Rac1WeaponsSmoke.cs::OBPGame::method:PlaceWeaponSmokeEnemy(:Rac1HostedEnemy,:Vector3):void:private,static",
     "game/diagnostics/OBPGame.Rac1WeaponsSmoke.cs::OBPGame::method:RunRac1WeaponIdleAndAudioSmokeAsync():Task:async,private",
     "game/diagnostics/OBPGame.Rac1WeaponsSmoke.cs::OBPGame::method:RunRac1WeaponsSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::field:_retailReviewInputGuard:Rac1PauseSmokeInputGuard ?:private",
+    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:EnumerateControls(:Node):IEnumerable < Control >:private,static",
+    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:ReviewFrames(:int):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:ReviewPage(:PauseMenuUi,:Rac1RetailMenuPage,:string):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:ReviewTap(:JoyButton):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:RunRac1WorldRetailNavigationSmokeAsync(:string):Task:async,private",
     "game/diagnostics/OBPGame.Rac1WrenchSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/OBPGame.Rac1WrenchSmoke.cs::OBPGame::method:CaptureWrenchSmokeAsync(:string):Task:async,private",
     "game/diagnostics/OBPGame.Rac1WrenchSmoke.cs::OBPGame::method:RunRac1WrenchSmokeAsync():Task:async,private",
     "game/diagnostics/OBPGame.Rac1WrenchSmoke.cs::OBPGame::method:TapWrenchSmokeAsync():Task:async,private",
     "game/diagnostics/OBPGame.Rac1WrenchSmoke.cs::OBPGame::method:WaitWrenchTimeAsync(:float):Task:private",
-    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:ExerciseRecoveredLevel2CheckpointRestart():void:private",
-    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:Rac1CampaignSmokeTravelAsync(:int):Task:async,private",
-    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:ReloadCurrentRac1CampaignSmokeLevelAsync(:int):Task:async,private",
-    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:RequireFreshRac1CheckpointSmoke(:int):void:private",
-    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:RequirePersistedRac1CampaignSmokeState(:int,:int [  ]):void:private",
-    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:RequireRac1CampaignSmoke(:bool,:string):void:private,static",
-    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:RequireRac1CampaignSmokeState(:int,:int [  ]):void:private",
-    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:RunFreshRac1CampaignSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:RunRac1CampaignSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1CampaignSmoke.cs::OBPGame::method:RunRestoredRac1CampaignSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1CrateSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1CrateSmoke.cs::OBPGame::method:CaptureRac1CratesAsync(:string,:Vector3):Task:async,private",
-    "game/diagnostics/OBPGame.Rac1CrateSmoke.cs::OBPGame::method:RunRac1CrateSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1CrateSmoke.cs::OBPGame::method:StageRac1CrateForSmoke(:RuntimeWorldScene . DynamicObjectNode,:Vector3):void:private",
-    "game/diagnostics/OBPGame.Rac1MissionPlaySmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1MissionPlaySmoke.cs::OBPGame::method:ObserveRac1MissionPlayAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1MissionPlaySmoke.cs::OBPGame::method:RequireMissionPlayAdmissions(:int,:int [  ]):void:private",
-    "game/diagnostics/OBPGame.Rac1MissionPlaySmoke.cs::OBPGame::method:RequireMissionPlayPlumberRetired():void:private",
-    "game/diagnostics/OBPGame.Rac1MissionPlaySmoke.cs::OBPGame::method:RunRac1MissionPlaySmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1PlacedBoltSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1PlacedBoltSmoke.cs::OBPGame::method:RunRac1PlacedBoltSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1PlacedBoltSmoke.cs::OBPGame::method:StageRac1PlacedBoltForSmoke(:Rac1PlacedBoltSession . Registration,:Vector3):void:private",
-    "game/diagnostics/OBPGame.Rac1MetropolisTaxiSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1MetropolisTaxiSmoke.cs::OBPGame::method:RequireTaxiFacesMovingRouteAsync(:Node3D,:string,:int):Task:async,private",
-    "game/diagnostics/OBPGame.Rac1MetropolisTaxiSmoke.cs::OBPGame::method:RunRac1MetropolisTaxiSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1MetropolisTaxiSmoke.cs::OBPGame::method:WaitForTaxiSmokeStateAsync(:Func < bool >,:int,:string):Task:async,private",
-    "game/diagnostics/OBPGame.Rac1NovalisMusicSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1NovalisMusicSmoke.cs::OBPGame::method:RunRac1NovalisMusicSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1NovalisRouteSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1NovalisRouteSmoke.cs::OBPGame::method:RunRac1NovalisRouteSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:BugFrames(:int):Task:async,private",
-    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:BugKey(:Key):Task:async,private",
-    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:BugPad(:JoyButton):Task:async,private",
-    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:CaptureBugUi(:string):Task:async,private",
-    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:ClickBugButton(:string):Task:async,private",
-    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:RunBugReporterSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:WaitBugAsync(:Func < bool >,:string,:int):Task:async,private",
-    "game/diagnostics/OBPGame.MovementStateSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.MovementStateSmoke.cs::OBPGame::method:RunMovementStateSmokeAsync(:CancellationToken):Task:async,private",
-    "game/diagnostics/OBPGame.PlaytestSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.PlaytestSmoke.cs::OBPGame::method:RunPlaytestRecordingSmokeAsync():Task:async,private",
     "game/diagnostics/OBPGame.ReconciliationSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/OBPGame.ReconciliationSmoke.cs::OBPGame::method:RunReconciliationRecordingSmokeAsync():Task:async,private",
     "game/diagnostics/OBPGame.ReconciliationSmoke.cs::OBPGame::method:VerifyFinishedCaptureContinuationAsync():Task:async,private",
+    "game/diagnostics/OBPGame.SharedProfileSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.SharedProfileSmoke.cs::OBPGame::method:RunSharedProfileSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.SmokeDispatch.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.SmokeDispatch.cs::OBPGame::method:DispatchRequestedWorldSmokes(:ObpDestination):void:private",
+    "game/diagnostics/OBPGame.SourceSetupCheck.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.SourceSetupCheck.cs::OBPGame::method:RunSourceSetupCheckAsync():Task:async,private",
     "game/diagnostics/OBPGame.TrilogyGameplaySmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/OBPGame.TrilogyGameplaySmoke.cs::OBPGame::method:RunTrilogyGameplaySmokeAsync():Task:async,private",
-    "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame::field:_fusionSmokeReloaded:bool:private",
-    "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame::field:_fusionSmokeSnapshots:int:private",
-    "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame::field:_fusionSmokeStage:int:private",
-    "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame::method:CompleteFusionLabTraversalSmoke():void:private",
-    "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame::method:StartFusionLabTraversalSmoke(:PlayerHost):void:private",
-    "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame::method:TickFusionLabTraversalSmoke():void:private",
-    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame+CrateDebugSnapshot::declaration:RecordDeclaration:private,sealed:::( string ? TargetInteractionId , int ? NativeUid , int ? NativeInstanceIndex , bool Visible , bool Broken , string Status , string EventFlags , float EventScalar , byte ? PvarC8 , string ? Route , string RewardStatus , int CollectedBolts , int OutstandingPickups , int DeferredBolts )",
-    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::field:_crateBoltSession:Rac2FreshBoltSession:private",
-    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::field:_crateDebugBroken:bool:private",
-    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::field:_crateDebugPvarC8:byte ?:private",
-    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::field:_crateDebugRoute:string ?:private",
-    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::field:_crateDebugStatus:string:private",
-    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::field:_crateDebugTarget:RuntimeWorldScene . DynamicObjectNode ?:private",
-    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::field:_crateRewardStatus:string:private",
-    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::method:GetCrateDebugHudLine():string:private",
-    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::method:GetCrateDebugSnapshot():CrateDebugSnapshot ?:private",
-    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::method:TryGetCrateFocusPose(:RuntimeWorld,out:Vector3,out:float):bool:private",
-    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::property:CrateDebugRequested:bool:get/:private",
-    "game/scripts/OBPGame.Shots.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/scripts/OBPGame.Shots.cs::OBPGame::method:ApplyShotCamera(:ShotSpec,:RuntimeWorld):void:private",
-    "game/scripts/OBPGame.Shots.cs::OBPGame::method:RegisterCommandLineSources():void:private",
-    "game/scripts/OBPGame.Shots.cs::OBPGame::method:RunShotsAsync(:string,:CancellationToken):System . Threading . Tasks . Task:async,private",
-    "game/scripts/OBPGame.StressDiagnostics.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/scripts/OBPGame.StressDiagnostics.cs::OBPGame::method:CountDescendants(:Node):int:private,static",
-    "game/scripts/OBPGame.StressDiagnostics.cs::OBPGame::method:RunStressSwitchAsync(:string,:CancellationToken):System . Threading . Tasks . Task:async,private",
-    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_diagnosticSourceAccess:bool:private",
-    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_setupProfileSuspended:bool:private",
-    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_sourceCheckElapsed:double:private",
-    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_sourceConfigNeedsRepair:bool:private",
-    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_sourceReadiness:SourceReadinessEvaluator:private",
-    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_startupSourcesResolved:bool:private",
-    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::method:CompleteSourceSetup():void:private",
-    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::method:InitializeStartupSources():bool:private",
-    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::method:RequireOrdinarySourceSetup(:string):bool:private",
-    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::method:RequireStartupSetup():bool:public",
-    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::method:TickSourceSetup(:double):void:private",
-    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::property:ProfileRecoveryRequired:bool:get/:internal",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sourceConfigPath:string:private",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sourceConfigWarning:string ?:private",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sourceManager:SourceManagerUi ?:private",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sourceRestoreWarnings:Dictionary < ObpSourceGame , string >:private,readonly",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sources:ObpSourceLibrary:private",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sourcesInitialized:bool:private",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::method:AttachExpectedSource(:ObpSourceGame,:string,:bool,:bool):bool:private",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::method:BuildSourceManagerScreen():void:private",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::method:EnsureSourceLibraryInitialized():void:private",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::method:ForgetSource(:ObpSourceGame):void:private",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::method:OpenSourcePicker(:ObpSourceGame):void:private",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::method:RefreshRetailUiSource(:ObpAttachedSource ?,:IRandomAccessReader ?):string ?:private",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::method:RememberCommandLineSource(:ObpSourceGame,:string,:bool):void:public",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::method:RestoreRememberedSources():void:private",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::method:ShowSourceManagerFromBootstrap():void:public",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::method:TryReturnSelectorToMenu():bool:public",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_controllerSettings:ControllerSettingsUi ?:private",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_controllerSettingsFromPause:bool:private",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_debugOutputEnabled:bool:private",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_pauseMenu:PauseMenuUi ?:private",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_pauseOwnsTreePause:bool:private",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_prePauseHeldButtons:int:private",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_prePauseMouseMode:Input . MouseModeEnum:private",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_settingsReturnFocus:Control ?:private",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:CloseControllerSettings():void:private",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:ClosePauseMenu():void:private",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:OpenControllerSettings(:bool):void:private",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:ReturnToWorldsFromPause():void:private",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:SetDebugOutputEnabled(:bool):void:private",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:ShowControllerSettingsFromMenu():void:public",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:TearDownInteractiveOverlays():void:private",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:TryCloseControllerSettings():bool:public",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:TryClosePauseMenu():bool:public",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::method:TryOpenPauseMenu():bool:public",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::property:ControllerSettingsOpen:bool:get/:private",
+    "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::property:PauseMenuOpen:bool:get/:private",
     "game/scripts/OBPGame.Destinations.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/scripts/OBPGame.Destinations.cs::OBPGame::field:_destinationSelector:DestinationSelectorUi ?:private",
     "game/scripts/OBPGame.Destinations.cs::OBPGame::field:_genericNavigationActive:bool:private",
@@ -3416,16 +3852,71 @@
     "game/scripts/OBPGame.Destinations.cs::OBPGame::property:Rac1PlanetMapOpen:bool:get/:private",
     "game/scripts/OBPGame.Destinations.cs::OBPGame::property:_activeDestination:ObpDestination ?:get/:private",
     "game/scripts/OBPGame.Destinations.cs::OBPGame::property:_currentDestinationId:string ?:get/:private",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::field:_equipmentPresentationBindings:Dictionary < SourceWeaponKey , EquipmentPresentationBinding >:private,readonly",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::field:_playerAudioBankLevel:int:private",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::field:_playerAudioDiagnostics:List < string >:private,readonly",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::field:_playerEquipmentEffectMaterials:WorldMaterialFactory ?:private",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::field:_playerEquipmentEffectMeshes:Dictionary < int , List < ( ArrayMesh Mesh , Material Material ) > >:private,readonly",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::field:_selectedPlayerAudioTrace:List < ( string Source , string Build , int Level , int Class , int Sound , bool Loop , bool LevelSound , long Tick ) >:private,readonly",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::field:_selectedRac1PresentationAssets:Rac1PickupAssets . Catalogue ?:private",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::method:BindPlayerEquipmentPresentation():void:private",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::method:ConfigurePlayerEquipmentPresentation(:RuntimeWorld):void:private",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::method:CreateEquipmentAppearancePreview(:EquipmentCatalogEntry):Control ?:private",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::method:CreatePlayerEquipmentEffectNode(:int,:string):Node3D:private",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::method:PlayPlayerEquipmentSound(:int,:int,:Vector3):void:private",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::method:PlayerEquipmentModelAvailable(:SourceWeaponKey):bool:private",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::method:ReportPlayerAudioMissing(:int,:int):void:private",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::method:SetPlayerAudioPaused(:bool):void:private",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::method:TraceSelectedPlayerAudio(:int,:int,:bool,:bool):void:private",
+    "game/scripts/OBPGame.EquipmentPresentation.cs::OBPGame::property:PlayerPresentationAssets:Rac1PickupAssets . Catalogue ?:get/:private",
     "game/scripts/OBPGame.FusionLab.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/scripts/OBPGame.FusionLab.cs::OBPGame::field:_fusionLabStatus:Label ?:private",
     "game/scripts/OBPGame.FusionLab.cs::OBPGame::method:ClearFusionLabStatus():void:private",
     "game/scripts/OBPGame.FusionLab.cs::OBPGame::method:DecorateFusionLab(:FusionLabDefinition,:bool):void:private",
     "game/scripts/OBPGame.FusionLab.cs::OBPGame::method:EnterFusionLab():bool:private",
+    "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame::field:_fusionSmokeReloaded:bool:private",
+    "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame::field:_fusionSmokeSnapshots:int:private",
+    "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame::field:_fusionSmokeStage:int:private",
+    "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame::method:CompleteFusionLabTraversalSmoke():void:private",
+    "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame::method:StartFusionLabTraversalSmoke(:PlayerHost):void:private",
+    "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame::method:TickFusionLabTraversalSmoke():void:private",
     "game/scripts/OBPGame.Navigation.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/scripts/OBPGame.Navigation.cs::OBPGame::field:_titleScreen:TitleScreen ?:private",
     "game/scripts/OBPGame.Navigation.cs::OBPGame::method:ClearTitleScreen():void:private",
     "game/scripts/OBPGame.Navigation.cs::OBPGame::method:ShowTitleFromBootstrap():void:public",
     "game/scripts/OBPGame.Navigation.cs::OBPGame::method:ShowTitleScreen():void:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:PlayerAvatarProviders:PlayerAvatarProviderRegistry:private,readonly,static",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_avatarPhysicsPlayer:PlayerHost ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_playerAvatar:PlayerAvatar ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_playerAvatarAnimationController:IPlayerAnimationPresentationController ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_playerAvatarAnimationSink:IPlayerAnimationPresentationSink ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_playerAvatarClock:double:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_playerAvatarSourceGame:ObpSourceGame ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_playerAvatarSourcePath:string ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_playerAvatarView:PlayerAvatarView ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_playerPhysicsClock:PlayerNativeClock ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_rac1BombGloveAsset:OBP . RAC1 . Gameplay . Rac1BombGloveAssets . Asset ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_rac1BombGloveSourcePath:string ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_rac1BombGloveView:Rac1BombGloveView ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_rac1StagedBombView:Node3D ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_rac1WrenchAsset:Rac1WrenchAsset . Asset ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_rac1WrenchSourcePath:string ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::field:_rac1WrenchView:Rac1WrenchView ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::method:AttachPlayerAvatarVisual(:PlayerHost):void:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::method:ClearPlayerAvatarView():void:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::method:CreatePlayerAnimationController(:IPlayerAvatarProvider,:PlayerAvatar):IPlayerAnimationPresentationController:private,static",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::method:CurrentPlayerAvatarSourceSequence():int ?:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::method:HideAuthoredWorldRatchetPresentation():void:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::method:HoldSelectedRac1HandItem():void:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::method:IsRac1HandEquipmentVisible(:OBP . RAC1 . Gameplay . Rac1WeaponId):bool:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::method:PlayerAvatarPresentationIsSynchronized():bool:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::method:RefreshRac1HeldItem(:int ?):void:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::method:RefreshRac1WrenchPresentationVisibility():void:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::method:ResetPlayerAvatarPhysics():void:private",
+    "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame::method:StepPlayerAvatarPhysics(:double,:PlayerAnimationState,:Rac1LocomotionAnimationInput):void:private",
     "game/scripts/OBPGame.PlayerSession.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/scripts/OBPGame.PlayerSession.cs::OBPGame::field:_avatarSourceStamp:( long Length , long Written ) ?:private",
     "game/scripts/OBPGame.PlayerSession.cs::OBPGame::field:_playerAnimationProfile:PlayerAnimationProfile ?:private",
@@ -3461,7 +3952,68 @@
     "game/scripts/OBPGame.Profile.cs::OBPGame::method:TickSharedProfile(:double):void:private",
     "game/scripts/OBPGame.Profile.cs::OBPGame::method:TryResumeSharedProfileFromBootstrap():bool:public",
     "game/scripts/OBPGame.Profile.cs::OBPGame::property:PlayerSaveNotice:string ?:get/:private",
-    "game/scripts/OBPGame.Profile.cs::OBPGame::property:SharedProfilePath:string ?:get/:private"
+    "game/scripts/OBPGame.Profile.cs::OBPGame::property:SharedProfilePath:string ?:get/:private",
+    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::field:_lastQuickSelectTap:ulong:private",
+    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::field:_preQuickSelectHeldButtons:int:private",
+    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::field:_preQuickSelectMouse:Input . MouseModeEnum:private",
+    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::field:_previousSelectedWeapon:SourceWeaponKey ?:private",
+    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::field:_quickSelect:WeaponQuickSelectUi ?:private",
+    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::method:CloseWeaponQuickSelect(:SourceWeaponKey ?):void:private",
+    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::method:TryOpenWeaponQuickSelect(:InputEvent):bool:public",
+    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::property:CurrentWeaponKey:SourceWeaponKey:get/:private",
+    "game/scripts/OBPGame.QuickSelect.cs::OBPGame::property:QuickSelectOpen:bool:get/:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1PlayerSoundTrace:List < ( Rac1PlayerAudioSession . Cue Cue , bool Loop ) >:private,readonly",
+    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame+CrateDebugSnapshot::declaration:RecordDeclaration:private,sealed:::( string ? TargetInteractionId , int ? NativeUid , int ? NativeInstanceIndex , bool Visible , bool Broken , string Status , string EventFlags , float EventScalar , byte ? PvarC8 , string ? Route , string RewardStatus , int CollectedBolts , int OutstandingPickups , int DeferredBolts )",
+    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::field:_crateBoltSession:Rac2FreshBoltSession:private",
+    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::field:_crateDebugBroken:bool:private",
+    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::field:_crateDebugPvarC8:byte ?:private",
+    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::field:_crateDebugRoute:string ?:private",
+    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::field:_crateDebugStatus:string:private",
+    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::field:_crateDebugTarget:RuntimeWorldScene . DynamicObjectNode ?:private",
+    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::field:_crateRewardStatus:string:private",
+    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::method:GetCrateDebugHudLine():string:private",
+    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::method:GetCrateDebugSnapshot():CrateDebugSnapshot ?:private",
+    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::method:TryGetCrateFocusPose(:RuntimeWorld,out:Vector3,out:float):bool:private",
+    "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::property:CrateDebugRequested:bool:get/:private",
+    "game/scripts/OBPGame.Shots.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Shots.cs::OBPGame::method:ApplyShotCamera(:ShotSpec,:RuntimeWorld):void:private",
+    "game/scripts/OBPGame.Shots.cs::OBPGame::method:RegisterCommandLineSources():void:private",
+    "game/scripts/OBPGame.Shots.cs::OBPGame::method:RunShotsAsync(:string,:CancellationToken):System . Threading . Tasks . Task:async,private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_diagnosticSourceAccess:bool:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_setupProfileSuspended:bool:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_sourceCheckElapsed:double:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_sourceConfigNeedsRepair:bool:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_sourceReadiness:SourceReadinessEvaluator:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_startupSourcesResolved:bool:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::method:CompleteSourceSetup():void:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::method:InitializeStartupSources():bool:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::method:RequireOrdinarySourceSetup(:string):bool:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::method:RequireStartupSetup():bool:public",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::method:TickSourceSetup(:double):void:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::property:ProfileRecoveryRequired:bool:get/:internal",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sourceConfigPath:string:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sourceConfigWarning:string ?:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sourceManager:SourceManagerUi ?:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sourceRestoreWarnings:Dictionary < ObpSourceGame , string >:private,readonly",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sources:ObpSourceLibrary:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sourcesInitialized:bool:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:AttachExpectedSource(:ObpSourceGame,:string,:bool,:bool):bool:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:BuildSourceManagerScreen():void:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:EnsureSourceLibraryInitialized():void:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:ForgetSource(:ObpSourceGame):void:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:OpenSourcePicker(:ObpSourceGame):void:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:RefreshRetailUiSource(:ObpAttachedSource ?,:IRandomAccessReader ?):string ?:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:RememberCommandLineSource(:ObpSourceGame,:string,:bool):void:public",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:RestoreRememberedSources():void:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:ShowSourceManagerFromBootstrap():void:public",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:TryReturnSelectorToMenu():bool:public",
+    "game/scripts/OBPGame.StressDiagnostics.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.StressDiagnostics.cs::OBPGame::method:CountDescendants(:Node):int:private,static",
+    "game/scripts/OBPGame.StressDiagnostics.cs::OBPGame::method:RunStressSwitchAsync(:string,:CancellationToken):System . Threading . Tasks . Task:async,private"
   ],
   "RetiredAccess": [
     "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()"
