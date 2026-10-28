@@ -54,6 +54,67 @@ public sealed class BugReportInboxTests : IDisposable
     }
 
     [Fact]
+    public async Task CanceledPublicationAfterWritingItsTemporaryManifestPreservesThePreviousReport()
+    {
+        var inbox = Inbox;
+        Guid id = Guid.NewGuid();
+        using var writer = new PlaytestRunWriter(Run, Header());
+        var report = AddReport(writer, 0, "original");
+        var session = await inbox.SaveAsync(id, writer, report);
+        string manifest = Path.Combine(inbox.SessionDirectory(id), "session.json");
+        byte[] original = File.ReadAllBytes(manifest);
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        var publish = typeof(BugReportInbox).GetMethod("WriteAtomic", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var error = Assert.Throws<TargetInvocationException>(() => publish.Invoke(null, [manifest, session, canceled.Token]));
+        Assert.Equal(canceled.Token, Assert.IsAssignableFrom<OperationCanceledException>(error.InnerException).CancellationToken);
+        Assert.Equal(original, File.ReadAllBytes(manifest));
+        Assert.Empty(Directory.GetFiles(inbox.SessionDirectory(id), "*.partial"));
+        Assert.Equal(report, inbox.Resolve(id, report.Id).Report);
+    }
+
+    [Fact]
+    public async Task FailedSecondReportLeavesThePreviousManifestAndRecordingIntact()
+    {
+        var inbox = Inbox;
+        Guid id = Guid.NewGuid();
+        using var writer = new PlaytestRunWriter(Run, Header());
+        var report = AddReport(writer, 0, "saved draft");
+        await inbox.SaveAsync(id, writer, report);
+        string manifest = Path.Combine(inbox.SessionDirectory(id), "session.json");
+        byte[] original = File.ReadAllBytes(manifest);
+        writer.Add(Step(1));
+        var missingMarker = report with { Id = Guid.NewGuid(), Step = 1, Marker = "missing", Description = "retry this draft" };
+        await Assert.ThrowsAsync<InvalidDataException>(() => inbox.SaveAsync(id, writer, missingMarker));
+        Assert.Equal(original, File.ReadAllBytes(manifest));
+        Assert.Equal(report, inbox.Resolve(id, report.Id).Report);
+        Assert.Single(Directory.GetFiles(inbox.SessionDirectory(id), "*.gz"));
+        Assert.Empty(Directory.GetFiles(inbox.SessionDirectory(id), "*.partial"));
+        writer.Mark(new(1, "missing"));
+        await inbox.SaveAsync(id, writer, missingMarker);
+        Assert.Equal(missingMarker, inbox.Resolve(id, missingMarker.Id).Report);
+    }
+
+    [Fact]
+    public async Task CanceledImportCreatesNoSessionAndRetainsTheArchive()
+    {
+        var inbox = Inbox;
+        Guid id = Guid.NewGuid();
+        using var writer = new PlaytestRunWriter(Run, Header());
+        var report = AddReport(writer, 0, "import later");
+        await inbox.SaveAsync(id, writer, report);
+        string archive = inbox.Export(id, report.Id);
+        byte[] original = File.ReadAllBytes(archive);
+        var target = new BugReportInbox(Path.Combine(_directory, "canceled-import"));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => target.Import(archive, canceled.Token)).CancellationToken);
+        Assert.False(Directory.Exists(target.Root));
+        Assert.Equal(original, File.ReadAllBytes(archive));
+        Assert.Equal(report, inbox.Resolve(id, report.Id).Report);
+    }
+
+    [Fact]
     public void InterruptedCaptures_AreCountedSeparatelyAndNeverListedAsReadyReports()
     {
         var inbox = Inbox;

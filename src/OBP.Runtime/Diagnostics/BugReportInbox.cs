@@ -166,14 +166,17 @@ public sealed class BugReportInbox
         finally { TryDelete(temporary); }
     }
 
-    public BugReportSession Import(string archive)
+    public BugReportSession Import(string archive) => Import(archive, CancellationToken.None);
+
+    public BugReportSession Import(string archive, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (new FileInfo(archive).Length > MaximumArchiveBytes) throw new InvalidDataException("Portable report exceeds 25 MB.");
         using var zip = ZipFile.OpenRead(archive);
         if (zip.Entries.Count != 2) throw new InvalidDataException("A portable report must contain only its manifest and recording.");
         var manifestEntry = zip.GetEntry("report.json") ?? throw new InvalidDataException("Report manifest missing.");
         using var buffer = new MemoryStream();
-        using (var input = manifestEntry.Open()) CopyBounded(input, buffer, MaximumManifestBytes);
+        using (var input = manifestEntry.Open()) CopyBounded(input, buffer, MaximumManifestBytes, cancellationToken);
         var session = JsonSerializer.Deserialize<BugReportSession>(buffer.ToArray(), Json)
             ?? throw new InvalidDataException("Invalid report manifest.");
         Validate(session);
@@ -187,9 +190,9 @@ public sealed class BugReportInbox
         try
         {
             using (var output = new FileStream(path, FileMode.CreateNew, FileAccess.Write))
-            using (var input = recording.Open()) CopyBounded(input, output, MaximumArchiveBytes);
-            VerifyRecording(session, path);
-            WriteAtomic(Path.Combine(directory, "session.json"), session);
+            using (var input = recording.Open()) CopyBounded(input, output, MaximumArchiveBytes, cancellationToken);
+            VerifyRecording(session, path, cancellationToken);
+            WriteAtomic(Path.Combine(directory, "session.json"), session, cancellationToken);
             return session;
         }
         catch
@@ -318,7 +321,7 @@ public sealed class BugReportInbox
         return Convert.ToHexString(hash.GetHashAndReset());
     }
 
-    private static void WriteAtomic(string path, BugReportSession session)
+    private static void WriteAtomic(string path, BugReportSession session, CancellationToken cancellationToken = default)
     {
         byte[] json = JsonSerializer.SerializeToUtf8Bytes(session, Json);
         if (json.Length > MaximumManifestBytes) throw new InvalidDataException("Report manifest is too large.");
@@ -327,6 +330,7 @@ public sealed class BugReportInbox
         {
             using (var file = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write))
             { file.Write(json); file.Flush(flushToDisk: true); }
+            cancellationToken.ThrowIfCancellationRequested();
             File.Move(temporary, path, overwrite: true);
         }
         finally { TryDelete(temporary); }

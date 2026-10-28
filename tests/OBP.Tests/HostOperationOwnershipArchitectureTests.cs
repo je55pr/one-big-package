@@ -47,6 +47,7 @@ public sealed class HostOperationOwnershipArchitectureTests
     [InlineData("await LoadMovementStateAsync(path);", true)]
     [InlineData("_hostOperations.Start(\"capture\", token=>RunCaptureAsync(1, token));", true)]
     [InlineData("StartBugOverlayWork(\"replay\", token=>ReplaySelectedBugAsync(token));", true)]
+    [InlineData("_work.Start(\"bug-replay\", token=>ReplaySelectedBugAsync(token), result=>Show(result), error=>Fail(error));", false)]
     [InlineData("await Task.Run(()=>{_=RunCaptureAsync(1, token);});", false)]
     [InlineData("_=Task.Run(async()=>await RunCaptureAsync(1, token));", false)]
     [InlineData("_hostOperations.Start(\"capture\", async token=>await RunCaptureAsync(1, token));", true)]
@@ -101,7 +102,8 @@ public sealed class HostOperationOwnershipArchitectureTests
         if (!consumed || function.Parent is not ArgumentSyntax argument || argument.Parent?.Parent is not InvocationExpressionSyntax owner)
             return false;
         return Name(owner.Expression) == "StartBugOverlayWork" || owner.Expression is MemberAccessExpressionSyntax member &&
-            member.Name.Identifier.ValueText == "Start" && member.Expression.ToString().EndsWith("_hostOperations", StringComparison.Ordinal);
+            member.Name.Identifier.ValueText == "Start" && (member.Expression.ToString().EndsWith("_hostOperations", StringComparison.Ordinal) ||
+                member.Expression.ToString() == "_work" && call.Ancestors().OfType<ClassDeclarationSyntax>().First().Identifier.ValueText == "BugReportUiCoordinator");
     }
 
     [Fact]

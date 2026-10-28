@@ -2560,6 +2560,8 @@
     }
   ],
   "Composition": [
+    {"Key":"game/scripts/OBPGame.cs::OBPGame::field:_bugReporting:BugReportUiCoordinator ?:private","Owner":"#355","Rationale":"Composition-only report coordinator reference and modal observation. View state, selection, confirmations, persistence requests and child reproduction lifetimes belong to the owned coordinator; the store and recording writer remain independent. Final root composition removes this bridge.","ExpiresWith":"#376","Hash":"25675209ada32833e88646a317983c56b5b613117e8ec49a01ac093ef6397a24"},
+    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:BugReportModalOpen:bool:get/:internal","Owner":"#355","Rationale":"Composition-only report coordinator reference and modal observation. View state, selection, confirmations, persistence requests and child reproduction lifetimes belong to the owned coordinator; the store and recording writer remain independent. Final root composition removes this bridge.","ExpiresWith":"#376","Hash":"dd5ef1c6e0319386e6f2e22a9cd5d4853311e6c5e446f2c6e0170ecddfd7f96e"},
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::field:_avatarPresentation:PlayerAvatarPresentationHost:private,readonly",
       "Owner": "#350",
@@ -2703,9 +2705,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateCaptureDiagnosticHarness():CaptureDiagnosticHarness:private",
       "Owner": "#344",
-      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
+      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #355 replaces mutable report-view/store bindings with the report diagnostic interface and copied snapshots.",
       "ExpiresWith": "#356",
-      "Hash": "6cc7534b0d46f1b22810ec1a768d799b3993925bc9bf2ce2a73639f3332c08fc"
+      "Hash": "ba5f03a8975fa628808bbf0e5eed920cec5494a25a96a53ed5feb02decfc023f"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateFusionWeaponDiagnosticHarness():FusionWeaponDiagnosticHarness:private",
@@ -3577,6 +3579,35 @@
     }
   ],
   "RetiredMembers": [
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::field:_bugChangedBuildConfirmation:Guid ?:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::field:_bugDeleteConfirmation:Guid ?:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::field:_bugDraft:BugReportEntry ?:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::field:_bugOverlayLifetime:CancellationTokenSource ?:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::field:_bugReplayReport:BugReportEntry ?:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::field:_bugReports:BugReportInbox ?:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::field:_bugReportUi:BugReportUi ?:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::field:_bugRows:List < ( Guid Session , BugReportEntry Report ) >:private,readonly",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::field:_bugSaveInFlight:Task ?:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::field:_bugSelection:int:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::field:_bugSessionId:Guid:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:BeginBugOverlayLifetime():void:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:BugUiCurrent(:BugReportUi):bool:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:CloseBugReportOverlay():void:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:DeleteSelectedBugSession():void:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:ExportSelectedBugAsync(:CancellationToken):Task:async,private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:ImportBugArchive():void:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:InitializeBugReporting():bool:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:OpenBugReportForm(:BugReportEntry):void:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:OpenBugReportInbox():void:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:RefreshBugInbox():void:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:ReplaySelectedBugAsync(:CancellationToken):Task:async,private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:ReportBugUiFailure(:BugReportUi,:Exception,:string):void:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:RetireBugOverlayLifetime():void:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:SaveBugReportAsync(:string,:string):Task:async,private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:SelectedBug():( Guid Session , BugReportEntry Report ):private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::method:StartBugOverlayWork(:string,:Func < CancellationToken , Task >):void:private",
+    "game/scripts/OBPGame.BugReports.cs::OBPGame::property:BugReportModalOpen:bool:get/:internal",
     "game/diagnostics/ControllerSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/ControllerSmoke.cs::OBPGame::method:CheckControllerWeaponInputAsync():Task:async,internal",
     "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame+AcceptanceCheck::declaration:RecordDeclaration:private,sealed:::( string Id , string ? Destination , bool Passed , string Detail )",

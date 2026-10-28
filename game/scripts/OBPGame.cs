@@ -178,6 +178,8 @@ public partial class OBPGame : Node3D
     private string _sceneKind = "smoke";
     private readonly HostOperationScope _hostOperations = new();
     private CaptureDiagnosticHarness? _captureDiagnostics;
+    private BugReportUiCoordinator? _bugReporting;
+    internal bool BugReportModalOpen => _bugReporting?.IsOpen == true || _playtest?.BugInputSuspended == true;
     private ApplicationNavigationCoordinator _navigation = null!;
     private readonly DiagnosticPlayerAudioCollector _playerAudioDiagnosticEvents = new();
 
@@ -212,7 +214,14 @@ public partial class OBPGame : Node3D
         }
         if (!InitializeReplayBookmark()) return;
         if (_args.FusionTest && _args.Destination is null) _args = _args with { Destination = "rac1:LEVEL0" };
-        if (!InitializeBugReporting()) return;
+        var bugStartup = BugReportStartup.Initialize(this, _args, _hostOperations.Token);
+        _args = bugStartup.Args;
+        if (!bugStartup.Ready) return;
+        if (bugStartup.Capture is { } capture)
+            _bugReporting = new(capture, _hostOperations, new(this, () => _playtest!, () => _playtest!.BugWriter,
+                () => _playtest!.ResumeAfterBugOverlay(), notice => _playtest!.ShowBugNotice(notice),
+                PlaytestBuildMatches, PlaytestPhysicsEngine, WaitForWorldPreparationFrameAsync,
+                (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code)));
         if (!InitializePlaytest()) return;
         if (_args.FusionTest && (_args.Destination != "rac1:LEVEL0" || _args.LoadMovementState is not null))
         {
@@ -472,7 +481,7 @@ public partial class OBPGame : Node3D
         _modals?.RetireAll();
         _hostOperations.Dispose();
         _sourceSetup?.Dispose();
-        RetireBugOverlayLifetime();
+        _bugReporting?.Dispose();
         if (_verification is { } verification) CancelSourceVerification(verification.Source.Game);
         SaveSharedProfile("clean exit");
         // An external exit can bypass normal world teardown. Finish campaign
@@ -494,6 +503,7 @@ public partial class OBPGame : Node3D
         ProcessMode = ProcessModeEnum.Disabled;
         _modals?.RetireAll();
         _playtest?.SuspendBugCaptureForQuit();
+        _bugReporting?.Dispose();
         Task hostStopped = _hostOperations.StopAsync();
         if (_worldScenes is { } scenes)
         {
@@ -502,7 +512,6 @@ public partial class OBPGame : Node3D
         }
         await hostStopped;
         ReportHostOperationFailures();
-        if (_bugSaveInFlight is { } save) await _hostOperations.ObserveQuitWriteAsync("bug-report-save", save);
         if (_playtest is { } playtest)
             await _hostOperations.ObserveQuitWriteAsync("capture-flush", playtest.PrepareBugCaptureQuitAsync());
         ReportHostOperationFailures();
@@ -1352,10 +1361,10 @@ public partial class OBPGame : Node3D
         var navigation = new DiagnosticNavigationActions(destination => destination == "obp:fusion-lab" ? EnterFusionLab() :
             TrilogyWorldProviders.Resolve(destination) is { } native && OnDestinationChosen(native));
         var equipment = new CaptureEquipmentActions((slot, item) => AssignPlayerQuickSelect(slot, item).Accepted, item => SelectPlayerEquipment(item).Accepted);
-        var reports = new GodotBugReporterDiagnosticFixture(this, () => _bugReportUi, () => BugReportModalOpen,
+        var reports = new GodotBugReporterDiagnosticFixture(this, () => _bugReporting, () => BugReportModalOpen,
             () => new(GodotMovementPlayer.Copy(_player!.GlobalPosition), _rac1BoltWallet.Balance,
                 System.Text.Json.JsonSerializer.Serialize(_rac1Weapons.CapturePersistentState()), QuickSelectOpen, PauseMenuOpen, GetTree().Paused),
-            () => _bugReports, () => _bugSessionId, () => _playtest);
+            () => _playtest);
         var acceptance = new OwnedDiagnosticAcceptanceReporter(() => _currentDestinationId, () => _args.AcceptanceOut,
             () => new(DisplayServer.GetName() == "headless", [.. Sources.Setup.Library.Attached.Values.Select(source => source.Identity)],
                 _playerSession?.Capture().Configuration, [.. ReadPlayerEquipment().Select(entry => new AcceptanceEquipment(entry.Definition.Id,
@@ -1365,7 +1374,7 @@ public partial class OBPGame : Node3D
         var ports = new CaptureDiagnosticPorts(recorder, equipment, reports, CreateMovementStateDiagnosticFixture,
             CreateTrilogyPlayerDiagnosticFixture(), CreateTrilogyActorDiagnosticFixture(), navigation,
             token => CreateFusionWeaponDiagnosticHarness().RunRecordingAsync(token),
-            () => CaptureDiagnosticIsolation.Isolated(SharedProfilePath, captures) && CaptureDiagnosticIsolation.Isolated(_bugReports?.Root, captures));
+            () => CaptureDiagnosticIsolation.Isolated(SharedProfilePath, captures) && CaptureDiagnosticIsolation.Isolated(_bugReporting?.StorageRoot, captures));
         return _captureDiagnostics = new(new(() => [.. Sources.Setup.Library.Attached.Values.Select(source => new DiagnosticSourceRequirement(source.Game, source.Identity.BuildId))],
                 [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))]),
             ports, CreateMovementDiagnosticHarness().Ports, new GodotCaptureDiagnosticInputFactory(), new GodotCaptureDiagnosticTime(), acceptance,

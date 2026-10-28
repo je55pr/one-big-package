@@ -265,6 +265,41 @@ existing owners. Existing host callbacks (including native weapon presentation)
 remain recorded as expiry-scoped composition bridges for #351/#354/#375/#376.
 Original root member retirements, relocated bridge hashes, and exact exceptions
 are recorded in the versioned architecture ledger; the frozen origin is unchanged.
+
+The #355 report UI extraction retires `OBPGame.BugReports.cs`, moving its script
+UID to `BugReportUiCoordinator`. The root changes from 62 files, 15,767 lines,
+588 methods, 380 fields (238 mutable), 43 exposed members and 1,675 cross-file
+references to 61 files, 15,397 lines, 572 methods, 370 fields (229 mutable),
+43 exposed members and 1,663 cross-file references. One coordinator reference
+replaces the 11 bug-report fields; all 29 historical declaration/member
+permissions retire. Two exact composition entries retain the owner reference
+and the existing bootstrap modal observation until #376. The existing #344
+capture-fixture binding now consumes the report owner's narrow diagnostic
+interface; the frozen origin and external-access ledger do not grow.
+
+`BugReportUiCoordinator` owns forms, inbox rows/selection, confirmations and
+child dialogs. Its nine composition ports bind the Godot host, overlay parent,
+recording writer, resume/notice callbacks, build and physics identity checks,
+frame waits and failure exit. Its five-member diagnostic interface exposes
+copied UI/report snapshots, the local evidence root and focused UI actions;
+neither mutable views nor the report store escape through that interface.
+`BugReportCapture` preserves startup/profile/campaign provenance separately from
+view lifetime. The existing `BugReportInbox` and `PlaytestRunWriter` retain
+publication, recording and archive authority; report/marker IDs, manifests,
+source stamps, F7/F8 input and native recording phases stay unchanged.
+
+Closing or disposing the coordinator cancels view work, retires dialogs and
+prevents late callbacks from updating another inbox. Export/import temporary
+files and owned reproduction children are cleaned up on cancellation/failure,
+including interactive children. Back/Cancel remains available during work;
+a saving form explicitly labels its close action as continuing the save.
+An admitted report save is supervised independently of the view and drains
+before capture finalization during host shutdown; failed shutdown writes still
+require a nonzero exit. Portable regressions cover late callbacks, committed
+saves, child cancellation/deadlines, failed replacement writes and cancellation
+after a temporary manifest write. The retained engine scenario also cancels an
+active child, reopens its inbox and performs both same-build report replays.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

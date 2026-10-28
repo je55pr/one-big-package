@@ -19,6 +19,7 @@ public partial class BugReportUi : CanvasLayer
     private Label _status = null!, _details = null!;
     private ItemList? _list;
     private Button _primary = null!;
+    private Button? _close;
     private readonly List<Button> _buttons = [];
     private readonly List<Button> _reportButtons = [];
     private Control? _busyReturnFocus;
@@ -79,7 +80,7 @@ public partial class BugReportUi : CanvasLayer
         var row = new HBoxContainer();
         column.AddChild(row);
         _primary = AddButton(row, "SAVE REPORT", Submit);
-        AddButton(row, "CANCEL", () => CloseRequested?.Invoke());
+        AddButton(row, "CANCEL", () => CloseRequested?.Invoke(), closesView: true);
         _title.TextSubmitted += _ => Submit();
         _description.TextSubmitted += _ => Submit();
     }
@@ -112,7 +113,7 @@ public partial class BugReportUi : CanvasLayer
         AddButton(row, "OPEN FOLDER", () => OpenFolderRequested?.Invoke());
         AddButton(row, "IMPORT ZIP", () => ImportRequested?.Invoke());
         _reportButtons.Add(AddButton(row, "DELETE SESSION…", () => DeleteRequested?.Invoke()));
-        AddButton(row, "BACK", () => CloseRequested?.Invoke());
+        AddButton(row, "BACK", () => CloseRequested?.Invoke(), closesView: true);
     }
 
     private void WireInboxFocus()
@@ -141,10 +142,11 @@ public partial class BugReportUi : CanvasLayer
         }
     }
 
-    private Button AddButton(Node parent, string text, Action pressed)
+    private Button AddButton(Node parent, string text, Action pressed, bool closesView = false)
     {
         var button = new Button { Text = text, CustomMinimumSize = new(0, 38), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        button.Pressed += () => { if (!_busy) pressed(); };
+        button.Pressed += () => { if (!_busy || closesView) pressed(); };
+        if (closesView) _close = button;
         parent.AddChild(button);
         _buttons.Add(button);
         return button;
@@ -163,6 +165,7 @@ public partial class BugReportUi : CanvasLayer
         if (_list is not null) _list.ProcessMode = busy ? ProcessModeEnum.Disabled : ProcessModeEnum.Inherit;
         if (_title is not null) _title.Editable = !busy;
         if (_description is not null) _description.Editable = !busy;
+        if (_close is not null && !InboxMode) _close.Text = busy ? "CLOSE · saving continues" : "CANCEL";
         _status.Text = status;
         if (!busy) MenuFocus.Restore(_busyReturnFocus, _buttons);
     }
@@ -183,7 +186,7 @@ public partial class BugReportUi : CanvasLayer
     private void UpdateActionAvailability()
     {
         foreach (var button in _buttons)
-            button.Disabled = _busy || _list?.ItemCount == 0 && _reportButtons.Contains(button);
+            button.Disabled = _busy && button != _close || _list?.ItemCount == 0 && _reportButtons.Contains(button);
     }
     public void SetDetails(string text) { _details.Text = text; _details.TooltipText = text; }
 
@@ -192,7 +195,7 @@ public partial class BugReportUi : CanvasLayer
         if (GetTree().Root.GetEmbeddedSubwindows().Any(window => window.Visible)) return;
         if (input.IsActionPressed("ui_cancel") || input.IsActionPressed(ControllerBindings.Pause))
         {
-            if (!_busy) CloseRequested?.Invoke();
+            CloseRequested?.Invoke();
             GetViewport().SetInputAsHandled();
         }
     }

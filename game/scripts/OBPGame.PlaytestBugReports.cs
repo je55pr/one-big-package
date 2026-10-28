@@ -81,7 +81,7 @@ public partial class OBPGame
             GetTree().Paused = true;
             ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
             PlaytestClock.Active = false;
-            if (draft is not null) Game.OpenBugReportForm(draft); else Game.OpenBugReportInbox();
+            if (draft is not null) Game._bugReporting!.OpenForm(draft); else Game._bugReporting!.OpenInbox();
         }
 
         internal void ResumeAfterBugOverlay() => _bugResumePending = true;
