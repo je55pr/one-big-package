@@ -32,6 +32,7 @@ internal sealed record BugReportCapture(CommandLineArgs Args, BugReportInbox Inb
             return new(args with { ReplayPlaytest = resolved.RecordingPath }, inbox, Guid.Empty, resolved.Report);
         }
 
+        inbox.RestorePendingDrafts(token);
         Guid id = Guid.NewGuid();
         string live = Path.Combine(inbox.Root, "live", id.ToString("N"));
         Directory.CreateDirectory(live);

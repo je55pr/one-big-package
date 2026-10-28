@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Reflection;
 using System.Text.Json;
+using OBP.Game;
 using OBP.Runtime.Diagnostics;
 
 namespace OBP.Tests;
@@ -10,6 +11,79 @@ public sealed class BugReportInboxTests : IDisposable
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "obp-bug-report-test-" + Guid.NewGuid().ToString("N"));
     private BugReportInbox Inbox => new(Path.Combine(_directory, "inbox"));
     private string Run => Path.Combine(_directory, "live.run.jsonl.gz");
+
+    [Fact]
+    public async Task FailedSubmittedSaveIsRecoveredAtStartupWithItsOriginalSessionAndTape()
+    {
+        var inbox = Inbox;
+        Guid id = Guid.NewGuid();
+        string recording = Path.Combine(inbox.Root, "live", id.ToString("N"), "session.run.jsonl.gz");
+        using var writer = new PlaytestRunWriter(recording, Header());
+        var report = AddReport(writer, 0, "submitted description") with { Title = "Submitted title" };
+        inbox.RetainPendingDraft(id, report);
+        string obstruction = Path.Combine(inbox.SessionDirectory(id), "session.json");
+        Directory.CreateDirectory(obstruction);
+        var error = await Record.ExceptionAsync(() => inbox.SaveAsync(id, writer, report));
+        Assert.True(error is IOException or UnauthorizedAccessException);
+        Assert.Equal(1, inbox.PendingDraftCount());
+        await writer.FinishAsync("closed");
+        byte[] original = File.ReadAllBytes(recording);
+        Directory.Delete(obstruction);
+
+        var capture = BugReportCapture.Prepare(new() { BugCapture = true, NoProfile = true, BugReportInbox = inbox.Root },
+            new(inbox.Root, Path.Combine(_directory, "profile.json"), Path.Combine(_directory, "campaign.json")), CancellationToken.None)!;
+        Assert.NotEqual(id, capture.SessionId);
+        var restored = capture.Inbox.Resolve(id, report.Id);
+        Assert.Equal(report, restored.Report);
+        Assert.Equal(id, restored.Session.Id);
+        Assert.Equal(original, File.ReadAllBytes(restored.RecordingPath));
+        Assert.Equal(original, File.ReadAllBytes(recording));
+        Assert.Equal(0, capture.Inbox.PendingDraftCount());
+        Assert.False(File.Exists(capture.Args.RecordPlaytest));
+    }
+
+    [Fact]
+    public async Task DraftRecoveryRetainsUnfinishedOrUnwritableReportsForRetry()
+    {
+        var inbox = Inbox;
+        Guid id = Guid.NewGuid();
+        string recording = Path.Combine(inbox.Root, "live", id.ToString("N"), "session.run.jsonl.gz");
+        using var writer = new PlaytestRunWriter(recording, Header());
+        var report = AddReport(writer, 0, "retained for retry");
+        inbox.RetainPendingDraft(id, report);
+        Assert.Equal(0, inbox.RestorePendingDrafts());
+        Assert.Equal(1, inbox.PendingDraftCount());
+        await writer.FinishAsync("closed");
+        string obstruction = Path.Combine(inbox.SessionDirectory(id), "session.json");
+        Directory.CreateDirectory(obstruction);
+        Assert.Equal(0, inbox.RestorePendingDrafts());
+        Assert.Equal(1, inbox.PendingDraftCount());
+        Assert.Empty(Directory.GetFiles(inbox.SessionDirectory(id), "*.gz"));
+        Assert.Empty(Directory.GetFiles(inbox.SessionDirectory(id), "*.partial"));
+        Assert.True(File.Exists(recording));
+        Directory.Delete(obstruction);
+        Assert.Equal(1, inbox.RestorePendingDrafts());
+        Assert.Equal(report, inbox.Resolve(id, report.Id).Report);
+        Assert.Equal(0, inbox.PendingDraftCount());
+    }
+
+    [Fact]
+    public async Task SuccessfulSaveRemovesOnlyItsSubmittedDraft()
+    {
+        var inbox = Inbox;
+        Guid id = Guid.NewGuid();
+        using var writer = new PlaytestRunWriter(Run, Header());
+        var report = AddReport(writer, 0, "saved");
+        var other = AddReport(writer, 1, "pending");
+        inbox.RetainPendingDraft(id, report);
+        inbox.RetainPendingDraft(id, other);
+        Assert.Equal(2, inbox.PendingDraftCount());
+        await inbox.SaveAsync(id, writer, report);
+        Assert.Equal(report, inbox.Resolve(id, report.Id).Report);
+        Assert.Equal(1, inbox.PendingDraftCount());
+        await inbox.SaveAsync(id, writer, other);
+        Assert.Equal(0, inbox.PendingDraftCount());
+    }
 
     [Fact]
     public async Task CanceledResolutionAndExportLeaveTheCompletedReportAndArchiveUntouched()
@@ -339,7 +413,9 @@ public sealed class BugReportInboxTests : IDisposable
         Assert.Throws<InvalidDataException>(() => inbox.Import(archive));
         string unrelated = Path.Combine(inbox.SessionDirectory(id), "notes.txt");
         await File.WriteAllTextAsync(unrelated, "keep");
+        inbox.RetainPendingDraft(id, AddReport(writer, 1, "delete this session's pending report"));
         inbox.Delete(id);
+        Assert.Equal(0, inbox.PendingDraftCount());
         Assert.True(File.Exists(unrelated));
         Assert.False(File.Exists(Path.Combine(inbox.SessionDirectory(id), "session.json")));
     }

@@ -59,6 +59,13 @@ internal sealed class BugReportUiCoordinator(BugReportCapture capture, HostOpera
         {
             if (!Current(ui) || ui.Busy || _draft is not { } savedDraft) return;
             var report = savedDraft with { Title = title, Description = description };
+            _draft = report;
+            try { capture.Inbox.RetainPendingDraft(capture.SessionId, report); }
+            catch (Exception error)
+            {
+                Failure(ui, error, "Could not retain your draft. Your text remains in this form. ");
+                return;
+            }
             ui.SetBusy(true, "Saving replayable report…");
             _work.Start("bug-report-save", _ => capture.Inbox.SaveAsync(capture.SessionId, ports.Writer(), report), _ =>
             {
@@ -147,6 +154,8 @@ internal sealed class BugReportUiCoordinator(BugReportCapture capture, HostOpera
         int unfinished = sessions.Count(s => s.Session is null) + capture.Inbox.InterruptedCaptureCount(capture.SessionId);
         _view.SetStatus(unfinished == 0 ? "Files stay local. Exporting a ZIP does not upload it." :
             $"{unfinished} unfinished/unreadable session(s) are not offered for replay. Open Folder to inspect them.");
+        int pending = capture.Inbox.PendingDraftCount();
+        if (pending > 0) _view.SetStatus($"{pending} unsaved report draft(s) retained. Reopen Bug Capture to retry recovery; Open Folder to inspect them.");
     }
 
     private (Guid Session, BugReportEntry Report) Selected() => _selection >= 0 && _selection < _rows.Count

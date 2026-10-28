@@ -31,6 +31,7 @@ public sealed class BugReportInbox
     public const int MaximumReports = 256;
     private const int MaximumManifestBytes = 1024 * 1024;
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
+    private sealed record PendingDraft(int Version, Guid SessionId, BugReportEntry Report);
     private readonly SemaphoreSlim _gate = new(1, 1);
     public string Root { get; }
 
@@ -60,21 +61,13 @@ public sealed class BugReportInbox
             if (previous?.Reports.Count >= MaximumReports) throw new InvalidDataException("This session has reached its report limit.");
             snapshot = Path.Combine(directory, "run-" + Guid.NewGuid().ToString("N") + ".run.jsonl.gz");
             await writer.ExportSnapshotAsync(snapshot).ConfigureAwait(false);
-            var (header, steps, markers) = InspectRecording(snapshot);
-            var reports = (previous?.Reports ?? []).Append(report).ToArray();
-            if (reports.Any(r => !markers.Contains(new(r.Step, r.Marker))))
-                throw new InvalidDataException("A report marker is missing from its recording.");
-            var recording = new BugReportRecording(Path.GetFileName(snapshot), new FileInfo(snapshot).Length,
-                Hash(snapshot), steps, header.Destination, header.SourceBuild, header.AssemblyId,
-                header.Assemblies, header.EngineVersion, header.Platform, header.PhysicsEngine, header.ApplicationVersion)
-            { CaptureVersion = header.Version, Sources = header.Sources, Adapters = header.Adapters };
-            var session = new BugReportSession(1, sessionId, header.StartedUtc, recording, reports);
-            Validate(session);
+            var session = BuildSession(sessionId, previous, report, snapshot);
             WriteAtomic(Path.Combine(directory, "session.json"), session);
             published = true;
             // The single index now points every report at the newer complete
             // prefix. An in-use old file may remain until the session is deleted.
             if (previous is not null) TryDelete(Path.Combine(directory, previous.Recording.FileName));
+            TryDelete(DraftPath(sessionId, report.Id));
             return session;
         }
         finally
@@ -82,6 +75,105 @@ public sealed class BugReportInbox
             if (!published && snapshot is not null) TryDelete(snapshot);
             _gate.Release();
         }
+    }
+
+    /// <summary>Persist submitted prose before its save may outlive the form.</summary>
+    public void RetainPendingDraft(Guid sessionId, BugReportEntry report)
+    {
+        ValidateReport(report);
+        string directory = SessionDirectory(sessionId);
+        Directory.CreateDirectory(directory);
+        string path = DraftPath(sessionId, report.Id);
+        if (!File.Exists(path) && Directory.EnumerateFiles(directory, "draft-*.json").Take(MaximumReports).Count() >= MaximumReports)
+            throw new InvalidDataException("This session has reached its pending draft limit.");
+        WriteAtomicBytes(path, JsonSerializer.SerializeToUtf8Bytes(new PendingDraft(1, sessionId, report), Json));
+    }
+
+    public int PendingDraftCount() => PendingDraftFiles().Count();
+
+    /// <summary>
+    /// Restore submitted reports from the original capture's completed tape.
+    /// Incomplete or inaccessible captures keep their drafts for a later retry.
+    /// Never use a new session's writer or rewrite the recorded input stream.
+    /// </summary>
+    public int RestorePendingDrafts(CancellationToken cancellationToken = default)
+    {
+        int restored = 0;
+        foreach (string draftPath in PendingDraftFiles())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            string? snapshot = null;
+            bool published = false;
+            try
+            {
+                if (new FileInfo(draftPath).Length > MaximumManifestBytes)
+                    throw new InvalidDataException("Pending report draft is too large.");
+                var draft = JsonSerializer.Deserialize<PendingDraft>(File.ReadAllBytes(draftPath), Json)
+                    ?? throw new InvalidDataException("Invalid pending report draft.");
+                if (draft.Report is null) throw new InvalidDataException("Pending report draft is missing its report.");
+                ValidateReport(draft.Report);
+                if (draft.Version != 1 || draftPath != DraftPath(draft.SessionId, draft.Report.Id))
+                    throw new InvalidDataException("Pending report draft identity changed.");
+                string directory = SessionDirectory(draft.SessionId);
+                var previous = File.Exists(Path.Combine(directory, "session.json")) ? Read(draft.SessionId) : null;
+                if (previous?.Reports.SingleOrDefault(report => report.Id == draft.Report.Id) is { } saved)
+                {
+                    if (saved == draft.Report) TryDelete(draftPath);
+                    continue;
+                }
+                if (previous?.Reports.Count >= MaximumReports) continue;
+                string recording = Path.Combine(Root, "live", draft.SessionId.ToString("N"), "session.run.jsonl.gz");
+                if (!File.Exists(recording)) continue;
+                snapshot = Path.Combine(directory, "run-" + Guid.NewGuid().ToString("N") + ".run.jsonl.gz");
+                using (var input = File.OpenRead(recording))
+                using (var output = new FileStream(snapshot, FileMode.CreateNew, FileAccess.Write))
+                {
+                    CopyBounded(input, output, PlaytestRunLimits.Compressed, cancellationToken);
+                    output.Flush(flushToDisk: true);
+                }
+                var session = BuildSession(draft.SessionId, previous, draft.Report, snapshot, cancellationToken);
+                WriteAtomic(Path.Combine(directory, "session.json"), session, cancellationToken);
+                published = true;
+                if (previous is not null) TryDelete(Path.Combine(directory, previous.Recording.FileName));
+                TryDelete(draftPath);
+                restored++;
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidDataException)
+            { /* Retain the submitted draft and original capture for the next startup. */ }
+            finally { if (!published && snapshot is not null) TryDelete(snapshot); }
+        }
+        return restored;
+    }
+
+    private IEnumerable<string> PendingDraftFiles()
+    {
+        if (!Directory.Exists(Root)) yield break;
+        foreach (string directory in Directory.EnumerateDirectories(Root))
+        {
+            if (!Guid.TryParseExact(Path.GetFileName(directory), "N", out var id)) continue;
+            // Keep the same directory/link boundary as ordinary saved reports.
+            string owned = SessionDirectory(id);
+            foreach (string path in Directory.EnumerateFiles(owned, "draft-*.json").Take(MaximumReports)) yield return path;
+        }
+    }
+
+    private string DraftPath(Guid sessionId, Guid reportId) =>
+        Path.Combine(SessionDirectory(sessionId), "draft-" + reportId.ToString("N") + ".json");
+
+    private static BugReportSession BuildSession(Guid sessionId, BugReportSession? previous, BugReportEntry report,
+        string snapshot, CancellationToken cancellationToken = default)
+    {
+        var (header, steps, markers) = InspectRecording(snapshot, cancellationToken);
+        var reports = (previous?.Reports ?? []).Append(report).ToArray();
+        if (reports.Any(item => !markers.Contains(new(item.Step, item.Marker))))
+            throw new InvalidDataException("A report marker is missing from its recording.");
+        var recording = new BugReportRecording(Path.GetFileName(snapshot), new FileInfo(snapshot).Length,
+            Hash(snapshot, cancellationToken), steps, header.Destination, header.SourceBuild, header.AssemblyId,
+            header.Assemblies, header.EngineVersion, header.Platform, header.PhysicsEngine, header.ApplicationVersion)
+        { CaptureVersion = header.Version, Sources = header.Sources, Adapters = header.Adapters };
+        var session = new BugReportSession(1, sessionId, header.StartedUtc, recording, reports);
+        Validate(session);
+        return session;
     }
 
     public BugReportSession Read(Guid id)
@@ -231,7 +323,7 @@ public sealed class BugReportInbox
             if (!Directory.EnumerateFileSystemEntries(live).Any()) Directory.Delete(live);
         }
         foreach (string file in Directory.EnumerateFiles(directory))
-            if (Path.GetFileName(file) == "session.json" || ValidRunName(Path.GetFileName(file))) File.Delete(file);
+            if (Path.GetFileName(file) == "session.json" || ValidRunName(Path.GetFileName(file)) || ValidDraftName(Path.GetFileName(file))) File.Delete(file);
         if (!Directory.EnumerateFileSystemEntries(directory).Any()) Directory.Delete(directory);
     }
 
@@ -276,6 +368,9 @@ public sealed class BugReportInbox
 
     private static bool ValidRunName(string name) => name is { Length: 49 } && name.StartsWith("run-", StringComparison.Ordinal) &&
         name.EndsWith(".run.jsonl.gz", StringComparison.Ordinal) && Guid.TryParseExact(name.AsSpan(4, 32), "N", out _);
+
+    private static bool ValidDraftName(string name) => name is { Length: 43 } && name.StartsWith("draft-", StringComparison.Ordinal) &&
+        name.EndsWith(".json", StringComparison.Ordinal) && Guid.TryParseExact(name.AsSpan(6, 32), "N", out _);
 
     private static void Validate(BugReportSession session)
     {
@@ -327,8 +422,10 @@ public sealed class BugReportInbox
     }
 
     private static void WriteAtomic(string path, BugReportSession session, CancellationToken cancellationToken = default)
+        => WriteAtomicBytes(path, JsonSerializer.SerializeToUtf8Bytes(session, Json), cancellationToken);
+
+    private static void WriteAtomicBytes(string path, byte[] json, CancellationToken cancellationToken = default)
     {
-        byte[] json = JsonSerializer.SerializeToUtf8Bytes(session, Json);
         if (json.Length > MaximumManifestBytes) throw new InvalidDataException("Report manifest is too large.");
         string temporary = path + "." + Guid.NewGuid().ToString("N") + ".partial";
         try

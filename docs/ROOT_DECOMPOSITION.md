@@ -300,6 +300,16 @@ saves, child cancellation/deadlines, failed replacement writes and cancellation
 after a temporary manifest write. The retained engine scenario also cancels an
 active child, reopens its inbox and performs both same-build report replays.
 
+Submitted report prose is atomically retained by the existing inbox before a
+save can outlive its view. Successful publication removes that pending draft.
+Capture startup restores pending reports from their original completed capture,
+preserving session/marker/source identity and copying the tape without rewriting
+input or observations. Unfinished or unwritable captures retain their drafts and
+remain explicitly pending; committed-save failures still reach host supervision
+and require the existing nonzero exit. Recovery/publication retries and explicit
+session deletion have portable regressions, with no new root fields or schemas
+for saved reports or portable archives.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds
