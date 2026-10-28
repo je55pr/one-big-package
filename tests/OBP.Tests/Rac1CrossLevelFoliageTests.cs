@@ -10,19 +10,24 @@ namespace OBP.Tests;
 public sealed class Rac1CrossLevelFoliageTests
 {
     [Theory]
-    [InlineData(true, false, false, 160, new int[] { 10, 11 })]
-    [InlineData(false, false, false, 160, new int[] { })]
-    [InlineData(true, true, false, 160, new int[] { })]
-    [InlineData(true, false, true, 160, new int[] { })]
-    [InlineData(true, false, false, 80, new int[] { })]
+    [InlineData(true, false, false, new int[] { 160, 160, 160 }, new int[] { 10, 11 })]
+    [InlineData(true, false, false, new int[] { 200, 150, 200 }, new int[] { 10, 11 })]
+    [InlineData(true, false, false, new int[] { 200, 149, 200 }, new int[] { })]
+    [InlineData(false, false, false, new int[] { 160, 160, 160 }, new int[] { })]
+    [InlineData(true, true, false, new int[] { 160, 160, 160 }, new int[] { })]
+    [InlineData(true, false, true, new int[] { 160, 160, 160 }, new int[] { })]
+    [InlineData(true, false, false, new int[] { 80, 80, 80 }, new int[] { })]
     public void CutoutPolicyRequiresLargeCoincidentBinaryAlphaLayersWithSourceBlend(
-        bool overlap, bool fixedAlpha, bool mostlyTranslucent, int faces, int[] expected)
+        bool overlap, bool fixedAlpha, bool mostlyTranslucent, int[] layerFaces, int[] expected)
     {
         var positions = new List<double>();
         var indices = new List<int>();
         var textureIds = new List<int>();
-        foreach (int layer in new[] { 10, 11, 12 })
-            for (int triangle = 0; triangle < faces; triangle++)
+        int[] layers = [10, 11, 12];
+        for (int layerIndex = 0; layerIndex < layers.Length; layerIndex++)
+        {
+            int layer = layers[layerIndex];
+            for (int triangle = 0; triangle < layerFaces[layerIndex]; triangle++)
             {
                 for (int corner = 0; corner < 3; corner++)
                 {
@@ -33,6 +38,7 @@ public sealed class Rac1CrossLevelFoliageTests
                 }
                 textureIds.Add(layer);
             }
+        }
 
         var state = new RcMaterialState(0,
             RcTextureWrapHint.Unknown, RcTextureWrapHint.Unknown,
