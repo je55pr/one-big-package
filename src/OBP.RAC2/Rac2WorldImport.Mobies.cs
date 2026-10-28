@@ -155,6 +155,7 @@ public static partial class Rac2WorldImport
     /// </summary>
     private static List<RuntimeDynamicObject> BuildDynamicMobyObjects(
         int level,
+        Rac2LevelCore.Core core,
         Rac2Instances.Gameplay gameplay,
         Dictionary<int, GcUyaMoby.MobyClass> classes,
         IReadOnlyList<Rac2Instances.DirLight> dirLights,
@@ -295,21 +296,42 @@ public static partial class Rac2WorldImport
                 Transform: new RuntimeObjectTransform(obpMatrix),
                 Meshes: surfaces,
                 NativePayloads: payloads,
-                Animations: BuildAdmittedDynamicAnimationSet(cls, surfaces)));
+                Animations: BuildAdmittedDynamicAnimationSet(cls, surfaces, core,
+                    Rac2MobyClasses.NativePoseEnabledForLevel(level))));
             dynamicInstances.Add(inst.Index);
         }
 
         return outp;
     }
 
+    private static byte[] NativeMobyClassBytes(Rac2LevelCore.Core core, int oClass)
+    {
+        var table = core.Header.MobyClasses;
+        int entry = Enumerable.Range(0, table.Count)
+            .Select(i => table.Offset + i * GcUyaMoby.ClassEntrySize)
+            .Single(at => BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(at + 4)) == oClass);
+        int start = BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(entry));
+        if (start <= 0 || start >= core.Assets.Length)
+            throw new InvalidDataException($"Invalid native class {oClass} asset offset.");
+        int end = core.SectionBoundaries.FirstOrDefault(boundary => boundary > start, core.Assets.Length);
+        if (end <= start)
+            throw new InvalidDataException($"Invalid native class {oClass} asset bounds.");
+        return core.Assets.AsSpan(start, end - start).ToArray();
+    }
+
     private static RuntimeObjectAnimationSet? BuildAdmittedDynamicAnimationSet(
         GcUyaMoby.MobyClass cls,
-        IReadOnlyList<RuntimeObjectMesh> surfaces)
+        IReadOnlyList<RuntimeObjectMesh> surfaces,
+        Rac2LevelCore.Core core,
+        bool nativePosePreview)
     {
         if (cls.OClass != Rac2AranosOpeningDoorSession.NativeClassId)
             return null;
 
-        if (cls.Joints.Count != 7 || cls.Mesh.Indices.Length / 3 != 120)
+        // Original static decoder omitted four genuine VU1 faces. Keep both
+        // source-backed witnesses exact rather than relaxing the old guard.
+        int expectedTriangles = nativePosePreview ? 124 : 120;
+        if (cls.Joints.Count != 7 || cls.Mesh.Indices.Length / 3 != expectedTriangles)
             throw new InvalidDataException("Aranos class-2755 door model drifted from the retail witness.");
 
         var opening = cls.Sequences.SingleOrDefault(sequence => sequence.Index == 1)
@@ -323,9 +345,12 @@ public static partial class Rac2WorldImport
             throw new InvalidDataException("Aranos class-2755 door animation no longer matches the retail witness.");
 #pragma warning restore S1244
 
+        byte[]? sourceBytes = nativePosePreview ? NativeMobyClassBytes(core, cls.OClass) : null;
         var posedFrames = opening.Frames.Concat(open.Frames).Select(frame =>
         {
-            var posed = OBP.RAC2.Animation.Rac2MobyAnimation.Pose(cls.Mesh, cls.Joints, frame);
+            var posed = sourceBytes is null
+                ? OBP.RAC2.Animation.Rac2MobyAnimation.Pose(cls.Mesh, cls.Joints, frame)
+                : GcUyaMobyNativePose.Pose(sourceBytes, cls.Mesh, frame);
             var local = new double[posed.Length];
             for (int i = 0; i < posed.Length; i += 3)
             {

@@ -45,7 +45,8 @@ internal sealed class Rac2Msr1ActorFactory(ActorSceneFactory scenes, ActorSource
             native.Hostiles.Add(node.Source.InstanceIndex, hostile); native.Sessions.Add(node.Source.InstanceIndex, hosted);
             _ = scene.AddBody();
             var animation = assets.Asset(source, placement.LevelId, placement.NativeClassId, "rac2/msr1-animation",
-                () => Rac2Class2827Presentation.Load(source.Path, node.Source.Meshes));
+                () => Rac2Class2827Presentation.Load(source.Path, node.Source.Meshes,
+                    nativePosePreview: OBP.RAC2.Level.Rac2MobyClasses.NativePoseEnabledForLevel(placement.LevelId)));
             node.ConfigureAnimations(animation.Presentation);
             // Reuse the original source approach/attack cycle, starting at the admitted resumed chase.
             return new(registration, node, () => native.Observe(node, hostile), intent => native.Damage(node, hostile, intent), tick: _ =>
