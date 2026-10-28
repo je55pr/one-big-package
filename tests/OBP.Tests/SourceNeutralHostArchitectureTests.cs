@@ -17,6 +17,14 @@ public sealed class SourceNeutralHostArchitectureTests
         Assert.DoesNotContain(method.DescendantNodes().OfType<InvocationExpressionSyntax>()
             .Select(call => moduleModel.GetSymbolInfo(call).Symbol).OfType<IMethodSymbol>(),
             symbol => symbol.ContainingType.Name is "Rac1PlayerAudioPresenter" or "PlayerAvatarPresentationHost");
+        var subscriptions = method.DescendantNodes().OfType<AssignmentExpressionSyntax>()
+            .Where(assignment => assignment.IsKind(SyntaxKind.AddAssignmentExpression))
+            .Select(assignment => (
+                Event: moduleModel.GetSymbolInfo(assignment.Left).Symbol,
+                Callback: moduleModel.GetSymbolInfo(assignment.Right).Symbol));
+        Assert.Contains(subscriptions, binding =>
+            binding.Event is IEventSymbol { Name: "Rac1WaterSoundRequested", ContainingType.Name: "PlayerHost" } &&
+            binding.Callback is IPropertySymbol { Name: "WaterSound", ContainingType.Name: "Rac1WorldContactPorts" });
         var composition = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.cs");
         var factory = composition.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
             .Single(method => method.Identifier.ValueText == "CreateRac1WorldModule");
