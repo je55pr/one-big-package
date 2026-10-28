@@ -3,7 +3,9 @@ using OBP.Core.Math;
 using OBP.IO;
 using OBP.PS2.Collision;
 using OBP.PS2.Geometry;
+using OBP.PS2.Graphics;
 using OBP.PS2.Textures;
+using OBP.Runtime.Presentation;
 using OBP.RAC1.Level;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
@@ -146,7 +148,10 @@ public static partial class Rac1WorldImport
             throw new InvalidDataException("R&C1 tfrag baked-colour count does not match its vertex count.");
         }
 
-        var byTexture = new SortedDictionary<int, List<int>>();
+        // R&C1 tfrag material records carry separate S/T address modes.
+        // Preserve the distinction even for faces sharing a texture ID;
+        // some native materials clamp at the edge while others tile.
+        var byMaterial = new SortedDictionary<(int TextureId, RuntimeTextureWrap S, RuntimeTextureWrap T), List<int>>();
         for (int face = 0; face < mesh.TriangleTextureIds.Length; face++)
         {
             int textureId = mesh.TriangleTextureIds[face];
@@ -154,16 +159,26 @@ public static partial class Rac1WorldImport
             {
                 throw new InvalidDataException($"R&C1 tfrag face references missing texture {textureId}.");
             }
-            if (!byTexture.TryGetValue(textureId, out var triangles))
+            int nativeMaterialIndex = mesh.TriangleMaterialIndices[face];
+            RcMaterialState? nativeMaterial = nativeMaterialIndex >= 0
+                && nativeMaterialIndex < mesh.Materials.Count
+                ? mesh.Materials[nativeMaterialIndex] : null;
+            // These material payload words are source-axis address selectors,
+            // not the raw packed 64-bit GS CLAMP register. Only 0/1 is
+            // understood; other selector values retain their current fallback.
+            var wrapS = DecodeTfragWrap(nativeMaterial?.ClampRawLo);
+            var wrapT = DecodeTfragWrap(nativeMaterial?.ClampRawHi);
+            var key = (textureId, wrapS, wrapT);
+            if (!byMaterial.TryGetValue(key, out var triangles))
             {
-                byTexture[textureId] = triangles = [];
+                byMaterial[key] = triangles = [];
             }
             triangles.Add(mesh.Indices[face * 3]);
             triangles.Add(mesh.Indices[face * 3 + 1]);
             triangles.Add(mesh.Indices[face * 3 + 2]);
         }
 
-        foreach (var (textureId, sourceIndices) in byTexture)
+        foreach (var ((textureId, wrapS, wrapT), sourceIndices) in byMaterial)
         {
             var remap = new Dictionary<int, int>();
             var positions = new List<double>();
@@ -200,9 +215,20 @@ public static partial class Rac1WorldImport
                 positions.ToArray(),
                 uvs.ToArray(),
                 indices.ToArray(),
-                colours.ToArray());
+                colours.ToArray(),
+                MaterialPresentation: new RuntimeMaterialPresentation(WrapS: wrapS, WrapT: wrapT));
         }
     }
+
+    // Source tfrag materials use an independent 32-bit selector per UV axis.
+    // Hosts currently apply a uniform TextureRepeat bool only when both axes
+    // agree; mixed-axis evidence stays available without altering sampling.
+    internal static RuntimeTextureWrap DecodeTfragWrap(int? selector) => selector switch
+    {
+        0 => RuntimeTextureWrap.Repeat,
+        1 => RuntimeTextureWrap.Clamp,
+        _ => RuntimeTextureWrap.Unknown,
+    };
 
     private static RuntimeCollisionBlob ToRuntimeCollision(RcCollision.Mesh mesh)
     {
