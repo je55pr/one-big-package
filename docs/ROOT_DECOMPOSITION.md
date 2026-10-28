@@ -522,6 +522,51 @@ and isolation across repeated authored IDs; persistent-player and engine
 reconciliation checks cover continuity, original-world checkpoints, HUD and
 same-build replay. Source builds, native IDs and save/replay formats are unchanged.
 
+The #352 shared equipment extraction retires `OBPGame.FusionWeapons.cs` and moves
+its UID to `FusionWeaponHost.cs`. Against `dd97c87`, the root moves from **48 files,
+13,096 lines, 495 methods, 324 fields (201 mutable), 43 exposed members and
+1,258 cross-file references** to **47 files, 12,543 lines, 462 methods,
+297 fields (179 mutable), 43 exposed members and 1,168 references**. One lazy
+composition reference replaces the 28 original fields. Sixty-three historical
+permissions and seven expired equipment presentation bridges retire. Four exact
+owner/factory/coordinate-copy entries and the rebound diagnostic factory expire
+with final composition #376; existing native action bindings remain focused
+callbacks. The frozen origin and player/world ownership ledgers do not expand.
+
+`FusionWeaponHost` borrows the persistent native session and existing equipment
+facade. `FusionWeaponSourceHost<TAssets>` owns cancelable preparation, the existing
+`FileVerificationCache` and main-thread resource upload for an attached source
+set. Unchanged sources retain those assets across destinations; source changes
+retire voices, effects and views before disposing textures. A late canceled
+worker cannot publish into a replacement source lifetime. Missing assets and
+upload failures keep their explicit equipment status.
+
+Each `GodotWorldResources` owns a disposable fusion renderer binding, installed
+after native world initialization resets and before avatar attachment. Retirement
+clears projectile/beam/spread/audio nodes, native transient sessions and fixture
+state once; an old binding cannot act on a replacement world. The source owner
+is independent of this lease. Native ammunition and the held-model animation
+snapshot persist with the player; death/source invalidation clear use snapshots
+and world effects without refilling equipment. Application exit releases sources
+and the preparation notice in a finally boundary. `Rac1FusionCampaignIsolation`
+owns the explicit test campaign/wallet/gold-bolt snapshot and restores it
+idempotently; ordinary persistent-session admission returns before that path.
+Damage, cadence, charge, source animations/audio and the existing replay/config
+identities remain with their original native/session owners. The unresolved
+spread renderer and held Cannon clip choice retain their OBP provenance.
+
+Validation for #352: the source-free Release suite passes 3,241 tests with 283
+retail-dependent skips; the authorized NTSC-U suite passes 3,509 tests with 15
+optional oracle skips. Both use `DOTNET_PROCESSOR_COUNT=2`. All 17 reconciliation
+phases pass, including five-stop continuity, profiles, bookmarks and fresh-process
+bug-report replay. The complete fusion suite passes asset absence, source
+invalidation, cancellation, transient cleanup and normal return. Its 1,271-step,
+three-marker recording replays with 14 matched checkpoints and no build override;
+the initial and 13 later checkpoint payloads also match unchanged `dd97c87`
+exactly. UID coverage, solution format verification and the game build with
+warnings as errors pass. Engine acceptance is headless; human visual/audible
+review is not claimed.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

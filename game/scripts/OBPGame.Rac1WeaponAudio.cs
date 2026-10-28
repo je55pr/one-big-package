@@ -38,7 +38,7 @@ public partial class OBPGame
         if (loop != _rac1WeaponLoop)
         {
             _rac1WeaponLoopAudio.StopAll(); _rac1WeaponLoop = null;
-            if (loop is { } cue && PlayerPresentationAssets?.Sounds?.TryGetValue(cue, out var sound) == true)
+            if (loop is { } cue && _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets)?.Sounds?.TryGetValue(cue, out var sound) == true)
             {
                 // Position is local to the player, so a sustained sound follows
                 // its owner instead of remaining at the first shot's world point.
@@ -53,7 +53,7 @@ public partial class OBPGame
         if (admitted && weapon == Rac1WeaponId.Taunter && _rac1ArsenalHeld)
         {
             if (_rac1TaunterSoundTicks > 0) _rac1TaunterSoundTicks--;
-            else if (PlayerPresentationAssets?.Sounds?.TryGetValue((175, _rac1TaunterSoundStep), out var sound) == true)
+            else if (_equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets)?.Sounds?.TryGetValue((175, _rac1TaunterSoundStep), out var sound) == true)
             {
                 _rac1TaunterAudio.StopAll();
                 if (_rac1TaunterAudio.PlayEffect(_player!, new(sound.SelectPitch(_playerAudio!.Random), RuntimeAudioCategory.SoundEffect,
@@ -78,7 +78,6 @@ public partial class OBPGame
         _playerAudio?.SetPaused(paused);
         _rac1WeaponLoopAudio.SetPaused(paused);
         _rac1TaunterAudio.SetPaused(paused);
-        foreach (var owned in _fusionAudioPlayers)
-            if (IsInstanceValid(owned.Player)) owned.Player.StreamPaused = paused;
+        FusionWeapons.SetPaused(paused);
     }
 }

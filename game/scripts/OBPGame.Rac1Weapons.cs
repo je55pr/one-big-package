@@ -91,7 +91,7 @@ public partial class OBPGame
 
     private void SetRac1WeaponPreview(bool disable)
     {
-        if (FusionTestActive) { ReportMovementState("Leave the fusion test before changing the R&C1 arsenal preview."); return; }
+        if (FusionWeapons.TestActive) { ReportMovementState("Leave the fusion test before changing the R&C1 arsenal preview."); return; }
         _playerNative?.SetEquipmentPreview(!disable);
         if (disable)
         {
@@ -116,7 +116,7 @@ public partial class OBPGame
             ReportMovementState("Full arsenal preview: hold Triangle to select, Circle to use. Refill or restore campaign equipment from Pause → Testing Equipment.");
         }
         _rac1AdditionalWeaponsInventory = _rac1Weapons;
-        SyncFusionNativeSelection();
+        FusionWeapons.SynchronizeNativeSelection();
         RefreshSourceEquipmentContext();
         if (_rac1HeldItem.NativeItemId != (int)Rac1WeaponId.Wrench) HoldSelectedRac1HandItem();
         RefreshRac1HudState(); RefreshRac1WrenchPresentationVisibility();
@@ -135,7 +135,7 @@ public partial class OBPGame
 
     private void AttachRac1EquipmentViews(Node3D avatarView)
     {
-        AttachFusionWeaponViews(avatarView);
+        FusionWeapons.AttachViews(avatarView);
         var source = Sources.Setup.Library.Get(OBP.Core.ObpSourceGame.Rac1)!;
         if (_rac1EquipmentAssets is null || _rac1EquipmentSource != source.Path)
         {
@@ -161,7 +161,7 @@ public partial class OBPGame
 
     private void StepRac1AdditionalWeapons()
     {
-        if (_movementStateLoading || PlayerPresentationAssets is null || _player is null || _rac1AdditionalWeapons is null) return;
+        if (_movementStateLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is null || _player is null || _rac1AdditionalWeapons is null) return;
         bool held = PlayerAlive && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active &&
             _rac1AdditionalFireRequested && !_rac1DetectorEquipped;
         _rac1AdditionalFireRequested = false;
@@ -237,8 +237,8 @@ public partial class OBPGame
                     view.Play(_rac1AdditionalWeapons?.Cargo.Count > 0 ? 6 : 1);
             }
             foreach (int sound in view.Step(controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(profile.HandSemantic))))
-                if (PlayerPresentationAssets?.Sounds?.TryGetValue((profile.ModelClass, sound), out var voice) != true || voice?.Loop != true)
-                    PlayPlayerEquipmentSound(profile.ModelClass, sound, _player!.GlobalPosition);
+                if (_equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets)?.Sounds?.TryGetValue((profile.ModelClass, sound), out var voice) != true || voice?.Loop != true)
+                    FusionWeapons.PlayNativeSound(profile.ModelClass, sound, _player!.GlobalPosition);
             if (_rac1StagedEquipment.TryGetValue(profile.Item, out var staged))
             {
                 staged.Position = view.MuzzleLocal; staged.Step();
@@ -369,7 +369,7 @@ public partial class OBPGame
 
     private void SpawnRac1ThrownEquipment(Rac1AdditionalWeaponSession.Shot shot)
     {
-        PlayPlayerEquipmentSound(0, 26, _player!.GlobalPosition); // hero_sound_start(0x1a,0), shared glove throw.
+        FusionWeapons.PlayNativeSound(0, 26, _player!.GlobalPosition); // hero_sound_start(0x1a,0), shared glove throw.
         float yaw = (float)_player!.Rac1CurrentYaw;
         NVector3 body = ToEffectNative(_player.GlobalPosition) + new NVector3(0, 0, (float)-(_avatarPresentation.Avatar?.BaseHeight ?? -.7));
         var origin = Rac1BombProjectileSession.LaunchOrigin(body, yaw);

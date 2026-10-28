@@ -35,7 +35,7 @@ public partial class OBPGame
         {
             var worldSourceStamp = SourceFileStamp(sourcePath);
             PrepareSelectedPlayerAssets();
-            CaptureReplay.PrepareControllers(() => { _playerNative!.ResetReplayControllers(); _fusion = _playerNative.Weapons; });
+            CaptureReplay.PrepareControllers(() => { _playerNative!.ResetReplayControllers(); FusionWeapons.BindPersistent(_playerNative.Weapons); });
             var request = _worldEntries!.Request(destinationId, PlayerEntryMode);
             var source = new WorldSource(entry =>
             {
@@ -177,6 +177,7 @@ public partial class OBPGame
             Rac1World.Configure();
             ConfigureRac3Gameplay(world, resources.Scene);
         }
+        resources.FusionWeapons = FusionWeapons.BindWorld(resources.Scene.Root);
         if (_args.AnimSolo) FrameAnimatedMobies(world);
         else if (staticCamera) FrameShowcaseCamera(world);
         else SpawnPlayer(world);
@@ -327,14 +328,14 @@ public partial class OBPGame
         var (view, controller) = _avatarPresentation.CreateWorldVisual(player, _playerAnimationProfile!, materials);
         if (selected.SourceGame == ObpSourceGame.Rac1)
         {
-            if (PlayerPresentationAssets is not null)
-                _avatarPresentation.InstallStagedBomb(CreatePlayerEquipmentEffectNode(121, "Rac1RetailStagedBomb_Class121"));
+            if (_equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is not null)
+                _avatarPresentation.InstallStagedBomb(FusionWeapons.CreateNativeEffect(121, "Rac1RetailStagedBomb_Class121"));
             AttachRac1EquipmentViews(view);
         }
         player.VisualRoot.ReplaceVisual(view);
         player.ConfigureAvatarPresentation((float)avatar.AnimationBounds.Height);
         _avatarPresentation.Subscribe(player, StepPlayerAvatarPhysics, ResetPlayerAvatarPhysics);
-        BindPlayerEquipmentPresentation();
+        _equipmentPresentation.BindSelected(_avatarPresentation, _persistentPlayer.Equipment.Sources, _rac1EquipmentAssets, FusionWeapons.Sources.Assets);
         RefreshRac1WrenchPresentationVisibility();
         HideAuthoredWorldRatchetPresentation();
         GD.Print($"[player-avatar] attached selected {avatar.Identity.ModelId}: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
@@ -349,7 +350,7 @@ public partial class OBPGame
         StepRac1EquippedUseInput();
         StepRac1BombWeaponPhysics();
         StepRac1AdditionalWeapons();
-        StepFusionWeapons();
+        FusionWeapons.Step();
         input = SelectRac1BombThrowAnimation(controller, input);
         _avatarPresentation.StepNative(state, input);
 
@@ -365,12 +366,12 @@ public partial class OBPGame
                 OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence) : null;
         // Jump/traversal clocks still own the body. Evaluate equipment from
         // that clock too, including the attachment when no arm bank applies.
-        bool fusionPose = _fusion is { Selected.SourceGame: not ObpSourceGame.Rac1 } && _fusion.Hand.IsHolding(_fusion.Selected) &&
+        bool fusionPose = FusionWeapons.Session is { Selected.SourceGame: not ObpSourceGame.Rac1 } && FusionWeapons.Session.Hand.IsHolding(FusionWeapons.Session.Selected) &&
             PlayerAlive && _player?.Rac1WrenchFrame.Active != true && _player?.Rac1WaterHandItemHidden != true;
         if (equipmentPose < 0) equipmentPose = null;
-        if (fusionPose && _fusionAssets?.AvatarAnimations.TryGetValue(_fusion!.Selected, out var sourceAnimation) == true)
+        if (fusionPose && FusionWeapons.Sources.Assets?.AvatarAnimations.TryGetValue(FusionWeapons.Session!.Selected, out var sourceAnimation) == true)
             _avatarPresentation.Sink?.SetAnimationPresentation(controller.ApplySourceEquipment(sourceAnimation,
-                moving, input.CrouchHeld, _fusionUseStarted, _fusionPoseTriggerHeld));
+                moving, input.CrouchHeld, FusionWeapons.Pose.UseStarted, FusionWeapons.Pose.TriggerHeld));
         else
         {
             controller.ClearSourceEquipment();
@@ -383,7 +384,7 @@ public partial class OBPGame
             _avatarPresentation.StepHandAttachments(controller, player.Rac1WrenchFrame,
                 _rac1WrenchThrow.Active, _rac1BombThrowGeneration);
             StepRac1EquipmentViews(controller);
-            StepFusionWeaponViews(controller);
+            FusionWeapons.StepViews(controller, _avatarPresentation.Avatar);
         }
 
 
@@ -398,7 +399,7 @@ public partial class OBPGame
 
     private void ResetPlayerAvatarPhysics()
     {
-        ClearFusionTransients();
+        FusionWeapons.ClearTransients();
         _playerAudio?.Reset();
         ResetRac1WrenchHost();
         _rac1BombThrowActive = false;
@@ -441,7 +442,7 @@ public partial class OBPGame
     }
 
     private bool IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId item) =>
-        _fusion?.Selected.SourceGame is not (ObpSourceGame.Rac2 or ObpSourceGame.Rac3) &&
+        FusionWeapons.Session?.Selected.SourceGame is not (ObpSourceGame.Rac2 or ObpSourceGame.Rac3) &&
         _rac1HeldItem.Hand.IsHolding(new(ObpSourceGame.Rac1, (int)item)) &&
         _player?.Rac1WaterHandItemHidden != true &&
         _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active;

@@ -57,7 +57,7 @@ public partial class OBPGame
 
     private Node3D CreateRac1EffectNode(int nativeClass, string name, bool playerEquipment = false)
     {
-        var assets = playerEquipment ? PlayerPresentationAssets : _rac1PickupAssets;
+        var assets = playerEquipment ? _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) : _rac1PickupAssets;
         var materials = playerEquipment ? _equipmentPresentation.EffectMaterials : _rac1PickupMaterials;
         var cache = playerEquipment ? _equipmentPresentation.EffectMeshes : _rac1EffectMeshes;
         if (_sceneResult is null || materials is null || assets is null ||

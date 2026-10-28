@@ -101,7 +101,7 @@ public partial class OBPGame
             else ReportMovementState("Universal bookmarks need an input history. Start Bug Capture or --record-playtest, then press F12; the completed prefix preserves native actors too.");
             return;
         }
-        if (FusionMovementStateBlocked) { ReportMovementState("Cross-game weapons use input recordings; use --record-playtest to retain all three sources."); return; }
+        if (FusionWeapons.MovementStateBlocked) { ReportMovementState("Cross-game weapons use input recordings; use --record-playtest to retain all three sources."); return; }
         try
         {
             MovementReproState state = CaptureMovementState();
@@ -139,7 +139,7 @@ public partial class OBPGame
                 return null;
             }
             if (OrdinaryPlayerSession) throw new InvalidOperationException("Legacy native R&C1 bookmarks require an explicit parity session. Open them with --load-movement-state at launch.");
-            if (FusionMovementStateBlocked) throw new InvalidOperationException("Legacy R&C1 bookmarks require an R&C1 weapon with no active foreign shots.");
+            if (FusionWeapons.MovementStateBlocked) throw new InvalidOperationException("Legacy R&C1 bookmarks require an R&C1 weapon with no active foreign shots.");
             if (_args.ReplayForwardFrames is { } frames && (frames < 1 || frames > 3600))
                 throw new InvalidDataException("Forward replay must contain 1 through 3600 physics updates.");
             var destination = TrilogyWorldProviders.Resolve(state.Destination)

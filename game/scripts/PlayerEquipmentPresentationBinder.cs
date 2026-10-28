@@ -28,6 +28,31 @@ internal sealed class PlayerEquipmentPresentationBinder
     internal Dictionary<int, List<(ArrayMesh Mesh, Material Material)>> EffectMeshes => _effectMeshes;
     internal EquipmentPresentationBinding? Binding(SourceWeaponKey key) => _bindings.GetValueOrDefault(key);
 
+    internal Rac1PickupAssets.Catalogue? Assets(bool ordinary, Rac1PickupAssets.Catalogue? parity) => ordinary ? SelectedAssets : parity;
+
+    internal bool ModelAvailable(SourceWeaponKey key, PlayerAvatarPresentationHost avatar,
+        Rac1EquipmentAssets.Catalogue? native, FusionWeaponAssets? shared) =>
+        key == PlayerEquipmentRegistrations.Wrench ? avatar.WrenchAsset is not null :
+        key == FusionWeaponSession.BombGlove ? avatar.GloveAsset is not null : key.SourceGame == ObpSourceGame.Rac1
+            ? native?.Models.ContainsKey(Rac1WeaponProfiles.Get((Rac1WeaponId)key.NativeItemId).ModelClass) == true
+            : shared?.Available(key) == true;
+
+    internal void BindSelected(PlayerAvatarPresentationHost avatar, IReadOnlyDictionary<ObpSourceGame, string> sources,
+        Rac1EquipmentAssets.Catalogue? native, FusionWeaponAssets? shared)
+    {
+        Bind(avatar.Controller is null ? null : avatar.Avatar, sources,
+            key => ModelAvailable(key, avatar, native, shared), key =>
+            {
+                if (avatar.Avatar?.Skeletal is not { } rig || shared is null || !shared.AvatarAnimations.TryGetValue(key, out var animation)) return false;
+                try
+                {
+                    new PlayerSkeletalSampler(rig.Skeleton).RequireCompatible(animation.Skeleton);
+                    return true;
+                }
+                catch (InvalidDataException) { return false; }
+            });
+    }
+
     internal PlayerEquipmentPresentationState Observe(SourceWeaponKey key, bool modelAvailable, bool effectBankAvailable)
     {
         var binding = Binding(key);

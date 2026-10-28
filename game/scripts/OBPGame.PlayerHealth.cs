@@ -20,8 +20,8 @@ public partial class OBPGame
             Health = new((int)health.Current, (int)health.Capacity, "nanotech", health.Alive ? HudLifeState.Alive : HudLifeState.Dead),
             Bolts = new(Rac1HudProjection.BoltsResourceKey, (int)state.Currencies.GetValueOrDefault("obp/bolts")),
         };
-        if (_hudState.Current.Epoch == 0) _hudState.BeginSession(FusionHud(projection));
-        else _hudState.Publish(FusionHud(projection), feedback);
+        if (_hudState.Current.Epoch == 0) _hudState.BeginSession(FusionWeapons.Hud(projection));
+        else _hudState.Publish(FusionWeapons.Hud(projection), feedback);
     }
 
     private readonly HashSet<ActorInstanceKey> _playerDamageActors = [];
@@ -54,7 +54,7 @@ public partial class OBPGame
             displayed.LifeState != (health.Alive ? OBP.Runtime.Presentation.HudLifeState.Alive : OBP.Runtime.Presentation.HudLifeState.Dead)) RefreshRac1HudState();
         if (_hudState.Current.Air != OBP.RAC1.Presentation.Rac1HudProjection.CaptureAir(_player.Rac1SwimState,
             _player.Rac1MovementEquipment.OxygenMask)) RefreshRac1HudState();
-        if (!PlayerAlive && _rac1CombatRetry is null) { ClearFusionOnDeath(); ResetRac1WrenchHost(); ShowPlayerRetry(); }
+        if (!PlayerAlive && _rac1CombatRetry is null) { FusionWeapons.ClearOnDeath(); ResetRac1WrenchHost(); ShowPlayerRetry(); }
     }
 
     private PlayerIntakeResult ApplyPlayerSourceDamage(RuntimeWorldScene.DynamicObjectNode node, string build, string adapter,

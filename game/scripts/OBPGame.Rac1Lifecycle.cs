@@ -52,7 +52,7 @@ public partial class OBPGame
 
         // Explicit native parity policy; ordinary life/respawn belongs to the
         // persistent player's health session on every destination.
-        ClearFusionTransients();
+        FusionWeapons.ClearTransients();
         var respawn = _rac1Nanotech.Respawn();
         _player.Rac1GameplayState = respawn;
         _player.ApplyRecoveredRac1Restart(restart.Placement);
