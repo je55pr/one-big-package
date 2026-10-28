@@ -1,9 +1,9 @@
 [
   {
-    "Key": "game/scripts/OBPGame.CaptureDiagnostics.cs::OBPGame.CaptureMetadata()",
+    "Key": "game/scripts/OBPGame.cs::OBPGame.CreateCapturePresentation()",
     "Kind": "adapter",
-    "Reason": "Optional capture/debug metadata names the actual loaded world provenance; source-qualified player replay uses its own shared-session header. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added.",
-    "Hash": "cfc54240d12f527d5c1279e517b42cbbaee5190801d284a6afd11f060f9688fe"
+    "Reason": "Optional capture/debug metadata names the actual loaded world provenance; source-qualified player replay uses its own shared-session header. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added. #356 relocates the unchanged world-provenance read into the capture snapshot binding; CaptureFrameMetadataTests and baseline sidecar comparison protect its wire fields. The binding supplies no player capability.",
+    "Hash": "e18e3fd64ac51339b4a2202f0a84a365db2fda7a862a00e390661383de2c5835"
   },
   {
     "Key": "game/scripts/OBPGame.cs::OBPGame.UpdateWorldHud()",
@@ -57,7 +57,7 @@
     "Key": "game/scripts/OBPGame.Rac1Enemies.cs::OBPGame.TickRac1Hostiles(double)",
     "Kind": "adapter",
     "Reason": "R&C1 native actor/session updates and original source context; placed actors use lease-owned voice scopes. TrilogyGameplaySmoke verifies live motion, native combat, scoped audio/pickup cleanup and reset. Only explicit parity retains native player health stepping here; no ordinary player service is selected.",
-      "Hash": "1000af5382f6dd2d211908922e0db51d44fd4057113504a6ae5810fee45b9c00"
+    "Hash": "1000af5382f6dd2d211908922e0db51d44fd4057113504a6ae5810fee45b9c00"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.BindSourcePlayerContacts(PlayerHost)",
@@ -194,8 +194,8 @@
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.StartRequestedSourceVerification(ObpDestination,string)",
     "Kind": "adapter",
-    "Reason": "Opt-in original GC source verification; no player service choice.",
-    "Hash": "d271329f7bea50279a020aa927720a2e479f2f9cfb013004a07542f1a89c1ac5"
+    "Reason": "Opt-in original GC source verification; no player service choice. #356 starts the optional verification owner for the same admitted source; its task scope is independent of critical startup/capture work.",
+    "Hash": "cdd268364d23df0f2fe394489d3ec6b0a5fbc541df3952541a07af0d6a349db9"
   },
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.ValidateSourceEntry(RuntimeWorld)",
