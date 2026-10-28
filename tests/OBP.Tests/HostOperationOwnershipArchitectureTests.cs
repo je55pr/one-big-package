@@ -46,7 +46,7 @@ public sealed class HostOperationOwnershipArchitectureTests
     [InlineData("Fixture", "var lost=ReplaySelectedBugAsync();", false)]
     [InlineData("Fixture", "await LoadMovementStateAsync(path);", true)]
     [InlineData("Fixture", "_hostOperations.Start(\"capture\", token=>RunCaptureAsync(1, token));", true)]
-    [InlineData("Fixture", "StartBugOverlayWork(\"replay\", token=>ReplaySelectedBugAsync(token));", true)]
+    [InlineData("Fixture", "StartBugOverlayWork(\"replay\", token=>ReplaySelectedBugAsync(token));", false)]
     [InlineData("Fixture", "_work.Start(\"bug-replay\", token=>ReplaySelectedBugAsync(token), result=>Show(result), error=>Fail(error));", false)]
     [InlineData("BugReportUiCoordinator", "_work.Start(\"bug-replay\", token=>ReplaySelectedBugAsync(token), result=>Show(result), error=>Fail(error));", true)]
     [InlineData("Fixture", "await Task.Run(()=>{_=RunCaptureAsync(1, token);});", false)]
@@ -102,7 +102,7 @@ public sealed class HostOperationOwnershipArchitectureTests
             function is LambdaExpressionSyntax lambda && lambda.Body == expression;
         if (!consumed || function.Parent is not ArgumentSyntax argument || argument.Parent?.Parent is not InvocationExpressionSyntax owner)
             return false;
-        return Name(owner.Expression) == "StartBugOverlayWork" || owner.Expression is MemberAccessExpressionSyntax member &&
+        return owner.Expression is MemberAccessExpressionSyntax member &&
             member.Name.Identifier.ValueText == "Start" && (member.Expression.ToString().EndsWith("_hostOperations", StringComparison.Ordinal) ||
                 member.Expression.ToString() == "_work" && call.Ancestors().OfType<ClassDeclarationSyntax>().First().Identifier.ValueText == "BugReportUiCoordinator");
     }

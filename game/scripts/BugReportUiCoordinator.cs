@@ -152,10 +152,12 @@ internal sealed class BugReportUiCoordinator(BugReportCapture capture, HostOpera
             foreach (var report in session.Session!.Reports) _rows.Add((session.Id, report));
         _view!.SetReports(_rows.Select(row => $"{row.Report.CreatedUtc.LocalDateTime:HH:mm:ss} · {row.Report.Title}"));
         int unfinished = sessions.Count(s => s.Session is null) + capture.Inbox.InterruptedCaptureCount(capture.SessionId);
-        _view.SetStatus(unfinished == 0 ? "Files stay local. Exporting a ZIP does not upload it." :
-            $"{unfinished} unfinished/unreadable session(s) are not offered for replay. Open Folder to inspect them.");
         int pending = capture.Inbox.PendingDraftCount();
-        if (pending > 0) _view.SetStatus($"{pending} unsaved report draft(s) retained. Reopen Bug Capture to retry recovery; Open Folder to inspect them.");
+        var notices = new List<string>();
+        if (unfinished > 0) notices.Add($"{unfinished} unfinished/unreadable session(s) are not offered for replay.");
+        if (pending > 0) notices.Add($"{pending} report draft(s) retained while saving or awaiting recovery. Pending recovery is retried at Bug Capture startup.");
+        _view.SetStatus(notices.Count == 0 ? "Files stay local. Exporting a ZIP does not upload it." :
+            string.Join(' ', notices) + " Open Folder to inspect them.");
     }
 
     private (Guid Session, BugReportEntry Report) Selected() => _selection >= 0 && _selection < _rows.Count
