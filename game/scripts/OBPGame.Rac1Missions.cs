@@ -38,14 +38,14 @@ public partial class OBPGame
     {
         // An external provider/debug load is not permission to mutate a different
         // campaign. Ordinary current-level entry and actor/map travel are eligible.
-        if (world.LevelId != _rac1CampaignSession.Campaign.CurrentLevel) return;
+        if (world.LevelId != _rac1Campaign.Session.Campaign.CurrentLevel) return;
         var source = Sources.Setup.Library.Get(ObpSourceGame.Rac1) ?? throw new InvalidOperationException("Mission actors require the retail source.");
         using var reader = new FileRandomAccessReader(source.Path);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == world.LevelId);
         var gameplay = Rac1LevelSettings.ReadGameplay(reader, level);
         var instances = Rac1Instances.Parse(gameplay).MobyInstances;
         var overlay = Rac1ExecutableOverlay.Read(reader, level);
-        _rac1Missions = new(world.LevelId, _rac1CampaignSession.Campaign, _rac1BoltWallet, Rac1ClipVolumes.Read(gameplay));
+        _rac1Missions = new(world.LevelId, _rac1Campaign.Session.Campaign, _rac1BoltWallet, Rac1ClipVolumes.Read(gameplay));
         foreach (var placement in instances)
         {
             if (placement.OClass != 750 && !(world.LevelId == 0 && placement.OClass == 834 || world.LevelId == 1 && placement.OClass == 774))
@@ -59,8 +59,8 @@ public partial class OBPGame
                     ?? throw new InvalidDataException("Mission actor lacks its native talk program.");
                 _rac1Missions.RegisterTalkActor(placement, program, postOpeningIntro: world.LevelId == 0);
             }
-            var node = FindPresentedDynamic(result, authored) ?? CreateRac1InvisibleRuntimeNode(result, authored);
-            _rac1MobyRuntime.Register(authored, node.State, 0, placement.PVar ?? []);
+            var node = Rac1WorldPresentation.FindPresentedDynamic(result, authored) ?? Rac1WorldPresentation.CreateInvisibleRuntimeNode(result, authored);
+            Rac1World.Context.MobyRuntime.Register(authored, node.State, 0, placement.PVar ?? []);
             _rac1MissionNodes.Add(placement.Index, node);
         }
         GD.Print($"[rac1-missions] L{world.LevelId}: {_rac1Missions.RegisteredCount} source-owned mission actors");
@@ -84,7 +84,7 @@ public partial class OBPGame
     private void TickRac1Missions(double delta)
     {
         if (_rac1Missions is null || _player is null || _rac1MissionExitQueued) return;
-        _rac1MissionTicks += Math.Max(0, delta) * Rac1NativeTicksPerSecond;
+        _rac1MissionTicks += Math.Max(0, delta) * OBP.RAC1.Player.Rac1RatchetMovementController.UpdateHz;
         while (_rac1MissionTicks >= 1)
         {
             _rac1MissionTicks--;
@@ -99,9 +99,9 @@ public partial class OBPGame
             foreach (var probe in _rac1Missions.Probe())
             {
                 if (!_rac1MissionNodes.TryGetValue(probe.Key.InstanceIndex, out var node)) continue;
-                var instance = _rac1MobyRuntime.Require(node.Source);
-                _rac1MobyRuntime.SetNativeState(instance, probe.NativeState);
-                _rac1MobyRuntime.SetPresence(instance, probe.Visible ? RuntimeEntityPresence.Active : RuntimeEntityPresence.Inactive);
+                var instance = Rac1World.Context.MobyRuntime.Require(node.Source);
+                Rac1World.Context.MobyRuntime.SetNativeState(instance, probe.NativeState);
+                Rac1World.Context.MobyRuntime.SetPresence(instance, probe.Visible ? RuntimeEntityPresence.Active : RuntimeEntityPresence.Inactive);
                 node.ApplyState(instance.EntityState);
             }
             if (_rac1Missions.PendingScene is { } scene)
@@ -160,7 +160,7 @@ public partial class OBPGame
         if (_world is not { Game.SourceGame: ObpSourceGame.Rac1 } world || world.LevelId != exit.Owner.LevelId) return;
         var destination = TrilogyWorldProviders.Resolve($"rac1:LEVEL{exit.Destination}")
             ?? throw new InvalidOperationException("Native mission requested an unavailable source destination.");
-        if (_rac1CampaignSession.BeginMissionLevelExit(exit) != Rac1PlanetTravelStartResult.Started) return;
+        if (_rac1Campaign.Session.BeginMissionLevelExit(exit) != Rac1PlanetTravelStartResult.Started) return;
         GD.Print($"[rac1-missions] native actor exit L{world.LevelId} -> {exit.Destination}");
         OnDestinationChosen(destination);
     }

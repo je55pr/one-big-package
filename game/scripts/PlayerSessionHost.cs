@@ -14,6 +14,17 @@ namespace OBP.Game;
 /// </summary>
 internal sealed class PlayerSessionHost
 {
+    internal Rac1RatchetNanotechSession ParityHealth { get; private set; } = new();
+    internal Rac1HeldItemSession ParityHeld { get; } = new();
+    internal Rac1WeaponInventory? WeaponPreview { get; set; }
+    internal Rac1WrenchCombatController Wrench { get; } = new();
+    internal Rac1BoltWallet Rac1Wallet(Rac1BoltWallet parityWallet) => Native?.Wallet ?? parityWallet;
+    internal Rac1RatchetNanotechSession Rac1Health => Native?.Health ?? ParityHealth;
+    internal Rac1HeldItemSession Rac1Held => Native?.Held ?? ParityHeld;
+    internal Rac1WeaponInventory Rac1Weapons(FusionWeaponSession? fusion, bool fusionTest, Rac1WeaponInventory campaign) =>
+        Native?.Inventory ?? (fusionTest ? fusion!.Rac1Inventory : WeaponPreview ?? campaign);
+    internal void BeginParityWorld() { if (Native is null) ParityHealth = new(); }
+
     internal ObpPlayerSession? Session { get; private set; }
     internal PlayerSessionNativeState? Native { get; private set; }
     internal WorldEntrySession? WorldEntries { get; private set; }

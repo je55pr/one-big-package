@@ -110,7 +110,7 @@ public partial class OBPGame
         ResolveRac1FrogCarrierWrenchContacts(previousHand, previousTip, hand, tip, radius);
         ResolveRac1QueenWrenchContacts(previousHand, previousTip, hand, tip, radius, result);
         ActorHost.Combat.ResolveWrench(previousHand, previousTip, hand, tip, radius, damage);
-        foreach (var target in _rac1CrateNodes.Concat(Rac1EnemyNodes).Concat(_rac1NovalisBreakableNodes.Values))
+        foreach (var target in Rac1World.Presentation.CrateNodes.Concat(Rac1EnemyNodes).Concat(_rac1NovalisBreakableNodes.Values))
         {
             var key = new Rac1MobyRuntimeKey(target.Source.NativeClassId, target.Source.InstanceIndex);
             bool isNovalisProp = Rac1NovalisBreakableSession.IsAdmitted(

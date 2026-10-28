@@ -36,9 +36,9 @@ public partial class OBPGame
         var native = Rac1Instances.Parse(gameplay).MobyInstances.ToDictionary(moby => moby.Index);
         // Testing equipment may spawn bolts but must never alter genuine
         // campaign dig-history counters. Its copy is discarded on exit.
-        var progress = _rac1WeaponPreviewInventory is null
-            ? _rac1CampaignSession.BuriedBolts
-            : Rac1BuriedBoltProgress.Restore(_rac1CampaignSession.BuriedBolts.Snapshot());
+        var progress = _persistentPlayer.WeaponPreview is null
+            ? _rac1Campaign.Session.BuriedBolts
+            : Rac1BuriedBoltProgress.Restore(_rac1Campaign.Session.BuriedBolts.Snapshot());
         _rac1MetalDetector = new(Rac1Paths.Read(gameplay), Rac1ClipVolumes.Read(gameplay),
             progress, world.LevelId);
         foreach (var moby in (world.DynamicObjects ?? [])
@@ -73,10 +73,10 @@ public partial class OBPGame
         _rac1DetectorEquipped = !_rac1DetectorEquipped;
         _rac1DetectorHeldTicks = 0;
         _rac1DetectorNearest = null;
-        _rac1CombatStatus = _rac1DetectorEquipped
+        Rac1World.Context.CombatStatus = _rac1DetectorEquipped
             ? "Metal Detector equipped: hold Circle to scan/dig"
             : "Metal Detector holstered";
-        GD.Print($"[rac1-metal-detector] {_rac1CombatStatus}");
+        GD.Print($"[rac1-metal-detector] {Rac1World.Context.CombatStatus}");
         RefreshRac1HudState();
         return true;
     }
@@ -89,7 +89,7 @@ public partial class OBPGame
             _rac1DetectorEquipped = false;
             return;
         }
-        _rac1DetectorCarry += Math.Max(0, delta) * Rac1NativeTicksPerSecond;
+        _rac1DetectorCarry += Math.Max(0, delta) * OBP.RAC1.Player.Rac1RatchetMovementController.UpdateHz;
         while (_rac1DetectorCarry >= 1)
         {
             _rac1DetectorCarry--;
@@ -109,11 +109,11 @@ public partial class OBPGame
             // host rather than immediately crediting the wallet.
             SpawnRac1BoltPickups(_player.GlobalPosition + Vector3.Up * .5f,
                 Enumerable.Range(0, extracted.FiveBoltBursts)
-                    .SelectMany(_ => _rac1BoltPickups.Emit(Rac1MetalDetectorSession.BoltsPerBurst)).ToArray());
-            _rac1CombatStatus =
+                    .SelectMany(_ => Rac1World.Context.BoltPickups.Emit(Rac1MetalDetectorSession.BoltsPerBurst)).ToArray());
+            Rac1World.Context.CombatStatus =
                 $"Metal Detector: unearthed {extracted.AvailableBolts} native bolts (site {extracted.InstanceIndex})";
             PersistRac1CampaignState("buried-bolt history update");
-            GD.Print($"[rac1-metal-detector] {_rac1CombatStatus}");
+            GD.Print($"[rac1-metal-detector] {Rac1World.Context.CombatStatus}");
         }
     }
 

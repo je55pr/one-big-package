@@ -40,17 +40,17 @@ public partial class OBPGame
         IReadOnlyList<NVector3[]> paths, IReadOnlyList<Rac1ClipVolume> volumes,
         List<RuntimeWorldScene.DynamicObjectNode> nodes)
     {
-        _rac1Frogs = new Rac1FrogSession(_rac1MobyRuntime, paths);
+        _rac1Frogs = new Rac1FrogSession(Rac1World.Context.MobyRuntime, paths);
         _rac1FrogShuttle = world.LevelId == 6
             ? Rac1FrogShuttleSwitch.FromRetail(world.DynamicObjects ?? [], volumes) : null;
         foreach (var authored in (world.DynamicObjects ?? []).Where(item => item.NativeClassId == Rac1FrogAuthored.ClassId))
         {
-            var node = FindPresentedDynamic(result, authored)
+            var node = Rac1WorldPresentation.FindPresentedDynamic(result, authored)
                 ?? throw new InvalidDataException("Original Frog mesh unavailable.");
             var forward = ToEffectNative(EnemyForward(node));
             var frame = _rac1Frogs.Register(authored, node.State,
                 ToEffectNative(node.Root.GlobalPosition), MathF.Atan2(forward.Y, forward.X));
-            node.ApplyState(_rac1MobyRuntime.Require(authored).EntityState);
+            node.ApplyState(Rac1World.Context.MobyRuntime.Require(authored).EntityState);
             nodes.Add(node);
         }
     }
@@ -77,7 +77,7 @@ public partial class OBPGame
             _rac1QueenEntrance.SecondLinkedInstance })
         {
             var parent = (world.DynamicObjects ?? []).Single(m => m.InstanceIndex == id);
-            var node = FindPresentedDynamic(result, parent)
+            var node = Rac1WorldPresentation.FindPresentedDynamic(result, parent)
                 ?? throw new InvalidDataException($"Original class1021 linked parent i{id} mesh missing.");
             _rac1QueenLinkedNodes.Add(id, node);
             _rac1QueenLinkedBaseRotations.Add(id, node.Root.Quaternion);
@@ -86,7 +86,7 @@ public partial class OBPGame
             _rac1QueenLinkedNodes.ToDictionary(pair => pair.Key,
                 pair => ToEffectNative(pair.Value.Root.GlobalPosition)));
         ConfigureRac1QueenLinkedChildren(result.Root);
-        _rac1QueenNode = FindPresentedDynamic(result, queen)
+        _rac1QueenNode = Rac1WorldPresentation.FindPresentedDynamic(result, queen)
             ?? throw new InvalidDataException("Original Alien Queen model is unavailable.");
         var queenSpawn = ToEffectNative(_rac1QueenNode.Root.GlobalPosition);
         _rac1QueenAuthoredNativeZ = queenSpawn.Z;
@@ -145,7 +145,7 @@ public partial class OBPGame
         if (_rac1QueenNode != target || _rac1QueenRecovery is null) return false;
         var result = _rac1QueenRecovery.ApplyNativeDamageEvent(damage);
         if (!result.Accepted) return false;
-        _rac1DamageTransport.Publish(damage);
+        Rac1World.Context.DamageTransport.Publish(damage);
         GD.Print($"[frog-queen] real weapon event {damage.Source.Kind} class{damage.Source.NativeClassId}, health={result.Health}, recovery={result.RecoveryStarted}");
         if (result.DeathTriggered)
             _rac1QueenAnimation?.Select(10, 10);
@@ -363,7 +363,7 @@ public partial class OBPGame
             (world.DynamicObjects ?? []).Where(m => m.NativeClassId == Rac1FrogSession.ClassId)
                 .Select(m => m.InstanceIndex));
         if (authored.Length == 0) return;
-        var first = FindPresentedDynamic(result, authored[0])
+        var first = Rac1WorldPresentation.FindPresentedDynamic(result, authored[0])
             ?? throw new InvalidDataException("Class1066 original trigger mesh missing.");
         var asset = Rac1MobyAnimationAssets.Bake(cls, first.Source.Meshes, classBytes,
             skipUnsupportedTiming: true);
@@ -372,7 +372,7 @@ public partial class OBPGame
 
         foreach (var controller in authored)
         {
-            var node = FindPresentedDynamic(result, controller)
+            var node = Rac1WorldPresentation.FindPresentedDynamic(result, controller)
                 ?? throw new InvalidDataException("Class1066 original trigger mesh missing.");
             _rac1FrogWaves.Register(controller, volumes,
                 ToEffectNative(node.Root.GlobalPosition));
@@ -439,7 +439,7 @@ public partial class OBPGame
             bool active = _rac1Frogs.Get(instance).Presented;
             enemy.Body.CollisionLayer = active ? 1u : 0u;
             enemy.Body.CollisionMask = active ? 1u : 0u;
-            enemy.Node.ApplyState(_rac1MobyRuntime.Require(enemy.Node.Source).EntityState);
+            enemy.Node.ApplyState(Rac1World.Context.MobyRuntime.Require(enemy.Node.Source).EntityState);
         }
     }
 
@@ -481,7 +481,7 @@ public partial class OBPGame
         {
             // Fixed target_id+0x204 addresses a native Moby, not Ratchet.
             // Never silently turn this special path into player pursuit.
-            if (_rac1LinkedTargetNodes.TryGetValue(authored.TargetInstance, out var linked) &&
+            if (Rac1World.Presentation.LinkedTargets.TryGetValue(authored.TargetInstance, out var linked) &&
                 IsInstanceValid(linked.Root) && IsRac1GameplayActive(linked))
             {
                 goal = linked.Root.GlobalPosition;

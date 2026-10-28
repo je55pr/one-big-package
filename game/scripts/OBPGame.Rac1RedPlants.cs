@@ -29,7 +29,7 @@ public partial class OBPGame
         foreach (var source in (world.DynamicObjects ?? [])
             .Where(obj => obj.NativeClassId == Rac1MobyAnimationProvider.RedPlantClassId))
         {
-            var node = FindPresentedDynamic(result, source)
+            var node = Rac1WorldPresentation.FindPresentedDynamic(result, source)
                 ?? throw new InvalidDataException($"Veldin red plant {source.InstanceIndex} has no source visual.");
             if (_rac1RedPlants.Register(source))
                 _rac1RedPlantNodes.Add(node);
@@ -46,10 +46,10 @@ public partial class OBPGame
         // normalize distance moved during the render interval to one 60-Hz
         // update so different host frame rates use the same source threshold.
         double nativeMotion = _rac1RedPlantLastPlayerPosition is { } previous && delta > 0
-            ? playerPosition.DistanceTo(previous) / (delta * Rac1NativeTicksPerSecond)
+            ? playerPosition.DistanceTo(previous) / (delta * OBP.RAC1.Player.Rac1RatchetMovementController.UpdateHz)
             : 0;
         _rac1RedPlantLastPlayerPosition = playerPosition;
-        _rac1RedPlantNativeTickCarry += Math.Max(0, delta) * Rac1NativeTicksPerSecond;
+        _rac1RedPlantNativeTickCarry += Math.Max(0, delta) * OBP.RAC1.Player.Rac1RatchetMovementController.UpdateHz;
         while (_rac1RedPlantNativeTickCarry >= 1)
         {
             _rac1RedPlantNativeTickCarry--;

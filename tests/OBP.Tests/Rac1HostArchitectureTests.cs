@@ -19,7 +19,7 @@ public sealed class Rac1HostArchitectureTests
             RepoPaths.Root,
             "game",
             "scripts",
-            "OBPGame.Rac1Gameplay.cs"));
+            "Rac1PlayerGameplayBinding.cs"));
 
         Assert.DoesNotContain("Rac1RespawnRequested", player, StringComparison.Ordinal);
         Assert.DoesNotContain("Rac1RespawnRequested", gameplay, StringComparison.Ordinal);
@@ -29,11 +29,11 @@ public sealed class Rac1HostArchitectureTests
             developmentControls,
             StringComparison.Ordinal);
         Assert.Contains(
-            "_rac1Nanotech.HasPendingRecoveredEnvironmentalRestart",
+            "health.HasPendingRecoveredEnvironmentalRestart",
             gameplay,
             StringComparison.Ordinal);
         Assert.Contains(
-            "TryCompleteRac1EnvironmentalRestart(automatic: true)",
+            "ports.EnvironmentalRestart()",
             gameplay,
             StringComparison.Ordinal);
     }
@@ -116,7 +116,7 @@ public sealed class Rac1HostArchitectureTests
             RepoPaths.Root,
             "game",
             "scripts",
-            "OBPGame.Rac1Gameplay.cs"));
+            "Rac1GameplayHudPresenter.cs"));
 
         Assert.DoesNotContain(
             "R recovered environmental respawn",
@@ -163,7 +163,7 @@ public sealed class Rac1HostArchitectureTests
 
         Assert.DoesNotContain(".Root.Visible", hostiles, StringComparison.Ordinal);
         Assert.Contains(
-            "_rac1MobyRuntime.Require(node.Source).IsActive",
+            "Rac1World.Context.MobyRuntime.Require(node.Source).IsActive",
             hostiles,
             StringComparison.Ordinal);
         string enemies = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.Rac1Enemies.cs"));

@@ -132,8 +132,8 @@ public partial class OBPGame
         typeof(OBPGame).Module.ModuleVersionId, Engine.GetVersionInfo()["string"].AsString(), OS.GetName(),
         PlaytestPhysicsEngine(), Engine.PhysicsTicksPerSecond, _args.FixedSeed!.Value,
         GetWindow().Size.X, GetWindow().Size.Y, DateTimeOffset.UtcNow,
-        OrdinaryPlayerSession ? JsonSerializer.SerializeToElement(new { }) : JsonSerializer.SerializeToElement(Rac1CampaignSavePolicy.Capture(_rac1CampaignSession.Campaign,
-            _rac1CampaignSession.Weapons, _rac1BoltWallet, _rac1CollectedNovalisGoldBolts, _rac1CampaignSession.BuriedBolts)),
+        OrdinaryPlayerSession ? JsonSerializer.SerializeToElement(new { }) : JsonSerializer.SerializeToElement(Rac1CampaignSavePolicy.Capture(_rac1Campaign.Session.Campaign,
+            _rac1Campaign.Session.Weapons, _rac1BoltWallet, _rac1CollectedNovalisGoldBolts, _rac1Campaign.Session.BuriedBolts)),
         JsonSerializer.SerializeToElement(CameraSettingsStore.Current), CapturePlaytestCheckpoint())
     {
         Assemblies = PlaytestAssemblyIds(),
@@ -158,7 +158,7 @@ public partial class OBPGame
         Text("ui.focus", focus is Button button ? button.Text : focus?.GetClass());
         Numbers("ui.quickSelect", _quickSelect?.SelectedWeapon?.NativeItemId ?? -1);
         if (_fusion is not null) Text("ui.quickSelect.source", _quickSelect?.SelectedWeapon?.SourceGame is { } selectedSource ? SourceIdentityWire.FormatSource(selectedSource) : null);
-        var campaign = _rac1CampaignSession.Campaign;
+        var campaign = _rac1Campaign.Session.Campaign;
         Numbers("campaign.current", campaign.CurrentLevel);
         Numbers("campaign.admissions", campaign.VisitedPlanets.Select(v => (double)v).ToArray());
         Numbers("campaign.map", campaign.GalacticMap.Select(v => (double)v).ToArray());
@@ -201,7 +201,7 @@ public partial class OBPGame
             Vector("camera.position", p.Camera.GlobalPosition);
             Vector("camera.rotation", p.Camera.GlobalRotation);
         }
-        foreach (var instance in _rac1MobyRuntime.Instances.OrderBy(v => v.NativeClassId).ThenBy(v => v.InstanceIndex))
+        foreach (var instance in Rac1World.Context.MobyRuntime.Instances.OrderBy(v => v.NativeClassId).ThenBy(v => v.InstanceIndex))
             Numbers($"moby.{instance.NativeClassId}.{instance.InstanceIndex}.state", instance.State.NativeState,
                 instance.IsActive ? 1 : 0, instance.State.IsTerminalized ? 1 : 0);
         foreach (var node in _sceneResult?.DynamicObjectNodes ?? [])
@@ -220,11 +220,11 @@ public partial class OBPGame
                 Numbers($"enemy.{id}.lifetime", enemy.DeathTicks, enemy.RewardEmitted ? 1 : 0, enemy.Buried ? 1 : 0);
                 if (enemy.Node.Source.NativeClassId == 1440 && _rac1Class1440 is not null)
                     Numbers($"enemy.{id}.health", _rac1Class1440.Get(id).Health);
-                if (_rac1HostileNodes.ContainsKey(id)) Numbers($"enemy.{id}.health", _rac1Hostiles.Probe(enemy.Node.Source).Health);
+                if (Rac1World.Presentation.HostileNodes.ContainsKey(id)) Numbers($"enemy.{id}.health", Rac1World.Context.Hostiles.Probe(enemy.Node.Source).Health);
             }
-        Numbers("transient.counts", _rac1Projectiles.Count, _rac1PickupMotion.Count, _rac1EquipmentShots.Count,
+        Numbers("transient.counts", Rac1World.Presentation.Projectiles.Count, _rac1PickupMotion.Count, _rac1EquipmentShots.Count,
             _rac1DoomAgents.Count, _rac1AmmoPickups.Count, _rac1NanotechClouds.Count);
-        foreach (var (id, projectile) in _rac1Projectiles.OrderBy(p => p.Key))
+        foreach (var (id, projectile) in Rac1World.Presentation.Projectiles.OrderBy(p => p.Key))
         {
             Vector($"bomb.{id}.position", FromEffectNative(projectile.Motion.Position));
             Vector($"bomb.{id}.velocity", FromEffectNative(projectile.Motion.Velocity));
@@ -242,7 +242,7 @@ public partial class OBPGame
                 Vector($"doom.{agent.Id}.position", agent.Body.GlobalPosition);
                 Vector($"doom.{agent.Id}.velocity", agent.Body.Velocity);
             }
-        foreach (var (id, node) in _rac1PickupNodes.OrderBy(p => p.Key))
+        foreach (var (id, node) in Rac1World.Presentation.PickupNodes.OrderBy(p => p.Key))
             if (IsInstanceValid(node)) Vector($"pickup.{id}.position", node.GlobalPosition);
         foreach (var crank in _rac1NovalisCrankNodes.Keys.Order()) Numbers($"crank.{crank}.progress", _rac1NovalisCranks.Progress(crank));
         CaptureSharedCheckpoint(values);

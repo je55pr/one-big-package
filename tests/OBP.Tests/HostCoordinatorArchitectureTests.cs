@@ -1,14 +1,32 @@
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+
 namespace OBP.Tests;
 
 public class HostCoordinatorArchitectureTests
 {
     [Fact]
+    public void ActorCompositionDefersWorldContextUntilALeaseExists()
+    {
+        var source = CSharpSyntaxTree.ParseText(File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs")));
+        var factory = source.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
+            .Single(method => method.Identifier.ValueText == "CreateActorHost");
+        var reads = factory.DescendantNodes().OfType<IdentifierNameSyntax>()
+            .Where(name => name.Identifier.ValueText == "Rac1World").ToArray();
+        Assert.NotEmpty(reads);
+        Assert.All(reads, read => Assert.Contains(read.Ancestors(), node => node is AnonymousFunctionExpressionSyntax));
+    }
+
+    [Fact]
     public void Rac1GameplayCoordinatorStaysSplitByHostResponsibility()
     {
         string scripts = Path.Combine(RepoPaths.Root, "game", "scripts");
-        string corePath = Path.Combine(scripts, "OBPGame.Rac1Gameplay.cs");
+        string corePath = Path.Combine(scripts, "Rac1WorldModule.cs");
         string core = File.ReadAllText(corePath);
 
+        Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac1Gameplay.cs")));
+        Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac1Presentation.cs")));
+        Assert.DoesNotContain("partial class OBPGame", core, StringComparison.Ordinal);
         Assert.True(File.ReadLines(corePath).Count() < 400);
         Assert.DoesNotContain("private void TickRac1Swing(", core, StringComparison.Ordinal);
         Assert.DoesNotContain("private void StepRac1BombProjectilesPhysics(", core, StringComparison.Ordinal);

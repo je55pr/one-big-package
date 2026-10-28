@@ -12,7 +12,7 @@ using OBP.Runtime.Gameplay;
 namespace OBP.Game;
 
 internal sealed record Rac1NativeActorPorts(Func<Rac1MobyRuntimeSession> Runtime, Func<Rac1Class749HostileSession> Hostiles,
-    IDictionary<int, RuntimeWorldScene.DynamicObjectNode> Nodes, IDictionary<int, Rac1HostedEnemy> Enemies,
+    Func<IDictionary<int, RuntimeWorldScene.DynamicObjectNode>?> Nodes, IDictionary<int, Rac1HostedEnemy> Enemies,
     Func<IEnumerable<RuntimeWorldScene.DynamicObjectNode>> OriginalTargets,
     Func<RuntimeWorldScene.DynamicObjectNode, Rac1GameplayDamageEvent, bool> ApplyDamage, Action<Rac1MobyRuntimeKey> ClearCaptures,
     Func<Rac1PickupAssets.Catalogue?> PickupBank, Func<Rac1PickupAssets.Catalogue?> SelectedBank,
@@ -30,7 +30,7 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
     Action<WeaponTargetKey> disableBody, Action<string, Action<ActorTickFacts>> registerUpdate)
 {
     internal Rac1PickupAssets.Catalogue? PickupBank => ports.Rac1.PickupBank();
-    internal ActorNativeCounts Counts => new(ports.Rac1.Enemies.Count, ports.Rac1.Nodes.Count);
+    internal ActorNativeCounts Counts => new(ports.Rac1.Enemies.Count, ports.Rac1.Nodes()?.Count ?? 0);
     internal bool Rac2AnimationPresented => ports.Rac2.Sessions.Count == 1 && ports.Rac2.Sessions.Values.Single().Node.AnimationSample is not null;
 
     internal IReadOnlyList<IActorFactory> CreateFactories(ActorSceneFactory scenes, ActorSourceCache sources) =>
@@ -41,7 +41,8 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
                 ports.Rac2.Tick();
             })), new Rac3PropActorFactory(scenes)];
 
-    private Rac1ActorBindings Rac1Bindings() => new(ports.Rac1.Hostiles(), ports.Rac1.Nodes, ports.Rac1.Enemies,
+    private Rac1ActorBindings Rac1Bindings() => new(ports.Rac1.Hostiles(),
+        ports.Rac1.Nodes() ?? throw new InvalidOperationException("R&C1 actors require an active world scene lease."), ports.Rac1.Enemies,
         ObserveRac1, ApplyRac1, clearTransients, index => ports.Rac1.ClearCaptures(new(749, index)), EnsurePickupBank,
         _ => { if (ports.Rac1.Enemies.Count > 0) ports.Rac1.TickHostiles(1d / 60); });
 

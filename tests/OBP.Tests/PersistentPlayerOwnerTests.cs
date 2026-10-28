@@ -15,6 +15,35 @@ namespace OBP.Tests;
 public sealed class PersistentPlayerOwnerTests
 {
     [Fact]
+    public void WorldContextsCannotReimportCampaignOrResetTheOrdinaryPlayerControllers()
+    {
+        var owner = new PlayerSessionHost();
+        owner.Ensure(WorldEntryMode.OrdinaryFusion, new Rac1WeaponInventory(true, firstRangedAmmo: 5), 42, 1440, new Preferences());
+        var native = owner.Native!;
+        var campaignHost = new Rac1CampaignHost();
+        var campaign = campaignHost.Session;
+        var health = owner.Rac1Health;
+        var inventory = owner.Rac1Weapons(null, false, campaignHost.Session.Weapons);
+        var wallet = owner.Rac1Wallet(campaignHost.Wallet);
+        wallet.Credit(7);
+        Assert.True(inventory.TryConsumeAmmo(10, 1));
+        int ammo = inventory.FirstRangedAmmo;
+
+        foreach (int level in new[] { 0, 1, 3, 0, 0 })
+        {
+            _ = new Rac1WorldContext(level, Rac1PickupRandom.FromSeed(1440));
+            owner.BeginParityWorld();
+            Assert.Same(campaign, campaignHost.Session);
+            Assert.Same(native.Inventory, owner.Rac1Weapons(null, false, campaignHost.Session.Weapons));
+            Assert.Same(inventory, owner.Rac1Weapons(null, false, campaignHost.Session.Weapons));
+            Assert.Same(health, owner.Rac1Health);
+            Assert.Same(wallet, owner.Rac1Wallet(campaignHost.Wallet));
+            Assert.Equal(49, owner.Rac1Wallet(campaignHost.Wallet).Balance);
+            Assert.Equal(ammo, owner.Rac1Weapons(null, false, campaignHost.Session.Weapons).FirstRangedAmmo);
+        }
+    }
+
+    [Fact]
     public void PlayerOwnerReusesNativeSessionAndWorldEntriesWithoutReimportingCampaign()
     {
         var owner = new PlayerSessionHost();

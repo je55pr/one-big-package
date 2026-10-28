@@ -2,14 +2,14 @@
   {
     "Key": "game/scripts/OBPGame.CaptureDiagnostics.cs::OBPGame.CaptureMetadata()",
     "Kind": "adapter",
-    "Reason": "Optional capture/debug metadata names the actual loaded world provenance; source-qualified player replay uses its own shared-session header. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added.",
-    "Hash": "cfc54240d12f527d5c1279e517b42cbbaee5190801d284a6afd11f060f9688fe"
+    "Reason": "Optional capture/debug metadata names the actual loaded world provenance; source-qualified player replay uses its own shared-session header. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "a9eb96456f481d946e4e9c96a67a877be4b903964a29f4a11a23d70b825cb0e2"
   },
   {
     "Key": "game/scripts/OBPGame.cs::OBPGame.UpdateWorldHud()",
     "Kind": "adapter",
-    "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added.",
-    "Hash": "c738fe2b81d5e1d66f1ae4afe82b6137eda915b0bd44736f2e69cdba611773a0"
+    "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "548251fea9b98635ba6aaa087d6e79609dc3abed6ed48294f56836b0bd841522"
   },
   {
     "Key": "game/scripts/ApplicationNavigationCoordinator.cs::ApplicationNavigationCoordinator.Choose(ObpDestination)",
@@ -50,80 +50,80 @@
   {
     "Key": "game/scripts/OBPGame.Rac1Checkpoints.cs::OBPGame.TickRac1CheckpointTriggers()",
     "Kind": "adapter",
-    "Reason": "Recovered source-world checkpoint trigger admission; checkpoint identity belongs to the R&C1 campaign adapter.",
-    "Hash": "4d0faa0152b8d90cb3b79a6e4a4e770206ca411c21dab1a9cdbee782ec12a69a"
+    "Reason": "Recovered source-world checkpoint trigger admission; checkpoint identity belongs to the R&C1 campaign adapter. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "354ffbaa9dfbd36b2620366a2b0be9ddd9297c64b03082fb18526990bec40276"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Enemies.cs::OBPGame.TickRac1Hostiles(double)",
     "Kind": "adapter",
-    "Reason": "R&C1 native actor/session updates and original source context; placed actors use lease-owned voice scopes. TrilogyGameplaySmoke verifies live motion, native combat, scoped audio/pickup cleanup and reset. Only explicit parity retains native player health stepping here; no ordinary player service is selected.",
-      "Hash": "1000af5382f6dd2d211908922e0db51d44fd4057113504a6ae5810fee45b9c00"
+    "Reason": "R&C1 native actor/session updates and original source context; placed actors use lease-owned voice scopes. TrilogyGameplaySmoke verifies live motion, native combat, scoped audio/pickup cleanup and reset. Only explicit parity retains native player health stepping here; no ordinary player service is selected. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "df0f6585b22234150b385d89e1fd006b820eeb658b002dd4a3a3fbc623864c26"
   },
   {
-    "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.BindSourcePlayerContacts(PlayerHost)",
+    "Key": "game/scripts/Rac1WorldModule.cs::Rac1WorldModule.BindSourcePlayerContacts(PlayerHost)",
     "Kind": "adapter",
-    "Reason": "Bind only original R&C1 water/crank/traversal contact facts; player actions and profiles are bound independently. #354 forwards the same native water sound IDs to the selected audio presenter; this contact adapter cannot bind its audio source or select a player service.",
-    "Hash": "5943f575ec7ce4c46e6681df1c1c76b56c7632cb3d3d0a31217dc40543252f80"
+    "Reason": "Bind only original R&C1 water/crank/traversal contact facts; player actions and profiles are bound independently. #354 forwards the same native water sound IDs to the selected audio presenter; this contact adapter cannot bind its audio source or select a player service. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "3cf4f8834b4d41d109e8191dacf04002a54b9a5cb00bee391f43db4919de2a83"
   },
   {
-    "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.ConfigureRac1WorldActors(RuntimeWorld,RuntimeWorldScene.Result)",
+    "Key": "game/scripts/Rac1WorldModule.cs::Rac1WorldModule.ConfigureActors(RuntimeWorld,RuntimeWorldScene.Result)",
     "Kind": "adapter",
-    "Reason": "Source-owned R&C1 actor, pickup, mission and environment registration only. Player controller, equipment owner and HUD composition are outside this origin check.",
-    "Hash": "7b8298a960f32dd568f7b5dfb9baaf7a417d21d7b21b8a27beca91b7c381aabc"
+    "Reason": "Source-owned R&C1 actor, pickup, mission and environment registration only. Player controller, equipment owner and HUD composition are outside this origin check. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "1ef7fa720583bcae6bfee072eee08d068a0233888942edc3095d09858525f68c"
   },
   {
-    "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.GetRac1GameplayHudLine()",
+    "Key": "game/scripts/Rac1GameplayHudPresenter.cs::Rac1GameplayHudPresenter.Line()",
     "Kind": "adapter",
-    "Reason": "Optional original-source debug probes; this does not choose the ordinary PlayerHud service.",
-    "Hash": "375e7ce99c8603a53019fbefd1c1f40fe14ae7c77411ad81dc02405aa0cdfb1e"
+    "Reason": "Optional original-source debug probes; this does not choose the ordinary PlayerHud service. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "f97fbd40d713cca0de7ed8880ebdbcc4976e9e6b507213cfea1148fababc77e5"
   },
   {
-    "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.GetRac1GameplaySnapshot()",
+    "Key": "game/scripts/Rac1GameplayHudPresenter.cs::Rac1GameplayHudPresenter.Snapshot()",
     "Kind": "adapter",
-    "Reason": "Source-native diagnostic snapshot for original-world witnesses, not the persistent OBP player snapshot.",
-    "Hash": "4ca706462bd44542adeda2d49aa164c5693bec275ab757b1f3c3a5682ee7be78"
+    "Reason": "Source-native diagnostic snapshot for original-world witnesses, not the persistent OBP player snapshot. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "9ebecc9467ac45f6ac511f59c77aabec6a17a09287d10bce32a0e9a7d504f2a7"
   },
   {
-    "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.TickRac1Gameplay(double)",
+    "Key": "game/scripts/Rac1WorldModule.cs::Rac1WorldModule.Tick(double)",
     "Kind": "adapter",
-    "Reason": "Original R&C1 missions/environment/pickups remain world-owned; ordinary enemy updates moved to the source-registered fixed actor clock. Explicit parity retains its source route; ActorRuntimeSetTests and TrilogyGameplaySmoke cover separate player and actor lifetimes.",
-    "Hash": "03d76b1eb17d97143dedd903ce19b418bd59c72fa4ec583219802da76fabf993"
+    "Reason": "Original R&C1 missions/environment/pickups remain world-owned; ordinary enemy updates moved to the source-registered fixed actor clock. Explicit parity retains its source route; ActorRuntimeSetTests and TrilogyGameplaySmoke cover separate player and actor lifetimes. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "19d9bf06fd0f940b264e0cf39914ebb1d8ab8e7ba44c879f55f32d4f74fc1369"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1GoldBolts.cs::OBPGame.TickRac1GoldBolts()",
     "Kind": "adapter",
-    "Reason": "Source-authored collectible/campaign consequence adapter; does not grant a player controller or UI.",
-    "Hash": "04f481a3112e1780c1bececc4854f564d5fecc8ace8590a155b0562d57035607"
+    "Reason": "Source-authored collectible/campaign consequence adapter; does not grant a player controller or UI. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "a3690c3c412a28b313c6efb0a6bd9d7496293c05e6851e7c150096888a142cf9"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Hostiles.cs::OBPGame.TryGetRac1Hostile(int,RuntimeWorldScene.DynamicObjectNode?,Rac1Class749HostProbe?)",
     "Kind": "adapter",
-    "Reason": "Resolve a native R&C1 actor from the current original-world actor set, never a player identity.",
-    "Hash": "0248f03c2b5c21b680973cae1d85f59e472c1f94af9a001dadd9189330e970c1"
+    "Reason": "Resolve a native R&C1 actor from the current original-world actor set, never a player identity. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "91cc3a381b15af23d5b5f618e0e7cd9e33d0d08543cfa029f8ed692f09efce50"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Lifecycle.cs::OBPGame.TickRac1VeldinEnvironmentalDeath()",
     "Kind": "adapter",
-    "Reason": "Recovered Veldin death-plane context; #270 adapts its consequence to the selected player health policy.",
-    "Hash": "175107ac5c1ebde27752fbe866e1d57610fbf4ba0e72577c613b8d665bfc9b1c"
+    "Reason": "Recovered Veldin death-plane context; #270 adapts its consequence to the selected player health policy. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "2e25c726147e10f2e7bef76edd03e47e65a42ccf8895234197da7cd299c8b4a0"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Lifecycle.cs::OBPGame.ResolveRac1EnvironmentalRestart()",
     "Kind": "adapter",
-    "Reason": "Read-only native source checkpoint/death admission. Returns a source placement; explicit parity policy applies it, while ordinary life uses the persistent player health session.",
-    "Hash": "3132177053f76c65d4ee6726fcb9db1e9c636d38516ebc4579f17f7f61b07264"
+    "Reason": "Read-only native source checkpoint/death admission. Returns a source placement; explicit parity policy applies it, while ordinary life uses the persistent player health session. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "554c2371fabb258649d2a7c587c7afd1d90e250e146857859a2e36be9c025298"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Missions.cs::OBPGame.ApplyRac1MissionLevelExit(Rac1MissionLevelExit)",
     "Kind": "adapter",
-    "Reason": "Recovered R&C1 mission-driven world travel; source mission gates must not become player feature gates.",
-    "Hash": "55af96a1180d9809310b8ede0d4bf441de2c1ca66b9c51d1a5fa26cf59fa3a8f"
+    "Reason": "Recovered R&C1 mission-driven world travel; source mission gates must not become player feature gates. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "2e1bc1dfd7a7718d3144adabfb00ffe43cc6098845c71b241c5336cd763b8767"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1NovalisCranks.cs::OBPGame.TryTurnRac1NovalisCrank(bool,Vector2)",
     "Kind": "adapter",
-    "Reason": "Source-authored Novalis crank/door interaction context; not universal traversal ownership.",
-    "Hash": "26cf7f9f8aa0b1156361a8db4873531a516045ecab8a206207014db27e62428c"
+    "Reason": "Source-authored Novalis crank/door interaction context; not universal traversal ownership. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "334dec274369b93ed36076a20d55da53789b8ba1f6ccd90d7f5c4cd48c7753ab"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1NovalisMusic.cs::OBPGame.ConfigureRac1NovalisMusic(RuntimeWorld)",
@@ -140,8 +140,8 @@
   {
     "Key": "game/scripts/OBPGame.Rac1NovalisWater.cs::OBPGame.OnRac1NovalisDrowned()",
     "Kind": "adapter",
-    "Reason": "Recovered Novalis water/drowning context adapter; #270 owns player-global damage policy.",
-    "Hash": "d69472e34e0e8c0a74806ff7ae321785d4df807d1f03281eab8e04e8309653bf"
+    "Reason": "Recovered Novalis water/drowning context adapter; #270 owns player-global damage policy. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "18c13e1cc3f362a2b21ede645fc20016f4d09660450ff15f0e09c789fddab4a1"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Weapons.cs::OBPGame.RefreshSourceEquipmentContext()",
@@ -152,8 +152,8 @@
   {
     "Key": "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame.ConfigureRac3Gameplay(RuntimeWorld,RuntimeWorldScene.Result)",
     "Kind": "adapter",
-    "Reason": "Register original-world UYA native actors/context; state and placement admission is atomic, covered by UyaClass5821ActorTests. No player-global controller/menu selection.",
-    "Hash": "60a0364506324c3d8254d97dfa28efec1c7fe2c112f2f9994453c37a9cf940e5"
+    "Reason": "Register original-world UYA native actors/context; state and placement admission is atomic, covered by UyaClass5821ActorTests. No player-global controller/menu selection. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "e7ebb1594e6e0d69df898bb69fabb354b8e41c65bd4ae16575d0235500c0db34"
   },
   {
     "Key": "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame.GetRac3GameplayHudLine()",
@@ -176,14 +176,14 @@
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.BeginSourceWorldEntry(RuntimeWorld)",
     "Kind": "adapter",
-    "Reason": "Begin the matching original source campaign checkpoint; never selects a player profile.",
-    "Hash": "4fcb2551d897ad514b8de3145e6750d21b61ab87adf066bb16b9b8f30b3a1f2d"
+    "Reason": "Begin the matching original source campaign checkpoint; never selects a player profile. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "9b83732e9e0d046119d8f593a276dfdecd3ff03cda585257d91786e761a2f581"
   },
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.CommitSourceWorldEntry(RuntimeWorld)",
     "Kind": "adapter",
-    "Reason": "Commit recovered original-world campaign travel after successful shared activation.",
-    "Hash": "5a53f3792f9ad163973cd85ea29b9c1a52cbcdf79c1af12fafdaeacf05ea0566"
+    "Reason": "Commit recovered original-world campaign travel after successful shared activation. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "b77ddf7bf76aa39c24081126824f52444e3e81c5524125327efba042142f7e0f"
   },
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.SourceEntrySnapReach(RuntimeWorld)",

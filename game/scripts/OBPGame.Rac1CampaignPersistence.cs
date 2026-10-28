@@ -49,7 +49,7 @@ public partial class OBPGame
             GD.PushWarning($"[rac1-campaign] {_rac1CampaignRestoreWarning}");
         Rac1CampaignRestoreResult restored = attempt.Restored;
 
-        _rac1CampaignSession = new Rac1CampaignRuntimeSession(
+        _rac1Campaign.Session = new Rac1CampaignRuntimeSession(
             restored.Campaign,
             restored.Weapons,
             Rac1BuriedBoltProgress.Restore(restored.BuriedBoltHistory));
@@ -76,7 +76,7 @@ public partial class OBPGame
     {
         Sources.Initialize();
         Rac1DestinationDiscoveryResult result =
-            _rac1CampaignSession.Campaign.ApplyProgressionEvent(progressionEventId);
+            _rac1Campaign.Session.Campaign.ApplyProgressionEvent(progressionEventId);
 
         if (result == Rac1DestinationDiscoveryResult.Discovered)
             PersistRac1CampaignState($"discovery event 0x{progressionEventId:x}");
@@ -95,7 +95,7 @@ public partial class OBPGame
         EnsureRac1CampaignPersistenceInitialized();
 
         Rac1ItemAcquisitionResult result =
-            (_playerNative?.Inventory ?? _rac1CampaignSession.Weapons).AcquireNativeItem(nativeItemId);
+            (_playerNative?.Inventory ?? _rac1Campaign.Session.Weapons).AcquireNativeItem(nativeItemId);
         if (_player is { } player)
             player.Rac1MovementEquipment = Rac1MovementCapabilities.FromInventory(_rac1Weapons);
         RefreshPlayerMovementEquipment();
@@ -120,7 +120,7 @@ public partial class OBPGame
         EnsureRac1CampaignPersistenceInitialized();
 
         Rac1AmmoGrantResult result =
-            (_playerNative?.Inventory ?? _rac1CampaignSession.Weapons).GrantAmmoClamped(nativeItemId, amount);
+            (_playerNative?.Inventory ?? _rac1Campaign.Session.Weapons).GrantAmmoClamped(nativeItemId, amount);
         if (result.Changed)
         {
             PersistRac1CampaignState($"ammo grant item {nativeItemId}");
@@ -133,8 +133,8 @@ public partial class OBPGame
 
     private Rac1CampaignSaveEnvelope CaptureRac1CampaignSnapshot() =>
         Rac1CampaignSavePolicy.Capture(
-            _rac1CampaignSession.Campaign, _rac1CampaignSession.Weapons, _rac1BoltWallet,
-            _rac1CollectedNovalisGoldBolts, _rac1CampaignSession.BuriedBolts);
+            _rac1Campaign.Session.Campaign, _rac1Campaign.Session.Weapons, _rac1BoltWallet,
+            _rac1CollectedNovalisGoldBolts, _rac1Campaign.Session.BuriedBolts);
 
     private void TickRac1CampaignSaves(double delta)
     {
@@ -148,7 +148,7 @@ public partial class OBPGame
 
     private void FlushRac1CampaignSaves(string boundary)
     {
-        if (_rac1SaveBatcher is null || _rac1WeaponPreviewInventory is not null || FusionTestActive) return;
+        if (_rac1SaveBatcher is null || _persistentPlayer.WeaponPreview is not null || FusionTestActive) return;
         if (!_rac1SaveBatcher.FlushNow(CaptureRac1CampaignSnapshot, out Exception? error))
             GD.PushWarning($"[rac1-campaign] {boundary} save failed; progress remains unsaved: {error!.Message}");
         else
@@ -159,7 +159,7 @@ public partial class OBPGame
     {
         // Preview equipment and its ammo are session-only. Never export this
         // development loadout through ordinary campaign persistence.
-        if (_rac1WeaponPreviewInventory is not null || FusionTestActive) return;
+        if (_persistentPlayer.WeaponPreview is not null || FusionTestActive) return;
         if (!_rac1CampaignPersistenceInitialized)
             EnsureRac1CampaignPersistenceInitialized();
 

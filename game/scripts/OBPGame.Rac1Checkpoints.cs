@@ -44,7 +44,7 @@ public partial class OBPGame
     {
         if (_rac1CheckpointTriggers is null || _player is null ||
             _world is not { Game.SourceGame: ObpSourceGame.Rac1 } world ||
-            _rac1CampaignSession.LevelCheckpoint is not { } checkpoint)
+            _rac1Campaign.Session.LevelCheckpoint is not { } checkpoint)
             return;
         NVector3 nativePlayer = ToEffectNative(_player.GlobalPosition);
         foreach (var trigger in _rac1CheckpointTriggers.Step(nativePlayer))
@@ -71,8 +71,8 @@ public partial class OBPGame
             var spawn = new RuntimeSpawn(trigger.NativeX, groundedZ, trigger.NativeY, trigger.NativeYaw);
             if (checkpoint.Activate(new Rac1CheckpointActivation(world.LevelId, spawn)))
             {
-                _rac1CombatStatus = $"native checkpoint i{trigger.InstanceIndex} activated (clip {trigger.CuboidIndex})";
-                GD.Print($"[rac1-checkpoints] {_rac1CombatStatus}");
+                Rac1World.Context.CombatStatus = $"native checkpoint i{trigger.InstanceIndex} activated (clip {trigger.CuboidIndex})";
+                GD.Print($"[rac1-checkpoints] {Rac1World.Context.CombatStatus}");
             }
         }
     }

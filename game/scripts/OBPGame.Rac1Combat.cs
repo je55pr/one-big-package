@@ -21,13 +21,13 @@ public partial class OBPGame
         if (!PlayerAlive ||
             _fusion?.Selected.SourceGame is not (ObpSourceGame.Rac2 or ObpSourceGame.Rac3) && _rac1Weapons.Equipped == Rac1WeaponId.Wrench) return;
         if (_player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active) return;
-        _rac1EquipmentUsePressed = true;
+        Rac1World.Context.EquipmentUsePressed = true;
     }
 
     private void StepRac1EquippedUseInput()
     {
-        bool pressed = _rac1EquipmentUsePressed;
-        _rac1EquipmentUsePressed = false;
+        bool pressed = Rac1World.Context.EquipmentUsePressed;
+        Rac1World.Context.EquipmentUsePressed = false;
         if (_playerNative is not null && ReadPlayerEquipment().Single(entry => entry.Definition.Item == _playerNative.Weapons.Selected).Usable == false) return;
         if (_fusion is not null && _fusionAssets?.Available(_fusion.Selected) == false) return;
         bool admitted = _player is not null && PlayerAlive &&
@@ -43,7 +43,7 @@ public partial class OBPGame
             _player?.Rac1EquippedItemHeld == true, admitted);
         if (frame.HandChanged) RefreshRac1HeldItem(previous);
         if (!frame.UseRequested) return;
-        if (_rac1Weapons.Equipped == Rac1WeaponId.FirstRanged) _rac1BombFireRequested = true;
+        if (_rac1Weapons.Equipped == Rac1WeaponId.FirstRanged) Rac1World.Context.BombFireRequested = true;
         else if (Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped)) _rac1AdditionalFireRequested = true;
     }
 
@@ -70,13 +70,13 @@ public partial class OBPGame
                 Enum.IsDefined(typeof(Rac1WeaponId), previous))
                 _previousSelectedWeapon = new(ObpSourceGame.Rac1, previous);
             if (previousKey.SourceGame != ObpSourceGame.Rac1) _previousSelectedWeapon = previousKey;
-            _rac1CombatStatus = $"equipped {Rac1WeaponProfiles.Name(weapon)}";
+            Rac1World.Context.CombatStatus = $"equipped {Rac1WeaponProfiles.Name(weapon)}";
             RefreshRac1HudState();
             if (_rac1EquipmentViews.TryGetValue(weapon, out var view))
                 view.Play(0, false, ++_rac1WeaponPoseGeneration, 1);
             HoldSelectedRac1HandItem();
             RefreshPlayerEquipmentAvailability();
-            GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
+            GD.Print($"[rac1-gameplay] {Rac1World.Context.CombatStatus}");
         }
         else ReportMovementState("Enable weapon preview from Pause → Testing Equipment (or press 0), then hold Triangle to select.");
     }
@@ -109,24 +109,24 @@ public partial class OBPGame
     {
         if (target.Source.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
         {
-            var explosive = _rac1Wrench.AdmitGoal1RuntimeTarget(target.Source);
+            var explosive = _persistentPlayer.Wrench.AdmitGoal1RuntimeTarget(target.Source);
             if (explosive is null) return false;
-            var strike = nativeDamage ?? _rac1Wrench.ResolveHostAdmittedDamage(explosive.Value);
+            var strike = nativeDamage ?? _persistentPlayer.Wrench.ResolveHostAdmittedDamage(explosive.Value);
             if (strike is null) return false;
             var key = new Rac1MobyRuntimeKey(target.Source.NativeClassId, target.Source.InstanceIndex);
             var hit = Rac1DamageRuntime.FromWrench(key, strike);
             if (!TryTriggerRac1ExplosiveDamage(target, hit)) return false;
-            _rac1DamageTransport.Publish(hit);
+            Rac1World.Context.DamageTransport.Publish(hit);
             return true;
         }
         var authored = Rac1BoltCrate.ReadAuthored(target.Source);
         if (authored is null)
             return false;
 
-        var contactTarget = _rac1Wrench.AdmitGoal1RuntimeTarget(target.Source)
+        var contactTarget = _persistentPlayer.Wrench.AdmitGoal1RuntimeTarget(target.Source)
             ?? throw new InvalidOperationException(
                 "Admitted R&C1 Bolt Crate was rejected by the wrench target contract.");
-        var damage = nativeDamage ?? _rac1Wrench.ResolveHostAdmittedDamage(contactTarget);
+        var damage = nativeDamage ?? _persistentPlayer.Wrench.ResolveHostAdmittedDamage(contactTarget);
         if (damage is null)
             return false;
 
@@ -134,10 +134,10 @@ public partial class OBPGame
             target.Source.NativeClassId,
             target.Source.InstanceIndex);
         var damageEvent = Rac1DamageRuntime.FromWrench(targetKey, damage);
-        if (!_rac1MobyRuntime.CanDispatchDamage(damageEvent)) return false;
-        _rac1DamageTransport.Publish(damageEvent);
+        if (!Rac1World.Context.MobyRuntime.CanDispatchDamage(damageEvent)) return false;
+        Rac1World.Context.DamageTransport.Publish(damageEvent);
         var admission =
-            _rac1MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(
+            Rac1World.Context.MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(
                 damageEvent);
         CompleteRac1CrateDamage(target, admission);
         return true;
@@ -146,7 +146,7 @@ public partial class OBPGame
     private void CompleteRac1CrateDamage(RuntimeWorldScene.DynamicObjectNode target, Rac1BoltCrateDamageAdmission admission)
     {
         var authored = Rac1BoltCrate.ReadAuthored(target.Source)!;
-        var broken = _rac1BoltCrates.CompleteDamage(
+        var broken = Rac1World.Context.BoltCrates.CompleteDamage(
             admission,
             selectedTotal: SelectRac1CrateReward(authored.RewardCentre));
 
@@ -158,9 +158,9 @@ public partial class OBPGame
         target.ApplyState(broken.EntityState);
         SpawnRac1BoltPickups(rewardOrigin, broken.Pickups);
         SpawnRac1CrateSupply(target, rewardOrigin);
-        _rac1CombatStatus =
+        Rac1World.Context.CombatStatus =
             $"crate {target.Source.InstanceIndex} broke via host contact policy: +{broken.PhysicalValue} bolts emitted";
-        GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
+        GD.Print($"[rac1-gameplay] {Rac1World.Context.CombatStatus}");
     }
 
     private int SelectRac1CrateReward(int centre)
@@ -171,10 +171,10 @@ public partial class OBPGame
 
     private bool TryStrikeRac1Hostile(RuntimeWorldScene.DynamicObjectNode hostile, Rac1WrenchDamageResult? nativeDamage = null)
     {
-        var contactTarget = _rac1Wrench.AdmitGoal1RuntimeTarget(hostile.Source)
+        var contactTarget = _persistentPlayer.Wrench.AdmitGoal1RuntimeTarget(hostile.Source)
             ?? throw new InvalidOperationException(
                 "R&C1 class-749 hostile was rejected by the wrench target contract.");
-        var damage = nativeDamage ?? _rac1Wrench.ResolveHostAdmittedDamage(contactTarget);
+        var damage = nativeDamage ?? _persistentPlayer.Wrench.ResolveHostAdmittedDamage(contactTarget);
         if (damage is null)
             return false;
 
@@ -183,7 +183,7 @@ public partial class OBPGame
             hostile.Source.InstanceIndex);
         var damageEvent = Rac1DamageRuntime.FromWrench(targetKey, damage);
         if (!ApplyRac1EnemyWeaponDamage(hostile, damageEvent)) return false;
-        _rac1DamageTransport.Publish(damageEvent);
+        Rac1World.Context.DamageTransport.Publish(damageEvent);
         return true;
     }
 

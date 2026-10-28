@@ -65,13 +65,13 @@ public partial class OBPGame
         var level = Rac1DiscIndex.Read(reader).Levels.Single(level => level.LevelId == world.LevelId);
         var core = Rac1LevelCore.Open(reader, level);
         var classes = Rac1StaticClasses.Read(core);
-        var nodes = _rac1HostileNodes.Values.ToList();
+        var nodes = Rac1World.Presentation.HostileNodes.Values.ToList();
         if (world.LevelId == 0)
         {
-            _rac1Class1440 = new(_rac1MobyRuntime, Rac1Paths.Read(Rac1LevelSettings.ReadGameplay(reader, level)), Rac1EffectRandom);
+            _rac1Class1440 = new(Rac1World.Context.MobyRuntime, Rac1Paths.Read(Rac1LevelSettings.ReadGameplay(reader, level)), Rac1EffectRandom);
             foreach (var authored in (world.DynamicObjects ?? []).Where(item => item.NativeClassId == Rac1Class1440Session.ClassId))
             {
-                var node = FindPresentedDynamic(result, authored) ?? throw new InvalidDataException("Veldin enemy has no rendered model.");
+                var node = Rac1WorldPresentation.FindPresentedDynamic(result, authored) ?? throw new InvalidDataException("Veldin enemy has no rendered model.");
                 var registered = _rac1Class1440.Register(authored, node.State);
                 node.ApplyState(registered.Instance.EntityState);
                 nodes.Add(node);
@@ -87,7 +87,7 @@ public partial class OBPGame
             _rac1AridiaEnemies.SetAuthoredGroupRoster(Rac1AridiaEnemies.ReadAuthoredGroupRoster(levelGameplay));
             foreach (var authored in (world.DynamicObjects ?? []).Where(item => Rac1AridiaEnemies.IsEnemyClass(item.NativeClassId)))
             {
-                var node = FindPresentedDynamic(result, authored) ?? CreateRac1InvisibleRuntimeNode(result, authored);
+                var node = Rac1WorldPresentation.FindPresentedDynamic(result, authored) ?? Rac1WorldPresentation.CreateInvisibleRuntimeNode(result, authored);
                 byte[] pvar = authoredPlacements[authored.InstanceIndex].PVar
                     ?? throw new InvalidDataException("Aridia enemy placement is missing its native PVar.");
                 int? linkedActivationMobyIndex = authored.NativeClassId == Rac1AridiaEnemies.Sandshark
@@ -107,7 +107,7 @@ public partial class OBPGame
                         FromEffectNative(_rac1AridiaClipVolumes[nativeWaypoint].Centre));
                 }
                 // The Sandshark init routine's +0x258 branch enters state29.
-                var runtime = _rac1MobyRuntime.Register(authored, node.State,
+                var runtime = Rac1World.Context.MobyRuntime.Register(authored, node.State,
                     nativeState: botStartup?.NativeState ?? (linkedActivationMobyIndex.HasValue ? 29 : 1),
                     pvar: pvar);
                 node.ApplyState(runtime.EntityState);
@@ -131,10 +131,10 @@ public partial class OBPGame
         }
         else
         {
-            _rac1Peckbots = new(_rac1MobyRuntime, Rac1EffectRandom);
-            _rac1Birdbots = new(_rac1MobyRuntime);
+            _rac1Peckbots = new(Rac1World.Context.MobyRuntime, Rac1EffectRandom);
+            _rac1Birdbots = new(Rac1World.Context.MobyRuntime);
             if (world.LevelId is 9 or 15)
-                _rac1Seekers = new(_rac1MobyRuntime);
+                _rac1Seekers = new(Rac1World.Context.MobyRuntime);
         }
         if (world.LevelId is 6 or 10)
         {
@@ -145,7 +145,7 @@ public partial class OBPGame
         if (_rac1Peckbots is { } peckbots)
             foreach (var authored in (world.DynamicObjects ?? []).Where(item => item.NativeClassId == Rac1NovalisPeckbotSession.ClassId))
             {
-                var node = FindPresentedDynamic(result, authored)
+                var node = Rac1WorldPresentation.FindPresentedDynamic(result, authored)
                     ?? throw new InvalidDataException("Novalis Peckbot has no original visual.");
                 var registered = peckbots.Register(authored, node.State);
                 node.ApplyState(registered.Instance.EntityState);
@@ -154,7 +154,7 @@ public partial class OBPGame
         if (_rac1Birdbots is { } birdbots)
             foreach (var authored in (world.DynamicObjects ?? []).Where(item => item.NativeClassId == Rac1NovalisBirdbotSession.ClassId))
             {
-                var node = FindPresentedDynamic(result, authored)
+                var node = Rac1WorldPresentation.FindPresentedDynamic(result, authored)
                     ?? throw new InvalidDataException("Novalis Birdbot has no original visual.");
                 var registered = birdbots.Register(authored, node.State);
                 node.ApplyState(registered.Instance.EntityState);
@@ -164,7 +164,7 @@ public partial class OBPGame
             foreach (var authored in (world.DynamicObjects ?? [])
                 .Where(item => item.NativeClassId == Rac1SeekerSession.ClassId))
             {
-                var node = FindPresentedDynamic(result, authored)
+                var node = Rac1WorldPresentation.FindPresentedDynamic(result, authored)
                     ?? throw new InvalidDataException("Original Seeker model is unavailable.");
                 NVector3 nativeForward = ToEffectNative(EnemyForward(node));
                 seekers.Register(authored, node.State, MathF.Atan2(nativeForward.Y, nativeForward.X));
@@ -268,7 +268,7 @@ public partial class OBPGame
     private void TickRac1Hostiles(double delta)
     {
         if (_player is null) return;
-        _rac1EnemyTicks += Math.Max(0, delta) * Rac1NativeTicksPerSecond;
+        _rac1EnemyTicks += Math.Max(0, delta) * OBP.RAC1.Player.Rac1RatchetMovementController.UpdateHz;
         while (_rac1EnemyTicks >= 1)
         {
             _rac1EnemyTicks--;
@@ -370,20 +370,20 @@ public partial class OBPGame
     private void TickRac1Class749(Rac1HostedEnemy enemy)
     {
         var node = enemy.Node;
-        var before = _rac1Hostiles.Probe(node.Source);
+        var before = Rac1World.Context.Hostiles.Probe(node.Source);
         Vector3 position = node.Root.GlobalPosition, target = ArsenalEnemyGoal(enemy, _player!.GlobalPosition);
         Rac1GameplayEntityRef identity = Rac1GameplayEntityRef.Player;
         bool linkedTerminal = false;
         if (before.NativeState == Rac1Class749Hostile.LinkedObjectNativeState && before.LinkedTargetInstanceIndex is int linked)
         {
-            _rac1LinkedTargetNodes.TryGetValue(linked, out var linkedNode);
+            Rac1World.Presentation.LinkedTargets.TryGetValue(linked, out var linkedNode);
             linkedTerminal = linkedNode is null || !IsInstanceValid(linkedNode.Root) || !IsRac1GameplayActive(linkedNode);
             if (!linkedTerminal) { target = linkedNode!.Root.GlobalPosition; identity = Rac1GameplayEntityRef.Moby(new(linkedNode.Source.NativeClassId, linked)); }
         }
         Vector3 difference = target - position;
         Vector3 planar = new(difference.X, 0, difference.Z);
         float facing = planar.LengthSquared() == 0 ? 0 : Math.Abs(EnemyForward(node).SignedAngleTo(planar.Normalized(), Vector3.Up));
-        var next = _rac1Hostiles.Step(node.Source, new(difference.Length(), facing,
+        var next = Rac1World.Context.Hostiles.Step(node.Source, new(difference.Length(), facing,
             new(-position.X, position.Y, position.Z), TargetDescriptor: new(identity, new(-target.X, target.Y, target.Z)),
             LinkedObjectTerminal: linkedTerminal, AnimationPosition: enemy.Animation.Position,
             AnimationFinished: enemy.Animation.Wrapped, AnimationBlending: enemy.Animation.Blending, Grounded: enemy.Grounded));
@@ -433,7 +433,7 @@ public partial class OBPGame
             var damage = Rac1DamageRuntime.FromClass1440Contact(new(1440, instance), victim);
             if (victim == Rac1GameplayEntityRef.Player && !ArsenalEnemyHitsDecoy(enemy)) ApplyRac1EnemyPlayerDamage(damage);
             else if (_rac1Enemies.TryGetValue((int)victim.RuntimeId, out var targetEnemy) && ApplyRac1EnemyWeaponDamage(targetEnemy.Node, damage))
-                _rac1DamageTransport.Publish(damage);
+                Rac1World.Context.DamageTransport.Publish(damage);
         }
     }
 
@@ -513,8 +513,8 @@ public partial class OBPGame
 
     private void SynchronizeRac1Enemy(Rac1HostedEnemy enemy)
     {
-        var instance = _rac1MobyRuntime.Require(enemy.Node.Source);
-        _rac1MobyRuntime.SetTransform(instance, RuntimeWorldScene.ToRuntimeTransform(enemy.Node.Root.Transform));
+        var instance = Rac1World.Context.MobyRuntime.Require(enemy.Node.Source);
+        Rac1World.Context.MobyRuntime.SetTransform(instance, RuntimeWorldScene.ToRuntimeTransform(enemy.Node.Root.Transform));
         enemy.Node.ApplyState(instance.EntityState);
     }
 
@@ -563,13 +563,13 @@ public partial class OBPGame
     {
         if (!PlayerAlive) return;
         var before = _rac1Nanotech.Probe();
-        _rac1DamageTransport.Publish(damage);
+        Rac1World.Context.DamageTransport.Publish(damage);
         if (_playerNative is not null)
         {
             // Validate the recovered descriptor in its source module before
             // translating its admitted integer amount to the selected victim.
             _ = new Rac1RatchetNanotechSession().ApplyDamage(damage);
-            var attacker = (_sceneResult?.DynamicObjectNodes ?? []).Concat(Rac1EnemyNodes).Concat(_rac1CrateNodes).Concat(_rac1HostileNodes.Values)
+            var attacker = (_sceneResult?.DynamicObjectNodes ?? []).Concat(Rac1EnemyNodes).Concat(Rac1World.Presentation.CrateNodes).Concat(Rac1World.Presentation.HostileNodes.Values)
                 .FirstOrDefault(node => node.Source.SourceGame == ObpSourceGame.Rac1 &&
                 node.Source.NativeClassId == damage.Source.NativeClassId && node.Source.InstanceIndex == damage.Source.RuntimeId);
             if (attacker is null) { GD.PushWarning("Player damage source has no registered native actor."); return; }
@@ -582,7 +582,7 @@ public partial class OBPGame
         _player!.Rac1GameplayState = after;
         if (after.Nanotech == before.Nanotech) return;
         _playerAudio?.NotifyDamage(before.Nanotech, after.Nanotech);
-        _rac1CombatStatus = $"enemy hit: Nanotech {after.Nanotech}/{after.RespawnNanotech}";
+        Rac1World.Context.CombatStatus = $"enemy hit: Nanotech {after.Nanotech}/{after.RespawnNanotech}";
         RefreshRac1HudState(Rac1HudProjection.DamageFeedback(before, after));
         GD.Print($"[rac1-enemies] class{damage.Source.NativeClassId} i{damage.Source.RuntimeId}: contact; Nanotech {after.Nanotech}");
     }
@@ -593,50 +593,50 @@ public partial class OBPGame
             return ApplyRac1AmoeboidDamage(node, damage);
         if (Rac1AridiaEnemies.IsEnemyClass(node.Source.NativeClassId))
             return ApplyRac1AridiaWeaponDamage(node, damage);
-        if (!_rac1MobyRuntime.CanDispatchDamage(damage)) return false;
+        if (!Rac1World.Context.MobyRuntime.CanDispatchDamage(damage)) return false;
         var enemy = _rac1Enemies[node.Source.InstanceIndex];
         bool lethal;
         int sequence;
         if (node.Source.NativeClassId == 749)
         {
-            var result = _rac1MobyRuntime.DispatchDamage<Rac1Class749HostProbe>(damage);
+            var result = Rac1World.Context.MobyRuntime.DispatchDamage<Rac1Class749HostProbe>(damage);
             lethal = result.Health <= 0; sequence = result.NativeSequence!.Value;
         }
         else if (node.Source.NativeClassId == Rac1NovalisBirdbotSession.ClassId)
         {
-            var (probe, dead) = _rac1MobyRuntime.DispatchDamage<(Rac1NovalisBirdbotSession.Probe Probe, bool Lethal)>(damage);
+            var (probe, dead) = Rac1World.Context.MobyRuntime.DispatchDamage<(Rac1NovalisBirdbotSession.Probe Probe, bool Lethal)>(damage);
             lethal = dead; sequence = probe.Sequence;
         }
         else if (node.Source.NativeClassId == Rac1SeekerSession.ClassId)
         {
-            var result = _rac1MobyRuntime.DispatchDamage<Rac1SeekerDamageResult>(damage);
+            var result = Rac1World.Context.MobyRuntime.DispatchDamage<Rac1SeekerDamageResult>(damage);
             lethal = result.Lethal; sequence = result.Frame.Sequence;
         }
         else if (node.Source.NativeClassId == Rac1FrogAuthored.ClassId)
         {
-            var result = _rac1MobyRuntime.DispatchDamage<Rac1FrogDamageResult>(damage);
+            var result = Rac1World.Context.MobyRuntime.DispatchDamage<Rac1FrogDamageResult>(damage);
             lethal = result.Lethal; sequence = result.Frame.Sequence;
             if (!result.Frame.Presented)
             {
-                node.ApplyState(_rac1MobyRuntime.Require(node.Source).EntityState);
+                node.ApplyState(Rac1World.Context.MobyRuntime.Require(node.Source).EntityState);
                 enemy.Body.CollisionLayer = enemy.Body.CollisionMask = 0;
             }
         }
         else if (node.Source.NativeClassId == Rac1NovalisPeckbotSession.ClassId)
         {
-            var result = _rac1MobyRuntime.DispatchDamage<Rac1NovalisPeckbotSession.DamageResult>(damage);
+            var result = Rac1World.Context.MobyRuntime.DispatchDamage<Rac1NovalisPeckbotSession.DamageResult>(damage);
             lethal = result.Lethal; sequence = result.Probe.Sequence;
         }
         else
         {
-            var result = _rac1MobyRuntime.DispatchDamage<Rac1Class1440Session.DamageResult>(damage);
+            var result = Rac1World.Context.MobyRuntime.DispatchDamage<Rac1Class1440Session.DamageResult>(damage);
             lethal = result.Lethal; sequence = result.Probe.Sequence;
         }
         if (node.Source.NativeClassId != Rac1SeekerSession.ClassId || enemy.Animation.Sequence != sequence)
             enemy.Animation.Select(sequence, 1);
         Vector3 attackerPosition = _player!.GlobalPosition;
         if (damage.Source is { Kind: Rac1GameplayEntityKind.Projectile, NativeClassId: 121 } &&
-            _rac1Projectiles.TryGetValue(damage.Source.RuntimeId, out var projectile))
+            Rac1World.Presentation.Projectiles.TryGetValue(damage.Source.RuntimeId, out var projectile))
             attackerPosition = projectile.Node.GlobalPosition;
         else if (damage.Source is { Kind: Rac1GameplayEntityKind.Projectile, NativeClassId: 74 } &&
             _rac1EquipmentShots.FirstOrDefault(shot => shot.Weapon == Rac1WeaponId.MineGlove && shot.Id == damage.Source.RuntimeId) is { } mine)
@@ -661,12 +661,12 @@ public partial class OBPGame
             enemy.Body.CollisionLayer = 0;
             if (node.Source.NativeClassId != Rac1FrogAuthored.ClassId)
             {
-                var pickups = _rac1BoltPickups.Emit(SelectRac1CrateReward(Rac1EnemyMotion.RewardCentre(node.Source)));
+                var pickups = Rac1World.Context.BoltPickups.Emit(SelectRac1CrateReward(Rac1EnemyMotion.RewardCentre(node.Source)));
                 SpawnRac1BoltPickups(node.Root.GlobalPosition, pickups);
                 ActorHost.TrackPickups(node, pickups.Select(pickup => pickup.PickupId));
             }
         }
-        _rac1CombatStatus = $"enemy i{node.Source.InstanceIndex}: {(lethal ? "lethal reaction" : "hit reaction")}";
+        Rac1World.Context.CombatStatus = $"enemy i{node.Source.InstanceIndex}: {(lethal ? "lethal reaction" : "hit reaction")}";
         GD.Print($"[rac1-enemies] class{node.Source.NativeClassId} i{node.Source.InstanceIndex}: " +
             $"{(lethal ? "lethal" : "nonlethal")} damage from {damage.Source.Kind} " +
             $"class{damage.Source.NativeClassId} i{damage.Source.RuntimeId}");

@@ -136,7 +136,7 @@ public partial class OBPGame
             ["mobyInstances"] = r?.MobyInstances ?? 0,
             ["dynamicObjects"] = r?.DynamicObjects ?? 0,
             ["crateDebug"] = _worldScenes?.Current?.Resources is { } resources ? resources.CrateDiagnostics.Capture(resources.Rac2CrateBolts) : null,
-            ["rac1Gameplay"] = GetRac1GameplaySnapshot(),
+            ["rac1Gameplay"] = _worldScenes?.Current?.Resources.Rac1Gameplay?.Hud.Snapshot(),
             ["hud"] = _hudState.Current,
             ["player"] = _player is { } pl && IsInstanceValid(pl)
                 ? new

@@ -1,31 +1,52 @@
 using Godot;
 using OBP.Godot;
-using OBP.Godot.Player;
 using OBP.RAC1.Gameplay;
-using OBP.RAC1.Player;
-using OBP.RAC1.Presentation;
-using OBP.RAC1.Progression;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
-using OBP.Runtime.Presentation;
 
 namespace OBP.Game;
 
-public partial class OBPGame
+internal sealed record Rac1HostedProjectile(Node3D Node, Rac1BombProjectileSession Motion, long Generation);
+
+/// <summary>Scene-only R&C1 views. Missing source presentation never manufactures contact geometry.</summary>
+internal sealed class Rac1WorldPresentation : IDisposable
 {
-    private static RuntimeWorldScene.DynamicObjectNode? FindPresentedDynamic(
+    // OBP feet-to-body presentation anchor; contact admission stays in Rac1WrenchHostContactPolicy.
+    internal const float WrenchHostRootHeight = 1.0f;
+    internal List<RuntimeWorldScene.DynamicObjectNode> CrateNodes { get; } = [];
+    internal Dictionary<int, Node3D> PickupNodes { get; } = [];
+    internal Dictionary<long, Rac1HostedProjectile> Projectiles { get; } = [];
+    internal List<RuntimeWorldScene.DynamicObjectNode> Class749Nodes { get; } = [];
+    internal Dictionary<int, RuntimeWorldScene.DynamicObjectNode> LinkedTargets { get; } = [];
+    internal Dictionary<int, RuntimeWorldScene.DynamicObjectNode> HostileNodes { get; } = [];
+    internal Vector3 LastEnvironmentalDeathPosition { get; set; }
+
+    public void Dispose()
+    {
+        foreach (var projectile in Projectiles.Values)
+            if (GodotObject.IsInstanceValid(projectile.Node) && !projectile.Node.IsQueuedForDeletion()) projectile.Node.QueueFree();
+        Projectiles.Clear();
+        CrateNodes.Clear();
+        PickupNodes.Clear();
+        Class749Nodes.Clear();
+        LinkedTargets.Clear();
+        HostileNodes.Clear();
+        LastEnvironmentalDeathPosition = default;
+    }
+
+    internal static RuntimeWorldScene.DynamicObjectNode? FindPresentedDynamic(
         RuntimeWorldScene.Result result,
         RuntimeDynamicObject source) =>
         result.DynamicObjectNodes?.FirstOrDefault(node =>
             node.Source.SourceGame == source.SourceGame &&
             node.Source.NativeClassId == source.NativeClassId &&
             node.Source.InstanceIndex == source.InstanceIndex);
-    private void TrackRac1LinkedTarget(
+    internal void TrackLinkedTarget(
         RuntimeWorld world,
         RuntimeWorldScene.Result result,
         int linkedInstanceIndex)
     {
-        if (_rac1LinkedTargetNodes.ContainsKey(linkedInstanceIndex))
+        if (LinkedTargets.ContainsKey(linkedInstanceIndex))
             return;
 
         var matches = (world.DynamicObjects ?? Array.Empty<RuntimeDynamicObject>())
@@ -42,15 +63,15 @@ public partial class OBPGame
 
         RuntimeDynamicObject source = matches[0];
         var node = FindPresentedDynamic(result, source)
-            ?? _rac1CrateNodes.FirstOrDefault(candidate =>
+            ?? CrateNodes.FirstOrDefault(candidate =>
                 candidate.Source.SourceGame == source.SourceGame &&
                 candidate.Source.NativeClassId == source.NativeClassId &&
                 candidate.Source.InstanceIndex == source.InstanceIndex)
-            ?? CreateRac1InvisibleRuntimeNode(result, source);
-        _rac1LinkedTargetNodes.Add(linkedInstanceIndex, node);
+            ?? CreateInvisibleRuntimeNode(result, source);
+        LinkedTargets.Add(linkedInstanceIndex, node);
     }
 
-    private static RuntimeWorldScene.DynamicObjectNode CreateRac1InvisibleRuntimeNode(
+    internal static RuntimeWorldScene.DynamicObjectNode CreateInvisibleRuntimeNode(
         RuntimeWorldScene.Result result,
         RuntimeDynamicObject source)
     {

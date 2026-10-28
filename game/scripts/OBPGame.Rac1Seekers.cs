@@ -68,7 +68,7 @@ public partial class OBPGame
                         Rac1GameplayEntityRef.Player));
             }
 
-            foreach (var target in _rac1CrateNodes.Concat(Rac1EnemyNodes).Where(candidate =>
+            foreach (var target in Rac1World.Presentation.CrateNodes.Concat(Rac1EnemyNodes).Where(candidate =>
                          IsInstanceValid(candidate.Root) && IsRac1GameplayActive(candidate) &&
                          candidate.Source.InstanceIndex != index))
             {
@@ -77,7 +77,7 @@ public partial class OBPGame
                     !BombHasLineOfSight(blastCentre, targetPoint)) continue;
                 var damage = Rac1SeekerExplosion.DamageTo(index,
                     Rac1GameplayEntityRef.Moby(new(target.Source.NativeClassId, target.Source.InstanceIndex)));
-                if (!_rac1MobyRuntime.CanDispatchDamage(damage)) continue;
+                if (!Rac1World.Context.MobyRuntime.CanDispatchDamage(damage)) continue;
                 if (target.Source.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
                 {
                     TryTriggerRac1ExplosiveDamage(target, damage);
@@ -85,14 +85,14 @@ public partial class OBPGame
                 else if (Rac1BoltCrate.IsCrateClass(target.Source.NativeClassId))
                 {
                     CompleteRac1CrateDamage(target,
-                        _rac1MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage));
+                        Rac1World.Context.MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage));
                 }
                 else if (target.Source.NativeClassId == Rac1SeekerSession.ClassId)
                 {
                     ApplyRac1EnemyWeaponDamage(target, damage);
                 }
                 else continue; // Other class-specific response masks remain unverified.
-                _rac1DamageTransport.Publish(damage);
+                Rac1World.Context.DamageTransport.Publish(damage);
             }
             GD.Print($"[rac1-seekers] class193 i{index}: native state7 timed detonation");
         }
@@ -110,7 +110,7 @@ public partial class OBPGame
         if (frame.Terminal)
         {
             enemy.Reaction = null;
-            node.ApplyState(_rac1MobyRuntime.Require(node.Source).EntityState);
+            node.ApplyState(Rac1World.Context.MobyRuntime.Require(node.Source).EntityState);
         }
     }
 }

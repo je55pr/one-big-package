@@ -73,14 +73,14 @@ public partial class OBPGame
             _fusion = new(_args.FixedSeed ?? 1440, _rac1Weapons, _rac1HeldItem.Hand);
             return;
         }
-        _fusionOriginalCampaign = _rac1CampaignSession;
+        _fusionOriginalCampaign = _rac1Campaign.Session;
         _fusionOriginalWallet = _rac1BoltWallet;
         _fusionOriginalGoldBolts = _rac1CollectedNovalisGoldBolts.ToArray();
         _rac1CollectedNovalisGoldBolts.Clear();
-        _rac1CampaignSession = new(new Rac1CampaignState(), Rac1WeaponInventory.CreateOpeningLoadout());
-        _rac1CampaignSession.StartLevelCheckpointSession(0, world.PlayerStart!);
+        _rac1Campaign.Session = new(new Rac1CampaignState(), Rac1WeaponInventory.CreateOpeningLoadout());
+        _rac1Campaign.Session.StartLevelCheckpointSession(0, world.PlayerStart!);
         _rac1BoltWallet = new();
-        _rac1WeaponPreviewInventory = null;
+        _persistentPlayer.WeaponPreview = null;
         _fusion = new(_args.FixedSeed ?? 1440, hand: _rac1HeldItem.Hand);
         GD.Print("[fusion] opt-in Veldin test: Bomb Glove [rac1/10] 10; Lancer [rac2/30] 40; Shock Cannon [rac3/43] 20. Original damage; campaign isolated.");
     }
@@ -238,7 +238,7 @@ public partial class OBPGame
             StopFusionAudio();
             _fusionModelSequence = _fusionModelAge = 0;
             _fusionUseStarted = _fusionPoseTriggerHeld = false;
-            _rac1BombFireRequested = _rac1AdditionalFireRequested = _rac1EquipmentUsePressed = false;
+            Rac1World.Context.BombFireRequested = _rac1AdditionalFireRequested = Rac1World.Context.EquipmentUsePressed = false;
             _rac1BombThrowActive = false;
             if (_fusionBeam is not null) _fusionBeam.Visible = false;
         }
@@ -539,12 +539,12 @@ public partial class OBPGame
     private void ClearFusionTransients(bool freeImmediately = false)
     {
         StopFusionAudio(freeImmediately: freeImmediately);
-        if (_fusionAssets is not null)
+        if (_fusionAssets is not null && _worldScenes?.Current?.Resources.Rac1Gameplay is not null)
         {
-            foreach (var (id, projectile) in _rac1Projectiles.ToArray()) RetireBomb(id, projectile);
+            foreach (var (id, projectile) in Rac1World.Presentation.Projectiles.ToArray()) RetireBomb(id, projectile);
             ResetRac1BombPresentation();
-            _rac1BombGlove = new(_rac1Weapons);
-            _rac1BombFireRequested = _rac1EquipmentUsePressed = false;
+            Rac1World.Context.BombGlove = new(_rac1Weapons);
+            Rac1World.Context.BombFireRequested = Rac1World.Context.EquipmentUsePressed = false;
         }
         _fusion?.ClearTransientState();
         foreach (var node in _fusionProjectiles.Values.Cast<Node3D>().Concat(_fusionEffects.Select(e => e.Node)))
@@ -562,7 +562,7 @@ public partial class OBPGame
         _fusion = null;
         if (_fusionOriginalCampaign is { } campaign)
         {
-            _rac1CampaignSession = campaign; _rac1BoltWallet = _fusionOriginalWallet!;
+            _rac1Campaign.Session = campaign; _rac1BoltWallet = _fusionOriginalWallet!;
             _rac1CollectedNovalisGoldBolts.Clear(); _rac1CollectedNovalisGoldBolts.UnionWith(_fusionOriginalGoldBolts);
         }
         _fusionOriginalCampaign = null; _fusionOriginalWallet = null; _fusionOriginalGoldBolts = [];
