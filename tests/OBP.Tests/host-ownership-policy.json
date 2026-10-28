@@ -57,7 +57,7 @@
     "Key": "game/scripts/OBPGame.Rac1Enemies.cs::OBPGame.TickRac1Hostiles(double)",
     "Kind": "adapter",
     "Reason": "R&C1 native actor/session updates and original source context; placed actors use lease-owned voice scopes. TrilogyGameplaySmoke verifies live motion, native combat, scoped audio/pickup cleanup and reset. Only explicit parity retains native player health stepping here; no ordinary player service is selected.",
-    "Hash": "9fb576d4415683a23b68473cfb2025550f1e4eac91d73779176dd142008aae4d"
+      "Hash": "1000af5382f6dd2d211908922e0db51d44fd4057113504a6ae5810fee45b9c00"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.BindSourcePlayerContacts(PlayerHost)",

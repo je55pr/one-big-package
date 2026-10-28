@@ -341,7 +341,7 @@ public partial class OBPGame
                     aridiaStepped = true;
                 }
                 foreach (int sound in enemy.Animation.Tick())
-                    if (node.Root.GlobalPosition.DistanceTo(_player.GlobalPosition) < 40 && !PlayRegisteredRac1ActorSound(node, sound))
+                    if (node.Root.GlobalPosition.DistanceTo(_player.GlobalPosition) < 40 && !ActorHost.PlayRac1Sound(node, sound))
                         PlayRac1PickupSound(node.Source.NativeClassId, sound, node.Root.GlobalPosition);
                 if (node.Source.NativeClassId == 749) TickRac1Class749(enemy);
                 else if (node.Source.NativeClassId == 1440) TickRac1Class1440(enemy);
@@ -663,7 +663,7 @@ public partial class OBPGame
             {
                 var pickups = _rac1BoltPickups.Emit(SelectRac1CrateReward(Rac1EnemyMotion.RewardCentre(node.Source)));
                 SpawnRac1BoltPickups(node.Root.GlobalPosition, pickups);
-                TrackRegisteredActorPickups(node, pickups.Select(pickup => pickup.PickupId));
+                ActorHost.TrackPickups(node, pickups.Select(pickup => pickup.PickupId));
             }
         }
         _rac1CombatStatus = $"enemy i{node.Source.InstanceIndex}: {(lethal ? "lethal reaction" : "hit reaction")}";

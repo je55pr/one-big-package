@@ -167,6 +167,21 @@ public sealed class SourceNeutralHostArchitectureTests
     }
 
     [Fact]
+    public void RegisteredActorVoiceBridgeCannotAcquirePlayerEquipmentSelection()
+    {
+        var (compilation, tree) = InsertAdapterStatement("game/scripts/OBPGame.Rac1Enemies.cs", "TickRac1Hostiles",
+            "SelectPlayerEquipment(\"rac1/item/12\");");
+        var call = tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Single(invocation => invocation.Expression.ToString() == "SelectPlayerEquipment");
+        var bound = Assert.IsAssignableFrom<IMethodSymbol>(compilation.GetSemanticModel(tree).GetSymbolInfo(call).Symbol);
+        Assert.Equal("OBP.Game.OBPGame", bound.ContainingType.ToDisplayString());
+        var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation), HostOwnershipAudit.Policy());
+        Assert.Single(errors);
+        Assert.Contains("TickRac1Hostiles", errors[0]);
+        Assert.Contains("approved source-world adapter changed", errors[0]);
+    }
+
+    [Fact]
     public void ApprovedWorldAdapterCannotAcquireTheReportedEquipmentSelectionCall()
     {
         var (compilation, tree) = InsertAdapterStatement("game/scripts/OBPGame.WorldEntry.cs", "WorldOptions", """

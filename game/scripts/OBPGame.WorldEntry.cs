@@ -190,14 +190,14 @@ public partial class OBPGame
         {
             DecorateFusionLab(lab, _avatarPresentation.View is not null);
         }
-        ConfigureRegisteredActors(lab);
+        ActorHost.Configure(OrdinaryPlayerSession, _playerDamageWorld, _playerDamageLease, lab, resources.Scene.Root);
         var effectScope = resources.EffectScope ?? throw new InvalidOperationException("Effects require the existing world lease.");
         try
         {
             resources.Effects = new(resources.Scene.Root, worldId: effectScope.WorldInstanceId,
                 generation: effectScope.Generation, camera: () => GetViewport().GetCamera3D(),
                 sources: () => Sources.Setup.Library.Attached.Values.ToArray(),
-                actorAlive: key => _actorWorld.Views.TryGetValue(key.Target, out var actor) && actor.Registration.Instance == key && actor.Observe().Alive,
+                actorAlive: key => ActorHost.IsAlive(key),
                 placementOffset: () => lab is not null ? System.Numerics.Vector3.Zero :
                     WorldEffectHost.Runtime((_player?.GlobalPosition ?? Vector3.Zero) + EquipmentForward * 6 + Vector3.Up * 8) - new System.Numerics.Vector3(0, 0, 18),
                 suspended: () => _movementStateLoading || _playtest is { WaitingForEntry: true } or { PreparingWorld: true },
@@ -222,7 +222,7 @@ public partial class OBPGame
                 {
                     Configuration = _playerSession?.Capture().Configuration,
                     Loadout = _playerSession?.Capture().Loadout,
-                    Actors = _actorWorld.Views.Values.Select(a => new { a.Registration.Instance, a.Observe().Health }).ToArray(),
+                    Actors = ActorHost.ReadActors().Select(actor => new { actor.Registration.Instance, actor.State.Health }).ToArray(),
                 }), Path.GetDirectoryName(Path.GetFullPath(report))!, () => _worldScenes?.Current?.Resources.EffectsFailure);
             var definition = new DiagnosticScenarioDefinition("effects-room/v1", DiagnosticSourceAccess.OrdinaryPlay, DiagnosticSetup.ExistingWorld,
                 [.. TrilogySourceDefinitions.All.Select(s => new DiagnosticSourceRequirement(s.Game, s.Authority.BuildId))], TimeSpan.FromMinutes(10), 30000, "obp:fusion-lab");

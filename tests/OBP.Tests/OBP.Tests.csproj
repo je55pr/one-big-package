@@ -136,6 +136,9 @@
     <Compile Include="../../game/scripts/WorldSceneLifetime.cs" Link="Game/WorldSceneLifetime.cs" />
     <Compile Include="../../game/scripts/HostOperationScope.cs" Link="Game/HostOperationScope.cs" />
     <Compile Include="../../game/scripts/ActorSourceCache.cs" Link="Game/ActorSourceCache.cs" />
+    <Compile Include="../../game/scripts/ActorPlacementPreparation.cs" Link="Game/ActorPlacementPreparation.cs" />
+    <Compile Include="../../game/scripts/ActorReplayAdmission.cs" Link="Game/ActorReplayAdmission.cs" />
+    <Compile Include="../../game/scripts/ActorContactGeometry.cs" Link="Game/ActorContactGeometry.cs" />
     <Compile Include="../../game/scripts/SourceVerificationOperation.cs" Link="Game/SourceVerificationOperation.cs" />
     <Compile Include="../../game/scripts/ApplicationPointer.cs" Link="Game/ApplicationPointer.cs" />
     <Compile Include="../../game/scripts/FusionWeaponSession.cs" Link="Game/FusionWeaponSession.cs" />

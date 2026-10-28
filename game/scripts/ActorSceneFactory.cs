@@ -9,6 +9,7 @@ namespace OBP.Game;
 internal interface IActorFactory
 {
     ActorAdapterDescriptor Descriptor { get; }
+    bool SupportsDeterministicReplay => false;
     void RegisterUpdateGroups(ActorRuntimeSet actors);
     HostedActor Create(ActorPlacement placement, RuntimeWorld library, ActorSourceVersion source);
 }
