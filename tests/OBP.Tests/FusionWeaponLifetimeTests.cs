@@ -94,6 +94,35 @@ public sealed class FusionWeaponLifetimeTests
     }
 
     [Fact]
+    public async Task FailedPresentationBindingReportsHostFailureAndReleasesAssetsBeforeRetry()
+    {
+        var uploads = new List<Assets>();
+        using var owner = new FusionWeaponSourceHost<Assets>(_ =>
+        {
+            var assets = new Assets();
+            uploads.Add(assets);
+            return assets;
+        }, _ => new FusionWeaponPreparation((_, _) => new FusionWeaponData([])));
+
+        owner.Prepare([]);
+        await owner.Preparation!.Completion.WaitAsync(TimeSpan.FromSeconds(10));
+        string? error = null;
+        Assert.True(owner.Tick(_ => throw new InvalidOperationException("binding failed"), _ => { }, text => error = text));
+        Assert.Null(owner.Assets);
+        Assert.False(owner.Preparing);
+        Assert.Equal(1, Assert.Single(uploads).Disposals);
+        Assert.Contains("presentation failed", owner.Failure!, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("binding failed", error);
+
+        owner.Prepare([], force: true);
+        await owner.Preparation!.Completion.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.True(owner.Tick(_ => { }, _ => { }, Assert.Fail));
+        Assert.Null(owner.Failure);
+        Assert.Same(uploads[1], owner.Assets);
+        Assert.Equal(0, uploads[1].Disposals);
+    }
+
+    [Fact]
     public void ExplicitFixtureRestoresCampaignWalletAndGoldWithoutTouchingThePersistentPlayer()
     {
         var campaign = new Rac1CampaignHost();

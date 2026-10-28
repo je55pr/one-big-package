@@ -47,6 +47,24 @@ public sealed class FusionWeaponOwnershipArchitectureTests
     }
 
     [Fact]
+    public void ForeignAvatarsReceiveViewsAndNativeTransientsClearWithoutSourceAssets()
+    {
+        string attach = Method("OBPGame.WorldEntry.cs", "AttachPlayerAvatarVisual").ToString();
+        Assert.Contains("FusionWeapons.AttachViews(view)", attach, StringComparison.Ordinal);
+        Assert.True(attach.IndexOf("FusionWeapons.AttachViews(view)", StringComparison.Ordinal) >
+            attach.IndexOf("AttachRac1EquipmentViews(view)", StringComparison.Ordinal));
+        Assert.DoesNotContain("FusionWeapons.AttachViews", Method("OBPGame.Rac1Weapons.cs", "AttachRac1EquipmentViews").ToString(),
+            StringComparison.Ordinal);
+        string clear = Method("FusionWeaponHost.cs", "ClearTransients").ToString();
+        Assert.Contains("player.ClearNativeTransients(freeImmediately)", clear, StringComparison.Ordinal);
+        Assert.DoesNotContain("Sources.Assets", clear, StringComparison.Ordinal);
+        Assert.Contains("ReleaseViews(freeImmediately: true)", Method("FusionWeaponHost.cs", "TickPreparation").ToString(),
+            StringComparison.Ordinal);
+        Assert.Contains("resources.Rac1Gameplay = null", Method("OBPGame.cs", "RetireWorldBindings").ToString(),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void OrdinarySessionBindingPrecedesAnyExplicitFixtureAndDeathClearsOnce()
     {
         string configure = Method("FusionWeaponHost.cs", "Configure").ToString();

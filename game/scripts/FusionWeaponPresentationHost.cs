@@ -164,7 +164,10 @@ internal sealed class FusionWeaponPresentationHost
             _pendingAudio.Remove(pending);
             var voice = pending.Voice;
             if (!RuntimeAudioHost.TryPrepare(new(voice.Clip, RuntimeAudioCategory.SoundEffect, voice.Loop, voice.Gain), out var clip, out var problem))
-                throw new InvalidDataException("Fusion audio unavailable: " + problem);
+            {
+                GD.PrintErr("[fusion] skipping unavailable weapon voice: " + problem);
+                continue;
+            }
             using var stream = new AudioStreamWav
             {
                 Format = AudioStreamWav.FormatEnum.Format16Bits,

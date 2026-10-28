@@ -42,13 +42,11 @@ internal sealed class FusionWeaponSourceHost<TAssets>(Func<FusionWeaponData, TAs
             return false;
         }
         _preparation = null;
+        FusionWeaponData data;
         try
         {
-            var data = preparation.Completion.GetAwaiter().GetResult();
+            data = preparation.Completion.GetAwaiter().GetResult();
             _assets = upload(data);
-            attached(_assets);
-            foreach (var problem in data.Problems.Values) log("[fusion] " + problem);
-            log($"[fusion] shared weapon preparation complete; reused {data.ReusedVerifications}/3 saved verifications; retained for this source session");
         }
         catch (Exception error)
         {
@@ -56,8 +54,24 @@ internal sealed class FusionWeaponSourceHost<TAssets>(Func<FusionWeaponData, TAs
             _assets = null;
             Failure = "Weapon preparation failed. Reattach the source in Game Sources.";
             logError("[fusion] weapon preparation failed: " + error);
+            LoadingStatus = null;
+            return true;
         }
         finally { preparation.Dispose(); }
+
+        try { attached(_assets); }
+        catch (Exception error)
+        {
+            _assets?.Dispose();
+            _assets = null;
+            Failure = "Weapon presentation failed. Reattach the source in Game Sources to retry.";
+            logError("[fusion] weapon presentation binding failed: " + error);
+            LoadingStatus = null;
+            return true;
+        }
+
+        foreach (var problem in data.Problems.Values) log("[fusion] " + problem);
+        log($"[fusion] shared weapon preparation complete; reused {data.ReusedVerifications}/3 saved verifications; retained for this source session");
         LoadingStatus = null;
         return true;
     }

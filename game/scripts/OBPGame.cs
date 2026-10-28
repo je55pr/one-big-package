@@ -878,7 +878,11 @@ public partial class OBPGame : Node3D
         TearDownInteractiveOverlays();
         TryCloseRac1PlanetMap();
         ClearPlayerAvatarView();
-        _worldScenes?.Current?.Resources.Rac1Gameplay?.Dispose();
+        if (_worldScenes?.Current?.Resources is { } resources)
+        {
+            try { resources.Rac1Gameplay?.Dispose(); }
+            finally { resources.Rac1Gameplay = null; }
+        }
         if (!OrdinaryPlayerSession) _hudState.ResetSession();
         _playerHud?.Render(_hudState.Current);
         if (_player is not null) _player.PlayerServicesPhysicsUpdated -= StepPlayerServicesPhysics;

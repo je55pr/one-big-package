@@ -332,6 +332,8 @@ public partial class OBPGame
                 _avatarPresentation.InstallStagedBomb(FusionWeapons.CreateNativeEffect(121, "Rac1RetailStagedBomb_Class121"));
             AttachRac1EquipmentViews(view);
         }
+        // Shared weapon views belong to any selected avatar, not just RAC1.
+        FusionWeapons.AttachViews(view);
         player.VisualRoot.ReplaceVisual(view);
         player.ConfigureAvatarPresentation((float)avatar.AnimationBounds.Height);
         _avatarPresentation.Subscribe(player, StepPlayerAvatarPhysics, ResetPlayerAvatarPhysics);

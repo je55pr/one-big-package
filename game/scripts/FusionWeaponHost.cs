@@ -106,8 +106,17 @@ internal sealed class FusionWeaponHost(Node owner, FusionWeaponPlayerPorts playe
         string? previous = Sources.LoadingStatus;
         bool completed = Sources.Tick(_ =>
         {
-            if (avatarView() is { } avatar) AttachViews(avatar);
-            source.BindPresentation();
+            try
+            {
+                if (avatarView() is { } avatar) AttachViews(avatar);
+                source.BindPresentation();
+            }
+            catch
+            {
+                // A partial attachment must not outlive the assets being retired.
+                _world?.Presentation.ReleaseViews(freeImmediately: true);
+                throw;
+            }
         }, GD.Print, GD.PrintErr);
         if (!completed && previous == Sources.LoadingStatus) return;
         ShowPreparation(completed ? Sources.Failure : Sources.LoadingStatus);
@@ -284,7 +293,7 @@ internal sealed class FusionWeaponHost(Node owner, FusionWeaponPlayerPorts playe
     internal void ClearTransients(bool freeImmediately = false)
     {
         StopAudio(freeImmediately);
-        if (Sources.Assets is not null) player.ClearNativeTransients(freeImmediately);
+        player.ClearNativeTransients(freeImmediately);
         Session?.ClearTransientState();
         _world?.Presentation.Clear(freeImmediately);
         Pose = default;

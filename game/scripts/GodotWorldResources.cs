@@ -39,6 +39,7 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
                 try { Rac1Gameplay?.Dispose(); }
                 finally
                 {
+                    Rac1Gameplay = null;
                     try { FusionWeapons?.Dispose(); }
                     finally { Effects?.Dispose(); }
                 }
