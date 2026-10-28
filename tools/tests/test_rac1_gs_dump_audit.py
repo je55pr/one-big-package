@@ -43,14 +43,14 @@ class GsDumpAuditTests(unittest.TestCase):
         self.assertEqual(3, state["alpha_fail"])
 
     def test_state_and_vertices_across_split_gif_transfers(self):
-        state = tag(3, 0xE) + ad(0x47, 0x5360B) + ad(0x4E, 0x010000D8) + ad(0x06, 0x12345)
+        state = tag(4, 0xE) + ad(0x47, 0x5360B) + ad(0x4E, 0x010000D8) + ad(0x06, 0x12345) + ad(0x1A, 1) + tag(1, 0x0) + struct.pack("<QQ", 0, 0)
         vertices = tag(3, 0x5) + b"\0" * 48
         payload = state + vertices
         parsed = audit.GsAudit().analyse(dump(payload[:13], payload[13:42], payload[42:95], payload[95:]))
         self.assertEqual(3, parsed["draw_batches"][0]["vertex_writes"])
         self.assertEqual("gequal", parsed["draw_batches"][0]["gs_state"]["depth_function"])
         self.assertEqual(0x12345 & 0x3FFF, parsed["draw_batches"][0]["texture_base"])
-        self.assertEqual(3, len(parsed["register_changes"]))
+        self.assertEqual(4, len(parsed["register_changes"]))
         self.assertEqual(1, parsed["dump"]["frame_boundaries"])
 
     def test_unknown_state_stays_unknown_without_packets(self):
@@ -59,7 +59,7 @@ class GsDumpAuditTests(unittest.TestCase):
 
     def test_gif_image_data_does_not_fake_register_writes(self):
         image = struct.pack("<QQ", 2 | (2 << 58), 0) + b"\xff" * 32
-        state = tag(1, 0xE) + ad(0x47, 0x5360B)
+        state = tag(3, 0xE) + ad(0x47, 0x5360B) + ad(0x1A, 1) + ad(0x00, 0)
         vertices = tag(1, 0x5) + b"\0" * 16
         parsed = audit.GsAudit().analyse(dump(image + state + vertices))
         self.assertEqual("gequal", parsed["draw_batches"][0]["gs_state"]["depth_function"])
@@ -78,7 +78,7 @@ class GsDumpAuditTests(unittest.TestCase):
         self.assertEqual({"ad": 2, "packed": 1, "reglist": 2}, parsed["draw_batches"][0]["vertex_sources"])
 
     def test_reglist_prim_and_tex0_select_context_two(self):
-        state = tag(2, 0xE) + ad(0x48, 0x5360B) + ad(0x4F, 0x010000D8)
+        state = tag(3, 0xE) + ad(0x48, 0x5360B) + ad(0x4F, 0x010000D8) + ad(0x1A, 1)
         prim = tag(1, 0x0, mode=1) + struct.pack("<Q", 1 << 9) + b"\0" * 8
         tex0 = tag(1, 0x7, mode=1) + struct.pack("<Q", 0x4BEEF) + b"\0" * 8
         vertices = tag(1, 0x5) + b"\0" * 16
@@ -109,14 +109,46 @@ class GsDumpAuditTests(unittest.TestCase):
         self.assertFalse(from_prim["alpha_blending_enabled"])
         self.assertEqual("PRIM", from_prim["primitive_attributes_source"])
 
+    def test_unstreamed_prmodecont_keeps_primitive_attributes_unknown(self):
+        state = tag(3, 0xE) + ad(0x00, 0) + ad(0x47, 0x5360B) + ad(0x4E, 0x010000D8)
+        vertices = tag(1, 0x5) + b"\0" * 16
+        batch = audit.GsAudit().analyse(dump(state + vertices))["draw_batches"][0]
+        self.assertIsNone(batch["context"])
+        self.assertEqual("unknown", batch["primitive_attributes_source"])
+        self.assertFalse(batch["gs_state"]["known"])
+        self.assertIsNone(batch["test"])
+
+    def test_selected_but_unobserved_prmode_keeps_context_unknown(self):
+        state = (tag(4, 0xE) + ad(0x00, 0) + ad(0x1A, 0) +
+                 ad(0x47, 0x5360B) + ad(0x4E, 0x010000D8))
+        vertices = tag(1, 0x5) + b"\0" * 16
+        batch = audit.GsAudit().analyse(dump(state + vertices))["draw_batches"][0]
+        self.assertEqual("PRMODE", batch["primitive_attributes_source"])
+        self.assertIsNone(batch["context"])
+        self.assertFalse(batch["gs_state"]["known"])
+        self.assertIsNone(batch["test"])
+
+    def test_attribute_source_change_splits_identical_state_batches(self):
+        attributes = (1 << 9) | 3
+        state = (tag(3, 0xE) + ad(0x00, attributes) +
+                 ad(0x1B, attributes) + ad(0x1A, 1))
+        vertices = tag(1, 0x5) + b"\0" * 16
+        select_mode = tag(1, 0xE) + ad(0x1A, 0)
+        batches = audit.GsAudit().analyse(dump(state + vertices + select_mode + vertices))["draw_batches"]
+        self.assertEqual(2, len(batches))
+        self.assertEqual([1, 1], [batch["vertex_writes"] for batch in batches])
+        self.assertEqual([1, 1], [batch["context"] for batch in batches])
+        self.assertEqual(["PRIM", "PRMODE"], [batch["primitive_attributes_source"] for batch in batches])
+
     def test_packed_tex0_register_is_observed(self):
         tex0 = tag(1, 0x6) + struct.pack("<QQ", 0x812345, 0)
         vertices = tag(1, 0x5) + b"\0" * 16
-        parsed = audit.GsAudit().analyse(dump(tex0 + vertices))
+        selector = tag(2, 0xE) + ad(0x1A, 1) + ad(0x00, 0)
+        parsed = audit.GsAudit().analyse(dump(selector + tex0 + vertices))
         self.assertEqual(0x812345 & 0x3FFF, parsed["draw_batches"][0]["texture_base"])
 
     def test_zero_loop_pre_does_not_change_primitive_context(self):
-        state = tag(1, 0xE) + ad(0x47, 0x5360B)
+        state = tag(3, 0xE) + ad(0x47, 0x5360B) + ad(0x1A, 1) + ad(0x00, 0)
         ignored_pre = tag(0, 0x5, pre=True, prim=(1 << 9))
         vertices = tag(1, 0x5) + b"\0" * 16
         parsed = audit.GsAudit().analyse(dump(state + ignored_pre + vertices))

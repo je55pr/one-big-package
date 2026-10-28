@@ -207,16 +207,18 @@ class GsAudit:
         prim = self.registers.get(0x00)
         # PRMODECONT.AC selects the source of attribute bits 3-10.
         # PRIM always supplies the primitive type in bits 0-2.
-        use_prim_attributes = bool(self.registers.get(0x1A, 1) & 1)
-        attributes = prim if use_prim_attributes else self.registers.get(0x1B)
+        selector = self.registers.get(0x1A)
+        use_prim_attributes = None if selector is None else bool(selector & 1)
+        attributes = (prim if use_prim_attributes is True else
+                      self.registers.get(0x1B) if use_prim_attributes is False else None)
         effective_prim = (None if prim is None or attributes is None else
                           (prim & 7) | (attributes & ~7))
-        context = ((attributes or 0) >> 9) & 1
-        test = self.registers.get(0x47 + context)
-        zbuf = self.registers.get(0x4E + context)
-        tex0 = self.registers.get(0x06 + context)
-        alpha = self.registers.get(0x42 + context)
-        key = (self.frame, context, test, zbuf, tex0, alpha, effective_prim)
+        context = None if attributes is None else (attributes >> 9) & 1
+        test = None if context is None else self.registers.get(0x47 + context)
+        zbuf = None if context is None else self.registers.get(0x4E + context)
+        tex0 = None if context is None else self.registers.get(0x06 + context)
+        alpha = None if context is None else self.registers.get(0x42 + context)
+        key = (self.frame, context, test, zbuf, tex0, alpha, effective_prim, use_prim_attributes)
         if self.batches and self.batches[-1]["_key"] == key:
             self.batches[-1]["vertex_writes"] += 1
             sources = self.batches[-1]["vertex_sources"]
@@ -228,7 +230,8 @@ class GsAudit:
             "vertex_writes": 1, "vertex_sources": {source: 1},
             "gs_state": depth_state(test, zbuf),
             "primitive": None if prim is None else prim & 7,
-            "primitive_attributes_source": "PRIM" if use_prim_attributes else "PRMODE",
+            "primitive_attributes_source": ("unknown" if use_prim_attributes is None else
+                                            "PRIM" if use_prim_attributes else "PRMODE"),
             "texture_mapping_enabled": None if attributes is None else bool((attributes >> 4) & 1),
             "alpha_blending_enabled": None if attributes is None else bool((attributes >> 6) & 1),
             "texture_base": None if tex0 is None else tex0 & 0x3FFF,
