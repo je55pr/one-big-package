@@ -55,8 +55,9 @@ public sealed class PlayerEquipmentCatalog
             var status = item.Implementation != EquipmentImplementation.Implemented ? EquipmentUsability.Unimplemented :
                 !present ? EquipmentUsability.MissingSource : build != item.BuildId ? EquipmentUsability.UnsupportedBuild :
                 state.Model == EquipmentResourceStatus.Unavailable ? EquipmentUsability.MissingModel :
+                !state.Owned ? EquipmentUsability.Unowned :
                 !state.PresentationReady ? EquipmentUsability.PresentationBlocked :
-                !state.Owned ? EquipmentUsability.Unowned : !state.ContextAllowed ? EquipmentUsability.ContextBlocked : EquipmentUsability.Ready;
+                !state.ContextAllowed ? EquipmentUsability.ContextBlocked : EquipmentUsability.Ready;
             string? reason = status switch
             {
                 EquipmentUsability.Unimplemented => item.UnsupportedReason,

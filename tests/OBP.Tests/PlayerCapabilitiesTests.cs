@@ -97,6 +97,24 @@ public sealed class PlayerCapabilitiesTests
     }
 
     [Fact]
+    public void UnownedEquipmentKeepsItsReasonWhenPresentationAndContextAreBlocked()
+    {
+        var entry = Catalog.Read(Sources, definition => Ready(definition) with
+        {
+            Owned = false,
+            PresentationReady = false,
+            PresentationReason = "No measured compatible hand socket.",
+            ContextAllowed = false,
+            ContextReason = "Source target context absent.",
+        }).Single(entry => entry.Definition.Item == FusionWeaponSession.Lancer);
+
+        Assert.Equal(EquipmentUsability.Unowned, entry.Usability);
+        Assert.Equal("This loadout does not own the item.", entry.Reason);
+        Assert.False(entry.Usable);
+        Assert.False(entry.Selectable);
+    }
+
+    [Fact]
     public void DevelopmentInventoryIsIndependentAcquiredOnceAndKeepsNativeAmmoOnReentry()
     {
         var campaign = Rac1WeaponInventory.CreateOpeningLoadout();
