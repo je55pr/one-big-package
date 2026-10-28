@@ -173,12 +173,10 @@ public partial class OBPGame
     private void ConfigurePlayerEquipmentPresentation(RuntimeWorld world)
     {
         _equipmentPresentation.ConfigureWorld(world, PlayerPresentationAssets);
-        _playerAudio ??= new(new GodotRac1PlayerAudioPlayback(this, () => _player, intent => _worldHost.PlayEffect(intent)),
-            () => _avatarPresentation.Clock?.Tick ?? 0, () => ResetRac1WeaponAudio(),
-            reason => GD.Print("[player-audio] " + reason));
         var source = Sources.Setup.Library.Get(ObpSourceGame.Rac1);
-        _playerAudio.Bind(new(new(ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId, "player-audio"),
-            OrdinaryPlayerSession ? 0 : world.LevelId, SourceFileStamp(source?.Path),
+        _playerAudio!.Bind(new(new(ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId, "player-audio"),
+            OrdinaryPlayerSession ? 0 : world.LevelId,
+            OrdinaryPlayerSession ? _avatarSourceStamp : SourceFileStamp(source?.Path),
             WorldScenes.Current!.Plan.Request), source is null ? null : PlayerPresentationAssets, _args.FixedSeed,
             _args.Rac1WrenchSmoke || _args.Rac1WeaponsSmoke || _args.Rac1PlayerAudioSmoke, _args.Rac1PlayerAudioSmoke);
         // Foreign/unclassified contact material is deliberately treated as a

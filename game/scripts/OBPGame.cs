@@ -219,6 +219,9 @@ public partial class OBPGame : Node3D
             ApplicationLifecycle.RequestQuit(this, "cli-invalid", 2);
             return;
         }
+        _playerAudio ??= new(new GodotRac1PlayerAudioPlayback(this, () => _player, intent => _worldHost.PlayEffect(intent)),
+            () => _avatarPresentation.Clock?.Tick ?? 0, () => ResetRac1WeaponAudio(),
+            reason => GD.Print("[player-audio] " + reason));
         if (!InitializeReplayBookmark()) return;
         if (_args.FusionTest && _args.Destination is null) _args = _args with { Destination = "rac1:LEVEL0" };
         if (!InitializeBugReporting()) return;

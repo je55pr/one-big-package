@@ -2605,7 +2605,7 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::field:_playerAudio:Rac1PlayerAudioPresenter ?:private",
       "Owner": "#354",
-      "Rationale": "Retains only the native audio presenter composition reference or pause delegation to existing player/equipment audio owners.",
+      "Rationale": "Composition reference only: Rac1PlayerAudioPresenter owns the native sessions, pitch stream, diagnostic buffers and voice lifetime. Retire this root reference with final composition #376.",
       "ExpiresWith": "#376",
       "Hash": "ab68bc067058ca5e5116f9b53f530f5e7badc39bff31a8cc3570143279cfbe51"
     },
@@ -3389,56 +3389,56 @@
     {
       "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:BindPlayerEquipmentPresentation():void:private",
       "Owner": "#354",
-      "Rationale": "Wires the existing equipment/avatar ports and the owned native player audio presenter; source decisions and audio state remain outside the root.",
+      "Rationale": "Binds the selected avatar, existing equipment catalogue/source availability, attachment sockets and source-animation compatibility to PlayerEquipmentPresentationBinder. It owns no equipment or avatar state; retire this composition binding with #352.",
       "ExpiresWith": "#352",
       "Hash": "e9eefa307fc4f15412849b1a68308237eda825a3d4f54b2a941c7a678a71b335"
     },
     {
       "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:ConfigurePlayerEquipmentPresentation(:RuntimeWorld):void:private",
       "Owner": "#354",
-      "Rationale": "Wires the existing equipment/avatar ports and the owned native player audio presenter; source decisions and audio state remain outside the root.",
+      "Rationale": "Connects equipment material resources and the admitted source stamp/world lease to the existing Rac1PlayerAudioPresenter. Cue state, randomness and playback lifetime stay in their owners; retire this composition binding with #352.",
       "ExpiresWith": "#352",
-      "Hash": "4c33a727f857d7b1404c57ff98751ea592e87a8083a83cb59c326be8a264a932"
+      "Hash": "e7810e9402a5bca9872ddc67e01bec505e218c59ba7b1dfc5709be1369f619c1"
     },
     {
       "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:CreateEquipmentAppearancePreview(:EquipmentCatalogEntry):Control ?:private",
       "Owner": "#354",
-      "Rationale": "Wires the existing equipment/avatar ports and the owned native player audio presenter; source decisions and audio state remain outside the root.",
+      "Rationale": "Delegates catalogue appearance-preview creation to PlayerAvatarPresentationHost. Avatar selection and preview state stay with their existing owners; retire this delegation with #352.",
       "ExpiresWith": "#352",
       "Hash": "ea6c65176ac2583ccb7695cef93adbd9bd3fdda8b65ba59ca6121e9e5a38fac9"
     },
     {
       "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:CreatePlayerEquipmentEffectNode(:int,:string):Node3D:private",
       "Owner": "#354",
-      "Rationale": "Wires the existing equipment/avatar ports and the owned native player audio presenter; source decisions and audio state remain outside the root.",
+      "Rationale": "Forwards native effect-node construction to the existing R&C1 effect adapter using the selected equipment resource bank. Model/material caches stay in their existing owners; retire this composition delegation with #352.",
       "ExpiresWith": "#352",
       "Hash": "15f0b4e5240f15e71be6fc3415efc3b287a866df78feaa2d151076b362bd11e2"
     },
     {
       "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:PlayerEquipmentModelAvailable(:SourceWeaponKey):bool:private",
       "Owner": "#354",
-      "Rationale": "Wires the existing equipment/avatar ports and the owned native player audio presenter; source decisions and audio state remain outside the root.",
+      "Rationale": "Observes staged wrench/glove assets and the existing native/foreign equipment model caches for catalogue availability. It does not load models or choose a provider; retire this observation binding with #352.",
       "ExpiresWith": "#352",
       "Hash": "23d34ab3ffb7b357c80659138f8d4021f31a62202793ec3f9d0f82a383d4e06b"
     },
     {
       "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:PlayPlayerEquipmentSound(:int,:int,:Vector3):void:private",
       "Owner": "#354",
-      "Rationale": "Wires the existing equipment/avatar ports and the owned native player audio presenter; source decisions and audio state remain outside the root.",
+      "Rationale": "Projects the equipment sound position, forwards the cue through the presenter shared pitch stream/current-world playback port, then records the existing equipment diagnostic cue. It owns no samples or voices; retire this delegation with #352.",
       "ExpiresWith": "#352",
       "Hash": "a1b51fc75a33f12a0f3c9d44f34ec6991e5e14f51cf69b27272f74488062dc16"
     },
     {
       "Key": "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::method:SetPlayerAudioPaused(:bool):void:private",
       "Owner": "#354",
-      "Rationale": "Retains only the native audio presenter composition reference or pause delegation to existing player/equipment audio owners.",
+      "Rationale": "Delegates pause state to the player presenter and existing native weapon/fusion audio owners without advancing or resetting native cue cursors. Retire this pause composition binding with #376.",
       "ExpiresWith": "#376",
       "Hash": "8e35621d650d682af36e8b8fe1d08091df29b1b5fea5956ad087bfb0ef7fc888"
     },
     {
       "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::property:PlayerPresentationAssets:Rac1PickupAssets . Catalogue ?:get/:private",
       "Owner": "#354",
-      "Rationale": "Wires the existing equipment/avatar ports and the owned native player audio presenter; source decisions and audio state remain outside the root.",
+      "Rationale": "Projects the selected equipment bank for ordinary sessions or the existing pickup catalogue for explicit parity/diagnostic sessions. Catalogue ownership stays with the existing components; retire this compatibility projection with #352.",
       "ExpiresWith": "#352",
       "Hash": "07b74c5e671674ac28548e69e078cf70f7cd4331fdb16f4b19175164e3e9611c"
     },

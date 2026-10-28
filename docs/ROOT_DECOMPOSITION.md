@@ -269,7 +269,7 @@ are recorded in the versioned architecture ledger; the frozen origin is unchange
 The #354 audio extraction retires `OBPGame.Audio.cs` and
 `OBPGame.Rac1PlayerAudio.cs`, including their UID sidecars. From #350's **62 files,
 15,767 lines, 588 methods, 380 fields / 238 mutable, 43 exposed members**, the
-root becomes **60 files, 15,568 lines, 575 methods, 366 fields / 232 mutable,
+root becomes **60 files, 15,569 lines, 575 methods, 366 fields / 232 mutable,
 43 exposed members**. One composition reference replaces the native cue/reaction
 sessions, five playback hosts, three loop IDs, pitch random state, bank context
 and diagnostic collections. Twenty-five historical member/declaration permissions
@@ -280,7 +280,9 @@ adapter fingerprint only follows the same native water sound into its new owner,
 with a regression forbidding source binding or player-service selection there.
 
 `Rac1PlayerAudioPresenter` borrows the existing equipment bank and binds its admitted
-source/build/file stamp to the current world lease. Godot's playback adapter owns
+source/build/file stamp to the current world lease. Its unbound owner is composed
+at startup before static-camera diagnostics; ordinary audio uses the committed
+avatar source stamp of its prepared bank. Godot's playback adapter owns
 the player/pack/wrench/animation/reaction voices, while `WorldHost` retains world
 music and equipment one-shots and now presents the representative integration cue.
 Source loss and world retirement clear cue cursors, voices and the binding; exit
