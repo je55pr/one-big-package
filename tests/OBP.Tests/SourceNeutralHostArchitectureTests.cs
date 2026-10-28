@@ -7,6 +7,23 @@ namespace OBP.Tests;
 public sealed class SourceNeutralHostArchitectureTests
 {
     [Fact]
+    public void NativeWaterContactsCanPlayAudioButCannotBindItsSelectedSource()
+    {
+        var compilation = HostOwnershipAudit.Host.Value;
+        var tree = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.Rac1Gameplay.cs");
+        var method = tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
+            .Single(method => method.Identifier.ValueText == "BindSourcePlayerContacts");
+        var model = compilation.GetSemanticModel(tree);
+        var audioCalls = method.DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Select(call => model.GetSymbolInfo(call).Symbol).OfType<IMethodSymbol>()
+            .Where(symbol => symbol.ContainingType.Name == "Rac1PlayerAudioPresenter").ToArray();
+        Assert.Equal("Play", Assert.Single(audioCalls).Name);
+        var usage = Assert.Single(HostOwnershipAudit.Scan(compilation), usage => usage.Key.EndsWith(
+            "::OBPGame.BindSourcePlayerContacts(PlayerHost)", StringComparison.Ordinal));
+        Assert.False(usage.PlayerSelection);
+    }
+
+    [Fact]
     public void HostPlayerDependenciesHaveNarrowRationalesAndFrozenMigrationOwners()
     {
         var usages = HostOwnershipAudit.Scan(HostOwnershipAudit.Host.Value);

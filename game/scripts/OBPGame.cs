@@ -44,7 +44,16 @@ public partial class OBPGame : Node3D
         var setup = new SourceSetupCoordinator(TrilogySourceDefinitions.All,
             _args.SourceConfigPath ?? ProjectSettings.GlobalizePath("user://sources.json"),
             SourceSetupPolicy.Resolve(_args, OS.GetCmdlineUserArgs(), OS.GetCmdlineArgs()), new PhysicalSourceSetupStorage(),
-            new GodotSourceSetupConsumers(this, game => { CancelSourceVerification(game); ResetSharedWeaponAssets(); }, PrepareSharedWeaponSources),
+            new GodotSourceSetupConsumers(this, game =>
+            {
+                CancelSourceVerification(game);
+                ResetSharedWeaponAssets();
+                if (game == ObpSourceGame.Rac1)
+                {
+                    _playerAudio?.RetireWorld();
+                    ResetRac1WeaponAudio();
+                }
+            }, PrepareSharedWeaponSources),
             message => GD.Print(message), message => GD.PrintErr(message));
         return new(this, setup, new(EnsureRac1CampaignPersistenceInitialized, () =>
         {
@@ -179,7 +188,7 @@ public partial class OBPGame : Node3D
     private readonly HostOperationScope _hostOperations = new();
     private CaptureDiagnosticHarness? _captureDiagnostics;
     private ApplicationNavigationCoordinator _navigation = null!;
-    private readonly DiagnosticPlayerAudioCollector _playerAudioDiagnosticEvents = new();
+    private Rac1PlayerAudioPresenter? _playerAudio;
 
     // the live world
     private readonly WorldHost _idleWorldHost = new();
@@ -323,7 +332,9 @@ public partial class OBPGame : Node3D
     {
         if (_mode != Mode.World || _movementStateLoading || _player is null || _player.DevelopmentControls.FlyEnabled) return;
         StepRac1NovalisMechanisms();
-        StepRac1PlayerAudioPhysics();
+        _playerAudio?.StepReactions();
+        // Avatar updates stop at death; detached source particles still age out.
+        if (!_player.Rac1GameplayAlive) StepRac1BombEffectsPhysics();
         StepRegisteredActorsPhysics();
     }
 
@@ -480,7 +491,7 @@ public partial class OBPGame : Node3D
         FlushRac1CampaignSaves("clean exit");
         ResetRegisteredActors();
         _worldHost.Unload(releaseAudioImmediately: true);
-        ResetRac1PlayerAudio(freeImmediately: true);
+        _playerAudio?.Dispose();
         ResetRac1WeaponAudio(freeImmediately: true);
         ResetFusionWeapons(freeImmediately: true);
         ResetSharedWeaponAssets();
@@ -1406,13 +1417,13 @@ public partial class OBPGame : Node3D
         Session = () => _playerSession!,
         Player = () => _player,
         Scene = () => _sceneResult!.Root,
-        Read = () => new(OrdinaryPlayerSession, _playerNative is not null, PlayerPresentationAssets is not null, _rac1PlayerAudio is not null,
+        Read = () => new(OrdinaryPlayerSession, _playerNative is not null, PlayerPresentationAssets is not null, _playerAudio?.Ready == true,
             _rac1HeldItem.Hand.WrenchHeld, _avatarPresentation.Clock?.Tick ?? 0, _fusion?.ShotsFired ?? 0, _pauseMenu?.UniversalEnabled == true,
             _pauseMenu?.RetailEnabled == true, _rac1PyroEmitting, _rac1Particles?.Live.Any(particle => particle.Type == 12) == true,
             _rac1ParticleView?.RenderedCount ?? 0, _playerNative?.Life.Capture().Current ?? 0, GodotMovementPlayer.Copy(_player?.GlobalPosition ?? Vector3.Zero),
             _player?.Rac1CurrentYaw ?? 0, _fusionAcceptedHits, _fusionProjectiles.Count, _fusionAudioPlayers.Count),
-        ResetAudio = () => { _rac1PlayerAudioRandom = Rac1PickupRandom.FromSeed(1440); _selectedPlayerAudioTrace.Clear(); },
-        Audio = () => [.. _selectedPlayerAudioTrace.Select(cue => new TrilogyAudioDiagnostic(cue.Source, cue.Build, cue.Level, cue.Class, cue.Sound, cue.LevelSound, cue.Loop, cue.Tick))],
+        ResetAudio = () => _playerAudio?.ResetDiagnosticRandom(1440),
+        Audio = () => [.. (_playerAudio?.ReadSelected() ?? []).Select(cue => new TrilogyAudioDiagnostic(SourceIdentityWire.FormatSource(cue.Source), cue.Build, cue.Level, cue.Class, cue.Sound, cue.LevelSound, cue.Loop, cue.NativeTick))],
         Trial = token => CreatePlayerDiagnosticHarness().CaptureTrialAsync(token),
         OpenPause = TryOpenPauseMenu,
         PauseSection = section => _pauseMenu!.ShowUniversalSection(section),
@@ -1499,8 +1510,9 @@ public partial class OBPGame : Node3D
         var health = new GodotCapabilityHealthFixture(new(() => _playerNative, () => _player, () => _rac2RatchetNanotech.Current,
             () => _hudState.Current.Health, () => [.. _rac2OpeningMsr1.Values.Select(session => (session.Hostile.InstanceIndex, session.Node.Root))], RespawnPlayer));
         var audio = new GodotPlayerAudioFixture(this, new(() => _player,
-            () => new(_rac1PlayerAudio is not null, _world?.LevelId, _rac1PackSound, _rac1ThrownWrenchSound, _rac1WeaponLoop is not null,
+            () => new(_playerAudio?.Ready == true, _world?.LevelId, _playerAudio?.PackSound, _playerAudio?.ThrownWrenchSound, _rac1WeaponLoop is not null,
                 _rac1WrenchThrow.Active, _rac1BoltCrates.DestroyedCrateCount, _rac1Nanotech.Probe().Nanotech, _rac1Nanotech.Probe().IsDead),
+            () => _playerAudio?.ReadVoices() ?? [],
             ClearMovementSmokeInput, SetAnalogueSmokeInput, SetRac1SmokeConditionedInput, TryHandleInteractiveBack,
             OnRac1WeaponSelectionRequested, SetRac1WeaponPreview, () => [.. _rac1CrateNodes], IsRac1GameplayActive,
             (node, position) => GodotRac1CrateStaging.Place(node, position, _rac1FallingCrates), ApplyRac1EnemyPlayerDamage));
@@ -1515,7 +1527,7 @@ public partial class OBPGame : Node3D
             CreateCaptureDiagnosticHarness().Acceptance, samples,
             new GodotCommonContactFixture(() => _sceneResult?.Root, () => _player),
             new DiagnosticRetiredActorProbe(() => [.. _rac1HostileNodes.Values], ApplyPlayerSourceDamage), health,
-            () => PlayerEquipmentConfigurationIdentity, audio, _playerAudioDiagnosticEvents);
+            () => PlayerEquipmentConfigurationIdentity, audio, _playerAudio!.Events);
         return new(_args, [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))], ports,
             new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. Sources.Setup.Library.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
                 new GodotDiagnosticFrameClock(this)), _hostOperations, (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code),

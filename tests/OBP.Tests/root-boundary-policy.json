@@ -2603,11 +2603,11 @@
       "Hash": "93637fdc58f6eb3ff204e0b944598fadf8d05209b4b8b31e85ccae50903e9c2d"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_playerAudioDiagnosticEvents:DiagnosticPlayerAudioCollector:private,readonly",
-      "Owner": "#338",
-      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers.",
-      "ExpiresWith": "#354",
-      "Hash": "bf1b82ae06e6a7b56ab1c8651f209decb06e2ffad4cfa13e8449983e0ea50abd"
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_playerAudio:Rac1PlayerAudioPresenter ?:private",
+      "Owner": "#354",
+      "Rationale": "Retains only the native audio presenter composition reference or pause delegation to existing player/equipment audio owners.",
+      "ExpiresWith": "#376",
+      "Hash": "ab68bc067058ca5e5116f9b53f530f5e7badc39bff31a8cc3570143279cfbe51"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::field:_profileCoordinator:ProfileCoordinator ?:private",
@@ -2745,9 +2745,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlayerDiagnosticHarness():PlayerSessionDiagnosticHarness:private",
       "Owner": "#338",
-      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
+      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #354 binds the owned native player audio presenter and its copied observations.",
       "ExpiresWith": "#359",
-      "Hash": "cf98b0e2f6e8d946576b1bac0f90eea86c24faed34c0d5f11c42cbcec08979c6"
+      "Hash": "8890aabd97a623a1573ba5677cf34aeefd1dce431552845e7c5d8830f9cd03ba"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AdditionalWeaponDiagnosticFixture(:IDiagnosticWorldObservations):GodotRac1AdditionalWeaponDiagnosticFixture:private",
@@ -2836,9 +2836,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateSourceSetup():SourceSetupController:private",
       "Owner": "#346",
-      "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. Source state, admission and repair live outside the root; final world-entry composition removes this bridge.",
+      "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. Source state, admission and repair live outside the root; final world-entry composition removes this bridge. #354 binds the owned native player audio presenter and its copied observations.",
       "ExpiresWith": "#376",
-      "Hash": "150cfbea2b7d88106306713a473c3efce461d364b8074e2682f47f4fc74424d0"
+      "Hash": "a7d3e7f0efa952e3354325c78c2c8cc76a0968dcd2c644dede7bf6081a815687"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateStressSwitchCliService():StressSwitchCliService:private",
@@ -2857,9 +2857,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateTrilogyPlayerDiagnosticFixture():ITrilogyPlayerDiagnosticFixture:private",
       "Owner": "#344",
-      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
+      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios. #354 binds the owned native player audio presenter and its copied observations.",
       "ExpiresWith": "#359",
-      "Hash": "1d8dc6f2ff28d033f0c3a486e731ca1e4ab2f66c40b10ee79b30ce1decf6c3cf"
+      "Hash": "d9c6acce792d4d842fa9eff48d266a4e75835590c0235925bae95320d7fdf5f8"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateUiDiagnosticHarness():UiDiagnosticHarness:private",
@@ -3387,94 +3387,59 @@
       "Hash": "77861fbb2c4351eb6a171997d811ddd1a69f196e137e6925f97d1d58324dd0c4"
     },
     {
-      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_playerAudioBankLevel:int:private",
-      "Owner": "#350",
-      "Rationale": "Pre-existing player audio trace/bank diagnostic state moved to the already existing audio partial as part of the #350 file retirement; #354 owns the pending audio extraction.",
-      "ExpiresWith": "#354",
-      "Hash": "d7637bae691d25bb2b67bea833c5241759387626521a3cbd60950fa16736373f"
-    },
-    {
-      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_playerAudioDiagnostics:List < string >:private,readonly",
-      "Owner": "#350",
-      "Rationale": "Pre-existing player audio trace/bank diagnostic state moved to the already existing audio partial as part of the #350 file retirement; #354 owns the pending audio extraction.",
-      "ExpiresWith": "#354",
-      "Hash": "7ee94fb7cf7f67e6c067f11790f4b7859008b2bb1709c23f278ef03c766c29a5"
-    },
-    {
-      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_selectedPlayerAudioTrace:List < ( string Source , string Build , int Level , int Class , int Sound , bool Loop , bool LevelSound , long Tick ) >:private,readonly",
-      "Owner": "#350",
-      "Rationale": "Pre-existing player audio trace/bank diagnostic state moved to the already existing audio partial as part of the #350 file retirement; #354 owns the pending audio extraction.",
-      "ExpiresWith": "#354",
-      "Hash": "310f9352321e4eba85ed8858406882e1cf15343b224d089e1d1bc6016d25cb70"
-    },
-    {
-      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:BindPlayerEquipmentPresentation():void:private",
-      "Owner": "#350",
-      "Rationale": "Existing catalogue/hand-selection composition retained temporarily while the equipment facade migrates; model and binding caches now belong to the presentation binder.",
-      "ExpiresWith": "#351",
+      "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:BindPlayerEquipmentPresentation():void:private",
+      "Owner": "#354",
+      "Rationale": "Wires the existing equipment/avatar ports and the owned native player audio presenter; source decisions and audio state remain outside the root.",
+      "ExpiresWith": "#352",
       "Hash": "e9eefa307fc4f15412849b1a68308237eda825a3d4f54b2a941c7a678a71b335"
     },
     {
-      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:ConfigurePlayerEquipmentPresentation(:RuntimeWorld):void:private",
-      "Owner": "#350",
-      "Rationale": "Existing selected-player audio/presentation bridge remains stable pending the dedicated audio ownership migration; decoded data and effect binding moved to owned components.",
-      "ExpiresWith": "#354",
-      "Hash": "293348b910fd16c4b625fa072d0f17083a00fa9a887a13197ee80dd2931bf777"
+      "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:ConfigurePlayerEquipmentPresentation(:RuntimeWorld):void:private",
+      "Owner": "#354",
+      "Rationale": "Wires the existing equipment/avatar ports and the owned native player audio presenter; source decisions and audio state remain outside the root.",
+      "ExpiresWith": "#352",
+      "Hash": "4c33a727f857d7b1404c57ff98751ea592e87a8083a83cb59c326be8a264a932"
     },
     {
-      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:CreateEquipmentAppearancePreview(:EquipmentCatalogEntry):Control ?:private",
-      "Owner": "#350",
-      "Rationale": "Existing catalogue/hand-selection composition retained temporarily while the equipment facade migrates; model and binding caches now belong to the presentation binder.",
-      "ExpiresWith": "#351",
+      "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:CreateEquipmentAppearancePreview(:EquipmentCatalogEntry):Control ?:private",
+      "Owner": "#354",
+      "Rationale": "Wires the existing equipment/avatar ports and the owned native player audio presenter; source decisions and audio state remain outside the root.",
+      "ExpiresWith": "#352",
       "Hash": "ea6c65176ac2583ccb7695cef93adbd9bd3fdda8b65ba59ca6121e9e5a38fac9"
     },
     {
-      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:CreatePlayerEquipmentEffectNode(:int,:string):Node3D:private",
-      "Owner": "#350",
-      "Rationale": "Existing selected-player audio/presentation bridge remains stable pending the dedicated audio ownership migration; decoded data and effect binding moved to owned components.",
-      "ExpiresWith": "#354",
+      "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:CreatePlayerEquipmentEffectNode(:int,:string):Node3D:private",
+      "Owner": "#354",
+      "Rationale": "Wires the existing equipment/avatar ports and the owned native player audio presenter; source decisions and audio state remain outside the root.",
+      "ExpiresWith": "#352",
       "Hash": "15f0b4e5240f15e71be6fc3415efc3b287a866df78feaa2d151076b362bd11e2"
     },
     {
-      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:PlayerEquipmentModelAvailable(:SourceWeaponKey):bool:private",
-      "Owner": "#350",
-      "Rationale": "Existing catalogue/hand-selection composition retained temporarily while the equipment facade migrates; model and binding caches now belong to the presentation binder.",
-      "ExpiresWith": "#351",
+      "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:PlayerEquipmentModelAvailable(:SourceWeaponKey):bool:private",
+      "Owner": "#354",
+      "Rationale": "Wires the existing equipment/avatar ports and the owned native player audio presenter; source decisions and audio state remain outside the root.",
+      "ExpiresWith": "#352",
       "Hash": "23d34ab3ffb7b357c80659138f8d4021f31a62202793ec3f9d0f82a383d4e06b"
     },
     {
-      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:PlayPlayerEquipmentSound(:int,:int,:Vector3):void:private",
-      "Owner": "#350",
-      "Rationale": "Existing selected-player audio/presentation bridge remains stable pending the dedicated audio ownership migration; decoded data and effect binding moved to owned components.",
-      "ExpiresWith": "#354",
-      "Hash": "f0e2bcbca4249992236f770f07150d8222e26dd0bf35b84cdf22866c244ccb28"
+      "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:PlayPlayerEquipmentSound(:int,:int,:Vector3):void:private",
+      "Owner": "#354",
+      "Rationale": "Wires the existing equipment/avatar ports and the owned native player audio presenter; source decisions and audio state remain outside the root.",
+      "ExpiresWith": "#352",
+      "Hash": "a1b51fc75a33f12a0f3c9d44f34ec6991e5e14f51cf69b27272f74488062dc16"
     },
     {
-      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:ReportPlayerAudioMissing(:int,:int):void:private",
-      "Owner": "#350",
-      "Rationale": "Existing selected-player audio/presentation bridge remains stable pending the dedicated audio ownership migration; decoded data and effect binding moved to owned components.",
-      "ExpiresWith": "#354",
-      "Hash": "3d8afda2aedd9e782023fba0c8fff11e3c62be7f1d726590fee1b8782d498f80"
+      "Key": "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::method:SetPlayerAudioPaused(:bool):void:private",
+      "Owner": "#354",
+      "Rationale": "Retains only the native audio presenter composition reference or pause delegation to existing player/equipment audio owners.",
+      "ExpiresWith": "#376",
+      "Hash": "8e35621d650d682af36e8b8fe1d08091df29b1b5fea5956ad087bfb0ef7fc888"
     },
     {
-      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:SetPlayerAudioPaused(:bool):void:private",
-      "Owner": "#350",
-      "Rationale": "Existing selected-player audio/presentation bridge remains stable pending the dedicated audio ownership migration; decoded data and effect binding moved to owned components.",
-      "ExpiresWith": "#354",
-      "Hash": "9aa91a9b55313f0af06159e0408dff8caf15e35f672fcef0507546a05975dd8a"
-    },
-    {
-      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:TraceSelectedPlayerAudio(:int,:int,:bool,:bool):void:private",
-      "Owner": "#350",
-      "Rationale": "Existing selected-player audio/presentation bridge remains stable pending the dedicated audio ownership migration; decoded data and effect binding moved to owned components.",
-      "ExpiresWith": "#354",
-      "Hash": "64a3ef2a0eac92a99d9b77cbde43093a748a21702df2ce2080dceb1187bc6f1f"
-    },
-    {
-      "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::property:PlayerPresentationAssets:Rac1PickupAssets . Catalogue ?:get/:private",
-      "Owner": "#350",
-      "Rationale": "Existing selected-player audio/presentation bridge remains stable pending the dedicated audio ownership migration; decoded data and effect binding moved to owned components.",
-      "ExpiresWith": "#354",
+      "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::property:PlayerPresentationAssets:Rac1PickupAssets . Catalogue ?:get/:private",
+      "Owner": "#354",
+      "Rationale": "Wires the existing equipment/avatar ports and the owned native player audio presenter; source decisions and audio state remain outside the root.",
+      "ExpiresWith": "#352",
       "Hash": "07b74c5e671674ac28548e69e078cf70f7cd4331fdb16f4b19175164e3e9611c"
     },
     {
@@ -3487,9 +3452,9 @@
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:ClearPlayerAvatarView():void:private",
       "Owner": "#350",
-      "Rationale": "The host now owns state and presentation; this pre-existing root member forwards world/lifetime integration until the final thin-root composition.",
+      "Rationale": "The host now owns state and presentation; this pre-existing root member forwards world/lifetime integration until the final thin-root composition. #354 binds the owned native player audio presenter and its copied observations.",
       "ExpiresWith": "#376",
-      "Hash": "00c6322c113455ea068c6fd58b9e0ec3f89c51dce857ef4f7d5413f45c8d0b4f"
+      "Hash": "da50be65aea08a63d7df5276df3b59472cf00ec0c5b309d61d90a7c9fc3cbebe"
     },
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:CurrentPlayerAvatarSourceSequence():int ?:private",
@@ -3550,16 +3515,16 @@
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:ResetPlayerAvatarPhysics():void:private",
       "Owner": "#350",
-      "Rationale": "Existing 60Hz game/weapon callback order remains on the host until registered source-game tick scheduling; avatar clock, pose sampling and view lifetimes are owned by PlayerAvatarPresentationHost.",
+      "Rationale": "Existing 60Hz game/weapon callback order remains on the host until registered source-game tick scheduling; avatar clock, pose sampling and view lifetimes are owned by PlayerAvatarPresentationHost. #354 binds the owned native player audio presenter and its copied observations.",
       "ExpiresWith": "#375",
-      "Hash": "4335202b6dffde3ba5b380fccc24857e7d946fd6abf701ee1ee74b7baf691c24"
+      "Hash": "eb2a5c37552847335fec4f3c62f4ac242c63cd649cf8043f71a32f37c4cb36cb"
     },
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:StepPlayerAvatarPhysics(:double,:PlayerAnimationState,:Rac1LocomotionAnimationInput):void:private",
       "Owner": "#350",
-      "Rationale": "Existing 60Hz game/weapon callback order remains on the host until registered source-game tick scheduling; avatar clock, pose sampling and view lifetimes are owned by PlayerAvatarPresentationHost.",
+      "Rationale": "Existing 60Hz game/weapon callback order remains on the host until registered source-game tick scheduling; avatar clock, pose sampling and view lifetimes are owned by PlayerAvatarPresentationHost. #354 binds the owned native player audio presenter and its copied observations.",
       "ExpiresWith": "#375",
-      "Hash": "a4a77ebcb02cd5b321dd5c90ee94679bc294d65a2144171aed00eac4dcf7822c"
+      "Hash": "8b5d4b42092f2e3db2484026e78198b034b0d98c91da1d120a8467fbb37c4804"
     },
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:WorldOptions(:RuntimeWorld):WorldHost . Options:private",
@@ -3800,6 +3765,9 @@
     "game/diagnostics/OBPGame.SourceSetupCheck.cs::OBPGame::method:RunSourceSetupCheckAsync():Task:async,private",
     "game/diagnostics/OBPGame.TrilogyGameplaySmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/OBPGame.TrilogyGameplaySmoke.cs::OBPGame::method:RunTrilogyGameplaySmokeAsync():Task:async,private",
+    "game/scripts/OBPGame.Audio.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Audio.cs::OBPGame::method:AudioPosition(:RuntimeDynamicObject):RuntimeAudioPosition ?:private,static",
+    "game/scripts/OBPGame.Audio.cs::OBPGame::method:PlayRepresentativeAudioOneShot(:RuntimeAudioPosition ?):void:private",
     "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_controllerSettings:ControllerSettingsUi ?:private",
     "game/scripts/OBPGame.ControllerSettings.cs::OBPGame::field:_controllerSettingsFromPause:bool:private",
@@ -3963,7 +3931,29 @@
     "game/scripts/OBPGame.QuickSelect.cs::OBPGame::method:TryOpenWeaponQuickSelect(:InputEvent):bool:public",
     "game/scripts/OBPGame.QuickSelect.cs::OBPGame::property:CurrentWeaponKey:SourceWeaponKey:get/:private",
     "game/scripts/OBPGame.QuickSelect.cs::OBPGame::property:QuickSelectOpen:bool:get/:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1AnimationAudio:RuntimeAudioHost:private,readonly",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1AnimationSound:int ?:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1PackAudio:RuntimeAudioHost:private,readonly",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1PackSound:int ?:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1PlayerAudio:Rac1PlayerAudioSession ?:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1PlayerAudioRandom:Rac1PickupRandom ?:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1PlayerOneShots:RuntimeAudioHost:private,readonly",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1PlayerReactions:Rac1PlayerReactionAudioSession ?:private",
     "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1PlayerSoundTrace:List < ( Rac1PlayerAudioSession . Cue Cue , bool Loop ) >:private,readonly",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1ReactionAudio:RuntimeAudioHost:private,readonly",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1ThrownWrenchAudio:RuntimeAudioHost:private,readonly",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1ThrownWrenchSound:int ?:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:NotifyRac1PlayerDamageAudio(:Rac1RatchetNanotechSnapshot,:Rac1RatchetNanotechSnapshot):void:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:PlayRac1PlayerSound(:Rac1PlayerAudioSession . Cue,:bool):void:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:ResetRac1PlayerAudio(:bool,:bool):void:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:SetRac1PlayerLoop(:RuntimeAudioHost,ref:int ?,:int ?):void:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:StepRac1PlayerAudio(:Rac1PlayerAnimationPresentationController):void:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:StepRac1PlayerAudioPhysics():void:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:StepRac1WrenchAudio(:Rac1WrenchAttackSession . Frame,:Vector3):void:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:TraceRac1PlayerSound(:Rac1PlayerAudioSession . Cue,:bool):void:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::method:TryPlayRac1WrenchWorldContact(:global :: Godot . Collections . Dictionary):void:private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::property:PlayerAudioRandom:Rac1PickupRandom:get/:private",
     "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame+CrateDebugSnapshot::declaration:RecordDeclaration:private,sealed:::( string ? TargetInteractionId , int ? NativeUid , int ? NativeInstanceIndex , bool Visible , bool Broken , string Status , string EventFlags , float EventScalar , byte ? PvarC8 , string ? Route , string RewardStatus , int CollectedBolts , int OutstandingPickups , int DeferredBolts )",
     "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/scripts/OBPGame.Rac2CrateDebugHarness.cs::OBPGame::field:_crateBoltSession:Rac2FreshBoltSession:private",

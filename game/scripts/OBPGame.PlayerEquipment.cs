@@ -1,3 +1,6 @@
+using Godot;
+using OBP.Runtime;
+using OBP.Runtime.Player;
 using OBP.Core;
 using OBP.Fusion;
 using OBP.RAC1.Gameplay;
@@ -137,4 +140,61 @@ public partial class OBPGame
         player.Rac1ClankAvailable = player.Rac1ActiveBackpack.HasValue;
         player.Rac1SwingshotEquipped = Enabled(Rac1TraversalEquipmentId.Swingshot);
     }
+    private Rac1PickupAssets.Catalogue? PlayerPresentationAssets =>
+        OrdinaryPlayerSession ? _equipmentPresentation.SelectedAssets : _rac1PickupAssets;
+
+
+    private bool PlayerEquipmentModelAvailable(SourceWeaponKey key) =>
+        key == PlayerEquipmentRegistrations.Wrench ? _avatarPresentation.WrenchAsset is not null :
+        key == FusionWeaponSession.BombGlove ? _avatarPresentation.GloveAsset is not null : key.SourceGame == ObpSourceGame.Rac1
+            ? _rac1EquipmentAssets?.Models.ContainsKey(Rac1WeaponProfiles.Get((Rac1WeaponId)key.NativeItemId).ModelClass) == true
+            : _fusionAssets?.Available(key) == true;
+
+
+    private void BindPlayerEquipmentPresentation()
+    {
+        _equipmentPresentation.Bind(_avatarPresentation.Controller is null ? null : _avatarPresentation.Avatar,
+            PlayerEquipmentSources, PlayerEquipmentModelAvailable, key =>
+            {
+                if (_avatarPresentation.Avatar?.Skeletal is not { } rig ||
+                    _fusionAssets is not { } assets ||
+                    !assets.AvatarAnimations.TryGetValue(key, out var animation))
+                    return false;
+                try
+                {
+                    new PlayerSkeletalSampler(rig.Skeleton).RequireCompatible(animation.Skeleton);
+                    return true;
+                }
+                catch (InvalidDataException) { return false; }
+            });
+    }
+
+
+    private void ConfigurePlayerEquipmentPresentation(RuntimeWorld world)
+    {
+        _equipmentPresentation.ConfigureWorld(world, PlayerPresentationAssets);
+        _playerAudio ??= new(new GodotRac1PlayerAudioPlayback(this, () => _player, intent => _worldHost.PlayEffect(intent)),
+            () => _avatarPresentation.Clock?.Tick ?? 0, () => ResetRac1WeaponAudio(),
+            reason => GD.Print("[player-audio] " + reason));
+        var source = Sources.Setup.Library.Get(ObpSourceGame.Rac1);
+        _playerAudio.Bind(new(new(ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId, "player-audio"),
+            OrdinaryPlayerSession ? 0 : world.LevelId, SourceFileStamp(source?.Path),
+            WorldScenes.Current!.Plan.Request), source is null ? null : PlayerPresentationAssets, _args.FixedSeed,
+            _args.Rac1WrenchSmoke || _args.Rac1WeaponsSmoke || _args.Rac1PlayerAudioSmoke, _args.Rac1PlayerAudioSmoke);
+        // Foreign/unclassified contact material is deliberately treated as a
+        // dry surface by the selected movement adapter. The authentic LEVEL0
+        // footstep bank is an OBP fallback, not a recovered GC/UYA surface map.
+    }
+
+    private Node3D CreatePlayerEquipmentEffectNode(int nativeClass, string name) =>
+        CreateRac1EffectNode(nativeClass, name, playerEquipment: true);
+
+    private void PlayPlayerEquipmentSound(int nativeClass, int localSound, Vector3 position)
+    {
+        if (_playerAudio?.PlayEquipmentSound(nativeClass, localSound, new(-position.X, position.Y, position.Z)) == true)
+            RecordRac1WeaponSound(nativeClass, localSound);
+    }
+
+    private Control? CreateEquipmentAppearancePreview(EquipmentCatalogEntry entry) =>
+        _avatarPresentation.CreateAppearancePreview(entry);
 }

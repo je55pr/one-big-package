@@ -15,7 +15,7 @@ public partial class OBPGame
 
     private void ResetRac1WrenchHost()
     {
-        ResetRac1PlayerAudio(includeReactions: false);
+        _playerAudio?.Reset(includeReactions: false);
         _rac1WrenchThrow.Reset();
         _rac1WrenchHitTargets.Clear();
         _rac1WrenchHostGeneration = 0;
@@ -67,7 +67,7 @@ public partial class OBPGame
                 query.Exclude = new global::Godot.Collections.Array<Rid> { _player.GetRid() };
                 var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(query);
                 obstruction = hit.Count != 0;
-                TryPlayRac1WrenchWorldContact(hit);
+                GodotRac1PlayerAudioPlayback.WrenchWorldContact(_playerAudio, hit);
             }
             _rac1WrenchThrow.Step(ToWrenchNative(hand), obstruction);
             Vector3 next = WrenchWorldPosition();
@@ -83,15 +83,15 @@ public partial class OBPGame
             // not the unrecovered PS2 narrow-phase volume/query implementation.
             ResolveRac1AnimatedWrenchContacts(_rac1PreviousWrenchHand ?? hand,
                 _rac1PreviousWrenchTip ?? tip, hand, tip, .05f, frame.Damage);
-            if (_rac1PlayerAudio?.WrenchImpactAdmitted == true)
+            if (_playerAudio?.WrenchImpactAdmitted == true)
             {
                 var query = PhysicsRayQueryParameters3D.Create(hand, tip);
                 query.Exclude = new global::Godot.Collections.Array<Rid> { _player.GetRid() };
-                TryPlayRac1WrenchWorldContact(_player.GetWorld3D().DirectSpaceState.IntersectRay(query));
+                GodotRac1PlayerAudioPlayback.WrenchWorldContact(_playerAudio, _player.GetWorld3D().DirectSpaceState.IntersectRay(query));
             }
         }
         _player.Rac1WrenchThrown = _rac1WrenchThrow.Active;
-        StepRac1WrenchAudio(frame, hand);
+        GodotRac1PlayerAudioPlayback.StepWrench(_playerAudio, _avatarPresentation.Controller, frame, _rac1WrenchThrow, hand, WrenchWorldPosition());
         _rac1PreviousWrenchHand = hand;
         _rac1PreviousWrenchTip = tip;
         RefreshRac1WrenchPresentationVisibility();
@@ -151,7 +151,7 @@ public partial class OBPGame
                 // Unknown victim layouts use a generic host impact until their
                 // common hit-record producer is recovered independently.
                 bool soft = Rac1PlayerAudioSession.WrenchVictimSoftness(target.Source.NativeClassId) ?? false;
-                if (_rac1PlayerAudio?.WrenchContact(soft) is { } cue) PlayRac1PlayerSound(cue);
+                _playerAudio?.WrenchContact(soft);
             }
         }
     }

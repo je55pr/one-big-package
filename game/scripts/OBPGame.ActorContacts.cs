@@ -82,8 +82,8 @@ public partial class OBPGame
                 WrenchSegmentIntersects(bounds, previousHand, hand) || WrenchSegmentIntersects(bounds, previousTip, tip) ||
                 WrenchSegmentIntersects(bounds, previousHand, tip) || WrenchSegmentIntersects(bounds, previousTip, hand))) continue;
             if (ApplyRegisteredWeaponContact(new(new(PlayerEquipmentRegistrations.Wrench, _player.Rac1WrenchFrame.Generation, 0), target.Key,
-                damage, Rac1WrenchAttackProfile.NativeDamageFlags, "native-wrench")) && _rac1PlayerAudio?.WrenchContact(false) is { } cue)
-                PlayRac1PlayerSound(cue);
+                damage, Rac1WrenchAttackProfile.NativeDamageFlags, "native-wrench")))
+                _playerAudio?.WrenchContact(false);
         }
     }
 }

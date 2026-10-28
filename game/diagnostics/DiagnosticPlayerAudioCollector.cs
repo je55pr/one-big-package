@@ -4,10 +4,14 @@ using OBP.Core;
 namespace OBP.Game.Diagnostics;
 
 public enum DiagnosticAudioPlayback { Played, NativeSilence }
+public enum DiagnosticAudioTransition { Started, Stopped }
 public sealed record DiagnosticPlayerAudioEvent(ObpSourceGame Source, string Build, int Level, long NativeTick,
     int Class, int Sound, bool Loop, bool LevelSound)
 {
     public DiagnosticAudioPlayback Playback { get; init; } = DiagnosticAudioPlayback.Played;
+    public DiagnosticAudioTransition Transition { get; init; } = DiagnosticAudioTransition.Started;
+    public string? WorldInstanceId { get; init; }
+    public long WorldGeneration { get; init; }
 }
 public interface IDiagnosticPlayerAudioEvents
 {
@@ -27,7 +31,8 @@ public sealed class DiagnosticPlayerAudioCollector(int capacity = 4096) : IDiagn
         if (_events.Count == _capacity) { _overflow = true; return; }
         _events.Add(cue);
     }
-    public ImmutableArray<DiagnosticPlayerAudioEvent> Read() => [.. ReadOutcomes().Where(cue => cue.Playback == DiagnosticAudioPlayback.Played)];
+    public ImmutableArray<DiagnosticPlayerAudioEvent> Read() => [.. ReadOutcomes().Where(cue =>
+        cue.Playback == DiagnosticAudioPlayback.Played && cue.Transition == DiagnosticAudioTransition.Started)];
     public ImmutableArray<DiagnosticPlayerAudioEvent> ReadOutcomes() => _overflow
         ? throw new DiagnosticUnavailableException("Player audio evidence exceeded the fixture's bounded collector.") : [.. _events];
     public void Clear() { _events.Clear(); _overflow = false; }
