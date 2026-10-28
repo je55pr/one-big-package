@@ -13,22 +13,14 @@ public partial class OBPGame
         var adapters = new SortedSet<string>(StringComparer.Ordinal) { "obp/shared-player/v1", "rac1/ordinary-player/v1", "obp/weapon-controllers/v1" };
         if (EffectCaptureContract.Includes(_args, _playtest?.Reader?.Header) && _worldScenes?.Current?.Resources.Effects is { } effects)
             adapters.Add(EffectCaptureContract.AdapterPrefix + effects.ReplayIdentity);
-        foreach (var actor in _actorWorld.Views.Values)
-        {
-            string adapter = actor.Registration.AdapterId;
-            var target = actor.Registration.Instance.Target;
-            bool admitted = adapter is "rac1/class749/v1" or "rac2/class2827/v1" or "rac3/class500/v1" ||
-                adapter == "source-world/rac1" && target.NativeClassId is 500 or 501 or 511 or 749 or 1440 ||
-                adapter == "source-world/rac2" && target.NativeClassId == 2827 || adapter == "source-world/rac3" && target.NativeClassId == 500;
-            if (!admitted) throw new InvalidOperationException($"Capture is unavailable for native actor adapter {adapter}, class {target.NativeClassId}; no deterministic fixture is admitted.");
-            adapters.Add(adapter);
-        }
+        foreach (string adapter in ActorHost.ReadReplayAdapters()) adapters.Add(adapter);
         return adapters.Select(id => new PlaytestAdapter(id, 1, 60)).ToArray();
     }
 
     private bool CaptureWorldReady()
     {
-        if (_fusionPreparation is not null || _actorWorld.Preparation.Values.Any(task => !task.IsCompleted)) return false;
+        var actors = ActorHost.ReadSnapshot();
+        if (_fusionPreparation is not null || actors.Preparing) return false;
         if (EffectCaptureContract.Includes(_args, _playtest?.Reader?.Header))
         {
             var resources = _worldScenes?.Current?.Resources;
@@ -37,8 +29,8 @@ public partial class OBPGame
             if (effects?.Failure is { } failure) throw new InvalidDataException(failure);
             if (effects?.Ready != true) return false;
         }
-        if (_actorWorld.Problems.Count > 0) throw new InvalidOperationException("Capture requires admitted actor contexts: " + string.Join("; ", _actorWorld.Problems.Values));
-        if (_actorWorld.Lab is not null && _actorWorld.Placed.Count != _actorWorld.Placements.Count) return false;
+        if (actors.Problems.Length > 0) throw new InvalidOperationException("Capture requires admitted actor contexts: " + string.Join("; ", actors.Problems.Select(problem => problem.Message)));
+        if (actors.Lab && actors.Placed != actors.Expected) return false;
         _ = CaptureReplayAdapters();
         return _player is not null && _world is not null;
     }
@@ -82,14 +74,14 @@ public partial class OBPGame
         values.Add("obp.player", new(Text: Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(player))));
         values.Add("obp.adapters", new(Text: Digest(CaptureReplayAdapters())));
         values.Add("obp.sources", new(Text: Digest(CaptureProfileSources())));
-        foreach (var actor in _actorWorld.Views.Values.OrderBy(actor => actor.Registration.Instance.Target.SourceGame)
+        foreach (var actor in ActorHost.ReadActors().OrderBy(actor => actor.Registration.Instance.Target.SourceGame)
             .ThenBy(actor => actor.Registration.Instance.Target.NativeClassId).ThenBy(actor => actor.Registration.Instance.Target.InstanceIndex))
         {
-            var key = actor.Registration.Instance.Target; var state = actor.Observe();
+            var key = actor.Registration.Instance.Target; var state = actor.State;
             values.Add($"actor.{SourceIdentityWire.FormatSource(key.SourceGame)}.{key.NativeClassId}.{key.InstanceIndex}", new([state.Position.X, state.Position.Y, state.Position.Z,
                 state.Alive ? 1 : 0, state.Retired ? 1 : 0, state.Health ?? -1, state.NativeState, state.NativeSequence ?? -1], Tolerance: .0001));
         }
-        values.Add("obp.actor-clock", new([_actors?.TickCount ?? 0]));
+        values.Add("obp.actor-clock", new([ActorHost.TickCount]));
         if (EffectCaptureContract.Includes(_args, _playtest?.Reader?.Header))
             _worldScenes?.Current?.Resources.Effects?.AddCheckpoint(values);
         static string Digest(object value) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(value)));

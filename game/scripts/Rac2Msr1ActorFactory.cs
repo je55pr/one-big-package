@@ -17,6 +17,7 @@ internal sealed record Rac2ActorBindings(IDictionary<int, Rac2Class2827HostileSe
 
 internal sealed class Rac2Msr1ActorFactory(ActorSceneFactory scenes, ActorSourceCache assets, Rac2ActorBindings native) : IActorFactory
 {
+    public bool SupportsDeterministicReplay => true;
     public ActorAdapterDescriptor Descriptor { get; } = new(ObpSourceGame.Rac2, Rac2Authority.Primary.BuildId, 2827,
         "rac2/class2827/v1", "gc/aranos-chase-resume/v1", 0, Rac2Class2827HostileSession.ChaseNativeState);
 

@@ -331,21 +331,7 @@ public partial class OBPGame
     }
 
     private static bool SegmentBoxFraction(Vector3 a, Vector3 b, Aabb bounds, out float fraction)
-    {
-        float near = 0, far = 1; Vector3 direction = b - a;
-        for (int axis = 0; axis < 3; axis++)
-        {
-            if (MathF.Abs(direction[axis]) < .000001f)
-            {
-                if (a[axis] < bounds.Position[axis] || a[axis] > bounds.End[axis]) { fraction = 0; return false; }
-                continue;
-            }
-            float t0 = (bounds.Position[axis] - a[axis]) / direction[axis], t1 = (bounds.End[axis] - a[axis]) / direction[axis];
-            near = MathF.Max(near, MathF.Min(t0, t1)); far = MathF.Min(far, MathF.Max(t0, t1));
-            if (near > far) { fraction = 0; return false; }
-        }
-        fraction = near; return true;
-    }
+        => ActorContactGeometry.SegmentBoxFraction(a, b, bounds, out fraction);
 
     private bool ApplyRac1AdditionalDamage(RuntimeWorldScene.DynamicObjectNode target, Rac1GameplayDamageEvent damage)
     {

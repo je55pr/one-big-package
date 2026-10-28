@@ -9,6 +9,7 @@ namespace OBP.Game;
 
 internal sealed class Rac3PropActorFactory(ActorSceneFactory scenes) : IActorFactory
 {
+    public bool SupportsDeterministicReplay => true;
     public ActorAdapterDescriptor Descriptor { get; } = new(ObpSourceGame.Rac3, Rac3Authority.Primary.BuildId, 500,
         "rac3/class500/v1", "uya/table1-class500-deactivate/v1", 1, Rac3Class500Destructible.ActiveNativeState);
 
