@@ -109,7 +109,7 @@ public partial class OBPGame
             damage, Rac1WrenchAttackProfile.NativeDamageFlags);
         ResolveRac1FrogCarrierWrenchContacts(previousHand, previousTip, hand, tip, radius);
         ResolveRac1QueenWrenchContacts(previousHand, previousTip, hand, tip, radius, result);
-        ResolveRegisteredWrenchContacts(previousHand, previousTip, hand, tip, radius, damage);
+        ActorHost.Combat.ResolveWrench(previousHand, previousTip, hand, tip, radius, damage);
         foreach (var target in _rac1CrateNodes.Concat(Rac1EnemyNodes).Concat(_rac1NovalisBreakableNodes.Values))
         {
             var key = new Rac1MobyRuntimeKey(target.Source.NativeClassId, target.Source.InstanceIndex);
@@ -157,22 +157,5 @@ public partial class OBPGame
     }
 
     private static bool WrenchSegmentIntersects(Aabb bounds, Vector3 from, Vector3 to)
-    {
-        float first = 0, last = 1;
-        Vector3 delta = to - from;
-        for (int axis = 0; axis < 3; axis++)
-        {
-            float low = bounds.Position[axis], high = bounds.End[axis];
-            if (Mathf.Abs(delta[axis]) < 1e-7f)
-            {
-                if (from[axis] < low || from[axis] > high) return false;
-                continue;
-            }
-            float a = (low - from[axis]) / delta[axis], b = (high - from[axis]) / delta[axis];
-            first = Math.Max(first, Math.Min(a, b));
-            last = Math.Min(last, Math.Max(a, b));
-            if (first > last) return false;
-        }
-        return true;
-    }
+        => ActorContactGeometry.WrenchSegmentIntersects(bounds, from, to);
 }

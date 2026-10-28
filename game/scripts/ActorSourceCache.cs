@@ -15,6 +15,11 @@ public sealed class ActorSourceCache(HostOperationScope operations,
     public int LibraryCount => _imports.Count;
     public int AssetCount => _assets.Count;
 
+    /// <summary>Read-only cache witness; observing a retired world never starts another import.</summary>
+    internal bool IsCurrentLibrary(ActorSourceVersion source, int level, Task<RuntimeWorld> expected) =>
+        readStamp(source.Path) == (source.Length, source.Written) && _imports.TryGetValue((source, level), out var entry) &&
+        ReferenceEquals(entry.Completion.Task, expected) && !expected.IsFaulted && !expected.IsCanceled;
+
     private sealed class Import
     {
         private readonly object _sync = new();

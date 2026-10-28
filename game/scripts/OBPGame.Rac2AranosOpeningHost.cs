@@ -154,7 +154,7 @@ public partial class OBPGame
             }
 
             Vector3 position = session.Node.Root.GlobalPosition;
-            if (_actorWorld.Bodies.ContainsKey(ActorTarget(session.Node)) &&
+            if (ActorHost.HasContactBody(ActorWorldHost.Target(session.Node)) &&
                 (Math.Abs(position.Y - playerPosition.Y) > 3 || position.DistanceTo(playerPosition) > Rac2OpeningMsr1WitnessActivationDistance))
                 continue; // Explicit grounded-arena target context for relocated actors.
             switch (session.Phase)
@@ -261,7 +261,7 @@ public partial class OBPGame
                             playerPosition.X - position.X,
                             playerPosition.Z - position.Z).Length();
                         double facingError = 0;
-                        if (_actorWorld.Bodies.ContainsKey(ActorTarget(session.Node)))
+                        if (ActorHost.HasContactBody(ActorWorldHost.Target(session.Node)))
                         {
                             Vector3 toward = playerPosition - position; toward.Y = 0;
                             if (toward.LengthSquared() > 1e-8f)
@@ -381,18 +381,9 @@ public partial class OBPGame
         Rac2OpeningMsr1HostSession session,
         Vector3 position)
     {
-        if (_actorWorld.Bodies.TryGetValue(ActorTarget(session.Node), out var body))
-        {
-            var contact = body.MoveAndCollide(position - body.GlobalPosition);
-            if (contact is not null)
-            {
-                Vector3 remainder = contact.GetRemainder().Slide(contact.GetNormal());
-                if (remainder.LengthSquared() > 1e-8f) body.MoveAndCollide(remainder);
-            }
-            position = body.GlobalPosition;
-        }
+        if (ActorHost.TryMoveContactBody(ActorWorldHost.Target(session.Node), position, out var moved)) position = moved;
         Transform3D sceneTransform = session.Node.Root.Transform;
-        if (_actorWorld.Bodies.ContainsKey(ActorTarget(session.Node)) && _player is not null)
+        if (ActorHost.HasContactBody(ActorWorldHost.Target(session.Node)) && _player is not null)
         {
             Vector3 toward = _player.GlobalPosition - position; toward.Y = 0;
             if (toward.LengthSquared() > 1e-8f)

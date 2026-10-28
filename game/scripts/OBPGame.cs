@@ -178,6 +178,8 @@ public partial class OBPGame : Node3D
     private string _sceneKind = "smoke";
     private readonly HostOperationScope _hostOperations = new();
     private CaptureDiagnosticHarness? _captureDiagnostics;
+    private ActorWorldHost? _actorHost;
+    private ActorWorldHost ActorHost => _actorHost ??= CreateActorHost();
     private ApplicationNavigationCoordinator _navigation = null!;
     private readonly DiagnosticPlayerAudioCollector _playerAudioDiagnosticEvents = new();
 
@@ -324,7 +326,7 @@ public partial class OBPGame : Node3D
         if (_mode != Mode.World || _movementStateLoading || _player is null || _player.DevelopmentControls.FlyEnabled) return;
         StepRac1NovalisMechanisms();
         StepRac1PlayerAudioPhysics();
-        StepRegisteredActorsPhysics();
+        ActorHost.Step(ToNumerics(_player.GlobalPosition), PlayerAlive, _movementStateLoading);
     }
 
     public override void _Process(double delta)
@@ -334,7 +336,7 @@ public partial class OBPGame : Node3D
         _frame++;
         Sources.Tick(delta, _mode is Mode.World or Mode.Selector or Mode.Title);
         TickFusionPreparation();
-        TickActorPreparation();
+        ActorHost.PollPreparation();
         _worldScenes?.Current?.Resources.Effects?.PrepareTick();
         TickSharedProfile(delta);
         TickRac1CampaignSaves(delta);
@@ -478,7 +480,7 @@ public partial class OBPGame : Node3D
         // An external exit can bypass normal world teardown. Finish campaign
         // persistence before shutting down its owning Godot session.
         FlushRac1CampaignSaves("clean exit");
-        ResetRegisteredActors();
+        ActorHost.Reset();
         _worldHost.Unload(releaseAudioImmediately: true);
         ResetRac1PlayerAudio(freeImmediately: true);
         ResetRac1WeaponAudio(freeImmediately: true);
@@ -591,7 +593,7 @@ public partial class OBPGame : Node3D
     private void RetireWorldBindings()
     {
         FlushRac1CampaignSaves("world teardown");
-        ResetRegisteredActors();
+        ActorHost.Reset();
         _playerNative?.Life.EndWorld(); _playerDamageActors.Clear();
         ClearFusionLabStatus();
         CloseWeaponQuickSelect();
@@ -1422,24 +1424,34 @@ public partial class OBPGame : Node3D
         Respawn = () => _playerNative!.Life.Respawn(),
     });
 
+    private ActorWorldHost CreateActorHost() => new(_hostOperations, new(
+        () => Sources.Setup.Library, SourceFileStamp, key => PlayerEquipmentSources.GetValueOrDefault(key.SourceGame),
+        (live, total, problems) => _navigation.UpdateLabStatus(live, total, problems),
+        actor => { _playerDamageActors.Remove(actor); _playerNative?.Life.RetireActor(actor); },
+        actor => _playerDamageActors.Contains(actor), () => _rac1BombOcclusionFrame = ulong.MaxValue,
+        id =>
+        {
+            _rac1BoltPickups.Discard(id); _rac1PickupMotion.Remove(id);
+            if (_rac1PickupNodes.Remove(id, out var node) && IsInstanceValid(node)) node.QueueFree();
+        }, () => unchecked((uint)(_args.FixedSeed ?? System.Environment.TickCount))), new(
+        new(() => _rac1MobyRuntime, () => _rac1Hostiles, _rac1HostileNodes, _rac1Enemies,
+            () => Rac1EnemyNodes.Concat(_rac1CrateNodes), ApplyRac1AdditionalDamage,
+            key => _rac1Captures.RemoveAll(capture => capture.Key == key),
+            () => _rac1PickupAssets, () => _equipmentPresentation.SelectedAssets,
+            (assets, materials) => { _rac1PickupAssets = assets; _rac1PickupMaterials = materials; }, TickRac1Hostiles, TickRac1Pickups),
+        new(_rac2Class2827Hostiles, _rac2OpeningMsr1, TickRac2OpeningMsr1NativeTick),
+        new(() => _rac3Class500Nodes, () => _rac3MobyRuntime)), new(
+        () => _player!.GetWorld3D().DirectSpaceState, Rac1DamageableRayExclusions, BombHasLineOfSight,
+        reason => _rac1CombatStatus = reason, () => _player?.Rac1WrenchFrame.Generation,
+        () => { if (_rac1PlayerAudio?.WrenchContact(false) is { } cue) PlayRac1PlayerSound(cue); }));
+
+    public EquipmentChangeResult ResetPlacedActor(string id) => ActorHost.ResetPlacement(id);
+
     private ITrilogyActorDiagnosticFixture CreateTrilogyActorDiagnosticFixture() => new GodotTrilogyActorDiagnosticFixture(new()
     {
-        World = () => _actorWorld,
-        Sources = () => ActorSources,
-        Rac2Animation = () => _rac2OpeningMsr1.Count == 1 && _rac2OpeningMsr1.Values.Single().Node.AnimationSample is not null,
-        Pump = TickActorPreparation,
-        Reset = id => ResetPlacedActor(id).Accepted,
+        Actors = () => ActorHost.Diagnostics,
         ResetEncounter = () => { ClearFusionTransients(); _rac1EffectRandom = Rac1PickupRandom.FromSeed(1440); },
-        ClearSources = ClearActorSourceCaches,
         ResetSharedAssets = ResetSharedWeaponAssets,
-        Prepare = PrepareActorSource,
-        DamageTarget = key => _playerDamageActors.Contains(key),
-        Scene = () => _sceneResult!.Root,
-        Enemies = () => _rac1Enemies.Count,
-        Hostiles = () => _rac1HostileNodes.Count,
-        FaultBindings = () => new(_rac1Hostiles, _rac1HostileNodes, _rac1Enemies, ObserveRac1Actor, ApplyRegisteredRac1Damage, ClearRegisteredActorTransients,
-            index => _rac1Captures.RemoveAll(capture => capture.Key == new Rac1MobyRuntimeKey(749, index)),
-            _ => throw new InvalidDataException("actor construction fixture"), _ => { }),
     });
 
     private UiDiagnosticHarness CreateUiDiagnosticHarness()
@@ -1781,7 +1793,7 @@ public partial class OBPGame : Node3D
             CatalogGadget = equip.SetGadget,
             CatalogAssign = equip.AssignSlot,
             CatalogPreview = CreateEquipmentAppearancePreview,
-            ActorStatusReader = ReadPlacedActorStatus,
+            ActorStatusReader = ActorHost.ReadStatus,
             SharedProfileStatusReader = () => _profileStatus,
             SaveNoticeReader = () => PlayerSaveNotice,
             ActorReset = ResetPlacedActor,
