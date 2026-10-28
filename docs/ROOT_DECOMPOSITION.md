@@ -202,6 +202,37 @@ The root only composes the already-existing menu read models and forwards
 stable public entrypoints. Reviewed temporary #348 root composition bindings
 expire with #376; the frozen origin/access ledger does not grow.
 
+The #349 persistent player/profile extraction retires the two root partials
+`OBPGame.PlayerSession.cs` and `OBPGame.Profile.cs`, moving lifecycle
+state to `PlayerSessionHost` and profile recovery/atomic persistence to
+`ProfileCoordinator`. Compared with #348's 66 root files, 16,035 lines,
+590 methods, 414 fields (271 mutable) and 43 exposed members, the root now
+has **64 files, 15,910 lines, 589 methods, 399 fields (256 mutable) and 43
+exposed members**. The 15 direct-field reduction consists of relocated native
+player/session/profile state, with two application-level composition references
+and read-only projections replacing legacy cross-partial callers.
+
+`PlayerSessionHost` owns the single player/native controller pair, world-entry
+session, selected entry mode and animation/control identity for the process
+lifetime. `ProfileCoordinator` owns the loaded profile, recovered/blocked write
+state, source provenance, opaque campaign contributor tracking, retained unknown
+fields, last committed destination, save-failure diagnostics and the 10-second
+world-active save clock. Both expose only bounded state/control operations to
+the root; native equipment laws and R&C1 campaign capture/restore remain in
+their existing source modules and explicit host ports. Avatar source staging and
+HUD rendering stay world-bound. Staged/failed world entry must not reset the
+persistent player or claim the profile destination. The existing save envelope,
+versions, atomic write guard, source mismatch rejection and retail-parity file
+isolation are unchanged.
+
+All 36 historical direct members from the two retired partials are recorded as
+retired; 30 exact, token-hashed root composition/read-only compatibility
+projections are temporary and expire with #376. Their narrow consumers should
+migrate to owned ports, rather than growing the root bridge. The frozen legacy
+source/owner ledger is unchanged. The source-free owner tests cover five-stop
+session identity, version/build rejection, blocked saves, absent profile,
+world-only autosave and opaque campaign preservation.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

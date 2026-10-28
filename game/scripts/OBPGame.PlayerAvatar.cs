@@ -1,3 +1,5 @@
+using OBP.IO;
+using OBP.RAC1.Presentation;
 using Godot;
 using OBP.Core;
 using OBP.Fusion;
@@ -12,6 +14,63 @@ public partial class OBPGame
 {
     private static readonly PlayerAvatarProviderRegistry PlayerAvatarProviders = new(
         [Rac1PlayerAvatarProvider.Instance, DiagnosticAvatarProvider.Instance]);
+
+    private void PrepareSelectedPlayerAssets()
+    {
+        EnsurePlayerSession();
+        RefreshPlayerSourceAvailability();
+        var selected = _playerSession!.Capture().Configuration;
+        _persistentPlayer.ResolvePresentationProfiles();
+        if (Engine.PhysicsTicksPerSecond != _playerAnimationProfile!.NativeTicksPerSecond)
+            throw new InvalidOperationException($"Selected player animation requires {_playerAnimationProfile.NativeTicksPerSecond} physics ticks per second.");
+        var avatar = selected.Avatar;
+        if (avatar.SourceGame == ObpSourceGame.Synthetic) return;
+        var availability = _playerSession.Availability(avatar.SourceGame, avatar.BuildId, true, true);
+        if (!availability.Usable) throw new InvalidOperationException(availability.Reason);
+        var source = Sources.Setup.Library.Get(avatar.SourceGame)!;
+        var file = new FileInfo(source.Path);
+        if (!file.Exists || file.Length != source.SizeBytes) throw new InvalidOperationException("The selected avatar source is missing or has changed size. Reattach it in Game Sources.");
+        var stamp = (file.Length, file.LastWriteTimeUtc.Ticks);
+        var provider = PlayerAvatarProviders.Get(avatar.SourceGame)
+            ?? throw new InvalidOperationException($"No provider for selected avatar {avatar.AvatarId}.");
+        if (_playerAvatar is null || _playerAvatarSourcePath != source.Path || _playerAvatarSourceGame != avatar.SourceGame || _avatarSourceStamp != stamp)
+        {
+            using var reader = new FileRandomAccessReader(source.Path);
+            var probe = Sources.Setup.Library.Probe(reader);
+            if (!probe.Supported || probe.Definition?.Authority.BuildId != avatar.BuildId)
+                throw new InvalidOperationException("The selected avatar source no longer identifies as the selected supported build.");
+            _playerAvatar = provider.Load(source.Path, avatar.AvatarId);
+            _playerAvatarSourcePath = source.Path; _playerAvatarSourceGame = avatar.SourceGame;
+            _avatarSourceStamp = stamp;
+            _rac1WrenchAsset = null; _rac1BombGloveAsset = null;
+            _rac1EquipmentAssets = null; _rac1EquipmentSource = null;
+            _selectedRac1PresentationAssets = null;
+        }
+        if (_playerAvatar.Identity != avatar) throw new InvalidOperationException("Decoded avatar identity differs from the selected player profile.");
+        if (avatar.SourceGame == ObpSourceGame.Rac1 && (_rac1WrenchAsset is null || _rac1WrenchSourcePath != source.Path))
+        {
+            _rac1WrenchAsset = Rac1WrenchAsset.Load(source.Path);
+            _rac1WrenchSourcePath = source.Path;
+        }
+        if (avatar.SourceGame == ObpSourceGame.Rac1)
+        {
+            if (_rac1BombGloveAsset is null || _rac1BombGloveSourcePath != source.Path)
+            {
+                _rac1BombGloveAsset = OBP.RAC1.Gameplay.Rac1BombGloveAssets.Load(source.Path);
+                _rac1BombGloveSourcePath = source.Path;
+            }
+            if (_rac1EquipmentAssets is null || _rac1EquipmentSource != source.Path)
+            {
+                _rac1EquipmentAssets = OBP.RAC1.Gameplay.Rac1EquipmentAssets.Load(source.Path);
+                _rac1EquipmentSource = source.Path;
+            }
+            if (OrdinaryPlayerSession && _selectedRac1PresentationAssets is null)
+                _selectedRac1PresentationAssets = OBP.RAC1.Gameplay.Rac1PickupAssets.Load(source.Path, 0);
+        }
+    }
+
+
+    private PlayerSessionConfiguration SelectedPlayerConfiguration => _playerSession!.Capture().Configuration;
 
     private PlayerAvatar? _playerAvatar;
     private string? _playerAvatarSourcePath;
