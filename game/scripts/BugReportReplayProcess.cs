@@ -35,6 +35,7 @@ internal static class BugReportReplayProcess
         }
         finally
         {
+            bool childCleanupFailed = false;
             try
             {
                 if (process >= 0 && ports.Running(process))
@@ -45,9 +46,22 @@ internal static class BugReportReplayProcess
                     if (ports.Running(process)) throw new BugReportChildCleanupException("Could not stop the owned replay process.");
                 }
             }
+            catch (BugReportChildCleanupException)
+            {
+                childCleanupFailed = true;
+                throw;
+            }
             finally
             {
-                if (!completed && File.Exists(request.ResultPath)) File.Delete(request.ResultPath);
+                try
+                {
+                    if (!completed && File.Exists(request.ResultPath)) File.Delete(request.ResultPath);
+                }
+                catch (Exception error) when (childCleanupFailed && error is IOException or UnauthorizedAccessException)
+                {
+                    // A live child may still hold its result open. Preserve the
+                    // stop failure that requires a nonzero host exit.
+                }
             }
         }
     }

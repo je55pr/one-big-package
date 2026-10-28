@@ -173,6 +173,11 @@ public sealed class BugReportInbox
         cancellationToken.ThrowIfCancellationRequested();
         if (new FileInfo(archive).Length > MaximumArchiveBytes) throw new InvalidDataException("Portable report exceeds 25 MB.");
         using var zip = ZipFile.OpenRead(archive);
+        return ImportArchive(zip, cancellationToken);
+    }
+
+    private BugReportSession ImportArchive(ZipArchive zip, CancellationToken cancellationToken)
+    {
         if (zip.Entries.Count != 2) throw new InvalidDataException("A portable report must contain only its manifest and recording.");
         var manifestEntry = zip.GetEntry("report.json") ?? throw new InvalidDataException("Report manifest missing.");
         using var buffer = new MemoryStream();

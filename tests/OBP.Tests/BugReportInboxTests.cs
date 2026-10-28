@@ -115,6 +115,65 @@ public sealed class BugReportInboxTests : IDisposable
     }
 
     [Fact]
+    public async Task CancellationDuringImportRemovesItsCreatedSessionAndRecording()
+    {
+        var source = Inbox;
+        Guid id = Guid.NewGuid();
+        // Span multiple bounded-copy chunks using deterministic, payload-free observations.
+        var random = new Random(1440);
+        var observations = Enumerable.Range(0, 128).ToDictionary(key => "fixture-" + key,
+            _ => new PlaytestValue(Enumerable.Range(0, 128).Select(_ => random.NextDouble()).ToArray()));
+        using var writer = new PlaytestRunWriter(Run, Header() with { InitialState = new(observations) });
+        var report = AddReport(writer, 0, "cancel active import");
+        var saved = await source.SaveAsync(id, writer, report);
+        Assert.True(saved.Recording.Bytes > 65536);
+        string archive = source.Export(id, report.Id);
+        byte[] original = File.ReadAllBytes(archive);
+        var target = new BugReportInbox(Path.Combine(_directory, "active-import"));
+        using var canceled = new CancellationTokenSource();
+        bool copying = false;
+        using var input = new ObservedReadStream(original, () =>
+        {
+            if (!Directory.Exists(target.Root) || canceled.IsCancellationRequested) return;
+            var recordings = Directory.GetFiles(target.Root, "*.run.jsonl.gz", SearchOption.AllDirectories);
+            if (recordings.Length == 0) return;
+            string recording = Assert.Single(recordings);
+            long copied = new FileInfo(recording).Length;
+            if (copied == 0) return;
+            Assert.InRange(copied, 1, saved.Recording.Bytes - 1);
+            Assert.False(File.Exists(Path.Combine(Path.GetDirectoryName(recording)!, "session.json")));
+            copying = true;
+            canceled.Cancel();
+        });
+        using var zip = new ZipArchive(input, ZipArchiveMode.Read);
+        var import = typeof(BugReportInbox).GetMethod("ImportArchive", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var error = Assert.Throws<TargetInvocationException>(() => import.Invoke(target, [zip, canceled.Token]));
+        Assert.Equal(canceled.Token, Assert.IsAssignableFrom<OperationCanceledException>(error.InnerException).CancellationToken);
+        Assert.True(copying);
+        Assert.Empty(target.List());
+        Assert.Empty(Directory.EnumerateFileSystemEntries(target.Root));
+        Assert.Equal(original, File.ReadAllBytes(archive));
+        Assert.Equal(report, source.Resolve(id, report.Id).Report);
+    }
+
+    private sealed class ObservedReadStream(byte[] bytes, Action afterRead) : MemoryStream(bytes)
+    {
+        public override int Read(Span<byte> buffer)
+        {
+            int count = base.Read(buffer);
+            afterRead();
+            return count;
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            int read = base.Read(buffer, offset, count);
+            afterRead();
+            return read;
+        }
+    }
+
+    [Fact]
     public void InterruptedCaptures_AreCountedSeparatelyAndNeverListedAsReadyReports()
     {
         var inbox = Inbox;

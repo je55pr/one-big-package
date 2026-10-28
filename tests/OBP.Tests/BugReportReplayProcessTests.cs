@@ -76,5 +76,25 @@ public sealed class BugReportReplayProcessTests : IDisposable
         Assert.False(File.Exists(Result));
     }
 
+    [SkippableTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LockedPartialResultCannotHideAnUnstoppableChild(bool stopThrows)
+    {
+        Skip.IfNot(OperatingSystem.IsWindows(), "Windows file-sharing regression; Unix permits deleting an open file.");
+        File.WriteAllText(Result, "partial");
+        using var locked = new FileStream(Result, FileMode.Open, FileAccess.Read, FileShare.Read);
+        Assert.Throws<IOException>(() => File.Delete(Result));
+        using var cancellation = new CancellationTokenSource();
+        ulong time = 0;
+        var ports = new BugReportProcessPorts(_ => { cancellation.Cancel(); return 42; }, _ => true,
+            _ => { if (stopThrows) throw new BugReportChildCleanupException("Child stop rejected."); },
+            _ => { time += 5000; return Task.CompletedTask; }, () => time);
+        var error = await Assert.ThrowsAsync<BugReportChildCleanupException>(() =>
+            BugReportReplayProcess.RunAsync(new(Result, []), ports, cancellation.Token));
+        Assert.Equal(stopThrows ? "Child stop rejected." : "Could not stop the owned replay process.", error.Message);
+        Assert.True(File.Exists(Result));
+    }
+
     public void Dispose() => Directory.Delete(_directory, recursive: true);
 }
