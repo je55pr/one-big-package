@@ -248,7 +248,7 @@ public sealed class Rac2MobyNativePoseTests
     }
 
     [Fact]
-    public void ClassTableSkipsFailuresBeforeNativePoseAdmission()
+    public void ClassTableFallsBackToLegacyMeshWhenStrictCacheRecoveryRejectsTheClass()
     {
         var source = PacketClass();
         source[0x5c] = 3; // Invalid epilogue, before native pose admission.
@@ -261,8 +261,9 @@ public sealed class Rac2MobyNativePoseTests
         var classes = GcUyaMoby.ReadClasses(index, assets, [], new(1, 0),
             recoverPersistentVertexCache: _ => true,
             previewNativeInitialPose: id => { Assert.Equal(2827, id); previewCalls++; return true; });
-        Assert.Empty(classes);
-        Assert.Equal(0, previewCalls);
+        Assert.True(classes.TryGetValue(2827, out var recovered));
+        Assert.Equal(GcUyaMoby.ReadClass(source).Positions, recovered.Mesh.Positions);
+        Assert.Equal(1, previewCalls);
     }
 
     [Fact]

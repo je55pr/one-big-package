@@ -1213,8 +1213,21 @@ public static class GcUyaMoby
                 // and trailing epilogue rules are safe to apply.
                 bool compatiblePacketFormat = classBuf.Length > 0x0b &&
                     classBuf[0x0b] == 0;
-                var mesh = ReadClass(classBuf,
-                    recoverPersistentVertexCache?.Invoke(oClass) == true && compatiblePacketFormat);
+                bool recoverCache = recoverPersistentVertexCache?.Invoke(oClass) == true &&
+                    compatiblePacketFormat;
+                Mesh mesh;
+                try
+                {
+                    mesh = ReadClass(classBuf, recoverCache);
+                }
+                catch (InvalidDataException) when (recoverCache)
+                {
+                    // A valid GC-format marker alone does not guarantee every
+                    // authored cache/epilogue variant is supported. Keep the
+                    // previously available class on the established decoder
+                    // when strict recovery rejects an unsupported packet.
+                    mesh = ReadClass(classBuf);
+                }
                 var triTexIds = mesh.TriangleMaterialSlots
                     .Select(slot => slot >= 0 && slot < 16 ? textures[slot] : -1)
                     .ToArray();

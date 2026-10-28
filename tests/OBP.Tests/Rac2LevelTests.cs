@@ -578,9 +578,13 @@ public class Rac2LevelTests
         // 2 oc1134 instances are lifted out as animated mobies (below). Native material
         // presentation splits two same-texture Moby surface buckets without adding triangles.
         Assert.Equal(304, world.Meshes.Count);
-        Assert.Equal(1_860_879, world.TotalRenderTriangles);
-        Assert.Equal(21_470, world.TotalDynamicTriangles);
-        Assert.Equal(1_882_349, world.TotalRenderTriangles + world.TotalDynamicTriangles);
+        // The native packet-cache path recovers additional source geometry;
+        // keep the historical witness for OBP_RAC2_LEGACY_MOBY=1.
+        bool nativePose = Rac2MobyClasses.NativePoseEnabledForLevel(1);
+        Assert.Equal(nativePose ? 1_950_147 : 1_860_879, world.TotalRenderTriangles);
+        Assert.Equal(nativePose ? 23_560 : 21_470, world.TotalDynamicTriangles);
+        Assert.Equal(nativePose ? 1_973_707 : 1_882_349,
+            world.TotalRenderTriangles + world.TotalDynamicTriangles);
         Assert.Equal(398, world.MaterialCount);
 
         int Meshes(string kind) => world.Meshes.Count(m => m.AssetKind == kind);
@@ -589,7 +593,8 @@ public class Rac2LevelTests
         Assert.Equal((80, 27_384), (Meshes("tfrag"), Tris("tfrag"))); // chunk 0: 77 / 26,192 + chunk 1: 3 / 1,192
         Assert.Equal((79, 674_252), (Meshes("tie"), Tris("tie")));
         Assert.Equal((38, 852_785), (Meshes("shrub"), Tris("shrub")));
-        Assert.Equal((101, 304_186), (Meshes("moby"), Tris("moby")));
+        Assert.Equal((101, nativePose ? 393_454 : 304_186),
+            (Meshes("moby"), Tris("moby")));
         Assert.Equal((1, 576), (Meshes("moby-marker"), Tris("moby-marker")));
         Assert.Equal((4, 1_694), (Meshes("sky"), Tris("sky")));
         Assert.Equal((1, 2), (Meshes("death-plane"), Tris("death-plane")));
@@ -684,7 +689,7 @@ public class Rac2LevelTests
         {
             Assert.Equal("moby", am.AssetKind);
             Assert.Equal(170, am.Frames.Count);
-            Assert.Equal(91, am.TriangleCount);
+            Assert.Equal(nativePose ? 94 : 91, am.TriangleCount);
             Assert.All(am.Frames, f => Assert.Equal(am.VertexCount * 3, f.Length));
             Assert.Equal(am.VertexCount * 4, am.Colors.Length);
         }
@@ -721,8 +726,9 @@ public class Rac2LevelTests
         // oc2602 instances (200-frame spin) are lifted out as animated mobies;
         // class 500 crates, opening lift/doors and Aranos class-2827 MSR I hostiles
         // are preserved separately as per-instance dynamic objects.
-        Assert.Equal(138_009, Tris("moby"));
-        Assert.Equal(91_651, world.TotalDynamicTriangles);
+        bool nativePose = Rac2MobyClasses.NativePoseEnabledForLevel(0);
+        Assert.Equal(nativePose ? 167_941 : 138_009, Tris("moby"));
+        Assert.Equal(nativePose ? 100_838 : 91_651, world.TotalDynamicTriangles);
         Assert.Equal(43, world.DynamicObjects!.Count(o => o.NativeClassId == 500));
         Assert.Single(world.DynamicObjects!, o => o.NativeClassId == Rac2AranosOpeningLiftSession.NativeClassId);
         Assert.Equal(2, world.DynamicObjects!.Count(o => o.NativeClassId == Rac2AranosOpeningDoorSession.NativeClassId));

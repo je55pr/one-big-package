@@ -23,7 +23,7 @@ public sealed class Rac2MobyPacketCacheRetailTests(ITestOutputHelper log)
         var classes = Rac2MobyClasses.Read(core);
         int totalDups = 0, oldMissing = 0, correctLocalMissing = 0, priorPacketDups = 0,
             totalImpossible = 0, affectedClasses = 0, affectedPackets = 0, epilogueChanged = 0,
-            badEpilogue = 0, skipped = 0;
+            badEpilogue = 0, skipped = 0, alternateFormatClasses = 0;
         var witnesses = new List<(int Id, int Packets, int Dups, int OldMissing,
             int LocalMissing, int CrossPacket, int Impossible, int EpilogueChanged)>();
         var table = core.Header.MobyClasses;
@@ -35,9 +35,18 @@ public sealed class Rac2MobyPacketCacheRetailTests(ITestOutputHelper log)
             if (start <= 0 || !classes.ContainsKey(id)) continue;
             int end = core.SectionBoundaries.FirstOrDefault(b => b > start, core.Assets.Length);
             var buf = core.Assets.AsSpan(start, end - start);
+            // R&C2 can embed R&C1 packet classes. These do not use the GC
+            // persistent-slot epilogue and must not be audited as GC packets.
+            if (buf.Length <= 0x0b || buf[0x0b] != 0)
+            {
+                alternateFormatClasses++;
+                continue;
+            }
             int packetTable = BinaryPrimitives.ReadInt32LittleEndian(buf);
             int count = buf[4];
-            if (packetTable < 0 || packetTable + count * 16 > buf.Length) continue;
+            // Zero denotes no external packet table. Decoding the class header
+            // as a packet produced a false epilogue error (class 71).
+            if (packetTable <= 0 || packetTable + count * 16 > buf.Length) continue;
             var global = new HashSet<int>();
             int clsDups = 0, clsOld = 0, clsLocal = 0, clsCross = 0, clsImpossible = 0, clsChanged = 0;
             int worked = 0;
@@ -57,7 +66,11 @@ public sealed class Rac2MobyPacketCacheRetailTests(ITestOutputHelper log)
                 int basePos = vh + vo;
                 if (n > 4096 || n < 1 || basePos + n * 16 > buf.Length || dataSize * 16 + vh > buf.Length) { skipped++; continue; }
                 int epi = dataSize - vo / 16 - n;
-                if (epi < 1 || epi > 6) { badEpilogue++; continue; }
+                if (epi < 1 || epi > 6)
+                {
+                    badEpilogue++;
+                    continue;
+                }
                 int[] raw = new int[n], old = new int[n], correct = new int[n];
                 for (int v = 0; v < n; v++)
                     raw[v] = BinaryPrimitives.ReadUInt16LittleEndian(buf.Slice(basePos + v * 16)) & 511;
@@ -110,6 +123,7 @@ public sealed class Rac2MobyPacketCacheRetailTests(ITestOutputHelper log)
         foreach (var w in witnesses.OrderByDescending(w => w.CrossPacket).ThenByDescending(w => w.OldMissing).Take(35))
             log.WriteLine($"class={w.Id} packets={w.Packets} dup={w.Dups} old_missing={w.OldMissing} current_missing={w.LocalMissing} from_prior={w.CrossPacket} impossible={w.Impossible} late_id_changes={w.EpilogueChanged}");
         Assert.True(totalDups > 0);
+        Assert.Equal(1, alternateFormatClasses); // Class 2700 is R&C1-format.
         Assert.Equal(0, totalImpossible);
         Assert.Equal(0, badEpilogue);
     }
