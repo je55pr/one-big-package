@@ -107,7 +107,7 @@ public partial class OBPGame
                 continue;
             }
             _rac3AdmittedClass500++;
-            var node = FindPresentedDynamic(result, source);
+            var node = Rac1WorldPresentation.FindPresentedDynamic(result, source);
             if (node is null)
             {
                 unpresented++;

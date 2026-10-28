@@ -29,7 +29,7 @@ public partial class OBPGame
     }
 
     private MovementReproWorld CaptureMovementWorld() => new(
-        _rac1MobyRuntime.Instances
+        Rac1World.Context.MobyRuntime.Instances
             .Where(instance => !instance.IsActive ||
                 _rac1Enemies.TryGetValue(instance.InstanceIndex, out var enemy) && enemy.RewardEmitted)
             .OrderBy(instance => instance.InstanceIndex)
@@ -37,7 +37,7 @@ public partial class OBPGame
                 instance.State.IsTerminalized ||
                 _rac1Enemies.TryGetValue(instance.InstanceIndex, out var enemy) && enemy.RewardEmitted)).ToArray(),
         _rac1Weapons.CapturePersistentState(), _rac1Weapons.CurrentItemId, _rac1BoltWallet.Balance,
-        _rac1AdditionalWeapons?.Cargo.ToArray(), _rac1WeaponPreviewInventory is not null,
+        _rac1AdditionalWeapons?.Cargo.ToArray(), _persistentPlayer.WeaponPreview is not null,
         _rac1Chickens.Values.Where(chicken => IsRac1GameplayActive(chicken.Enemy.Node) && !chicken.Enemy.RewardEmitted)
             .Select(chicken => new Rac1MobyRuntimeKey(chicken.Enemy.Node.Source.NativeClassId, chicken.Enemy.Node.Source.InstanceIndex))
             .Concat(_rac1ChickenCargo).Distinct().ToArray())
@@ -56,15 +56,15 @@ public partial class OBPGame
             else MorphArsenalEnemy(enemy.Node);
         }
         var objects = world.InactiveObjects.Select(saved =>
-            (Saved: saved, Instance: _rac1MobyRuntime.TryGet(saved.Key, out var instance) ? instance! :
+            (Saved: saved, Instance: Rac1World.Context.MobyRuntime.TryGet(saved.Key, out var instance) ? instance! :
                 throw new InvalidDataException($"Saved object {saved.Key} is unavailable in this world."))).ToArray();
         foreach (var (saved, instance) in objects)
         {
-            _rac1MobyRuntime.SetNativeState(instance, saved.NativeState);
-            if (saved.Terminalized && !instance.State.IsTerminalized) _rac1MobyRuntime.Terminalize(instance);
-            var node = FindPresentedDynamic(_sceneResult!, instance.Source);
+            Rac1World.Context.MobyRuntime.SetNativeState(instance, saved.NativeState);
+            if (saved.Terminalized && !instance.State.IsTerminalized) Rac1World.Context.MobyRuntime.Terminalize(instance);
+            var node = Rac1WorldPresentation.FindPresentedDynamic(_sceneResult!, instance.Source);
             if (node is not null) SetRac1HostedPresence(node, RuntimeEntityPresence.Inactive);
-            else _rac1MobyRuntime.SetPresence(instance, RuntimeEntityPresence.Inactive);
+            else Rac1World.Context.MobyRuntime.SetPresence(instance, RuntimeEntityPresence.Inactive);
             if (_rac1Enemies.TryGetValue(instance.InstanceIndex, out var enemy))
             {
                 enemy.RewardEmitted = enemy.DeathPresented = saved.Terminalized;
@@ -78,7 +78,7 @@ public partial class OBPGame
                 if (saved.Terminalized)
                 {
                     var authored = Rac1BoltCrate.ReadAuthored(instance.Source)!;
-                    _rac1MobyPersistence.UpdateUid(instance.Source with { NativeUid = authored.Uid },
+                    Rac1World.Context.MobyPersistence.UpdateUid(instance.Source with { NativeUid = authored.Uid },
                         Rac1MobyUidPersistenceBits.BothSet);
                 }
             }
@@ -87,7 +87,7 @@ public partial class OBPGame
                 int id = Rac1PlacedBoltSession.PickupId(instance.InstanceIndex);
                 _rac1PendingPlacedBolts.RemoveAll(pending => pending.Registration.PickupId == id);
                 _rac1PlacedBoltNodes.Remove(id);
-                _rac1PickupNodes.Remove(id);
+                Rac1World.Presentation.PickupNodes.Remove(id);
                 _rac1PickupMotion.Remove(id);
             }
         }
@@ -158,9 +158,9 @@ public partial class OBPGame
             {
                 EnsureRac1CampaignPersistenceInitialized();
                 var inventory = new Rac1WeaponInventory(savedWorld.Inventory, savedWorld.CurrentItemId);
-                _rac1WeaponPreviewInventory = savedWorld.WeaponPreview ? inventory : null;
+                _persistentPlayer.WeaponPreview = savedWorld.WeaponPreview ? inventory : null;
                 if (!savedWorld.WeaponPreview)
-                    _rac1CampaignSession = new Rac1CampaignRuntimeSession(_rac1CampaignSession.Campaign, inventory);
+                    _rac1Campaign.Session = new Rac1CampaignRuntimeSession(_rac1Campaign.Session.Campaign, inventory);
                 _rac1BoltWallet = new Rac1BoltWallet(savedWorld.Bolts);
             }
             OpenDestinationFromBootstrap(state.Destination);

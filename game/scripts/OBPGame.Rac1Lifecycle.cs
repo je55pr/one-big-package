@@ -59,10 +59,10 @@ public partial class OBPGame
         _rac1HeldItem.ResetForLevelEntry();
         RefreshRac1WrenchPresentationVisibility();
         string source = automatic ? "automatic" : "development manual";
-        _rac1CombatStatus =
+        Rac1World.Context.CombatStatus =
             $"{source} environmental respawn L{_world!.LevelId} ({restart.Kind}): Nanotech {respawn.Nanotech}";
         RefreshRac1HudState();
-        GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
+        GD.Print($"[rac1-gameplay] {Rac1World.Context.CombatStatus}");
         return true;
     }
 
@@ -70,7 +70,7 @@ public partial class OBPGame
     {
         var death = _rac1Nanotech.Probe();
         if (_world is not { Game.SourceGame: ObpSourceGame.Rac1 } world ||
-            _rac1CampaignSession.LevelCheckpoint is not { } checkpoint ||
+            _rac1Campaign.Session.LevelCheckpoint is not { } checkpoint ||
             checkpoint.NativeLevelId != world.LevelId ||
             !death.HasRecoveredEnvironmentalRespawn)
             return null;
@@ -94,16 +94,16 @@ public partial class OBPGame
                 NativeVerticalPosition: _player.GlobalPosition.Y,
                 DeathHeight: environment.DeathHeight,
                 ContactSeparation: contactSeparation,
-                NativeSpecialPlayerState20A4: _rac1NativePlayerState20A4));
+                NativeSpecialPlayerState20A4: Rac1World.Context.NativePlayerState20A4));
         if (dead is null) return;
 
-        _rac1LastEnvironmentalDeathBoundary = dead;
-        _rac1LastEnvironmentalDeathPosition = _player.GlobalPosition;
-        _rac1LastEnvironmentalDeathContactSeparation = contactSeparation;
+        Rac1World.Context.LastEnvironmentalDeathBoundary = dead;
+        Rac1World.Presentation.LastEnvironmentalDeathPosition = _player.GlobalPosition;
+        Rac1World.Context.LastEnvironmentalDeathContactSeparation = contactSeparation;
         _player.Rac1GameplayState = dead;
-        _rac1CombatStatus = $"Veldin death plane: state 0x{dead.NativePlayerState:x2}, sequence {dead.NativeSequence} frame {dead.NativeSequenceFrame}; Nanotech {dead.Nanotech}";
+        Rac1World.Context.CombatStatus = $"Veldin death plane: state 0x{dead.NativePlayerState:x2}, sequence {dead.NativeSequence} frame {dead.NativeSequenceFrame}; Nanotech {dead.Nanotech}";
         RefreshRac1HudState();
-        GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
+        GD.Print($"[rac1-gameplay] {Rac1World.Context.CombatStatus}");
     }
 
     private double MeasureRac1ContactSeparation()

@@ -54,7 +54,7 @@ public partial class OBPGame
         foreach (var candidate in (world.DynamicObjects ?? [])
             .Where(moby => moby.NativeClassId == Rac1AmoeboidTargetSelection.TargetClassId))
         {
-            var node = FindPresentedDynamic(result, candidate);
+            var node = Rac1WorldPresentation.FindPresentedDynamic(result, candidate);
             if (node is null) continue; // No source-backed presented target.
             var placement = instances[candidate.InstanceIndex];
             int group = Rac1AmoeboidAuthored.ReadGroup(placement.RawRecord);
@@ -74,7 +74,7 @@ public partial class OBPGame
                 _rac1AmoeboidTargetGroups.Add(group, members = []);
             members.Add(node);
         }
-        _rac1Amoeboids = new(_rac1MobyRuntime,
+        _rac1Amoeboids = new(Rac1World.Context.MobyRuntime,
             Rac1AmoeboidPathRouter.Read(gameplay),
             // Exact source 0x276fe8 waypoint/mask search, but Godot's
             // world ray query substitutes for native 0x261968 segment collision.
@@ -86,13 +86,13 @@ public partial class OBPGame
             var placement = instances[source.InstanceIndex];
             var authored = Rac1AmoeboidAuthored.Read(placement.OClass,
                 placement.PVar ?? throw new InvalidDataException("Amoeboid has no authored PVar."));
-            var node = FindPresentedDynamic(result, source)
+            var node = Rac1WorldPresentation.FindPresentedDynamic(result, source)
                 ?? throw new InvalidDataException($"Native Amoeboid i{source.InstanceIndex} has no original mesh.");
             var born = _rac1Amoeboids.Register(source, node.State, authored,
                 Rac1AmoeboidAuthored.ReadGroup(placement.RawRecord),
                 new(placement.Position.X, placement.Position.Y, placement.Position.Z),
                 placement.Rotation.Z);
-            node.ApplyState(_rac1MobyRuntime.Require(source).EntityState);
+            node.ApplyState(Rac1World.Context.MobyRuntime.Require(source).EntityState);
             // The original state12 and state13 actors aren't drawn or solid.
             if (!born.Active) node.Root.Visible = false;
             presented.Add(node);
@@ -138,8 +138,8 @@ public partial class OBPGame
         var node = enemy.Node;
         enemy.Body.GlobalPosition = FromEffectNative(frame.Position);
         node.Root.GlobalPosition = enemy.Body.GlobalPosition;
-        var instance = _rac1MobyRuntime.Require(node.Source);
-        _rac1MobyRuntime.SetTransform(instance, RuntimeWorldScene.ToRuntimeTransform(node.Root.Transform));
+        var instance = Rac1World.Context.MobyRuntime.Require(node.Source);
+        Rac1World.Context.MobyRuntime.SetTransform(instance, RuntimeWorldScene.ToRuntimeTransform(node.Root.Transform));
         node.Root.Visible = true;
         enemy.Body.CollisionLayer = 1;
         enemy.Body.CollisionMask = 1;
@@ -224,12 +224,12 @@ public partial class OBPGame
     private bool ApplyRac1AmoeboidDamage(RuntimeWorldScene.DynamicObjectNode node,
         Rac1GameplayDamageEvent damage)
     {
-        if (_rac1Amoeboids is null || !_rac1MobyRuntime.CanDispatchDamage(damage)) return false;
-        var result = _rac1MobyRuntime.DispatchDamage<Rac1AmoeboidDamageResult>(damage);
+        if (_rac1Amoeboids is null || !Rac1World.Context.MobyRuntime.CanDispatchDamage(damage)) return false;
+        var result = Rac1World.Context.MobyRuntime.DispatchDamage<Rac1AmoeboidDamageResult>(damage);
         var parent = _rac1Enemies[node.Source.InstanceIndex];
         parent.Body.CollisionLayer = 0;
         parent.Body.CollisionMask = 0;
-        node.ApplyState(_rac1MobyRuntime.Require(node.Source).EntityState);
+        node.ApplyState(Rac1World.Context.MobyRuntime.Require(node.Source).EntityState);
         node.Root.Visible = false;
         foreach (var child in result.Children)
             ActivateRac1Amoeboid(child);

@@ -25,7 +25,7 @@ public partial class OBPGame
             e.Node.Source.NativeClassId == Rac1FrogSession.ClassId &&
             _rac1Frogs.Get(e.Node.Source.InstanceIndex).CarrierMode).ToArray();
         if (carrierEnemies.Length == 0) return;
-        var donor = _rac1CrateNodes.FirstOrDefault(crate =>
+        var donor = Rac1World.Presentation.CrateNodes.FirstOrDefault(crate =>
             crate.Source.NativeClassId == Rac1FrogSession.CarrierChildClassId &&
             crate.Root.GetChildren().OfType<MeshInstance3D>().Any());
         if (donor is null)
@@ -93,7 +93,7 @@ public partial class OBPGame
         _rac1FrogCarrierChildren.Remove(instance);
         enemy.Body.CollisionLayer = 0;
         enemy.Body.CollisionMask = 0;
-        enemy.Node.ApplyState(_rac1MobyRuntime.Require(enemy.Node.Source).EntityState);
+        enemy.Node.ApplyState(Rac1World.Context.MobyRuntime.Require(enemy.Node.Source).EntityState);
         GD.Print($"[frog-carrier] class500 child hit removed parent i{instance}, no crate payout");
         return true;
     }
@@ -133,7 +133,7 @@ public partial class OBPGame
         var authored = _rac1Frogs.GetAuthored(instance);
         if (authored.TargetInstance >= 0)
         {
-            if (!_rac1LinkedTargetNodes.TryGetValue(authored.TargetInstance, out var linked) ||
+            if (!Rac1World.Presentation.LinkedTargets.TryGetValue(authored.TargetInstance, out var linked) ||
                 !IsInstanceValid(linked.Root) || !IsRac1GameplayActive(linked))
                 eligible = false;
             else target = linked.Root.GlobalPosition;
@@ -147,7 +147,7 @@ public partial class OBPGame
         bool active = frame.Presented;
         enemy.Body.CollisionLayer = active ? 1u : 0u;
         enemy.Body.CollisionMask = active ? 1u : 0u;
-        enemy.Node.ApplyState(_rac1MobyRuntime.Require(enemy.Node.Source).EntityState);
+        enemy.Node.ApplyState(Rac1World.Context.MobyRuntime.Require(enemy.Node.Source).EntityState);
         SelectRac1EnemySequence(enemy, frame.Sequence, 5);
         GD.Print($"[frog-carrier] parent i{instance} released native class500 child at four-unit target gate");
     }

@@ -95,13 +95,13 @@ public partial class OBPGame
         _playerNative?.SetEquipmentPreview(!disable);
         if (disable)
         {
-            _rac1WeaponPreviewInventory = null;
-            _rac1BombGlove = new(_rac1Weapons); ResetRac1AdditionalWeapons();
+            _persistentPlayer.WeaponPreview = null;
+            Rac1World.Context.BombGlove = new(_rac1Weapons); ResetRac1AdditionalWeapons();
             ReportMovementState("Weapon preview disabled; campaign equipment restored.");
         }
         else
         {
-            _rac1WeaponPreviewInventory ??= _playerNative?.Inventory ?? new(_rac1CampaignSession.Weapons.CapturePersistentState(), _rac1Weapons.CurrentItemId);
+            _persistentPlayer.WeaponPreview ??= _playerNative?.Inventory ?? new(_rac1Campaign.Session.Weapons.CapturePersistentState(), _rac1Weapons.CurrentItemId);
             _rac1Weapons.AcquireNativeItem(Rac1MetalDetectorSession.NativeGadgetItem);
             foreach (var weapon in Rac1WeaponProfiles.Additional.Select(profile => profile.Item).Append(Rac1WeaponId.FirstRanged))
             {
@@ -111,7 +111,7 @@ public partial class OBPGame
             // Rebind once when entering preview; refilling does not erase live cargo.
             if (_rac1AdditionalWeaponsInventory != _rac1Weapons)
             {
-                _rac1BombGlove = new(_rac1Weapons); ResetRac1AdditionalWeapons();
+                Rac1World.Context.BombGlove = new(_rac1Weapons); ResetRac1AdditionalWeapons();
             }
             ReportMovementState("Full arsenal preview: hold Triangle to select, Circle to use. Refill or restore campaign equipment from Pause → Testing Equipment.");
         }
@@ -272,7 +272,7 @@ public partial class OBPGame
             if (_rac1EquipmentGeometryFrame == frame) return _rac1EquipmentGeometry;
             _rac1EquipmentGeometryFrame = frame;
             var geometry = new List<(RuntimeWorldScene.DynamicObjectNode, Aabb)>();
-            foreach (var node in Rac1EnemyNodes.Concat(_rac1CrateNodes).Concat(Rac1QueenDamageTargets))
+            foreach (var node in Rac1EnemyNodes.Concat(Rac1World.Presentation.CrateNodes).Concat(Rac1QueenDamageTargets))
             {
                 if (!IsInstanceValid(node.Root) ||
                     (node.Source.NativeClassId == Rac1FrogQueenGroup.QueenClassId
@@ -337,17 +337,17 @@ public partial class OBPGame
     {
         if (target.Source.NativeClassId == Rac1FrogQueenGroup.QueenClassId)
             return ApplyRac1QueenWeaponDamage(target, damage);
-        if (!_rac1MobyRuntime.CanDispatchDamage(damage)) return false;
+        if (!Rac1World.Context.MobyRuntime.CanDispatchDamage(damage)) return false;
         bool applied;
         if (Rac1BoltCrate.IsCrateClass(target.Source.NativeClassId))
         {
-            CompleteRac1CrateDamage(target, _rac1MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage));
+            CompleteRac1CrateDamage(target, Rac1World.Context.MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage));
             applied = true;
         }
         else if (target.Source.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
             applied = TryTriggerRac1ExplosiveDamage(target, damage);
         else applied = ApplyRac1EnemyWeaponDamage(target, damage);
-        if (applied) _rac1DamageTransport.Publish(damage);
+        if (applied) Rac1World.Context.DamageTransport.Publish(damage);
         return applied;
     }
 

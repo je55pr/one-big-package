@@ -24,7 +24,7 @@ public partial class OBPGame
         {
             if (!Rac1NovalisBreakableSession.IsAdmitted(world.LevelId, source.NativeClassId))
                 continue;
-            var node = FindPresentedDynamic(result, source)
+            var node = Rac1WorldPresentation.FindPresentedDynamic(result, source)
                 ?? throw new InvalidDataException("Novalis mushroom/rock lacks its imported visual.");
             _rac1NovalisBreakables.Register(world.LevelId, source.NativeClassId, source.InstanceIndex);
             _rac1NovalisBreakableNodes.Add(source.InstanceIndex, node);
@@ -53,7 +53,7 @@ public partial class OBPGame
                 int value = Rac1EffectRandom.Inclusive(
                     Rac1NovalisBreakableSession.PlantBoltMinimum,
                     Rac1NovalisBreakableSession.PlantBoltMaximum);
-                SpawnRac1BoltPickups(plant, _rac1BoltPickups.Emit(value));
+                SpawnRac1BoltPickups(plant, Rac1World.Context.BoltPickups.Emit(value));
             }
         }
         GD.Print($"[rac1-novalis] {node.Source.NativeClassId} instance {node.Source.InstanceIndex} " +

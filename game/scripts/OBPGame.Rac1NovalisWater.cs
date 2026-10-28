@@ -44,8 +44,8 @@ public partial class OBPGame
         // orchestration remains outside the bounded water controller.
         var dead = _rac1Nanotech.ApplyEnvironmentalDeathReset();
         _player.Rac1GameplayState = dead;
-        _rac1CombatStatus = "Novalis drowned (native water action completed)";
+        Rac1World.Context.CombatStatus = "Novalis drowned (native water action completed)";
         RefreshRac1HudState();
-        GD.Print($"[rac1-novalis-water] {_rac1CombatStatus}");
+        GD.Print($"[rac1-novalis-water] {Rac1World.Context.CombatStatus}");
     }
 }

@@ -493,6 +493,35 @@ Both retired equipment/capture-session partials stay absent. The combined ledger
 retains both migrations' composition boundaries and retired permissions without
 expanding the frozen origin.
 
+The #360 R&C1 world extraction retires `OBPGame.Rac1Gameplay.cs` and
+`OBPGame.Rac1Presentation.cs`. After reconciling the #351 equipment and
+#356 capture/replay extractions at `3d91db1`, the root moves from 50 files,
+13,494 lines, 506 methods, 353 fields (221 mutable) and 1,409 cross-file references
+to 48 files, 13,096 lines, 495 methods, 324 fields (201 mutable)
+and 1,258 references. Its exposed surface remains 43 members. Fifty-one historical permissions retire; eight exact temporary
+composition bindings replace them. The campaign reference expires with #372;
+the remaining module, player projection and HUD bindings expire with #376.
+The frozen origin/access inventory does not expand.
+
+`GodotWorldResources` owns one `Rac1WorldModule`, native `Rac1WorldContext`
+and scene-only presentation adapter per lease. The module preserves the existing
+configure/reset/render callback order; source controllers and the player's
+physics callbacks retain their native 60-Hz rules. Typed mechanic/action ports
+allow later enemy, loot, weapon and area owners to replace the retained
+composition callbacks without acquiring privileged root access. The actor bridge
+resolves the active hostile dictionary lazily, then binds it to that world's
+factory; construction before world entry never captures a retired dictionary.
+
+The persistent `Rac1CampaignHost` retains the original source campaign and parity
+wallet, separately from `PlayerSessionHost` and its ordinary native player state.
+World retirement detaches player/source events, releases mechanic bindings and
+clears only that lease's views and projectiles. Repeated disposal cannot invoke
+the old callbacks against a replacement world. Failed staging still leaves the
+live lease untouched. `Rac1WorldContextTests` checks shared Moby/reward identity
+and isolation across repeated authored IDs; persistent-player and engine
+reconciliation checks cover continuity, original-world checkpoints, HUD and
+same-build replay. Source builds, native IDs and save/replay formats are unchanged.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

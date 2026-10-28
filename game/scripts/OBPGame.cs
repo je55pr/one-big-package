@@ -80,6 +80,58 @@ public partial class OBPGame : Node3D
 
 
     private readonly PlayerSessionHost _persistentPlayer = new();
+    private readonly Rac1CampaignHost _rac1Campaign = new();
+    private Rac1WorldModule Rac1World => _worldScenes?.Current?.Resources.Rac1Gameplay
+        ?? throw new InvalidOperationException("R&C1 gameplay requires an active scene lease.");
+    private Rac1BoltWallet _rac1BoltWallet { get => _persistentPlayer.Rac1Wallet(_rac1Campaign.Wallet); set => _rac1Campaign.Wallet = value; }
+    private Rac1RatchetNanotechSession _rac1Nanotech => _persistentPlayer.Rac1Health;
+    private Rac1WeaponInventory _rac1Weapons => _persistentPlayer.Rac1Weapons(_fusion, FusionTestActive, _rac1Campaign.Session.Weapons);
+    private Rac1HeldItemSession _rac1HeldItem => _persistentPlayer.Rac1Held;
+
+    private Rac1WorldModule CreateRac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene) => new(world, scene, Rac1EffectRandom,
+        new Rac1WorldResetPorts(
+            Player: () =>
+            {
+                if (_playerNative is null) { ResetFusionWeapons(); _rac1HeldItem.ResetForLevelEntry(); }
+                else { ClearFusionTransients(); ReleaseFusionWeaponViews(); _playerNative.EndWorld(); }
+            },
+            Wheel: () => { _lastQuickSelectTap = 0; _previousSelectedWeapon = null; },
+            Taxis: ResetRac1MetropolisTaxis, Water: () => _rac1NovalisWater = null,
+            Music: ResetRac1NovalisMusic, RedPlants: ResetRac1RedPlants, PulsingOrbs: ResetRac1PulsingOrbs,
+            Explosives: ResetRac1ExplosiveCrates, Checkpoints: ResetRac1CheckpointTriggers,
+            Missions: ResetRac1Missions, MetalDetector: ResetRac1MetalDetector, Wrench: ResetRac1WrenchHost,
+            Retry: ResetRac1CombatRetry, Enemies: ResetRac1Enemies, Pickups: ResetRac1PickupPresentation,
+            GoldBolts: ResetRac1GoldBolts, Cranks: ResetRac1NovalisCranks, Breakables: ResetRac1NovalisBreakables,
+            Mechanisms: () => _rac1NovalisMechanisms.Clear(), AdditionalWeapons: ResetRac1AdditionalWeapons,
+            BombPresentation: ResetRac1BombPresentation),
+        new Rac1WorldActorPorts(ConfigureRac1PickupPresentation, AddRac1CrateCollider,
+            ConfigureRac1ExplosiveCrates, ConfigureRac1CheckpointTriggers, ConfigureRac1Missions, ConfigureRac1MetalDetector,
+            ConfigureRac1PlacedBolts, ConfigureRac1GoldBolts, ConfigureRac1RedPlants, ConfigureRac1PulsingOrbs,
+            ConfigureRac1NovalisCranks, ConfigureRac1NovalisBreakables, ConfigureRac1NovalisMechanisms,
+            ConfigureRac1NovalisWater, ConfigureRac1NovalisMusic, ConfigureRac1Enemies, ConfigureRac1MetropolisTaxis),
+        new Rac1WorldTickPorts(() => _movementStateLoading, AbortRac1MetropolisTaxiRide,
+            TickRac1MetropolisTaxis, TickRac1NovalisMusic, TickRac1Swing, TickRac1Hostiles, TickRac1RedPlants,
+            TickRac1PulsingOrbs, TickRac1ExplosiveCrates, TickRac1CheckpointTriggers, TickRac1MetalDetector,
+            TickRac1Pickups, TickRac1GoldBolts, TickRac1Missions),
+        new Rac1PlayerGameplayPorts(() => OrdinaryPlayerSession, () => _playerNative is not null, () => PlayerAlive,
+            () => _rac1Nanotech, () => _rac1Weapons, _persistentPlayer.Equipment.RefreshMovementEquipment,
+            OnRac1PrimaryAttackRequested, OnRac1WeaponSelectionRequested, OnRac1WeaponCycleRequested,
+            ToggleRac1WeaponPreview, OnRac1WrenchPhysicsUpdated, ConfigureFusionWeapons, () => _fusion is not null,
+            ConfigurePlayerEquipmentPresentation, _persistentPlayer.BeginParityWorld,
+            () => TryCompleteRac1EnvironmentalRestart(automatic: true), TickRac1VeldinEnvironmentalDeath,
+            () => { ClearFusionOnDeath(); ResetRac1WrenchHost(); ShowRac1CombatRetry(); }),
+        new Rac1WorldContactPorts(TryTurnRac1NovalisCrank, SampleRac1NovalisWaterHeight, OnRac1NovalisDrowned,
+            sound => _playerAudio?.Play(new(0, sound))),
+        new Rac1GameplayHudPorts(_hudState, () => OrdinaryPlayerSession, () => _playerSession is not null,
+            PublishPersistentPlayerHud, FusionHud, () => _rac1Nanotech, () => _rac1Weapons, () => _rac1BoltWallet,
+            () => _rac1AdditionalWeapons?.Cargo.Count ?? 0, () => _player, MetalDetectorHudText));
+
+    private void RefreshRac1HudState(params HudFeedbackDraft[] feedback)
+    {
+        if (_worldScenes?.Current?.Resources.Rac1Gameplay is { } gameplay) gameplay.Hud.Refresh(feedback);
+        else if (OrdinaryPlayerSession && _playerSession is not null) PublishPersistentPlayerHud(feedback);
+    }
+
     private readonly PlayerAvatarPresentationHost _avatarPresentation = new();
     private readonly PlayerEquipmentPresentationBinder _equipmentPresentation = new();
     private ProfileCoordinator? _profileCoordinator;
@@ -95,13 +147,13 @@ public partial class OBPGame : Node3D
             source.Game, source.Identity.BuildId, source.Identity.Sha256 ?? throw new InvalidDataException("Source has no authority digest.")))],
         LegacyCampaignExists: () => File.Exists(ProjectSettings.GlobalizePath("user://rac1-campaign.json")),
         CaptureCampaign: previous => new ProfilePayload("rac1/campaign", 1,
-            JsonSerializer.SerializeToElement(Rac1CampaignSavePolicy.Capture(_rac1CampaignSession.Campaign,
-                _rac1CampaignSession.Weapons, _parityBoltWallet, _rac1CollectedNovalisGoldBolts,
-                _rac1CampaignSession.BuriedBolts))).RetainUnknownFields(previous),
+            JsonSerializer.SerializeToElement(Rac1CampaignSavePolicy.Capture(_rac1Campaign.Session.Campaign,
+                _rac1Campaign.Session.Weapons, _rac1Campaign.Wallet, _rac1CollectedNovalisGoldBolts,
+                _rac1Campaign.Session.BuriedBolts))).RetainUnknownFields(previous),
         RestoreCampaign: restored =>
         {
-            _rac1CampaignSession = new(restored.Campaign, restored.Weapons, Rac1BuriedBoltProgress.Restore(restored.BuriedBoltHistory));
-            _parityBoltWallet = new(restored.Bolts);
+            _rac1Campaign.Session = new(restored.Campaign, restored.Weapons, Rac1BuriedBoltProgress.Restore(restored.BuriedBoltHistory));
+            _rac1Campaign.Wallet = new(restored.Bolts);
             _rac1CollectedNovalisGoldBolts.Clear();
             _rac1CollectedNovalisGoldBolts.UnionWith(restored.NovalisGoldBoltInstances);
         },
@@ -153,15 +205,15 @@ public partial class OBPGame : Node3D
         () => OrdinaryPlayerSession, () => _fusion?.Tick ?? 0,
         () => new(_currentDestinationId!, _world!.BuildId, GetWindow().Size.X, GetWindow().Size.Y,
             OrdinaryPlayerSession ? JsonSerializer.SerializeToElement(new { }) : JsonSerializer.SerializeToElement(
-                Rac1CampaignSavePolicy.Capture(_rac1CampaignSession.Campaign, _rac1CampaignSession.Weapons,
-                    _rac1BoltWallet, _rac1CollectedNovalisGoldBolts, _rac1CampaignSession.BuriedBolts)),
+                Rac1CampaignSavePolicy.Capture(_rac1Campaign.Session.Campaign, _rac1Campaign.Session.Weapons,
+                    _rac1BoltWallet, _rac1CollectedNovalisGoldBolts, _rac1Campaign.Session.BuriedBolts)),
             JsonSerializer.SerializeToElement(CameraSettingsStore.Current), FusionConfiguration, OrdinaryPlayerSession ? CaptureSharedProfile() : null),
         () => new(_currentDestinationId, GetTree().Paused, GetWindow().Size.X, GetWindow().Size.Y,
             PauseMenuOpen, QuickSelectOpen, Rac1PlanetMapOpen, ControllerSettingsOpen,
             GetViewport().GuiGetFocusOwner() is Button button ? button.Text : GetViewport().GuiGetFocusOwner()?.GetClass(),
             _quickSelect?.SelectedWeapon,
-            new(_rac1CampaignSession.Campaign.CurrentLevel, _rac1CampaignSession.Campaign.VisitedPlanets.Select(v => (double)v).ToArray(),
-                _rac1CampaignSession.Campaign.GalacticMap.Select(v => (double)v).ToArray(), _rac1CampaignSession.Campaign.LevelStates.Select(v => (double)v).ToArray()),
+            new(_rac1Campaign.Session.Campaign.CurrentLevel, _rac1Campaign.Session.Campaign.VisitedPlanets.Select(v => (double)v).ToArray(),
+                _rac1Campaign.Session.Campaign.GalacticMap.Select(v => (double)v).ToArray(), _rac1Campaign.Session.Campaign.LevelStates.Select(v => (double)v).ToArray()),
             new(_rac1Nanotech.Probe().Nanotech, _rac1Nanotech.Probe().IsDead, _rac1BoltWallet.Balance,
                 _rac1Weapons.CurrentItemId, _rac1HeldItem.NativeItemId ?? -1, _rac1HeldItem.Hand.Equipment?.ToString() ?? "wrench",
                 JsonSerializer.SerializeToElement(_rac1Weapons.CapturePersistentState()), JsonSerializer.SerializeToElement(CameraSettingsStore.Current)),
@@ -175,19 +227,19 @@ public partial class OBPGame : Node3D
                 CurrentPlayerAvatarSourceSequence() ?? -1, _avatarPresentation.View?.CurrentFrame ?? -1, _avatarPresentation.View?.FramesPerSecond ?? 0,
                 player.Rac1SmallStepDecision, JsonSerializer.SerializeToElement(_rac1Nanotech.Actions.Probe()), JsonSerializer.SerializeToElement(player.Rac1WrenchFrame),
                 ToNumerics(player.Camera.GlobalPosition), ToNumerics(player.Camera.GlobalRotation)) : null,
-            _rac1MobyRuntime.Instances.Select(v => new CaptureMobyCheckpoint(v.NativeClassId, v.InstanceIndex, v.State.NativeState, v.IsActive, v.State.IsTerminalized)).ToArray(),
+            Rac1World.Context.MobyRuntime.Instances.Select(v => new CaptureMobyCheckpoint(v.NativeClassId, v.InstanceIndex, v.State.NativeState, v.IsActive, v.State.IsTerminalized)).ToArray(),
             (_sceneResult?.DynamicObjectNodes ?? []).Where(v => IsInstanceValid(v.Root)).Select(v => new CaptureObjectCheckpoint(v.Source.NativeClassId, v.Source.InstanceIndex,
                 ToNumerics(v.Root.GlobalPosition), ToNumerics(v.Root.GlobalRotation), v.Root.Visible)).ToArray(),
             _rac1Enemies.Where(v => IsInstanceValid(v.Value.Body)).Select(v => new CaptureEnemyCheckpoint(v.Key, ToNumerics(v.Value.Body.Velocity), v.Value.Animation.Sequence,
                 v.Value.Animation.Position, v.Value.DeathTicks, v.Value.RewardEmitted, v.Value.Buried,
                 v.Value.Node.Source.NativeClassId == 1440 && _rac1Class1440 is not null ? _rac1Class1440.Get(v.Key).Health : null,
-                _rac1HostileNodes.ContainsKey(v.Key) ? _rac1Hostiles.Probe(v.Value.Node.Source).Health : null)).ToArray(),
-            [_rac1Projectiles.Count, _rac1PickupMotion.Count, _rac1EquipmentShots.Count, _rac1DoomAgents.Count, _rac1AmmoPickups.Count, _rac1NanotechClouds.Count],
-            _rac1Projectiles.Select(v => new CaptureBombCheckpoint(v.Key, ToNumerics(FromEffectNative(v.Value.Motion.Position)), ToNumerics(FromEffectNative(v.Value.Motion.Velocity)),
+                Rac1World.Presentation.HostileNodes.ContainsKey(v.Key) ? Rac1World.Context.Hostiles.Probe(v.Value.Node.Source).Health : null)).ToArray(),
+            [Rac1World.Presentation.Projectiles.Count, _rac1PickupMotion.Count, _rac1EquipmentShots.Count, _rac1DoomAgents.Count, _rac1AmmoPickups.Count, _rac1NanotechClouds.Count],
+            Rac1World.Presentation.Projectiles.Select(v => new CaptureBombCheckpoint(v.Key, ToNumerics(FromEffectNative(v.Value.Motion.Position)), ToNumerics(FromEffectNative(v.Value.Motion.Velocity)),
                 v.Value.Motion.NativeState, v.Value.Motion.BlastAge)).ToArray(),
             _rac1EquipmentShots.Select(v => new CaptureShotCheckpoint(v.Id, ToNumerics(v.Position), ToNumerics(v.Step), (int)v.Weapon, v.Age, v.Grounded)).ToArray(),
             _rac1DoomAgents.Where(v => IsInstanceValid(v.Body)).Select(v => new CaptureBodyCheckpoint(v.Id, ToNumerics(v.Body.GlobalPosition), ToNumerics(v.Body.Velocity))).ToArray(),
-            _rac1PickupNodes.Where(v => IsInstanceValid(v.Value)).Select(v => new CapturePositionCheckpoint(v.Key, ToNumerics(v.Value.GlobalPosition))).ToArray(),
+            Rac1World.Presentation.PickupNodes.Where(v => IsInstanceValid(v.Value)).Select(v => new CapturePositionCheckpoint(v.Key, ToNumerics(v.Value.GlobalPosition))).ToArray(),
             _rac1NovalisCrankNodes.Keys.Select(v => new CaptureCrankCheckpoint(v, _rac1NovalisCranks.Progress(v))).ToArray()),
         () => new(ProfilePlayer.Capture(_playerSession!.Capture()), CaptureProfileSources(), ActorHost.ReadActors().Select(actor => new CaptureActorCheckpoint(
             actor.Registration.Instance.Target, actor.State.Position, actor.State.Alive, actor.State.Retired, actor.State.Health ?? -1, actor.State.NativeState, actor.State.NativeSequence ?? -1)).ToArray(), ActorHost.TickCount),
@@ -219,7 +271,7 @@ public partial class OBPGame : Node3D
         _sceneResult?.MeshInstances ?? 0, _sceneResult?.Triangles ?? 0, _sceneResult?.Textures ?? 0, _sceneResult?.CollisionBodies ?? 0, _sceneResult?.CollisionTriangles ?? 0,
         _sceneResult?.TieInstances ?? 0, _sceneResult?.ShrubInstances ?? 0, _sceneResult?.MobyInstances ?? 0, _sceneResult?.DynamicObjects ?? 0,
         _worldScenes?.Current?.Resources is { } resources && resources.CrateDiagnostics.Capture(resources.Rac2CrateBolts) is { } crates ? JsonSerializer.SerializeToElement(crates) : null,
-        JsonSerializer.SerializeToElement(GetRac1GameplaySnapshot()), JsonSerializer.SerializeToElement(_hudState.Current),
+        JsonSerializer.SerializeToElement(_worldScenes?.Current?.Resources.Rac1Gameplay?.Hud.Snapshot()), JsonSerializer.SerializeToElement(_hudState.Current),
         _player is { } player && IsInstanceValid(player) ? new(ToNumerics(player.GlobalPosition), player.IsOnFloor(), player.MovementControllerLabel, player.CameraControllerLabel,
             player.HasActiveRecoveredCamera, player.Rac1RuntimeCameraState?.ControlHeadingRadians, player.Rac1RuntimeCameraState?.PreferredDistance,
             player.Rac1RuntimeCameraState?.EffectiveDistance, player.Rac1CameraManualYaw, player.Rac1CameraManualPitch, player.Rac1CameraObstructionCorrection,
@@ -230,8 +282,8 @@ public partial class OBPGame : Node3D
     {
         if (_playerSession is not null) return;
         Sources.Initialize();
-        if (!_persistentPlayer.Ensure(PlayerEntryMode, _rac1CampaignSession.Weapons,
-            _parityBoltWallet.Balance, _args.FixedSeed ?? 1440, new PlayerCameraPreferences())) return;
+        if (!_persistentPlayer.Ensure(PlayerEntryMode, _rac1Campaign.Session.Weapons,
+            _rac1Campaign.Wallet.Balance, _args.FixedSeed ?? 1440, new PlayerCameraPreferences())) return;
         if (_playerNative is not null) _fusion = _playerNative.Weapons;
         RefreshPlayerSourceAvailability();
         InitializeSharedProfile();
@@ -426,7 +478,7 @@ public partial class OBPGame : Node3D
             PrepareLater: (work, report) => WorldScenes.PrepareLater(work, report),
             World: () => _world, SceneResult: () => _sceneResult,
             Ui: () => _ui, Player: () => _player,
-            Campaign: () => _rac1CampaignSession, Frame: () => _frame,
+            Campaign: () => _rac1Campaign.Session, Frame: () => _frame,
             IsWorld: () => _mode == Mode.World, IsSelector: () => _mode == Mode.Selector,
             PauseMenuOpen: () => PauseMenuOpen, ControllerSettingsOpen: () => ControllerSettingsOpen,
             QuickSelectOpen: () => QuickSelectOpen, DebugOutput: () => _debugOutputEnabled,
@@ -536,7 +588,7 @@ public partial class OBPGame : Node3D
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
             _worldScenes?.Current?.Resources.Effects?.Render();
             TickRac2Gameplay(delta);
-            TickRac1Gameplay(delta);
+            _worldScenes?.Current?.Resources.Rac1Gameplay?.Tick(delta);
             TickRac3Gameplay(delta);
             UpdatePlayerHud();
             UpdateWorldHud();
@@ -797,7 +849,7 @@ public partial class OBPGame : Node3D
         TearDownInteractiveOverlays();
         TryCloseRac1PlanetMap();
         ClearPlayerAvatarView();
-        ResetRac1LevelGameplay();
+        _worldScenes?.Current?.Resources.Rac1Gameplay?.Dispose();
         if (!OrdinaryPlayerSession) _hudState.ResetSession();
         _playerHud?.Render(_hudState.Current);
         if (_player is not null) _player.PlayerServicesPhysicsUpdated -= StepPlayerServicesPhysics;
@@ -1040,7 +1092,7 @@ public partial class OBPGame : Node3D
         player.DevelopmentControls.LoadMovementStateRequested += () => StartMovementStateLoad(MovementStatePath);
         AttachPlayerAvatarVisual(player);
         ArmRac2GameplayHost(player);
-        ArmRac1Gameplay(player);
+        Rac1World.Arm(player);
         ArmRac3Gameplay(player);
     }
 
@@ -1116,7 +1168,7 @@ public partial class OBPGame : Node3D
         var resources = _worldScenes?.Current?.Resources;
         string crateDebug = resources?.CrateDiagnostics.HudLine(resources.Rac2CrateBolts) ?? string.Empty;
         string rac2Gameplay = GetRac2GameplayHudLine();
-        string rac1Gameplay = GetRac1GameplayHudLine();
+        string rac1Gameplay = _worldScenes?.Current?.Resources.Rac1Gameplay?.Hud.Line() ?? string.Empty;
         string rac3Gameplay = GetRac3GameplayHudLine();
 
         _worldHud.Text =
@@ -1176,9 +1228,9 @@ public partial class OBPGame : Node3D
             position => SampleRac1NovalisWaterHeight(GodotMovementPlayer.Engine(position)),
             () => _playerHud?.FindChild("Air", true, false) is Control air ? air.Visible : null, _rac1Nanotech.Probe);
         var environment = new DiagnosticEnvironmentalDeathFixture(() => new(_rac1Nanotech.EnvironmentalDeathGeneration,
-            _rac1Nanotech.EnvironmentalRestartGeneration, _rac1Nanotech.Probe(), _rac1LastEnvironmentalDeathBoundary,
-            GodotMovementPlayer.Copy(_rac1LastEnvironmentalDeathPosition), _rac1LastEnvironmentalDeathContactSeparation,
-            MeasureRac1ContactSeparation(), _rac1CampaignSession.LevelCheckpoint?.AuthoredClass0.Yaw));
+            _rac1Nanotech.EnvironmentalRestartGeneration, _rac1Nanotech.Probe(), Rac1World.Context.LastEnvironmentalDeathBoundary,
+            GodotMovementPlayer.Copy(Rac1World.Presentation.LastEnvironmentalDeathPosition), Rac1World.Context.LastEnvironmentalDeathContactSeparation,
+            MeasureRac1ContactSeparation(), _rac1Campaign.Session.LevelCheckpoint?.AuthoredClass0.Yaw));
         var equipment = new DiagnosticControllerEquipmentFixture(() =>
         {
             var player = _player ?? throw new DiagnosticUnavailableException("The controller fixture player is unavailable.");
@@ -1211,8 +1263,8 @@ public partial class OBPGame : Node3D
             Session = () => new(_fusion?.Selected, _fusion?.Hand.Equipment, _rac1HeldItem.Hand.WrenchHeld, _fusion?.LancerSession.Ammo ?? 0,
                 _fusion?.CannonSession.Ammo ?? 0, _fusionAcceptedHits, _fusionAudioStarted, _fusionBeam?.Visible == true, _fusion?.CannonFrame?.BeamUpdatesRemaining ?? 0,
                 _fusionLastDamage is { } damage ? new(damage.Shot.Weapon, damage.SourceDamage, damage.Kind) : null,
-                _player?.Rac1WrenchFrame.Active == true, _fusion is not null && ReferenceEquals(_fusion.Rac1Inventory, _rac1CampaignSession.Weapons),
-                ReferenceEquals(_rac1Weapons, _rac1CampaignSession.Weapons)),
+                _player?.Rac1WrenchFrame.Active == true, _fusion is not null && ReferenceEquals(_fusion.Rac1Inventory, _rac1Campaign.Session.Weapons),
+                ReferenceEquals(_rac1Weapons, _rac1Campaign.Session.Weapons)),
             Transients = () => new(_fusionProjectiles.Count, _fusion?.LancerSession.ActiveShots.Count ?? 0, _fusionEffects.Count, _fusionPendingAudio.Count, _fusionAudioPlayers.Count),
             Menu = () => new(QuickSelectOpen, _quickSelect is { } menu ? [.. menu.Entries.Select(entry => entry.Weapon)] : [], _quickSelect?.SelectedWeapon),
             NativeSession = () => _fusion,
@@ -1248,7 +1300,7 @@ public partial class OBPGame : Node3D
         var movement = CreateMovementDiagnosticHarness();
         var facts = new Rac1CampaignDiagnosticFacts(() =>
         {
-            var campaign = _rac1CampaignSession.Campaign; var travel = _rac1CampaignSession.Travel;
+            var campaign = _rac1Campaign.Session.Campaign; var travel = _rac1Campaign.Session.Travel;
             return new(campaign.CurrentLevel, travel.SelectedDestination, [.. campaign.GalacticMap.Take(campaign.AdmittedDestinationCount)], [.. campaign.LevelStates], travel.TransitionActive)
             { NovalisAvailable = campaign.CanSelectDestination(1), AridiaAvailable = campaign.CanSelectDestination(2) };
         }, () =>
@@ -1256,13 +1308,13 @@ public partial class OBPGame : Node3D
             var state = _rac1Nanotech.Probe();
             return new(state.Nanotech, state.IsDead, state.HasRecoveredEnvironmentalRespawn, _rac1Nanotech.EnvironmentalDeathGeneration);
         }, () => _rac1Missions?.Probe().SingleOrDefault(actor => actor.Key.NativeClassId == 774)?.Retired == true);
-        var actions = new Rac1CampaignDiagnosticActions(ApplyRac1CampaignProgressionEvent, TravelRac1CampaignTo, () => _rac1CampaignSession.Travel.OpenPlanetMap(),
+        var actions = new Rac1CampaignDiagnosticActions(ApplyRac1CampaignProgressionEvent, TravelRac1CampaignTo, () => _rac1Campaign.Session.Travel.OpenPlanetMap(),
             level => OpenDestinationFromBootstrap($"rac1:LEVEL{level}"), TickRac1CampaignSaves, FlushRac1CampaignSaves);
         var checkpoints = new GodotRac1CampaignCheckpointFixture(() =>
         {
-            var checkpoint = _rac1CampaignSession.LevelCheckpoint ?? throw new DiagnosticUnavailableException("R&C1 smoke checkpoint session is missing.");
+            var checkpoint = _rac1Campaign.Session.LevelCheckpoint ?? throw new DiagnosticUnavailableException("R&C1 smoke checkpoint session is missing.");
             return new(checkpoint.NativeLevelId, checkpoint.AuthoredClass0, _world?.PlayerStart, checkpoint.ActiveCheckpoint is not null, checkpoint.ResolveEnvironmentalRestart().Kind);
-        }, activation => (_rac1CampaignSession.LevelCheckpoint ?? throw new DiagnosticUnavailableException("The checkpoint session is unavailable.")).Activate(activation),
+        }, activation => (_rac1Campaign.Session.LevelCheckpoint ?? throw new DiagnosticUnavailableException("The checkpoint session is unavailable.")).Activate(activation),
         () =>
         {
             var player = _player ?? throw new DiagnosticUnavailableException("The checkpoint fixture player is unavailable.");
@@ -1278,25 +1330,25 @@ public partial class OBPGame : Node3D
     private Rac1LootDiagnosticHarness CreateRac1LootDiagnosticHarness()
     {
         var movement = CreateMovementDiagnosticHarness(); var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
-        var targets = new GodotRac1WeaponTargetFixture(new(() => [.. _rac1CrateNodes], () => [.. _rac1Enemies.Values], IsRac1GameplayActive,
+        var targets = new GodotRac1WeaponTargetFixture(new(() => [.. Rac1World.Presentation.CrateNodes], () => [.. _rac1Enemies.Values], IsRac1GameplayActive,
             (node, position) => GodotRac1CrateStaging.Place(node, position, _rac1FallingCrates),
             id => _rac1Class1440?.Get(id).Health ?? throw new DiagnosticUnavailableException("The robot health source is unavailable.")), worlds);
         var loot = new GodotRac1LootDiagnosticFixture(new()
         {
             Read = () => new(ObpSourceGame.Rac1, _rac1BoltWallet.Balance, Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet).Bolts?.Balance,
-                _rac1PickupSoundCount, _rac1Nanotech.Probe().Nanotech, _rac1Weapons.FirstRangedAmmo, _rac1BoltCrates.OutstandingPickupCount,
+                _rac1PickupSoundCount, _rac1Nanotech.Probe().Nanotech, _rac1Weapons.FirstRangedAmmo, Rac1World.Context.BoltCrates.OutstandingPickupCount,
                 [.. _rac1Debris.Select(piece => piece.Motion.NativeClassId)],
                 [.. _rac1PickupMotion.Select(pair => new Rac1LootMotionDiagnostic(pair.Key, pair.Value.NativeClassId, pair.Value.NativeState, pair.Value.Position,
                     GodotMovementPlayer.Copy(FromEffectNative(pair.Value.Position))))],
                 [.. _rac1AmmoPickups.Select(pickup => new Rac1AmmoPickupDiagnostic(new(ObpSourceGame.Rac1, pickup.Motion.Definition.Item), pickup.Motion.Definition.Amount,
                     pickup.Motion.Position, pickup.Motion.Velocity, pickup.Motion.DelayTicks, _rac1Weapons.GetAmmo(pickup.Motion.Definition.Item)))],
                 [.. _rac1NanotechClouds.Select(cloud => cloud.Motion.Attracting)]),
-            OriginalPickupMeshes = () => _rac1PickupNodes.Values.All(node => GodotWeaponModelFacts.Read(node).OriginalMeshes),
+            OriginalPickupMeshes = () => Rac1World.Presentation.PickupNodes.Values.All(node => GodotWeaponModelFacts.Read(node).OriginalMeshes),
             Pending = () => _rac1PendingPlacedBolts.Count,
-            Placed = () => _rac1PlacedBolts,
+            Placed = () => Rac1World.Context.PlacedBolts,
             PlacedNodes = () => _rac1PlacedBoltNodes,
             Motions = () => _rac1PickupMotion,
-            PickupNodes = () => _rac1PickupNodes,
+            PickupNodes = () => Rac1World.Presentation.PickupNodes,
             Random = () => Rac1EffectRandom,
             ToNative = ToEffectNative,
             FromNative = FromEffectNative,
@@ -1313,7 +1365,7 @@ public partial class OBPGame : Node3D
     {
         var movement = CreateMovementDiagnosticHarness();
         var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
-        var targets = new GodotRac1WeaponTargetFixture(new(() => [.. _rac1CrateNodes], () => [.. _rac1Enemies.Values],
+        var targets = new GodotRac1WeaponTargetFixture(new(() => [.. Rac1World.Presentation.CrateNodes], () => [.. _rac1Enemies.Values],
             IsRac1GameplayActive, (node, position) => GodotRac1CrateStaging.Place(node, position, _rac1FallingCrates),
             id => _rac1Class1440?.Get(id).Health ?? throw new DiagnosticUnavailableException("The robot health source is unavailable.")), worlds);
         var wrench = new GodotRac1WrenchDiagnosticFacts(new(() => _player, () => _avatarPresentation.WrenchView, () => _avatarPresentation.Avatar,
@@ -1336,14 +1388,14 @@ public partial class OBPGame : Node3D
                 _rac1Particles is { } particles ? [.. particles.Live.Select(particle => particle.Type)] : []),
             () =>
             {
-                var shot = _rac1Projectiles.Single();
+                var shot = Rac1World.Presentation.Projectiles.Single();
                 bool originalModel = GodotWeaponModelFacts.Read(shot.Value.Node).OriginalMeshes;
                 return new GodotRac1BombAcceptanceWitness(new(worlds), () => new(shot.Key, FusionWeaponSession.BombGlove,
                     shot.Value.Motion.Position, shot.Value.Motion.Velocity, shot.Value.Motion.NativeState, shot.Value.Motion.Flying, originalModel));
             }, BombHasLineOfSight, ProbeBombWorldContact,
             amount => _rac1Weapons.TryConsumeAmmo((int)Rac1WeaponId.FirstRanged, amount), () => _player));
         var transients = new GodotWeaponDiagnosticTransientFixture(worlds, () => DiagnosticCleanup.Run("Weapon fixture transient cleanup",
-            () => { foreach (var (id, projectile) in _rac1Projectiles.ToArray()) RetireBomb(id, projectile); },
+            () => { foreach (var (id, projectile) in Rac1World.Presentation.Projectiles.ToArray()) RetireBomb(id, projectile); },
             ResetRac1BombPresentation, ResetRac1AdditionalWeapons, () => ClearFusionTransients()));
         async Task<bool> LoadWeaponStateAsync(string path, CancellationToken token) => await LoadMovementStateAsync(path, cancellationToken: token) is not null;
         var reproduction = new GodotWeaponMovementStateFixture(() => _movementStateLoading, () => CaptureMovementState(), LoadWeaponStateAsync,
@@ -1354,7 +1406,7 @@ public partial class OBPGame : Node3D
     }
 
     private GodotRac1AdditionalWeaponDiagnosticFixture CreateRac1AdditionalWeaponDiagnosticFixture(IDiagnosticWorldObservations worlds) => new(new(
-        () => new(_rac1WeaponPreviewInventory is not null, _rac1CampaignSession.Weapons.Owns(Rac1WeaponId.Blaster), _rac1AdditionalWeapons?.Cargo.Count ?? 0,
+        () => new(_persistentPlayer.WeaponPreview is not null, _rac1Campaign.Session.Weapons.Owns(Rac1WeaponId.Blaster), _rac1AdditionalWeapons?.Cargo.Count ?? 0,
             _rac1EquipmentUseTicks, _rac1WeaponShotsFired, _rac1PyroEmitting, _rac1WeaponLoop, _hudState.Current.CurrentWeapon,
             GodotMovementPlayer.Copy(EquipmentForward), _player?.Rac1RemoteControlActive == true, _rac1MissileCamera is not null,
             _rac1MissileCamera?.Current == true, _player?.Camera.Current == true, _rac1ParticleView?.RenderedCount ?? 0, _rac1ParticleView?.DrawCalls ?? 0),
@@ -1365,7 +1417,7 @@ public partial class OBPGame : Node3D
             new(ObpSourceGame.Rac1, (int)shot.Weapon), shot.Id, GodotMovementPlayer.Copy(shot.Position), shot.Grounded, GodotWeaponModelFacts.Read(shot.Node))))],
         () => [.. _rac1DoomAgents.Select(agent => new GodotWeaponDiagnosticWitness<Rac1DoomAgentDiagnostic>(new(worlds), () => new(
             new(ObpSourceGame.Rac1, (int)Rac1WeaponId.GloveOfDoom), agent.Id, GodotMovementPlayer.Copy(agent.Body.GlobalPosition), agent.Motion.Wander,
-            GodotWeaponModelFacts.Read(agent.View))))], () => _rac1WeaponPreviewInventory is not null, SetRac1WeaponPreview));
+            GodotWeaponModelFacts.Read(agent.View))))], () => _persistentPlayer.WeaponPreview is not null, SetRac1WeaponPreview));
 
     private GodotRac1ArsenalDiagnosticFixture CreateRac1ArsenalDiagnosticFixture(IDiagnosticWorldObservations worlds, GodotRac1WeaponTargetFixture targets) => new(new(
         () => new(_rac1RynoSalvo.Remaining, _rac1ArsenalId, _rac1Drones.Count, _rac1ChickenCargo.Count,
@@ -1392,19 +1444,19 @@ public partial class OBPGame : Node3D
     private Rac1EncounterDiagnosticHarness CreateRac1EncounterDiagnosticHarness()
     {
         var actors = new GodotRac1EnemyDiagnosticFixture(new(() => [.. _rac1Enemies.Values],
-            () => _rac1Class1440, () => _rac1Peckbots, () => _rac1Birdbots, () => _rac1Hostiles,
+            () => _rac1Class1440, () => _rac1Peckbots, () => _rac1Birdbots, () => Rac1World.Context.Hostiles,
             () => new(_rac1Enemies.Count, _rac1Class1440?.RegisteredCount ?? 0, _rac1Peckbots?.RegisteredCount ?? 0,
                 _rac1Birdbots?.RegisteredCount ?? 0, _rac1BirdbotShotCount, _rac1Nanotech.Probe().Nanotech,
                 _worldSwitches, _rac1CombatRetry?.Visible == true), () => _player, node => TryStrikeRac1Hostile(node),
             TryGroundRac1Enemy, EnemyForward, EnemySocket, EnemyRayTouchesPlayer,
             id => _rac1BirdbotShots.Values.Any(shot => shot.OwnerInstance == id)), new GodotDiagnosticWorldObservations(WorldScenes));
         var movement = CreateMovementDiagnosticHarness();
-        var loot = new GodotRac1EncounterLoot(() => new(_rac1BoltWallet.Balance, _rac1BoltPickups.OutstandingCount,
+        var loot = new GodotRac1EncounterLoot(() => new(_rac1BoltWallet.Balance, Rac1World.Context.BoltPickups.OutstandingCount,
             [.. _rac1PickupMotion.Select(pair => new Rac1DiagnosticPickup(pair.Key, pair.Value.NativeClassId,
                 pair.Value.Position, pair.Value.NativeState, pair.Value.CollectionStep))],
             [.. _rac1Debris.Select(piece => piece.Motion.NativeClassId)]));
         var lifecycle = new GodotRac1EncounterLifecycle(() => _rac1Nanotech.Probe(), ApplyRac1EnemyPlayerDamage, () => _rac1CombatRetry);
-        var approach = new GodotRac1WrenchApproachFixture(() => _player, _rac1Wrench.ResolveFirstSwingFacing, Rac1WrenchHostRootHeight);
+        var approach = new GodotRac1WrenchApproachFixture(() => _player, _persistentPlayer.Wrench.ResolveFirstSwingFacing, Rac1WorldPresentation.WrenchHostRootHeight);
         var combat = new Rac1CombatScenarioPorts(actors, actors, CreateRac1CombatDiagnosticFixture(actors), approach, movement.Equipment,
             new DiagnosticNavigationActions(destination => { OpenDestinationFromBootstrap(destination); return _world is not null && _currentDestinationId == destination; }),
             CreateUiDiagnosticHarness(), movement.Environment, lifecycle);
@@ -1416,28 +1468,28 @@ public partial class OBPGame : Node3D
     private GodotRac1CombatDiagnosticFixture CreateRac1CombatDiagnosticFixture(GodotRac1EnemyDiagnosticFixture actors) => new(actors,
         new GodotDiagnosticWorldObservations(WorldScenes), new()
         {
-            Crates = () => [.. _rac1CrateNodes],
-            Hostiles = () => [.. _rac1HostileNodes.Values],
+            Crates = () => [.. Rac1World.Presentation.CrateNodes],
+            Hostiles = () => [.. Rac1World.Presentation.HostileNodes.Values],
             World = () => _world,
             Player = () => _player,
             Opening = () => new(_args.Rac1CampaignPersistenceRequested, _rac1CampaignPersistence.Enabled, _rac1CampaignRestoreKind,
-                _rac1CampaignSession.Campaign.CurrentLevel, _rac1CampaignSession.Campaign.AdmittedDestinationCount, _rac1Weapons.OwnsFirstRanged),
+                _rac1Campaign.Session.Campaign.CurrentLevel, _rac1Campaign.Session.Campaign.AdmittedDestinationCount, _rac1Weapons.OwnsFirstRanged),
             Population = () => new(_world?.DynamicObjects?.Count(source => source.NativeClassId == Rac1Class749Hostile.NativeClassId) ?? 0,
-                _rac1Class749PresentationNodes.Count(node => IsInstanceValid(node.Root) && node.Root.Visible), _rac1HostileNodes.Count, _rac1Hostiles.RegisteredCount),
+                Rac1World.Presentation.Class749Nodes.Count(node => IsInstanceValid(node.Root) && node.Root.Visible), Rac1World.Presentation.HostileNodes.Count, Rac1World.Context.Hostiles.RegisteredCount),
             Presentation = () =>
             {
                 var wrench = _avatarPresentation.WrenchView; bool present = wrench is not null && IsInstanceValid(wrench);
                 return new(_hudState.Current.CurrentWeapon, present, present && wrench!.Visible,
                     present && _avatarPresentation.View is not null && wrench!.GetParent() == _avatarPresentation.View);
             },
-            Loot = () => new(_rac1BoltCrates.DestroyedCrateCount, _rac1BoltCrates.CollectedBolts,
-                [.. _rac1PickupNodes.Select(pair => new Rac1CombatPickupDiagnostic(pair.Key, IsInstanceValid(pair.Value),
-                    IsInstanceValid(pair.Value) ? GodotMovementPlayer.Copy(pair.Value.GlobalPosition) : System.Numerics.Vector3.Zero, _rac1BoltCrates.OwnsPickup(pair.Key)))]),
-            Bombs = () => new(_rac1BombFireRequested, [.. _rac1Projectiles.Keys],
-                _rac1LastBombContactResolution is { } contact ? new(contact.ProjectileId, [.. contact.DamageResults]) : null),
+            Loot = () => new(Rac1World.Context.BoltCrates.DestroyedCrateCount, Rac1World.Context.BoltCrates.CollectedBolts,
+                [.. Rac1World.Presentation.PickupNodes.Select(pair => new Rac1CombatPickupDiagnostic(pair.Key, IsInstanceValid(pair.Value),
+                    IsInstanceValid(pair.Value) ? GodotMovementPlayer.Copy(pair.Value.GlobalPosition) : System.Numerics.Vector3.Zero, Rac1World.Context.BoltCrates.OwnsPickup(pair.Key)))]),
+            Bombs = () => new(Rac1World.Context.BombFireRequested, [.. Rac1World.Presentation.Projectiles.Keys],
+                Rac1World.Context.LastBombContactResolution is { } contact ? new(contact.ProjectileId, [.. contact.DamageResults]) : null),
             BombWitness = () =>
             {
-                var shot = _rac1Projectiles.FirstOrDefault();
+                var shot = Rac1World.Presentation.Projectiles.FirstOrDefault();
                 return shot.Value is null ? null : new GodotRac1BombDiagnosticWitness(() => new(shot.Key,
                     new(ObpSourceGame.Rac1, (int)Rac1WeaponId.FirstRanged), shot.Value.Motion.Position, shot.Value.Motion.NativeState));
             },
@@ -1445,12 +1497,12 @@ public partial class OBPGame : Node3D
             Forward = EnemyForward,
             Presence = SetRac1HostedPresence,
             PrimaryAttack = OnRac1PrimaryAttackRequested,
-            Damage = () => _rac1DamageTransport,
+            Damage = () => Rac1World.Context.DamageTransport,
         });
 
     private GodotRac1AridiaDiagnosticFixture CreateRac1AridiaDiagnosticFixture(GodotRac1EnemyDiagnosticFixture actors)
     {
-        return new(actors, new(() => _rac1MobyRuntime, () => _rac1AridiaEnemies, session => _rac1AridiaEnemies = session,
+        return new(actors, new(() => Rac1World.Context.MobyRuntime, () => _rac1AridiaEnemies, session => _rac1AridiaEnemies = session,
             () => _rac1AridiaClipVolumes.Count, index => _rac1AridiaClipVolumes[index].Centre,
             (index, point) => _rac1AridiaClipVolumes[index].Contains(point),
             id => _rac1ConstructorbotNativeWaypoints.TryGetValue(id, out var point) ? point : null,
@@ -1473,7 +1525,7 @@ public partial class OBPGame : Node3D
             WaveControllers = () => [.. _rac1FrogWaveNodes.Keys],
             Carriers = () => System.Collections.Immutable.ImmutableDictionary.CreateRange(_rac1FrogCarrierChildren),
             HasPickupModel = nativeClass => _rac1PickupAssets?.Models.ContainsKey(nativeClass) == true,
-            Counts = () => (_rac1CrateNodes.Count, _rac1PickupMotion.Count, _rac1Debris.Count),
+            Counts = () => (Rac1World.Presentation.CrateNodes.Count, _rac1PickupMotion.Count, _rac1Debris.Count),
             TickFrog = TickRac1Frog,
             TickCarrier = TickRac1FrogCarrier,
             MeleeTouchesPlayer = EnemyMeleeTouchesPlayer,
@@ -1503,7 +1555,7 @@ public partial class OBPGame : Node3D
         ActiveCamera = () => _activeCamera,
         QueenCamera = () => _rac1QueenScriptedCamera,
         GuidedCamera = () => _rac1MissileCamera,
-        DamageSequence = () => _rac1DamageTransport.Sequence,
+        DamageSequence = () => Rac1World.Context.DamageTransport.Sequence,
         ForgetWrenchContact = key => _rac1WrenchHitTargets.Remove(key),
         ResolveWrench = ResolveRac1QueenWrenchContacts,
         InvalidateEquipmentGeometry = () => _rac1EquipmentGeometryFrame = ulong.MaxValue,
@@ -1575,14 +1627,14 @@ public partial class OBPGame : Node3D
     {
         Player = () => _player,
         Enemies = () => [.. _rac1Enemies.Values.Select(enemy => enemy.Node)],
-        Crates = () => [.. _rac1CrateNodes],
+        Crates = () => [.. Rac1World.Presentation.CrateNodes],
         Active = IsRac1GameplayActive,
         Damage = ApplyRac1EnemyWeaponDamage,
         Strike = node => TryStrikeRac1Crate(node),
         Read = () => new([.. _rac1Enemies.Values.Select(enemy => new MovementStateEnemyDiagnostic(new(ObpSourceGame.Rac1, enemy.Node.Source.NativeClassId,
                 enemy.Node.Source.InstanceIndex), IsRac1GameplayActive(enemy.Node), enemy.Node.Root.Visible, enemy.Body.CollisionLayer, enemy.RewardEmitted))],
-            [.. _rac1CrateNodes.Select(node => new MovementStateCrateDiagnostic(new(ObpSourceGame.Rac1, node.Source.NativeClassId, node.Source.InstanceIndex),
-                IsRac1GameplayActive(node), _rac1CrateBodies.ContainsKey(node.Source.InstanceIndex)))], _rac1BoltCrates.DestroyedCrateCount,
+            [.. Rac1World.Presentation.CrateNodes.Select(node => new MovementStateCrateDiagnostic(new(ObpSourceGame.Rac1, node.Source.NativeClassId, node.Source.InstanceIndex),
+                IsRac1GameplayActive(node), _rac1CrateBodies.ContainsKey(node.Source.InstanceIndex)))], Rac1World.Context.BoltCrates.DestroyedCrateCount,
             _rac1Weapons.Equipped, _rac1Weapons.FirstRangedAmmo, _rac1BoltWallet.Balance, _rac1PickupMotion.Keys.Any(id => id > 0)),
         Consume = () => { OnRac1WeaponSelectionRequested(Rac1WeaponId.FirstRanged); return _rac1Weapons.TryUseEquipped(); },
         Credit = amount => _rac1BoltWallet.Credit(amount),
@@ -1627,18 +1679,19 @@ public partial class OBPGame : Node3D
         actor => _playerDamageActors.Contains(actor), () => _rac1BombOcclusionFrame = ulong.MaxValue,
         id =>
         {
-            _rac1BoltPickups.Discard(id); _rac1PickupMotion.Remove(id);
-            if (_rac1PickupNodes.Remove(id, out var node) && IsInstanceValid(node)) node.QueueFree();
+            Rac1World.Context.BoltPickups.Discard(id); _rac1PickupMotion.Remove(id);
+            if (Rac1World.Presentation.PickupNodes.Remove(id, out var node) && IsInstanceValid(node)) node.QueueFree();
         }, () => unchecked((uint)(_args.FixedSeed ?? System.Environment.TickCount))), new(
-        new(() => _rac1MobyRuntime, () => _rac1Hostiles, _rac1HostileNodes, _rac1Enemies,
-            () => Rac1EnemyNodes.Concat(_rac1CrateNodes), ApplyRac1AdditionalDamage,
+        new(() => Rac1World.Context.MobyRuntime, () => Rac1World.Context.Hostiles,
+            () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Presentation.HostileNodes, _rac1Enemies,
+            () => Rac1EnemyNodes.Concat(Rac1World.Presentation.CrateNodes), ApplyRac1AdditionalDamage,
             key => _rac1Captures.RemoveAll(capture => capture.Key == key),
             () => _rac1PickupAssets, () => _equipmentPresentation.SelectedAssets,
             (assets, materials) => { _rac1PickupAssets = assets; _rac1PickupMaterials = materials; }, TickRac1Hostiles, TickRac1Pickups),
         new(_rac2Class2827Hostiles, _rac2OpeningMsr1, TickRac2OpeningMsr1NativeTick),
         new(() => _rac3Class500Nodes, () => _rac3MobyRuntime)), new(
         () => _player!.GetWorld3D().DirectSpaceState, Rac1DamageableRayExclusions, BombHasLineOfSight,
-        reason => _rac1CombatStatus = reason, () => _player?.Rac1WrenchFrame.Generation,
+        reason => Rac1World.Context.CombatStatus = reason, () => _player?.Rac1WrenchFrame.Generation,
         () => _playerAudio?.WrenchContact(false)));
 
     public EquipmentChangeResult ResetPlacedActor(string id) => ActorHost.ResetPlacement(id);
@@ -1675,7 +1728,7 @@ public partial class OBPGame : Node3D
             [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))], menus,
             new DiagnosticPlayerContinuityAdapter(() => _playerSession?.Capture() ?? throw new DiagnosticUnavailableException("The player session is missing.")),
             new DiagnosticProfileEvidence(() => SharedProfilePath, SaveSharedProfile),
-            new DiagnosticSourceRepairFixture(Sources.Setup.Library.Remove, Sources.RequireOrdinary, () => _rac1CampaignSession),
+            new DiagnosticSourceRepairFixture(Sources.Setup.Library.Remove, Sources.RequireOrdinary, () => _rac1Campaign.Session),
             new GodotRetailPauseFixture(this, () => _player, () => _pauseMenu, () => PauseMenuOpen, TryOpenPauseMenu, TryClosePauseMenu, () => _rac1Weapons, worlds), worlds,
             new DiagnosticNavigationActions(destination => { OpenDestinationFromBootstrap(destination); return _world is not null && _currentDestinationId == destination; }),
             new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. Sources.Setup.Library.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
@@ -1708,10 +1761,10 @@ public partial class OBPGame : Node3D
             () => _hudState.Current.Health, () => [.. _rac2OpeningMsr1.Values.Select(session => (session.Hostile.InstanceIndex, session.Node.Root))], RespawnPlayer));
         var audio = new GodotPlayerAudioFixture(this, new(() => _player,
             () => new(_playerAudio?.Ready == true, _world?.LevelId, _playerAudio?.PackSound, _playerAudio?.ThrownWrenchSound, _rac1WeaponLoop is not null,
-                _rac1WrenchThrow.Active, _rac1BoltCrates.DestroyedCrateCount, _rac1Nanotech.Probe().Nanotech, _rac1Nanotech.Probe().IsDead),
+                _rac1WrenchThrow.Active, Rac1World.Context.BoltCrates.DestroyedCrateCount, _rac1Nanotech.Probe().Nanotech, _rac1Nanotech.Probe().IsDead),
             () => _playerAudio?.ReadVoices() ?? [],
             ClearMovementSmokeInput, SetAnalogueSmokeInput, SetRac1SmokeConditionedInput, TryHandleInteractiveBack,
-            OnRac1WeaponSelectionRequested, SetRac1WeaponPreview, () => [.. _rac1CrateNodes], IsRac1GameplayActive,
+            OnRac1WeaponSelectionRequested, SetRac1WeaponPreview, () => [.. Rac1World.Presentation.CrateNodes], IsRac1GameplayActive,
             (node, position) => GodotRac1CrateStaging.Place(node, position, _rac1FallingCrates), ApplyRac1EnemyPlayerDamage));
         var ports = new PlayerSessionDiagnosticPorts(player,
             new GodotPlayerObservations(() => _player, () => _avatarPresentation.Avatar?.Identity,
@@ -1723,7 +1776,7 @@ public partial class OBPGame : Node3D
             equipment, ui, profile, new DiagnosticProfileEvidence(() => SharedProfilePath, SaveSharedProfile),
             CreateCaptureDiagnosticHarness().Acceptance, samples,
             new GodotCommonContactFixture(() => _sceneResult?.Root, () => _player),
-            new DiagnosticRetiredActorProbe(() => [.. _rac1HostileNodes.Values], ApplyPlayerSourceDamage), health,
+            new DiagnosticRetiredActorProbe(() => [.. Rac1World.Presentation.HostileNodes.Values], ApplyPlayerSourceDamage), health,
             () => PlayerEquipmentConfigurationIdentity, audio, _playerAudio!.Events);
         return new(_args, [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))], ports,
             new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. Sources.Setup.Library.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
@@ -1780,7 +1833,7 @@ public partial class OBPGame : Node3D
 
     private StressSwitchCliService CreateStressSwitchCliService() => new(
         new GodotStressWorldFixture(() => new(new GodotDiagnosticWorldObservations(WorldScenes).ReadWorld(),
-                _worldHost.Root?.GetInstanceId(), _player?.GetInstanceId(), _rac1CampaignSession.Campaign.CurrentLevel),
+                _worldHost.Root?.GetInstanceId(), _player?.GetInstanceId(), _rac1Campaign.Session.Campaign.CurrentLevel),
             path => _activeDestination is { } destination && _worldHost.Root is not null && !EnterProviderWorld(path, destination),
             ShowDestinationSelector, OpenDestinationFromBootstrap, _worldRoot, () => _world?.LevelId ?? -1, () => _player?.IsOnFloor()),
         new GodotDiagnosticFrameClock(this), (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code),
@@ -1886,7 +1939,7 @@ public partial class OBPGame : Node3D
     public void OpenRac1CampaignCurrentFromBootstrap()
     {
         Sources.Initialize();
-        OpenDestinationFromBootstrap($"rac1:LEVEL{_rac1CampaignSession.Campaign.CurrentLevel}");
+        OpenDestinationFromBootstrap($"rac1:LEVEL{_rac1Campaign.Session.Campaign.CurrentLevel}");
     }
 
     private void ShowTitleScreen() => _navigation.ShowTitle();
@@ -1903,9 +1956,9 @@ public partial class OBPGame : Node3D
 
     private void AbandonFailedRac1Travel()
     {
-        if (_rac1CampaignSession.Travel.TransitionActive &&
-            !_rac1CampaignSession.Travel.CurrentLevelCommitted)
-            _rac1CampaignSession.AbandonUncommittedHostLoad();
+        if (_rac1Campaign.Session.Travel.TransitionActive &&
+            !_rac1Campaign.Session.Travel.CurrentLevelCommitted)
+            _rac1Campaign.Session.AbandonUncommittedHostLoad();
     }
 
 
@@ -2064,12 +2117,12 @@ public partial class OBPGame : Node3D
                 .ToArray(),
             DebugOutputEnabled = _debugOutputEnabled,
             MovementStatesAvailable = _player?.CanSaveMovementState == true,
-            WeaponPreviewEnabled = _rac1WeaponPreviewInventory is not null,
+            WeaponPreviewEnabled = _persistentPlayer.WeaponPreview is not null,
             FusionTestAvailable = CanRunNativeFusionFixture,
             FusionTestEnabled = FusionTestActive,
             EquipmentStatus = _player is { } activePlayer
                 ? FusionTestActive ? "Three-game Veldin test · temporary inventory\nOriginal damage · OBP hand mounts / spread feedback\nHold Triangle / Q to select; Circle / E to fire."
-                : $"Weapons: {(_rac1WeaponPreviewInventory is null ? "campaign inventory" : "full arsenal preview")}\nPack: {activePlayer.Rac1EquipmentLabel}\nSwingshot preview: {(activePlayer.Rac1DevelopmentSwingshotPreview ? "on" : "off")}"
+                : $"Weapons: {(_persistentPlayer.WeaponPreview is null ? "campaign inventory" : "full arsenal preview")}\nPack: {activePlayer.Rac1EquipmentLabel}\nSwingshot preview: {(activePlayer.Rac1DevelopmentSwingshotPreview ? "on" : "off")}"
                 : string.Empty,
         };
         menu.EquipRequested += equip.SelectNativeWeapon;
@@ -2081,8 +2134,8 @@ public partial class OBPGame : Node3D
         menu.DebugOutputChanged += SetDebugOutputEnabled;
         menu.SaveMovementStateRequested += SaveMovementState;
         menu.LoadMovementStateRequested += () => StartMovementStateLoad(MovementStatePath);
-        menu.WeaponPreviewRequested += () => { ClosePauseMenu(); SetRac1WeaponPreview(_rac1WeaponPreviewInventory is not null); };
-        menu.RefillPreviewRequested += () => { ClosePauseMenu(); if (_rac1WeaponPreviewInventory is not null) SetRac1WeaponPreview(false); };
+        menu.WeaponPreviewRequested += () => { ClosePauseMenu(); SetRac1WeaponPreview(_persistentPlayer.WeaponPreview is not null); };
+        menu.RefillPreviewRequested += () => { ClosePauseMenu(); if (_persistentPlayer.WeaponPreview is not null) SetRac1WeaponPreview(false); };
         menu.PackPreviewRequested += () => { _player?.CycleRac1DevelopmentPack(); ClosePauseMenu(); };
         menu.SwingshotPreviewRequested += () => { _player?.ToggleRac1DevelopmentSwingshot(); ClosePauseMenu(); };
         menu.WorldsRequested += ReturnToWorldsFromPause;

@@ -72,7 +72,7 @@ public partial class OBPGame
                 new(source.SourceGame, build, $"moby:{source.NativeClassId}"), adapter,
                 source.InteractionId, [new(descriptor, CapabilityAdmission.Ready)]),
                 () => IsInstanceValid(node.Root) &&
-                    (source.SourceGame == ObpSourceGame.Rac1 ? _rac1MobyRuntime.TryGet(new(source.NativeClassId, source.InstanceIndex), out var native) && native!.IsActive :
+                    (source.SourceGame == ObpSourceGame.Rac1 ? Rac1World.Context.MobyRuntime.TryGet(new(source.NativeClassId, source.InstanceIndex), out var native) && native!.IsActive :
                         _rac2OpeningMsr1.TryGetValue(source.InstanceIndex, out var rac2) && !rac2.Hostile.IsTerminal));
         }
         var before = _playerNative!.Health.Probe();

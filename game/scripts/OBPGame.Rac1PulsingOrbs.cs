@@ -24,7 +24,7 @@ public partial class OBPGame
         foreach (var source in (world.DynamicObjects ?? [])
             .Where(source => source.NativeClassId == Rac1PulsingOrbSession.NativeClassId))
         {
-            var node = FindPresentedDynamic(result, source)
+            var node = Rac1WorldPresentation.FindPresentedDynamic(result, source)
                 ?? throw new InvalidDataException($"Native pulse object {source.InstanceIndex} has no source visual.");
             var materialCopies = node.Root.GetChildren().OfType<MeshInstance3D>()
                 .Select(surface =>

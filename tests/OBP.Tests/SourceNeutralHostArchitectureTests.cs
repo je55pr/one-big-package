@@ -10,16 +10,31 @@ public sealed class SourceNeutralHostArchitectureTests
     public void NativeWaterContactsCanPlayAudioButCannotBindItsSelectedSource()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var tree = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.Rac1Gameplay.cs");
+        var tree = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1WorldModule.cs");
         var method = tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
             .Single(method => method.Identifier.ValueText == "BindSourcePlayerContacts");
-        var model = compilation.GetSemanticModel(tree);
-        var audioCalls = method.DescendantNodes().OfType<InvocationExpressionSyntax>()
+        var moduleModel = compilation.GetSemanticModel(tree);
+        Assert.DoesNotContain(method.DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Select(call => moduleModel.GetSymbolInfo(call).Symbol).OfType<IMethodSymbol>(),
+            symbol => symbol.ContainingType.Name is "Rac1PlayerAudioPresenter" or "PlayerAvatarPresentationHost");
+        var subscriptions = method.DescendantNodes().OfType<AssignmentExpressionSyntax>()
+            .Where(assignment => assignment.IsKind(SyntaxKind.AddAssignmentExpression))
+            .Select(assignment => (
+                Event: moduleModel.GetSymbolInfo(assignment.Left).Symbol,
+                Callback: moduleModel.GetSymbolInfo(assignment.Right).Symbol));
+        Assert.Contains(subscriptions, binding =>
+            binding.Event is IEventSymbol { Name: "Rac1WaterSoundRequested", ContainingType.Name: "PlayerHost" } &&
+            binding.Callback is IPropertySymbol { Name: "WaterSound", ContainingType.Name: "Rac1WorldContactPorts" });
+        var composition = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.cs");
+        var factory = composition.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
+            .Single(method => method.Identifier.ValueText == "CreateRac1WorldModule");
+        var model = compilation.GetSemanticModel(composition);
+        var audioCalls = factory.DescendantNodes().OfType<InvocationExpressionSyntax>()
             .Select(call => model.GetSymbolInfo(call).Symbol).OfType<IMethodSymbol>()
             .Where(symbol => symbol.ContainingType.Name == "Rac1PlayerAudioPresenter").ToArray();
         Assert.Equal("Play", Assert.Single(audioCalls).Name);
         var usage = Assert.Single(HostOwnershipAudit.Scan(compilation), usage => usage.Key.EndsWith(
-            "::OBPGame.BindSourcePlayerContacts(PlayerHost)", StringComparison.Ordinal));
+            "::Rac1WorldModule.BindSourcePlayerContacts(PlayerHost)", StringComparison.Ordinal));
         Assert.False(usage.PlayerSelection);
     }
 

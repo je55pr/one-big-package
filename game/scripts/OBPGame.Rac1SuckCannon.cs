@@ -39,10 +39,10 @@ public partial class OBPGame
                 var visual = CloneEquipmentCargo(target);
                 _rac1CargoModels.Add(key, visual);
                 _rac1Captures.Add(new(key, visual, visual.GlobalPosition, visual.Scale));
-                var instance = _rac1MobyRuntime.Require(target.Source);
+                var instance = Rac1World.Context.MobyRuntime.Require(target.Source);
                 // Capture is a removal, not an invented damage/bolt reward.
-                _rac1MobyRuntime.SetNativeState(instance, Rac1MobyRuntime.TerminalNativeStateFe);
-                _rac1MobyRuntime.Terminalize(instance);
+                Rac1World.Context.MobyRuntime.SetNativeState(instance, Rac1MobyRuntime.TerminalNativeStateFe);
+                Rac1World.Context.MobyRuntime.Terminalize(instance);
                 SetRac1HostedPresence(target, RuntimeEntityPresence.Inactive);
                 if (_rac1Enemies.TryGetValue(target.Source.InstanceIndex, out var enemy))
                 {
@@ -90,7 +90,7 @@ public partial class OBPGame
         if (shot.Cargo is not { } key) return;
         if (!_rac1CargoModels.Remove(key, out var visual))
         {
-            var target = Rac1EnemyNodes.Concat(_rac1CrateNodes).FirstOrDefault(node =>
+            var target = Rac1EnemyNodes.Concat(Rac1World.Presentation.CrateNodes).FirstOrDefault(node =>
                 node.Source.NativeClassId == key.NativeClassId && node.Source.InstanceIndex == key.InstanceIndex);
             if (target is null) throw new InvalidDataException("Captured Moby is absent from the loaded level.");
             visual = CloneEquipmentCargo(target);

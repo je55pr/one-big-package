@@ -125,6 +125,7 @@ public partial class OBPGame
         BeginPlayerHealthWorld(entry.Plan.Request.WorldInstanceId, entry.Plan.Request.Generation);
         _navigation.RetireMenuPages();
         Sources.RetireView();
+        entry.Resources.Rac1Gameplay = CreateRac1WorldModule(entry.Plan.Prepared.World, entry.Resources.Scene);
         ActivateWorld(entry.Plan.Prepared.World, entry.Resources, entry.NativeDestination, entry.Lab);
         entry.Resources.BindPlayer(_player);
     }
@@ -173,7 +174,7 @@ public partial class OBPGame
             !_args.AnimSolo && !_args.CrateFocus && !_args.CrateAutoStrike;
         if (!staticCamera)
         {
-            ConfigureRac1Gameplay(world, resources.Scene);
+            Rac1World.Configure();
             ConfigureRac3Gameplay(world, resources.Scene);
         }
         if (_args.AnimSolo) FrameAnimatedMobies(world);
@@ -257,15 +258,15 @@ public partial class OBPGame
     private void BeginSourceWorldEntry(RuntimeWorld world)
     {
         if (world.Game != ObpSourceGame.Rac1) return;
-        _rac1CampaignSession.StartLevelCheckpointSession(world.LevelId, world.PlayerStart!);
-        WorldScenes.OverrideAuthoredEntry(_rac1CampaignSession.LevelCheckpoint!.AuthoredClass0);
+        _rac1Campaign.Session.StartLevelCheckpointSession(world.LevelId, world.PlayerStart!);
+        WorldScenes.OverrideAuthoredEntry(_rac1Campaign.Session.LevelCheckpoint!.AuthoredClass0);
     }
 
     private void CommitSourceWorldEntry(RuntimeWorld world)
     {
         if (world.Game != ObpSourceGame.Rac1) return;
-        var entry = _rac1CampaignSession.CommitLoadedLevel(world.LevelId);
-        _rac1CampaignSession.FinishLoadedLevel(entry);
+        var entry = _rac1Campaign.Session.CommitLoadedLevel(world.LevelId);
+        _rac1Campaign.Session.FinishLoadedLevel(entry);
         if (entry == Rac1LevelEntryKind.CampaignTravel) PersistRac1CampaignState("completed campaign travel");
     }
 

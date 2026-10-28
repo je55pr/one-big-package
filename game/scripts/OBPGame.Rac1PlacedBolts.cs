@@ -7,7 +7,6 @@ namespace OBP.Game;
 
 public partial class OBPGame
 {
-    private Rac1PlacedBoltSession _rac1PlacedBolts = new(new());
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1PlacedBoltNodes = [];
     private readonly List<(Rac1PlacedBoltSession.Registration Registration, RuntimeWorldScene.DynamicObjectNode Node)> _rac1PendingPlacedBolts = [];
     private ulong _rac1PlacedBoltProbeAfter;
@@ -18,7 +17,7 @@ public partial class OBPGame
         // effects in the ordinary pickup teardown, not authored objects twice.
         foreach (int id in _rac1PlacedBoltNodes.Keys)
         {
-            _rac1PickupNodes.Remove(id);
+            Rac1World.Presentation.PickupNodes.Remove(id);
             _rac1PickupMotion.Remove(id);
         }
         _rac1PlacedBoltNodes.Clear();
@@ -29,9 +28,9 @@ public partial class OBPGame
     {
         foreach (var source in (world.DynamicObjects ?? []).Where(source => Rac1PlacedBolt.IsBoltClass(source.NativeClassId)))
         {
-            var node = FindPresentedDynamic(result, source)
+            var node = Rac1WorldPresentation.FindPresentedDynamic(result, source)
                 ?? throw new InvalidDataException("R&C1 authored bolt is missing its retail presentation.");
-            var registration = _rac1PlacedBolts.Register(source, node.State);
+            var registration = Rac1World.Context.PlacedBolts.Register(source, node.State);
             if (!registration.Instance.IsActive)
             {
                 node.ApplyState(registration.Instance.EntityState);
@@ -67,7 +66,7 @@ public partial class OBPGame
             node.GlobalPosition = FromEffectNative(motion.Position);
             node.Quaternion = FromEffectOrientation(motion.Orientation);
             node.Scale = Vector3.One * motion.VisualScale;
-            _rac1PickupNodes.Add(id, node);
+            Rac1World.Presentation.PickupNodes.Add(id, node);
             _rac1PickupMotion.Add(id, motion);
         }
         _rac1PendingPlacedBolts.Clear();
@@ -75,14 +74,14 @@ public partial class OBPGame
 
     private int CollectRac1HostedBolt(int pickupId, Node3D node)
     {
-        if (_rac1PlacedBolts.TryCollect(pickupId, out var placed))
+        if (Rac1World.Context.PlacedBolts.TryCollect(pickupId, out var placed))
         {
             _rac1PlacedBoltNodes[pickupId].ApplyState(placed!.EntityState);
             _rac1PlacedBoltNodes.Remove(pickupId);
             return placed.Value;
         }
-        int value = _rac1BoltCrates.OwnsPickup(pickupId)
-            ? _rac1BoltCrates.CollectPickup(pickupId) : _rac1BoltPickups.Collect(pickupId);
+        int value = Rac1World.Context.BoltCrates.OwnsPickup(pickupId)
+            ? Rac1World.Context.BoltCrates.CollectPickup(pickupId) : Rac1World.Context.BoltPickups.Collect(pickupId);
         node.QueueFree();
         return value;
     }

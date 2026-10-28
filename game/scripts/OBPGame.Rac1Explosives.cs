@@ -27,16 +27,16 @@ public partial class OBPGame
 
     private void ConfigureRac1ExplosiveCrates(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
-        _rac1ExplosiveCrates = new Rac1ExplosiveCrateSession(_rac1MobyRuntime,
+        _rac1ExplosiveCrates = new Rac1ExplosiveCrateSession(Rac1World.Context.MobyRuntime,
             (min, max) => Rac1EffectRandom.Inclusive(min, max));
         foreach (var source in world.DynamicObjects ?? [])
         {
             if (source.NativeClassId != Rac1ExplosiveCrateSession.ClassId) continue;
-            var node = FindPresentedDynamic(result, source)
+            var node = Rac1WorldPresentation.FindPresentedDynamic(result, source)
                 ?? throw new InvalidDataException($"Native class-505 explosive {source.InstanceIndex} has no original model.");
             _rac1ExplosiveCrates.Register(source, node.State);
             _rac1ExplosiveNodes.Add(source.InstanceIndex, node);
-            _rac1CrateNodes.Add(node);
+            Rac1World.Presentation.CrateNodes.Add(node);
             AddRac1CrateCollider(node);
             _rac1ExplosiveMaterials.Add(source.InstanceIndex, node.Root.GetChildren()
                 .OfType<MeshInstance3D>().Where(mesh => mesh.MaterialOverride is StandardMaterial3D)
@@ -55,8 +55,8 @@ public partial class OBPGame
         Rac1GameplayDamageEvent damage)
     {
         if (_rac1ExplosiveCrates is null || target.Source.NativeClassId != Rac1ExplosiveCrateSession.ClassId ||
-            !_rac1MobyRuntime.CanDispatchDamage(damage)) return false;
-        _rac1MobyRuntime.DispatchDamage<Rac1ExplosiveCrateTriggered>(damage);
+            !Rac1World.Context.MobyRuntime.CanDispatchDamage(damage)) return false;
+        Rac1World.Context.MobyRuntime.DispatchDamage<Rac1ExplosiveCrateTriggered>(damage);
         return true;
     }
 
@@ -74,7 +74,7 @@ public partial class OBPGame
                     _rac1ExplosiveCrates.TryTouch(pair.Key);
         }
 
-        _rac1ExplosiveTickCarry += Math.Max(0, delta) * Rac1NativeTicksPerSecond;
+        _rac1ExplosiveTickCarry += Math.Max(0, delta) * OBP.RAC1.Player.Rac1RatchetMovementController.UpdateHz;
         while (_rac1ExplosiveTickCarry >= 1)
         {
             _rac1ExplosiveTickCarry--;
@@ -97,7 +97,7 @@ public partial class OBPGame
                     _rac1ExplosivePlayerHits.Remove(pair.Key);
                     SpawnRac1CrateDebris(node);
                     SpawnRac1BoltPickups(node.Root.GlobalPosition,
-                        _rac1BoltPickups.Emit(SelectRac1CrateReward(
+                        Rac1World.Context.BoltPickups.Emit(SelectRac1CrateReward(
                             _rac1ExplosiveCrates.Authored(pair.Key).RewardCentre)));
                     PlayRac1PickupSound(Rac1CrateAudio.BreakSoundClass(node.Source.NativeClassId),
                         Rac1CrateAudio.BreakLocalSound, node.Root.GlobalPosition);
@@ -130,7 +130,7 @@ public partial class OBPGame
             ApplyRac1EnemyPlayerDamage(Rac1ExplosiveCrateBlast.ToPlayer(sourceIndex));
         }
 
-        foreach (var target in _rac1CrateNodes.Concat(Rac1EnemyNodes))
+        foreach (var target in Rac1World.Presentation.CrateNodes.Concat(Rac1EnemyNodes))
         {
             int targetIndex = target.Source.InstanceIndex;
             if (targetIndex == sourceIndex || _rac1ExplosiveHits.Contains((sourceIndex, targetIndex)) ||
@@ -144,10 +144,10 @@ public partial class OBPGame
             if (target.Source.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
                 accepted = TryTriggerRac1ExplosiveDamage(target, damage);
             else if (Rac1BoltCrate.IsCrateClass(target.Source.NativeClassId) &&
-                _rac1MobyRuntime.CanDispatchDamage(damage))
+                Rac1World.Context.MobyRuntime.CanDispatchDamage(damage))
             {
                 CompleteRac1CrateDamage(target,
-                    _rac1MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage));
+                    Rac1World.Context.MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage));
                 accepted = true;
             }
             else accepted = _rac1Enemies.ContainsKey(targetIndex) &&
@@ -155,7 +155,7 @@ public partial class OBPGame
             if (accepted)
             {
                 _rac1ExplosiveHits.Add((sourceIndex, targetIndex));
-                _rac1DamageTransport.Publish(damage);
+                Rac1World.Context.DamageTransport.Publish(damage);
             }
         }
     }

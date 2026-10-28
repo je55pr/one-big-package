@@ -30,7 +30,7 @@ public partial class OBPGame
         _playerAudio?.RetireWorld();
         ResetRac1PlacedBoltPresentation();
         ResetRac1CrateSupply();
-        foreach (var node in _rac1PickupNodes.Values.Concat(_rac1Debris.Select(piece => piece.Node)))
+        foreach (var node in Rac1World.Presentation.PickupNodes.Values.Concat(_rac1Debris.Select(piece => piece.Node)))
             if (IsInstanceValid(node)) node.QueueFree();
         _rac1PickupMotion.Clear();
         _rac1Debris.Clear();
@@ -102,7 +102,7 @@ public partial class OBPGame
             var node = CreateRac1EffectNode(pickup.NativeClassId, $"rac1_retail_bolt_{pickup.PickupId}_class{pickup.NativeClassId}");
             node.GlobalPosition = FromEffectNative(motion.Position);
             node.Scale = Vector3.One * motion.VisualScale;
-            _rac1PickupNodes.Add(pickup.PickupId, node);
+            Rac1World.Presentation.PickupNodes.Add(pickup.PickupId, node);
             _rac1PickupMotion.Add(pickup.PickupId, motion);
         }
     }
@@ -143,12 +143,12 @@ public partial class OBPGame
             foreach (var pair in _rac1PickupMotion.ToArray())
             {
                 var motion = pair.Value;
-                var node = _rac1PickupNodes[pair.Key];
+                var node = Rac1World.Presentation.PickupNodes[pair.Key];
                 if (!IsInstanceValid(node))
                 {
-                    if (!_rac1BoltCrates.DiscardPickup(pair.Key)) _rac1BoltPickups.Discard(pair.Key);
+                    if (!Rac1World.Context.BoltCrates.DiscardPickup(pair.Key)) Rac1World.Context.BoltPickups.Discard(pair.Key);
                     _rac1PickupMotion.Remove(pair.Key);
-                    _rac1PickupNodes.Remove(pair.Key);
+                    Rac1World.Presentation.PickupNodes.Remove(pair.Key);
                     continue;
                 }
                 bool wrenchContact = _rac1WrenchThrow.Active &&
@@ -156,7 +156,7 @@ public partial class OBPGame
                 var contact = motion.NeedsWorldContact ? ProbeRac1EffectContact(motion.Position,
                     motion.Position + motion.Velocity - new NVector3(0, 0, Rac1BoltMotionSession.Gravity / 3600), motion.CollisionRadius) : null;
                 int previousState = motion.NativeState;
-                var attraction = Rac1BoltMotionSession.AttractionProfile(_rac1NativePlayerState20A4, _rac1Weapons.OwnsNativeItem(34));
+                var attraction = Rac1BoltMotionSession.AttractionProfile(Rac1World.Context.NativePlayerState20A4, _rac1Weapons.OwnsNativeItem(34));
                 motion.Step(root, socket, contact, attractEnabled: !_rac1Nanotech.Probe().IsDead,
                     thrownWrenchContact: wrenchContact,
                     attractPlanarRadius: attraction.PlanarRadius, attractHeight: attraction.Height);
@@ -172,7 +172,7 @@ public partial class OBPGame
                 _rac1BoltWallet.Credit(value);
                 collectedValue += value;
                 _rac1PickupMotion.Remove(pair.Key);
-                _rac1PickupNodes.Remove(pair.Key);
+                Rac1World.Presentation.PickupNodes.Remove(pair.Key);
             }
             TickRac1CrateSupply(root, socket);
             for (int i = _rac1Debris.Count - 1; i >= 0; i--)
@@ -194,7 +194,7 @@ public partial class OBPGame
         if (collectedValue > 0)
         {
             PersistRac1CampaignState("bolt collection");
-            _rac1CombatStatus = $"collected +{collectedValue} bolts";
+            Rac1World.Context.CombatStatus = $"collected +{collectedValue} bolts";
             RefreshRac1HudState(Rac1HudProjection.CollectedBoltFeedback(collectedValue));
         }
     }

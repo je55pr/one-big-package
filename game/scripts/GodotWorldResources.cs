@@ -20,6 +20,7 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
     public WorldEffectHost? Effects { get; set; }
     public string? EffectsFailure { get; set; }
     public WorldEntryRequest? EffectScope { get; set; }
+    public Rac1WorldModule? Rac1Gameplay { get; set; }
 
     public void Load(Node owner, Node3D parent, RuntimeWorld world, string name, WorldHost.Options options) =>
         Presentation.Load(owner, parent, world, name, options, Scene);
@@ -32,7 +33,11 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
         _disposed = true;
         try
         {
-            try { Effects?.Dispose(); }
+            try
+            {
+                try { Rac1Gameplay?.Dispose(); }
+                finally { Effects?.Dispose(); }
+            }
             finally
             {
                 Effects = null;

@@ -31,7 +31,7 @@ public partial class OBPGame
                 continue;
 
             _rac1GoldBolts.Register(world.LevelId, source.NativeClassId, source.InstanceIndex);
-            var node = FindPresentedDynamic(result, source)
+            var node = Rac1WorldPresentation.FindPresentedDynamic(result, source)
                 ?? throw new InvalidDataException("Novalis gold bolt has no retail presentation.");
             _rac1GoldBoltNodes.Add(source.InstanceIndex, node);
             if (_rac1GoldBolts.IsCollected(source.InstanceIndex))
@@ -67,8 +67,8 @@ public partial class OBPGame
             node.ApplyState(node.State.WithPresence(RuntimeEntityPresence.Inactive));
             _rac1CollectedNovalisGoldBolts.Add(pair.Key);
             PersistRac1CampaignState("Novalis Gold Bolt collection");
-            _rac1CombatStatus = $"Novalis gold bolts {_rac1GoldBolts.CollectedCount}/{Rac1GoldBoltSession.ExpectedNovalisBolts}";
-            GD.Print($"[rac1-gold] collected authored instance {pair.Key}: {_rac1CombatStatus}");
+            Rac1World.Context.CombatStatus = $"Novalis gold bolts {_rac1GoldBolts.CollectedCount}/{Rac1GoldBoltSession.ExpectedNovalisBolts}";
+            GD.Print($"[rac1-gold] collected authored instance {pair.Key}: {Rac1World.Context.CombatStatus}");
             RefreshRac1HudState();
         }
     }
