@@ -3433,7 +3433,7 @@
       "Owner": "#350",
       "Rationale": "The host now owns state and presentation; this pre-existing root member forwards world/lifetime integration until the final thin-root composition. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
       "ExpiresWith": "#376",
-      "Hash": "356487b2ab6e0664e9397465c5f52cec789337008a8c18007b51c0eefdf59cdf"
+      "Hash": "112e58fccc7f1c30546408f39326f17a024123fee0a0c8e377548a617ca5f660"
     },
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:ClearPlayerAvatarView():void:private",
