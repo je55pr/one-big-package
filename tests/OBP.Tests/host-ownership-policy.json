@@ -62,8 +62,8 @@
   {
     "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.BindSourcePlayerContacts(PlayerHost)",
     "Kind": "adapter",
-    "Reason": "Bind only original R&C1 water/crank/traversal contact facts; player actions and profiles are bound independently.",
-    "Hash": "9384fcf83679bb952e6704583c03c8b36a5d0506ea42a4c19b6b412d96fb432d"
+    "Reason": "Bind only original R&C1 water/crank/traversal contact facts; player actions and profiles are bound independently. #354 forwards the same native water sound IDs to the selected audio presenter; this contact adapter cannot bind its audio source or select a player service.",
+    "Hash": "5943f575ec7ce4c46e6681df1c1c76b56c7632cb3d3d0a31217dc40543252f80"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.ConfigureRac1WorldActors(RuntimeWorld,RuntimeWorldScene.Result)",

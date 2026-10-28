@@ -266,6 +266,54 @@ remain recorded as expiry-scoped composition bridges for #351/#354/#375/#376.
 Original root member retirements, relocated bridge hashes, and exact exceptions
 are recorded in the versioned architecture ledger; the frozen origin is unchanged.
 
+The #354 audio extraction retires `OBPGame.Audio.cs` and
+`OBPGame.Rac1PlayerAudio.cs`, including their UID sidecars. From #350's **62 files,
+15,767 lines, 588 methods, 380 fields / 238 mutable, 43 exposed members**, the
+root becomes **60 files, 15,569 lines, 575 methods, 366 fields / 232 mutable,
+43 exposed members**. One composition reference replaces the native cue/reaction
+sessions, five playback hosts, three loop IDs, pitch random state, bank context
+and diagnostic collections. Twenty-five historical member/declaration permissions
+and sixteen old composition permissions retire; nine focused owner/port bindings
+remain for equipment #352 and final composition #376. The frozen origin and
+world-origin ledger membership remain unchanged; the existing source-contact
+adapter fingerprint only follows the same native water sound into its new owner,
+with a regression forbidding source binding or player-service selection there.
+
+`Rac1PlayerAudioPresenter` borrows the existing equipment bank and binds its admitted
+source/build/file stamp to the current world lease. Its unbound owner is composed
+at startup before static-camera diagnostics; ordinary audio uses the committed
+avatar source stamp of its prepared bank. Godot's playback adapter owns
+the player/pack/wrench/animation/reaction voices, while `WorldHost` retains world
+music and equipment one-shots and now presents the representative integration cue.
+Source loss and world retirement clear cue cursors, voices and the binding; exit
+disposes all five channels immediately after world audio retirement. Death stops
+movement loops, then held equipment, before scheduling the native reaction. Pause
+retains suspended voices/cursors, so resume consumes no extra pitch randomness.
+Diagnostics receive copied voice facts and bounded, source/world-qualified start,
+stop and native-silence events rather than walking the player's audio nodes.
+The rendered retail player-audio smoke's 57 ordered playback records, including
+pitch rates, match the pre-extraction run at `0189349` exactly. The rendered
+arsenal smoke at fixed 60 FPS matches all 125 playback records, including its
+world reload, and the Novalis music/lifetime smoke matches all nine records.
+Equipment one-shots resolve the current lease's `WorldHost` through a focused
+playback port; retaining an earlier world's host would lose sound after reload.
+Portable presenter
+tests exercise the same pitch/sample sharing, pause, wrench, death, retirement,
+missing-bank and disposal contracts; authored audio facts and native timing stay
+with their existing source owners.
+
+Broader retail scene limitations were checked against unchanged `0189349`:
+the arsenal fixture emits the same nine existing skeletal-layer sampling errors
+while its assertions pass in both revisions. The Novalis swim fixture fails
+the existing surface/underwater-air-meter assertion in both revisions, so the
+complete audio-shutdown script cannot be reported as passing. Its Oozla exit,
+three Oozla switches and repeated Novalis route probes pass without audio leaks;
+the independent music/lifetime fixture also covers source detachment and re-entry.
+Release validation passes the portable suite (3,075 passed, 262 skipped) and the
+authorized retail suite (3,322 passed, 15 optional oracle checks skipped), pinned
+UID coverage and `dotnet format --verify-no-changes --no-restore`. The Godot app
+build passes with warnings as errors; mixed-source weapon fixtures and a fresh
+same-build input recording/replay retain their original source-identity gates.
 The #359 actor-composition extraction retires `OBPGame.Actors.cs`,
 `OBPGame.ActorAdapters.cs` and `OBPGame.ActorContacts.cs`. Against #350, the root
 changes from 62 files, 15,767 lines, 588 methods, 380 fields (238 mutable),
@@ -313,6 +361,14 @@ its sampled identities, positions, native states/sequences, health and alive
 flags. The same scenario retains ordinary cross-game contacts, independent
 resets, failed construction rollback, source invalidation/re-admission, world
 retirement, source-cache reuse and persistent-ammunition acceptance.
+
+With #354 integrated after #359, the combined four-configuration census is
+57 files, 15,142 lines, 547 methods, 365 fields (232 mutable), 43 exposed
+members and 1,582 cross-file references. Actor contacts retain their owned
+service; its accepted wrench-feedback port delegates to the player audio
+presenter. Only that existing composition binding and the two player diagnostic
+bindings need combined fingerprints; #359's remaining composition expiry stays
+with #376 and the frozen origin ledger remains unchanged.
 
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.

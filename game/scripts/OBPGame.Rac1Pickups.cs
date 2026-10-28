@@ -27,9 +27,7 @@ public partial class OBPGame
 
     private void ResetRac1PickupPresentation()
     {
-        ResetRac1PlayerAudio();
-        _rac1PlayerAudio = null;
-        _rac1PlayerReactions = null;
+        _playerAudio?.RetireWorld();
         ResetRac1PlacedBoltPresentation();
         ResetRac1CrateSupply();
         foreach (var node in _rac1PickupNodes.Values.Concat(_rac1Debris.Select(piece => piece.Node)))

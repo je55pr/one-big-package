@@ -179,7 +179,7 @@ public partial class OBPGame
         target.ApplyState(result.EntityState);
         if (result.Terminal)
         {
-            PlayRepresentativeAudioOneShot(AudioPosition(target.Source));
+            _worldHost.PlayRepresentativeAudioOneShot(target.Source);
         }
 
         GD.Print($"[gc-damage] seq={dispatch.Sequence} {target.Source.InteractionId} " +
@@ -238,7 +238,7 @@ public partial class OBPGame
         }
 
         SpawnCrateBoltPickups(target.Root.GlobalPosition, payout);
-        PlayRepresentativeAudioOneShot(AudioPosition(target.Source));
+        _worldHost.PlayRepresentativeAudioOneShot(target.Source);
         probe.RewardStatus = $"fresh selector {payout.Selector}: centre {payout.RewardCentreValue} => " +
             $"{string.Join("+", payout.PhysicalPickups.Select(p => p.Denomination))} physical, {payout.DeferredValue} deferred";
 

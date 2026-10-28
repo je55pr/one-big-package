@@ -80,7 +80,7 @@ public partial class OBPGame
         if (_player is { } player) { player.PlayerHealth = result.Health; player.Rac1GameplayState = _playerNative.Health.Probe(); }
         if (result.Applied)
         {
-            NotifyRac1PlayerDamageAudio(before, _playerNative.Health.Probe());
+            _playerAudio?.NotifyDamage(before.Nanotech, _playerNative.Health.Probe().Nanotech);
             RefreshRac1HudState();
         }
         return result;

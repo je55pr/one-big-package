@@ -18,6 +18,20 @@ public sealed class RuntimeAudioHost
 
     public sealed record Diagnostic(DiagnosticLevel Level, string Message);
 
+    public sealed record VoiceSnapshot(string Name, bool Pcm, bool ForwardLoop, bool Playing, bool Paused, bool CanProcess);
+
+    /// <summary>Copied playback facts; audio nodes and ownership lists never escape the adapter.</summary>
+    public IReadOnlyList<VoiceSnapshot> ReadVoices() => _levelPlayers.Concat(_effectPlayers)
+        .Where(node => GodotObject.IsInstanceValid(node) && !node.IsQueuedForDeletion())
+        .Select(node => node switch
+        {
+            AudioStreamPlayer flat => new VoiceSnapshot(flat.Name, flat.Stream is AudioStreamWav,
+                flat.Stream is AudioStreamWav { LoopMode: AudioStreamWav.LoopModeEnum.Forward }, flat.Playing, flat.StreamPaused, flat.CanProcess()),
+            AudioStreamPlayer3D spatial => new VoiceSnapshot(spatial.Name, spatial.Stream is AudioStreamWav,
+                spatial.Stream is AudioStreamWav { LoopMode: AudioStreamWav.LoopModeEnum.Forward }, spatial.Playing, spatial.StreamPaused, spatial.CanProcess()),
+            _ => throw new InvalidOperationException("Unexpected audio voice type."),
+        }).ToArray();
+
     public sealed record PreparedClip(
         int SampleRateHz,
         bool Stereo,

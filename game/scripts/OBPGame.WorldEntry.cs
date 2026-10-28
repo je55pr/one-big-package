@@ -390,7 +390,7 @@ public partial class OBPGame
         }
 
 
-        StepRac1PlayerAudio(controller);
+        GodotRac1PlayerAudioPlayback.Step(_playerAudio, controller, _player, _movementStateLoading);
         StepRac1BombProjectilesPhysics();
         StepRac1AdditionalWeaponWorld();
         StepRac1BombEffectsPhysics();
@@ -402,7 +402,7 @@ public partial class OBPGame
     private void ResetPlayerAvatarPhysics()
     {
         ClearFusionTransients();
-        ResetRac1PlayerAudio();
+        _playerAudio?.Reset();
         ResetRac1WrenchHost();
         _rac1BombThrowActive = false;
         _avatarPresentation.ResetClock();
@@ -413,7 +413,7 @@ public partial class OBPGame
 
     private void ClearPlayerAvatarView()
     {
-        ResetRac1PlayerAudio();
+        _playerAudio?.Reset();
         _avatarPresentation.Retire();
         _rac1EquipmentViews.Clear();
         _rac1StagedEquipment.Clear();

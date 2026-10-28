@@ -23,7 +23,7 @@ public partial class OBPGame
 
     private void StepRac1WeaponAudio()
     {
-        bool admitted = _player is not null && PlayerAlive && !_movementStateLoading &&
+        bool admitted = _player is not null && _playerAudio?.Ready == true && PlayerAlive && !_movementStateLoading &&
             !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active;
         var weapon = _rac1Weapons.Equipped;
         (int Class, int Sound)? loop = admitted ? weapon switch
@@ -42,7 +42,7 @@ public partial class OBPGame
             {
                 // Position is local to the player, so a sustained sound follows
                 // its owner instead of remaining at the first shot's world point.
-                if (_rac1WeaponLoopAudio.PlayEffect(_player!, new(sound.SelectPitch(PlayerAudioRandom), RuntimeAudioCategory.SoundEffect,
+                if (_rac1WeaponLoopAudio.PlayEffect(_player!, new(sound.SelectPitch(_playerAudio!.Random), RuntimeAudioCategory.SoundEffect,
                     loop: true, gain: sound.Gain, position: new(0, .7, 0))))
                 {
                     _rac1WeaponLoop = cue;
@@ -56,7 +56,7 @@ public partial class OBPGame
             else if (PlayerPresentationAssets?.Sounds?.TryGetValue((175, _rac1TaunterSoundStep), out var sound) == true)
             {
                 _rac1TaunterAudio.StopAll();
-                if (_rac1TaunterAudio.PlayEffect(_player!, new(sound.SelectPitch(PlayerAudioRandom), RuntimeAudioCategory.SoundEffect,
+                if (_rac1TaunterAudio.PlayEffect(_player!, new(sound.SelectPitch(_playerAudio!.Random), RuntimeAudioCategory.SoundEffect,
                     gain: sound.Gain, position: new(0, .7, 0)))) RecordRac1WeaponSound(175, _rac1TaunterSoundStep);
                 _rac1TaunterSoundTicks = Math.Max(17, (int)Math.Ceiling(sound.Clip.DurationSeconds * 60));
                 _rac1TaunterSoundStep = (_rac1TaunterSoundStep + 1) % 6;
@@ -69,5 +69,16 @@ public partial class OBPGame
     {
         if (!_args.Rac1WeaponsSmoke) return;
         _rac1WeaponSoundTrace.Add((_rac1WeaponWorldTick, cls, sound, loop));
+    }
+
+    private void SetPlayerAudioPaused(bool paused)
+    {
+        // Suspend playback without rewinding native cue cursors, reselecting
+        // probability programs or allocating duplicate looping voices.
+        _playerAudio?.SetPaused(paused);
+        _rac1WeaponLoopAudio.SetPaused(paused);
+        _rac1TaunterAudio.SetPaused(paused);
+        foreach (var owned in _fusionAudioPlayers)
+            if (IsInstanceValid(owned.Player)) owned.Player.StreamPaused = paused;
     }
 }
