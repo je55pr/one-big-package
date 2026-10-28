@@ -3,6 +3,7 @@ using OBP.Fusion;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
+using OBP.RAC1.Presentation;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Player;
@@ -26,6 +27,20 @@ internal sealed class PlayerEquipmentPresentationBinder
     internal WorldMaterialFactory? EffectMaterials { get; private set; }
     internal Dictionary<int, List<(ArrayMesh Mesh, Material Material)>> EffectMeshes => _effectMeshes;
     internal EquipmentPresentationBinding? Binding(SourceWeaponKey key) => _bindings.GetValueOrDefault(key);
+
+    internal PlayerEquipmentPresentationState Observe(SourceWeaponKey key, bool modelAvailable, bool effectBankAvailable)
+    {
+        var binding = Binding(key);
+        string? context = key.SourceGame == ObpSourceGame.Rac1 &&
+            key != PlayerEquipmentRegistrations.Wrench && !effectBankAvailable
+            ? "The selected source-native equipment effect bank is not prepared." : null;
+        var icon = key.SourceGame == ObpSourceGame.Rac1 ? Rac1WeaponIconCatalog.Ordinary((Rac1WeaponId)key.NativeItemId) : null;
+        bool iconReady = icon is { } nativeIcon && Rac1RetailUiAssets.Sprite(nativeIcon.AnimationId, nativeIcon.Frame) is not null;
+        return new(modelAvailable ? EquipmentResourceStatus.Available : EquipmentResourceStatus.Unavailable,
+            iconReady ? EquipmentResourceStatus.Available : EquipmentResourceStatus.Unavailable, context,
+            BindingReady: binding?.Ready == true,
+            BindingReason: binding?.Reason ?? (binding is null ? "Equipment presentation has not been bound to the selected player." : null));
+    }
 
     internal void PrepareSelectedBank(string path, bool ordinary, bool sourceChanged)
     {

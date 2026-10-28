@@ -465,12 +465,40 @@ timestamps are expected to change between fresh builds/processes; these are
 excluded only from that comparison, never from ordinary replay admission.
 The rendered Oozla metadata sidecar is byte-identical to the baseline.
 
+The #351 equipment extraction retires `OBPGame.PlayerEquipment.cs` and its UID,
+including 14 historical declaration/member permissions. The root changes from
+56 files, 14,772 lines, 531 methods, 355 fields (223 mutable), 43 exposed members
+and 1,570 cross-file references to 55 files, 14,661 lines, 526 methods, the same
+field/exposed-member counts and 1,529 references. `PlayerSessionHost` owns one
+`PlayerEquipmentFacade` for its lifetime, including explicit parity projections.
+The facade uses the existing native inventory, hand, weapon and assignment
+contracts and receives copied presentation/context observations. It does not
+own another inventory, cache, node, subscription or clock. World retirement
+retains it and the player state; application exit releases its scene callbacks.
+Prepared models and admitted presentation bindings are separate read-model facts;
+unimplemented, unowned, missing-source/build and absent-world-context states
+retain their individual reasons. Missing presentation bindings remain disabled,
+while contextual gadgets retain their desired assignments. The existing slot,
+equip, gadget and unequip command IDs and configuration identity stay unchanged.
+Seven public compatibility delegations expire with #376. Seven existing
+#350/#354 presentation composition bridges move into the main root file with
+their #352 expiry retained; four existing bindings now read through the facade.
+The immutable origin and player/world ownership ledger do not expand.
+
+With #356 integrated, the combined root has 50 files, 13,494 lines, 506 methods,
+353 fields (221 mutable), 43 exposed members and 1,409 cross-file references.
+Capture command actions reach the same equipment facade through the retained
+public delegations; the facade's recording callback uses `CaptureReplayCoordinator`.
+Both retired equipment/capture-session partials stay absent. The combined ledger
+retains both migrations' composition boundaries and retired permissions without
+expanding the frozen origin.
+
 The #360 R&C1 world extraction retires `OBPGame.Rac1Gameplay.cs` and
-`OBPGame.Rac1Presentation.cs`. After reconciling the #356 capture/replay
-extraction at `b5306db`, the root moves from 51 files, 13,601 lines, 511
-methods, 353 fields (221 mutable) and 1,448 cross-file references to 49 files,
-13,204 lines, 500 methods, 324 fields (201 mutable) and 1,303 references. Its exposed surface remains
-43 members. Fifty-one historical permissions retire; eight exact temporary
+`OBPGame.Rac1Presentation.cs`. After reconciling the #351 equipment and
+#356 capture/replay extractions at `3d91db1`, the root moves from 50 files,
+13,494 lines, 506 methods, 353 fields (221 mutable) and 1,409 cross-file references
+to 48 files, 13,096 lines, 495 methods, 324 fields (201 mutable)
+and 1,258 references. Its exposed surface remains 43 members. Fifty-one historical permissions retire; eight exact temporary
 composition bindings replace them. The campaign reference expires with #372;
 the remaining module, player projection and HUD bindings expire with #376.
 The frozen origin/access inventory does not expand.

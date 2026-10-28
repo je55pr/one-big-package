@@ -98,7 +98,7 @@ public partial class OBPGame
             (_playerNative?.Inventory ?? _rac1Campaign.Session.Weapons).AcquireNativeItem(nativeItemId);
         if (_player is { } player)
             player.Rac1MovementEquipment = Rac1MovementCapabilities.FromInventory(_rac1Weapons);
-        RefreshPlayerMovementEquipment();
+        _persistentPlayer.Equipment.RefreshMovementEquipment();
         PersistRac1CampaignState($"item acquisition {nativeItemId}");
 
         if (nativeItemId == (int)Rac1WeaponId.FirstRanged && result.IsFirstAcquisition)

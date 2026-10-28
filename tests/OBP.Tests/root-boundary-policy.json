@@ -2584,9 +2584,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateActorHost():ActorWorldHost:private",
       "Owner": "#359",
-      "Rationale": "Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings. #354 routes accepted cross-source wrench feedback to the player audio presenter. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added.",
+      "Rationale": "Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings. #354 routes accepted cross-source wrench feedback to the player audio presenter. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Reads source availability or equipment order through the persistent PlayerEquipmentFacade. Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings. #354 routes accepted cross-source wrench feedback to the player audio presenter. Reconciled #351 equipment delegations with #360 lease-owned R&C1 state; only existing owner ports are wired, with no added state or native formulas.",
       "ExpiresWith": "#376",
-      "Hash": "bb6fecc65bd0693a0f58473b9ef96d37c41311c5aa508a66f57335ee386f6440"
+      "Hash": "c43b8de6ba0d6aa01eb7e5d6a7faf4f19b430c8a8f2a55bd9afa040275470f4a"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ResetPlacedActor(:string):EquipmentChangeResult:public",
@@ -2759,9 +2759,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateMovementDiagnosticHarness():MovementDiagnosticHarness:private",
       "Owner": "#339",
-      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added.",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Reads source availability or equipment order through the persistent PlayerEquipmentFacade. Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376. Reconciled #351 equipment delegations with #360 lease-owned R&C1 state; only existing owner ports are wired, with no added state or native formulas.",
       "ExpiresWith": "#376",
-      "Hash": "4c095fb02abce233c679314d8a8f9dae17e43482394ea8c699d09577a5111776"
+      "Hash": "6ff8269f098e859d87391bc3cbd2ae749e47d269342eb0232252892cd5085061"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateMovementStateDiagnosticFixture():IMovementStateDiagnosticFixture:private",
@@ -2982,17 +2982,17 @@
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ReadWeaponQuickSelectEntries():WeaponQuickSelectUi . Entry [  ]:private",
-      "Owner": "#348",
-      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "Owner": "#351",
+      "Rationale": "Reads source availability or equipment order through the persistent PlayerEquipmentFacade. Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
       "ExpiresWith": "#376",
-      "Hash": "8096663d1d5c63083effad01cfa9aa31ec2aa7639eb878a5e85de39eebcc9f28"
+      "Hash": "8da914b50f1cfe71b3fb6763beb0a595b51648b75a2777526415b791e0ab3706"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RefreshPlayerSourceAvailability():void:private",
-      "Owner": "#349",
-      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
+      "Owner": "#351",
+      "Rationale": "Reads source availability or equipment order through the persistent PlayerEquipmentFacade. Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
       "ExpiresWith": "#376",
-      "Hash": "a97a748d913f2f9d9b602fe2337019ca40ec7de9383a51aa9440153e3fd47849"
+      "Hash": "5a9a621ee2ad56d0b38385f0cb25ea28db1a84cf31cd5c0afc101effc55020e1"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RememberCommandLineSource(:ObpSourceGame,:string,:bool):void:public",
@@ -3422,60 +3422,11 @@
       "Hash": "77861fbb2c4351eb6a171997d811ddd1a69f196e137e6925f97d1d58324dd0c4"
     },
     {
-      "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:BindPlayerEquipmentPresentation():void:private",
-      "Owner": "#354",
-      "Rationale": "Binds the selected avatar, existing equipment catalogue/source availability, attachment sockets and source-animation compatibility to PlayerEquipmentPresentationBinder. It owns no equipment or avatar state; retire this composition binding with #352.",
-      "ExpiresWith": "#352",
-      "Hash": "e9eefa307fc4f15412849b1a68308237eda825a3d4f54b2a941c7a678a71b335"
-    },
-    {
-      "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:ConfigurePlayerEquipmentPresentation(:RuntimeWorld):void:private",
-      "Owner": "#354",
-      "Rationale": "Connects equipment material resources and the admitted source stamp/world lease to the existing Rac1PlayerAudioPresenter. Cue state, randomness and playback lifetime stay in their owners; retire this composition binding with #352.",
-      "ExpiresWith": "#352",
-      "Hash": "e7810e9402a5bca9872ddc67e01bec505e218c59ba7b1dfc5709be1369f619c1"
-    },
-    {
-      "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:CreateEquipmentAppearancePreview(:EquipmentCatalogEntry):Control ?:private",
-      "Owner": "#354",
-      "Rationale": "Delegates catalogue appearance-preview creation to PlayerAvatarPresentationHost. Avatar selection and preview state stay with their existing owners; retire this delegation with #352.",
-      "ExpiresWith": "#352",
-      "Hash": "ea6c65176ac2583ccb7695cef93adbd9bd3fdda8b65ba59ca6121e9e5a38fac9"
-    },
-    {
-      "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:CreatePlayerEquipmentEffectNode(:int,:string):Node3D:private",
-      "Owner": "#354",
-      "Rationale": "Forwards native effect-node construction to the existing R&C1 effect adapter using the selected equipment resource bank. Model/material caches stay in their existing owners; retire this composition delegation with #352.",
-      "ExpiresWith": "#352",
-      "Hash": "15f0b4e5240f15e71be6fc3415efc3b287a866df78feaa2d151076b362bd11e2"
-    },
-    {
-      "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:PlayerEquipmentModelAvailable(:SourceWeaponKey):bool:private",
-      "Owner": "#354",
-      "Rationale": "Observes staged wrench/glove assets and the existing native/foreign equipment model caches for catalogue availability. It does not load models or choose a provider; retire this observation binding with #352.",
-      "ExpiresWith": "#352",
-      "Hash": "23d34ab3ffb7b357c80659138f8d4021f31a62202793ec3f9d0f82a383d4e06b"
-    },
-    {
-      "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:PlayPlayerEquipmentSound(:int,:int,:Vector3):void:private",
-      "Owner": "#354",
-      "Rationale": "Projects the equipment sound position, forwards the cue through the presenter shared pitch stream/current-world playback port, then records the existing equipment diagnostic cue. It owns no samples or voices; retire this delegation with #352.",
-      "ExpiresWith": "#352",
-      "Hash": "a1b51fc75a33f12a0f3c9d44f34ec6991e5e14f51cf69b27272f74488062dc16"
-    },
-    {
       "Key": "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::method:SetPlayerAudioPaused(:bool):void:private",
       "Owner": "#354",
       "Rationale": "Delegates pause state to the player presenter and existing native weapon/fusion audio owners without advancing or resetting native cue cursors. Retire this pause composition binding with #376.",
       "ExpiresWith": "#376",
       "Hash": "8e35621d650d682af36e8b8fe1d08091df29b1b5fea5956ad087bfb0ef7fc888"
-    },
-    {
-      "Key": "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::property:PlayerPresentationAssets:Rac1PickupAssets . Catalogue ?:get/:private",
-      "Owner": "#354",
-      "Rationale": "Projects the selected equipment bank for ordinary sessions or the existing pickup catalogue for explicit parity/diagnostic sessions. Catalogue ownership stays with the existing components; retire this compatibility projection with #352.",
-      "ExpiresWith": "#352",
-      "Hash": "07b74c5e671674ac28548e69e078cf70f7cd4331fdb16f4b19175164e3e9611c"
     },
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:AttachPlayerAvatarVisual(:PlayerHost):void:private",
@@ -3639,11 +3590,109 @@
       "Hash": "48dbca80eaa7f220ebe39f9c6fc82b0af31a9920443225f14e1c78ef8ce92b08"
     },
     {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:BindPlayerEquipmentPresentation():void:private",
+      "Owner": "#351",
+      "Rationale": "Relocated the existing #350/#354 presentation composition bridge when retiring the equipment partial. Binds the selected avatar, existing equipment catalogue/source availability, attachment sockets and source-animation compatibility to PlayerEquipmentPresentationBinder. It owns no equipment or avatar state; retire this composition binding with #352.",
+      "ExpiresWith": "#352",
+      "Hash": "b8aa4602a49beee587cdb05d1b76dcefc8eb23b093b45af2298278f346c6bf4d"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ConfigurePlayerEquipmentPresentation(:RuntimeWorld):void:private",
+      "Owner": "#351",
+      "Rationale": "Relocated the existing #350/#354 presentation composition bridge when retiring the equipment partial. Connects equipment material resources and the admitted source stamp/world lease to the existing Rac1PlayerAudioPresenter. Cue state, randomness and playback lifetime stay in their owners; retire this composition binding with #352.",
+      "ExpiresWith": "#352",
+      "Hash": "e7810e9402a5bca9872ddc67e01bec505e218c59ba7b1dfc5709be1369f619c1"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateEquipmentAppearancePreview(:EquipmentCatalogEntry):Control ?:private",
+      "Owner": "#351",
+      "Rationale": "Relocated the existing #350/#354 presentation composition bridge when retiring the equipment partial. Delegates catalogue appearance-preview creation to PlayerAvatarPresentationHost. Avatar selection and preview state stay with their existing owners; retire this delegation with #352.",
+      "ExpiresWith": "#352",
+      "Hash": "ea6c65176ac2583ccb7695cef93adbd9bd3fdda8b65ba59ca6121e9e5a38fac9"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlayerEquipmentEffectNode(:int,:string):Node3D:private",
+      "Owner": "#351",
+      "Rationale": "Relocated the existing #350/#354 presentation composition bridge when retiring the equipment partial. Forwards native effect-node construction to the existing R&C1 effect adapter using the selected equipment resource bank. Model/material caches stay in their existing owners; retire this composition delegation with #352.",
+      "ExpiresWith": "#352",
+      "Hash": "15f0b4e5240f15e71be6fc3415efc3b287a866df78feaa2d151076b362bd11e2"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:PlayerEquipmentModelAvailable(:SourceWeaponKey):bool:private",
+      "Owner": "#351",
+      "Rationale": "Relocated the existing #350/#354 presentation composition bridge when retiring the equipment partial. Observes staged wrench/glove assets and the existing native/foreign equipment model caches for catalogue availability. It does not load models or choose a provider; retire this observation binding with #352.",
+      "ExpiresWith": "#352",
+      "Hash": "23d34ab3ffb7b357c80659138f8d4021f31a62202793ec3f9d0f82a383d4e06b"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:PlayPlayerEquipmentSound(:int,:int,:Vector3):void:private",
+      "Owner": "#351",
+      "Rationale": "Relocated the existing #350/#354 presentation composition bridge when retiring the equipment partial. Projects the equipment sound position, forwards the cue through the presenter shared pitch stream/current-world playback port, then records the existing equipment diagnostic cue. It owns no samples or voices; retire this delegation with #352.",
+      "ExpiresWith": "#352",
+      "Hash": "a1b51fc75a33f12a0f3c9d44f34ec6991e5e14f51cf69b27272f74488062dc16"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:PlayerPresentationAssets:Rac1PickupAssets . Catalogue ?:get/:private",
+      "Owner": "#351",
+      "Rationale": "Relocated the existing #350/#354 presentation composition bridge when retiring the equipment partial. Projects the selected equipment bank for ordinary sessions or the existing pickup catalogue for explicit parity/diagnostic sessions. Catalogue ownership stays with the existing components; retire this compatibility projection with #352.",
+      "ExpiresWith": "#352",
+      "Hash": "07b74c5e671674ac28548e69e078cf70f7cd4331fdb16f4b19175164e3e9611c"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ReadPlayerQuickSlots():IReadOnlyList < SourceWeaponKey ? >:public",
+      "Owner": "#351",
+      "Rationale": "Stable UI/diagnostic equipment entrypoint delegates only to the PlayerEquipmentFacade owned by PlayerSessionHost; it owns no equipment state or admission policy. Retire this compatibility delegation with final composition #376.",
+      "ExpiresWith": "#376",
+      "Hash": "af53b9e3e8f9442e808972706873683413f3767eeb9f11fc1bd345f9bb03fc2d"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ReadPlayerEquipment():IReadOnlyList < EquipmentCatalogEntry >:public",
+      "Owner": "#351",
+      "Rationale": "Stable UI/diagnostic equipment entrypoint delegates only to the PlayerEquipmentFacade owned by PlayerSessionHost; it owns no equipment state or admission policy. Retire this compatibility delegation with final composition #376.",
+      "ExpiresWith": "#376",
+      "Hash": "da05e9fb02a0281678a69fbcb08e103c59932a47807b3da413218ef51cd849b3"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SelectPlayerEquipment(:string):EquipmentChangeResult:public",
+      "Owner": "#351",
+      "Rationale": "Stable UI/diagnostic equipment entrypoint delegates only to the PlayerEquipmentFacade owned by PlayerSessionHost; it owns no equipment state or admission policy. Retire this compatibility delegation with final composition #376.",
+      "ExpiresWith": "#376",
+      "Hash": "6d35f377e76bbc92dd8ad77e7b1e7466067172719205e08c3929e34ea5f4aacb"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:AssignPlayerQuickSelect(:int,:string ?):EquipmentChangeResult:public",
+      "Owner": "#351",
+      "Rationale": "Stable UI/diagnostic equipment entrypoint delegates only to the PlayerEquipmentFacade owned by PlayerSessionHost; it owns no equipment state or admission policy. Retire this compatibility delegation with final composition #376.",
+      "ExpiresWith": "#376",
+      "Hash": "414ec8b92785d2088f94cea3f655550817220929cbcf128dd0a25b1add1905c8"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:UnequipPlayerEquipment():EquipmentChangeResult:public",
+      "Owner": "#351",
+      "Rationale": "Stable UI/diagnostic equipment entrypoint delegates only to the PlayerEquipmentFacade owned by PlayerSessionHost; it owns no equipment state or admission policy. Retire this compatibility delegation with final composition #376.",
+      "ExpiresWith": "#376",
+      "Hash": "e8bed17b53fcfdcc33fdb9fcc156185ff5ddde3bf134f096041e7c57a9edfc12"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetPlayerGadgetEnabled(:string,:bool):EquipmentChangeResult:public",
+      "Owner": "#351",
+      "Rationale": "Stable UI/diagnostic equipment entrypoint delegates only to the PlayerEquipmentFacade owned by PlayerSessionHost; it owns no equipment state or admission policy. Retire this compatibility delegation with final composition #376.",
+      "ExpiresWith": "#376",
+      "Hash": "75064d3b140c6b66818778d7b20c75f7437f6ab7ee9aa2bfd27a6d272723b215"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:PlayerEquipmentConfigurationIdentity:string ?:get/:public",
+      "Owner": "#351",
+      "Rationale": "Stable UI/diagnostic equipment entrypoint delegates only to the PlayerEquipmentFacade owned by PlayerSessionHost; it owns no equipment state or admission policy. Retire this compatibility delegation with final composition #376.",
+      "ExpiresWith": "#376",
+      "Hash": "8b2f57f13cfb667c2f7033e2b19dda2d2a559c91fef4e84376eaa5a6c45d8cbc"
+    },
+    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1WorldModule(:RuntimeWorld,:RuntimeWorldScene . Result):Rac1WorldModule:private",
       "Owner": "#360",
-      "Rationale": "Temporary composition binding to the lease-owned R&C1 module or existing persistent player owner. No collection or native gameplay policy lives in the root; Rac1WorldContextTests and world/player lifecycle reconciliation cover isolation.",
+      "Rationale": "Temporary composition binding to the lease-owned R&C1 module or existing persistent player owner. No collection or native gameplay policy lives in the root; Rac1WorldContextTests and world/player lifecycle reconciliation cover isolation. Reconciled #351 equipment delegations with #360 lease-owned R&C1 state; only existing owner ports are wired, with no added state or native formulas.",
       "ExpiresWith": "#376",
-      "Hash": "9de741fc79cc91d3d4c81d6a8772bc8f6e28848212e9f7c3f44259a3485e5cff"
+      "Hash": "d485813fe3f83d44b695d70143219fef3bf07df4efa10c4dd9ca4773fd0363b4"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RefreshRac1HudState(params:HudFeedbackDraft [  ]):void:private",
@@ -4362,6 +4411,20 @@
     "game/scripts/OBPGame.StressDiagnostics.cs::OBPGame::method:CountDescendants(:Node):int:private,static",
     "game/scripts/OBPGame.StressDiagnostics.cs::OBPGame::method:RunStressSwitchAsync(:string,:CancellationToken):System . Threading . Tasks . Task:async,private",
     "game/scripts/OBPGame.cs::OBPGame::field:_verification:SourceVerificationOperation ?:private",
+    "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:AssignPlayerQuickSelect(:int,:string ?):EquipmentChangeResult:public",
+    "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:ObservePlayerEquipment(:EquipmentDefinition):EquipmentLiveState:private",
+    "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:PlayerQuickSelectOrder():IReadOnlyList < SourceWeaponKey ? >:private",
+    "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:PlayerWeaponOrder():IReadOnlyList < SourceWeaponKey >:private",
+    "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:ReadPlayerEquipment():IReadOnlyList < EquipmentCatalogEntry >:public",
+    "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:ReadPlayerQuickSlots():IReadOnlyList < SourceWeaponKey ? >:public",
+    "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:RefreshPlayerEquipmentAvailability():void:private",
+    "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:RefreshPlayerMovementEquipment():void:private",
+    "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:SelectPlayerEquipment(:string):EquipmentChangeResult:public",
+    "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:SetPlayerGadgetEnabled(:string,:bool):EquipmentChangeResult:public",
+    "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::method:UnequipPlayerEquipment():EquipmentChangeResult:public",
+    "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::property:PlayerEquipmentConfigurationIdentity:string ?:get/:public",
+    "game/scripts/OBPGame.PlayerEquipment.cs::OBPGame::property:PlayerEquipmentSources:IReadOnlyDictionary < ObpSourceGame , string >:get/:private",
     "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame+Rac1GameplaySnapshot::declaration:RecordDeclaration:private,sealed:::( int AdmittedCrates , int DestroyedCrates , int OutstandingPickups , int CollectedBolts , int HostileCount , int ActiveHostiles , int LinkedHostiles , int IdleHostiles , int PursuingHostiles , int AttackingHostiles , int ReturningHostiles , int Nanotech , Rac1RatchetLifeState LifeState , Rac1WeaponId EquippedWeapon , int BombGloveAmmo , int HostedProjectiles , string Status )",
     "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame::field:Rac1NativeTicksPerSecond:double:const,private",

@@ -14,6 +14,17 @@ namespace OBP.Game;
 /// </summary>
 internal sealed class PlayerSessionHost
 {
+    private PlayerEquipmentFacade? _equipment;
+    internal PlayerEquipmentFacade Equipment => _equipment ?? throw new InvalidOperationException("Player equipment ports are not bound.");
+
+    internal void BindEquipment(PlayerEquipmentPorts ports)
+    {
+        if (_equipment is not null) throw new InvalidOperationException("Player equipment ports are already bound.");
+        _equipment = new(ports);
+    }
+
+    internal void RetireEquipment() => _equipment?.Dispose();
+
     internal Rac1RatchetNanotechSession ParityHealth { get; private set; } = new();
     internal Rac1HeldItemSession ParityHeld { get; } = new();
     internal Rac1WeaponInventory? WeaponPreview { get; set; }

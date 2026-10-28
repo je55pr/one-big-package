@@ -114,7 +114,7 @@ public partial class OBPGame : Node3D
             TickRac1PulsingOrbs, TickRac1ExplosiveCrates, TickRac1CheckpointTriggers, TickRac1MetalDetector,
             TickRac1Pickups, TickRac1GoldBolts, TickRac1Missions),
         new Rac1PlayerGameplayPorts(() => OrdinaryPlayerSession, () => _playerNative is not null, () => PlayerAlive,
-            () => _rac1Nanotech, () => _rac1Weapons, RefreshPlayerMovementEquipment,
+            () => _rac1Nanotech, () => _rac1Weapons, _persistentPlayer.Equipment.RefreshMovementEquipment,
             OnRac1PrimaryAttackRequested, OnRac1WeaponSelectionRequested, OnRac1WeaponCycleRequested,
             ToggleRac1WeaponPreview, OnRac1WrenchPhysicsUpdated, ConfigureFusionWeapons, () => _fusion is not null,
             ConfigurePlayerEquipmentPresentation, _persistentPlayer.BeginParityWorld,
@@ -293,9 +293,74 @@ public partial class OBPGame : Node3D
     private void RefreshPlayerSourceAvailability()
     {
         _playerSession?.SetAttachedSources(Sources.Setup.Library.Attached.Values.Select(source => source.Identity));
-        _playerNative?.RefreshDevelopmentSources(PlayerEquipmentSources);
-        RefreshPlayerEquipmentAvailability();
+        _playerNative?.RefreshDevelopmentSources(_persistentPlayer.Equipment.Sources);
+        _persistentPlayer.Equipment.RefreshAvailability();
     }
+
+    // Stable UI/diagnostic entrypoints delegate to the persistent equipment owner.
+    public IReadOnlyList<SourceWeaponKey?> ReadPlayerQuickSlots() => _persistentPlayer.Equipment.ReadQuickSlots();
+    public IReadOnlyList<EquipmentCatalogEntry> ReadPlayerEquipment() => _persistentPlayer.Equipment.Read();
+    public EquipmentChangeResult SelectPlayerEquipment(string catalogId) => _persistentPlayer.Equipment.Select(catalogId);
+    public EquipmentChangeResult AssignPlayerQuickSelect(int slot, string? catalogId) => _persistentPlayer.Equipment.AssignQuickSelect(slot, catalogId);
+    public EquipmentChangeResult UnequipPlayerEquipment() => _persistentPlayer.Equipment.Unequip();
+    public EquipmentChangeResult SetPlayerGadgetEnabled(string catalogId, bool enabled) => _persistentPlayer.Equipment.SetGadgetEnabled(catalogId, enabled);
+    public string? PlayerEquipmentConfigurationIdentity => _persistentPlayer.Equipment.ConfigurationIdentity;
+
+    private Rac1PickupAssets.Catalogue? PlayerPresentationAssets =>
+        OrdinaryPlayerSession ? _equipmentPresentation.SelectedAssets : _rac1PickupAssets;
+
+
+    private bool PlayerEquipmentModelAvailable(SourceWeaponKey key) =>
+        key == PlayerEquipmentRegistrations.Wrench ? _avatarPresentation.WrenchAsset is not null :
+        key == FusionWeaponSession.BombGlove ? _avatarPresentation.GloveAsset is not null : key.SourceGame == ObpSourceGame.Rac1
+            ? _rac1EquipmentAssets?.Models.ContainsKey(Rac1WeaponProfiles.Get((Rac1WeaponId)key.NativeItemId).ModelClass) == true
+            : _fusionAssets?.Available(key) == true;
+
+
+    private void BindPlayerEquipmentPresentation()
+    {
+        _equipmentPresentation.Bind(_avatarPresentation.Controller is null ? null : _avatarPresentation.Avatar,
+            _persistentPlayer.Equipment.Sources, PlayerEquipmentModelAvailable, key =>
+            {
+                if (_avatarPresentation.Avatar?.Skeletal is not { } rig ||
+                    _fusionAssets is not { } assets ||
+                    !assets.AvatarAnimations.TryGetValue(key, out var animation))
+                    return false;
+                try
+                {
+                    new PlayerSkeletalSampler(rig.Skeleton).RequireCompatible(animation.Skeleton);
+                    return true;
+                }
+                catch (InvalidDataException) { return false; }
+            });
+    }
+
+
+    private void ConfigurePlayerEquipmentPresentation(RuntimeWorld world)
+    {
+        _equipmentPresentation.ConfigureWorld(world, PlayerPresentationAssets);
+        var source = Sources.Setup.Library.Get(ObpSourceGame.Rac1);
+        _playerAudio!.Bind(new(new(ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId, "player-audio"),
+            OrdinaryPlayerSession ? 0 : world.LevelId,
+            OrdinaryPlayerSession ? _avatarSourceStamp : SourceFileStamp(source?.Path),
+            WorldScenes.Current!.Plan.Request), source is null ? null : PlayerPresentationAssets, _args.FixedSeed,
+            _args.Rac1WrenchSmoke || _args.Rac1WeaponsSmoke || _args.Rac1PlayerAudioSmoke, _args.Rac1PlayerAudioSmoke);
+        // Foreign/unclassified contact material is deliberately treated as a
+        // dry surface by the selected movement adapter. The authentic LEVEL0
+        // footstep bank is an OBP fallback, not a recovered GC/UYA surface map.
+    }
+
+    private Node3D CreatePlayerEquipmentEffectNode(int nativeClass, string name) =>
+        CreateRac1EffectNode(nativeClass, name, playerEquipment: true);
+
+    private void PlayPlayerEquipmentSound(int nativeClass, int localSound, Vector3 position)
+    {
+        if (_playerAudio?.PlayEquipmentSound(nativeClass, localSound, new(-position.X, position.Y, position.Z)) == true)
+            RecordRac1WeaponSound(nativeClass, localSound);
+    }
+
+    private Control? CreateEquipmentAppearancePreview(EquipmentCatalogEntry entry) =>
+        _avatarPresentation.CreateAppearancePreview(entry);
 
     private void InitializeSharedProfile() => Profiles.Initialize();
     private void ApplySharedProfile(ObpProfile profile) => Profiles.Apply(profile);
@@ -355,6 +420,24 @@ public partial class OBPGame : Node3D
             ApplicationLifecycle.RequestQuit(this, "cli-invalid", 2);
             return;
         }
+        _persistentPlayer.BindEquipment(new(
+            Native: () => _playerNative, Inventory: () => _rac1Weapons, Held: () => _rac1HeldItem,
+            Weapons: () => _fusion, CurrentWeapon: () => CurrentWeaponKey, FusionTest: () => FusionTestActive,
+            Sources: () => Sources.Setup.Library.Attached.Values.ToDictionary(source => source.Game, source => source.Identity.BuildId),
+            SelectedAvatar: () => _playerSession?.Capture().Configuration.Avatar,
+            PresentedAvatar: () => _avatarPresentation.Avatar?.Identity,
+            Presentation: key => _equipmentPresentation.Observe(key, PlayerEquipmentModelAvailable(key), PlayerPresentationAssets is not null),
+            Context: () => new(_player?.HasRac1SwingshotTargets == true, _rac1NovalisWater is not null),
+            SelectWeapon: SelectWeaponKey,
+            ResetWeaponPresentation: () =>
+            {
+                _rac1EquipmentUseTicks = 0; _rac1ArsenalHeld = _rac1PyroEmitting = false;
+                _fusionPoseTriggerHeld = false;
+                ResetRac1WeaponAudio(); StopFusionAudio();
+                RefreshRac1WrenchPresentationVisibility(); RefreshRac1HudState();
+            },
+            ApplyMovementEquipment: (movement, backpack) => _player?.ApplyPlayerEquipment(movement, backpack),
+            Record: command => CaptureReplay.RecordCommand(command)));
         _playerAudio ??= new(new GodotRac1PlayerAudioPlayback(this, () => _player, intent => _worldHost.PlayEffect(intent)),
             () => _avatarPresentation.Clock?.Tick ?? 0, () => ResetRac1WeaponAudio(),
             reason => GD.Print("[player-audio] " + reason));
@@ -694,9 +777,16 @@ public partial class OBPGame : Node3D
     public override void _ExitTree()
     {
         // Also cover external/engine exits which bypass RequestQuit.
-        ReleaseAudioForExit();
-        ApplicationLifecycle.SetQuitPreparation(null);
-        ApplicationLifecycle.ReportRootExit(Name);
+        try
+        {
+            ReleaseAudioForExit();
+        }
+        finally
+        {
+            _persistentPlayer.RetireEquipment();
+            ApplicationLifecycle.SetQuitPreparation(null);
+            ApplicationLifecycle.ReportRootExit(Name);
+        }
     }
 
     /// <summary>F1..F7 + J toggle the <see cref="DebugOverlay"/> inspection layers in a loaded world.</summary>
@@ -1146,7 +1236,7 @@ public partial class OBPGame : Node3D
             var player = _player ?? throw new DiagnosticUnavailableException("The controller fixture player is unavailable.");
             return new(_rac1Weapons.Equipped, _rac1Weapons.FirstRangedAmmo,
                 _rac1HeldItem.NativeItemId, _avatarPresentation.WrenchView?.Visible == true, _avatarPresentation.GloveView?.Visible == true,
-                player.Rac1WrenchFrame.Active, player.Rac1AudioMovementAction, CurrentWeaponKey, [.. PlayerWeaponOrder()]);
+                player.Rac1WrenchFrame.Active, player.Rac1AudioMovementAction, CurrentWeaponKey, [.. _persistentPlayer.Equipment.WeaponOrder()]);
         },
             OnRac1WeaponSelectionRequested, OnRac1WeaponCycleRequested);
         return new(ports, water, environment, equipment, _activeDestination,
@@ -1583,7 +1673,7 @@ public partial class OBPGame : Node3D
     });
 
     private ActorWorldHost CreateActorHost() => new(_hostOperations, new(
-        () => Sources.Setup.Library, SourceFileStamp, key => PlayerEquipmentSources.GetValueOrDefault(key.SourceGame),
+        () => Sources.Setup.Library, SourceFileStamp, key => _persistentPlayer.Equipment.Sources.GetValueOrDefault(key.SourceGame),
         (live, total, problems) => _navigation.UpdateLabStatus(live, total, problems),
         actor => { _playerDamageActors.Remove(actor); _playerNative?.Life.RetireActor(actor); },
         actor => _playerDamageActors.Contains(actor), () => _rac1BombOcclusionFrame = ulong.MaxValue,
@@ -2085,7 +2175,7 @@ public partial class OBPGame : Node3D
             Rac1ItemAmmoDescriptors.Get((int)weapon).MaxAmmo > 0 ? $"{_rac1Weapons.GetAmmo((int)weapon)} ammo" : "")).ToArray();
         if (_fusion is not null && _playerNative is null)
         {
-            var keys = PlayerWeaponOrder();
+            var keys = _persistentPlayer.Equipment.WeaponOrder();
             entries = keys.Select(key => key.SourceGame == ObpSourceGame.Rac1 && !FusionTestActive ? entries.Single(e => e.Weapon == key) :
                 new WeaponQuickSelectUi.Entry(key, FusionWeaponName(key) + $" [{SourceIdentityWire.FormatSource(key.SourceGame)}]",
                     _fusionAssets?.Available(key) == false ? "Source unavailable" : FusionWeaponDetail(key))).ToArray();
@@ -2093,7 +2183,7 @@ public partial class OBPGame : Node3D
         if (_playerNative is not null)
         {
             var catalog = ReadPlayerEquipment();
-            entries = PlayerQuickSelectOrder().Select(key =>
+            entries = _persistentPlayer.Equipment.QuickSelectOrder().Select(key =>
             {
                 if (key is null) return new WeaponQuickSelectUi.Entry(null, "Empty", "Unassigned slot");
                 var entry = catalog.Single(entry => entry.Definition.Item == key);

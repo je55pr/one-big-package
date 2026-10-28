@@ -156,6 +156,7 @@
     <Compile Include="../../game/scripts/PlayerSessionHost.cs" Link="Game/PlayerSessionHost.cs" />
     <Compile Include="../../game/scripts/ProfileCoordinator.cs" Link="Game/ProfileCoordinator.cs" />
     <Compile Include="../../game/scripts/PlayerEquipmentRegistrations.cs" Link="Game/PlayerEquipmentRegistrations.cs" />
+    <Compile Include="../../game/scripts/PlayerEquipmentFacade.cs" Link="Game/PlayerEquipmentFacade.cs" />
     <Compile Include="../../game/scripts/PlayerHostProfiles.cs" Link="Game/PlayerHostProfiles.cs" />
     <Compile Include="../../game/scripts/DiagnosticAvatarProvider.cs" Link="Game/DiagnosticAvatarProvider.cs" />
     <Compile Include="../../game/scripts/FusionLabWorldFactory.cs" Link="Game/FusionLabWorldFactory.cs" />
