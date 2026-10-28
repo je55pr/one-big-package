@@ -41,6 +41,9 @@ public sealed class Rac2OozlaNativePoseCorpusTests(ITestOutputHelper output)
             int end = core.SectionBoundaries.FirstOrDefault(b => b > start, core.Assets.Length);
             byte[] source = core.Assets.AsSpan(start, end - start).ToArray();
             if (source[0x0b] != 0) continue; // R&C1-format variants are separate.
+            // Apply the same initial-pose admission gate as production.
+            var initial = cls.Sequences.FirstOrDefault(s => s.Index == 0)?.Frames.FirstOrDefault();
+            if (initial is null || !initial.ExtraChannelsResolved) continue;
             int poses = 0, outside = 0, vertices = 0;
             try
             {
@@ -50,8 +53,7 @@ public sealed class Rac2OozlaNativePoseCorpusTests(ITestOutputHelper output)
                     foreach (var frame in seq.Frames.Count > 1 ?
                         new[] { seq.Frames[0], seq.Frames[^1] } : new[] { seq.Frames[0] })
                     {
-                        if (!frame.ExtraChannelsResolved)
-                            throw new InvalidDataException("Unresolved frame channels");
+                        if (!frame.ExtraChannelsResolved) continue; // Unsupported source frame.
                         var points = Ps2MobyNativePose.Pose(source, cls.Mesh, frame);
                         poses++;
                         if (seq.BoundingSphere is not { } sphere || sphere.Radius <= 0) continue;
@@ -68,7 +70,7 @@ public sealed class Rac2OozlaNativePoseCorpusTests(ITestOutputHelper output)
                 eligible++; checkedFrames += poses; checkedVerts += vertices; sphereEscapes += outside;
                 if (outside > 0) failures.Add($"class={cls.OClass} poses={poses} outside={outside}/{vertices}");
             }
-            catch (Exception ex)
+            catch (InvalidDataException ex)
             {
                 unsupported++;
                 if (failures.Count < 30) failures.Add($"class={cls.OClass} UNSUPPORTED: {ex.GetType().Name} {ex.Message}");
@@ -77,5 +79,10 @@ public sealed class Rac2OozlaNativePoseCorpusTests(ITestOutputHelper output)
         output.WriteLine($"General Oozla eligible_classes={eligible}, sampled_frames={checkedFrames}, checked_vertices={checkedVerts}, escapes={sphereEscapes}, unsupported_classes={unsupported}");
         foreach (var f in failures.Take(40)) output.WriteLine(f);
         Assert.True(eligible >= 8);
+        Assert.True(checkedVerts > 0);
+        Assert.Equal(0, unsupported);
+        // The retail corpus contains a handful of legitimate sphere outliers.
+        Assert.True((double)sphereEscapes / checkedVerts < 0.001,
+            $"Too many authored-sphere outliers: {sphereEscapes}/{checkedVerts}");
     }
 }
