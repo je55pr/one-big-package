@@ -37,6 +37,18 @@ public static partial class Rac1WorldImport
         var shrubTextureIds = shrubTextures.Select(t => t.TextureId).ToHashSet();
         var shrubAlphaProfiles = shrubTextures.ToDictionary(
             t => t.TextureId, t => AlphaProfile.Analyse(t.Rgba));
+        // Inspect each native shrub class once, not once per placed instance.
+        // Interleaved, predominantly cutout leaf-card layers can need depth
+        // testing even when their original materials request alpha blending.
+        var foliageCutoutSurfaces = classes.Shrubs.ToDictionary(
+            entry => entry.Key,
+            entry => Rac1FoliageCutoutPolicy.FindLayeredCutoutTextures(
+                entry.Value, shrubAlphaProfiles));
+        // Novalis class 121 has additional mixed-opacity canopy surfaces
+        // outside the conservative paired-card detector; preserve the
+        // previously verified visual fix until those are separately studied.
+        if (levelId == 1 && classes.Shrubs.TryGetValue(121, out var canopy))
+            foliageCutoutSurfaces[121].UnionWith(canopy.TextureIds);
         var mobyTextureIds = mobyTextures.Select(t => t.TextureId).ToHashSet();
 
         animatedMeshes.AddRange(BuildAnimatedMobyMeshes(
@@ -72,17 +84,9 @@ public static partial class Rac1WorldImport
                 : null,
             shrubTextureIds,
             shrubAlphaProfiles,
-            // Veldin class 466 layers red texture 3 and blue texture 4 on
-            // nearly coincident leaf geometry; blending their depth-unsorted
-            // cards flips their colour as the camera moves. Both textures
-            // have predominantly binary alpha, so cutout depth selects the
-            // nearest authored leaf rather than an arbitrary draw order.
-            levelId switch
-            {
-                0 => new HashSet<int> { 466 },
-                1 => new HashSet<int> { 116, 121 },
-                _ => null,
-            },
+            // Class-local geometry/material evidence, independent of native
+            // level identity or level-local texture indices.
+            foliageCutoutSurfaces,
             // Veldin shrub 501 texture 13 is a root-ring overlay authored
             // coplanar with opaque terrain (Y=29.5 at the saved viewpoint).
             // PS2 overlay draw ordering cannot be inferred from these UVs.
@@ -181,7 +185,7 @@ public static partial class Rac1WorldImport
         Func<int, (double[] Positions, float[] Uvs, int[] Indices, int[] TriangleTextureIds, RuntimeMaterialPresentation?[] TrianglePresentations)?> lookup,
         HashSet<int> textureIds,
         IReadOnlyDictionary<int, AlphaProfile>? alphaProfiles,
-        IReadOnlySet<int>? cutoutClasses,
+        IReadOnlyDictionary<int, HashSet<int>>? cutoutSurfaces,
         IReadOnlySet<(int ClassId, int TextureId)>? raisedDecalSurfaces,
         List<RuntimeMesh> meshes,
         ref double minX,
@@ -252,14 +256,12 @@ public static partial class Rac1WorldImport
                 // must not branch on source-game identity.
                 if (alphaProfiles is not null)
                 {
-                    // The source-verified class allowlist covers Novalis's
-                    // class 121 canopy and class 116 red leaves, plus Veldin's
-                    // class 466 overlapping red/blue leaf-card layers.
-                    // Their native textures have predominantly binary alpha,
-                    // with a smaller partial-alpha fringe. Depth-writing
-                    // cutouts trade that fringe for stable frontmost leaf
-                    // depth; unrelated shrubs retain native alpha blending.
-                    bool cutout = cutoutClasses?.Contains(instance.OClass) == true &&
+                    // Only the proven interleaved texture pair receives
+                    // depth-writing cutouts. All other surfaces retain blending.
+                    // Novalis also keeps its previously verified canopy scope.
+                    bool cutout = cutoutSurfaces is not null &&
+                        cutoutSurfaces.TryGetValue(instance.OClass, out var cutoutTextures) &&
+                        cutoutTextures.Contains(textureId) &&
                         alphaProfiles.TryGetValue(textureId, out var profile) &&
                         profile.CutoutFraction >= 0.05 &&
                         presentation?.AlphaBlendEnabled is true &&
