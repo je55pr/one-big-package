@@ -77,11 +77,16 @@ public sealed class ActorPlacementPreparationTests
         var placement = Placement("actor");
         using var first = fixture.Create(); first.Add(placement); first.Prepare(placement);
         var library = fixture.Library(ObpSourceGame.Rac1);
+        Assert.Same(library, first.Prepared(placement.Id).Library);
         first.Dispose();
         fixture.Release(ObpSourceGame.Rac1); await library.WaitAsync(Guard); first.Poll();
         Assert.Empty(fixture.Activated);
         Assert.True(fixture.Cache.IsCurrentLibrary(fixture.Version(ObpSourceGame.Rac1), 0, library));
-        using var next = fixture.Create(); next.Add(placement); next.Prepare(placement); next.Poll();
+        using var next = fixture.Create(); next.Add(placement); next.Prepare(placement);
+        Assert.Same(library, next.Prepared(placement.Id).Library);
+        next.Prepare(placement);
+        Assert.Same(library, next.Prepared(placement.Id).Library);
+        next.Poll();
         Assert.Equal(new[] { placement.Id }, fixture.Activated);
         Assert.Equal(1, fixture.Imports);
     }

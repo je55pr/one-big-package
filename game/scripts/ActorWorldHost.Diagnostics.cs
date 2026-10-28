@@ -57,7 +57,9 @@ internal sealed partial class ActorWorldHost : IActorWorldDiagnostics
         var prepared = preparation.Prepared(placementId);
         var task = _sources.Library(prepared.Source, prepared.Placement.LevelId);
         preparation.Prepare(prepared.Placement);
-        return new CacheObservation(() => _sources.IsCurrentLibrary(prepared.Source, prepared.Placement.LevelId, task));
+        var preparedTask = preparation.Prepared(placementId).Library;
+        return new CacheObservation(() => ReferenceEquals(task, preparedTask) &&
+            _sources.IsCurrentLibrary(prepared.Source, prepared.Placement.LevelId, task));
     }
 
     private ActorResourceSnapshot ReadResources() => new(_runtime?.Count ?? 0, _bodies.Count, _scene?.GetChildCount() ?? 0, _native.Counts);
