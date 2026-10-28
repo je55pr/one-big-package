@@ -41,26 +41,27 @@ public sealed class HostOperationOwnershipArchitectureTests
     }
 
     [Theory]
-    [InlineData("_=LoadMovementStateAsync(path);", false)]
-    [InlineData("LoadMovementStateAsync(path);", false)]
-    [InlineData("var lost=ReplaySelectedBugAsync();", false)]
-    [InlineData("await LoadMovementStateAsync(path);", true)]
-    [InlineData("_hostOperations.Start(\"capture\", token=>RunCaptureAsync(1, token));", true)]
-    [InlineData("StartBugOverlayWork(\"replay\", token=>ReplaySelectedBugAsync(token));", true)]
-    [InlineData("_work.Start(\"bug-replay\", token=>ReplaySelectedBugAsync(token), result=>Show(result), error=>Fail(error));", false)]
-    [InlineData("await Task.Run(()=>{_=RunCaptureAsync(1, token);});", false)]
-    [InlineData("_=Task.Run(async()=>await RunCaptureAsync(1, token));", false)]
-    [InlineData("_hostOperations.Start(\"capture\", async token=>await RunCaptureAsync(1, token));", true)]
-    [InlineData("_hostOperations.Start(\"capture\", token=>{_=RunCaptureAsync(1, token); return Task.CompletedTask;});", false)]
-    [InlineData("var checks = new GodotSessionOperationChecks(token=>CheckMovementCancellationAsync(token));", true)]
-    [InlineData("var checks = new GodotSessionOperationChecks(token=>{_=CheckMovementCancellationAsync(token); return Task.CompletedTask;});", false)]
-    [InlineData("var checks = new OtherChecks(token=>CheckMovementCancellationAsync(token));", false)]
-    [InlineData("var fixture = new GodotMovementStateDiagnosticFixture(new Bindings { Load = async (path, frames, token) => { await LoadMovementStateAsync(path); } });", true)]
-    [InlineData("var fixture = new GodotMovementStateDiagnosticFixture(new Bindings { Load = async (path, frames, token) => { _=LoadMovementStateAsync(path); } });", false)]
-    [InlineData("var fixture = new OtherFixture(new Bindings { Load = async (path, frames, token) => { await LoadMovementStateAsync(path); } });", false)]
-    public void GuardRecognizesAwaitedOrOwnedCallsRatherThanDiscardSpelling(string body, bool expected)
+    [InlineData("Fixture", "_=LoadMovementStateAsync(path);", false)]
+    [InlineData("Fixture", "LoadMovementStateAsync(path);", false)]
+    [InlineData("Fixture", "var lost=ReplaySelectedBugAsync();", false)]
+    [InlineData("Fixture", "await LoadMovementStateAsync(path);", true)]
+    [InlineData("Fixture", "_hostOperations.Start(\"capture\", token=>RunCaptureAsync(1, token));", true)]
+    [InlineData("Fixture", "StartBugOverlayWork(\"replay\", token=>ReplaySelectedBugAsync(token));", true)]
+    [InlineData("Fixture", "_work.Start(\"bug-replay\", token=>ReplaySelectedBugAsync(token), result=>Show(result), error=>Fail(error));", false)]
+    [InlineData("BugReportUiCoordinator", "_work.Start(\"bug-replay\", token=>ReplaySelectedBugAsync(token), result=>Show(result), error=>Fail(error));", true)]
+    [InlineData("Fixture", "await Task.Run(()=>{_=RunCaptureAsync(1, token);});", false)]
+    [InlineData("Fixture", "_=Task.Run(async()=>await RunCaptureAsync(1, token));", false)]
+    [InlineData("Fixture", "_hostOperations.Start(\"capture\", async token=>await RunCaptureAsync(1, token));", true)]
+    [InlineData("Fixture", "_hostOperations.Start(\"capture\", token=>{_=RunCaptureAsync(1, token); return Task.CompletedTask;});", false)]
+    [InlineData("Fixture", "var checks = new GodotSessionOperationChecks(token=>CheckMovementCancellationAsync(token));", true)]
+    [InlineData("Fixture", "var checks = new GodotSessionOperationChecks(token=>{_=CheckMovementCancellationAsync(token); return Task.CompletedTask;});", false)]
+    [InlineData("Fixture", "var checks = new OtherChecks(token=>CheckMovementCancellationAsync(token));", false)]
+    [InlineData("Fixture", "var fixture = new GodotMovementStateDiagnosticFixture(new Bindings { Load = async (path, frames, token) => { await LoadMovementStateAsync(path); } });", true)]
+    [InlineData("Fixture", "var fixture = new GodotMovementStateDiagnosticFixture(new Bindings { Load = async (path, frames, token) => { _=LoadMovementStateAsync(path); } });", false)]
+    [InlineData("Fixture", "var fixture = new OtherFixture(new Bindings { Load = async (path, frames, token) => { await LoadMovementStateAsync(path); } });", false)]
+    public void GuardRecognizesAwaitedOrOwnedCallsRatherThanDiscardSpelling(string enclosingType, string body, bool expected)
     {
-        var tree = CSharpSyntaxTree.ParseText("class Fixture { async Task Run() { " + body + " } }");
+        var tree = CSharpSyntaxTree.ParseText("class " + enclosingType + " { async Task Run() { " + body + " } }");
         var call = Assert.Single(tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>(),
             call => CriticalOperations.Contains(Name(call.Expression)));
         Assert.Equal(expected, Owned(call));

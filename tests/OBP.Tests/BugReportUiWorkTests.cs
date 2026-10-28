@@ -66,6 +66,32 @@ public sealed class BugReportUiWorkTests
     }
 
     [Fact]
+    public async Task AFailedCommittedSaveAfterViewCloseRequiresFailureExitWhileTheHostIsRunning()
+    {
+        using var host = new HostOperationScope();
+        using var view = new BugReportUiWork(host);
+        var commit = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var error = new IOException("publication failed");
+        bool published = false, shown = false;
+        view.Open();
+        view.Start("bug-report-save", _ => commit.Task, _ => published = true,
+            _ => shown = true, committedSave: true);
+        view.Close();
+        Assert.Equal(1, host.PendingCount);
+        commit.SetException(error);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        while (host.PendingCount > 0) await Task.Delay(1, deadline.Token);
+        Assert.False(host.Stopping);
+        Assert.False(published);
+        Assert.False(shown);
+        var failure = Assert.Single(host.TakeFailures());
+        Assert.Equal("bug-report-save", failure.Name);
+        Assert.Same(error, failure.Error);
+        Assert.False(failure.Superseded);
+        Assert.True(failure.RequiresFailureExit(hostStopping: false));
+    }
+
+    [Fact]
     public async Task AFailureAfterViewRetirementIsRetainedByTheHostWithoutTouchingTheReplacementView()
     {
         using var host = new HostOperationScope();

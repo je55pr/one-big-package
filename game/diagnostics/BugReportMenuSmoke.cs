@@ -123,6 +123,7 @@ public partial class BugReportMenuSmoke : Node
             Check(!close.Disabled, "Committed-save close must explain that saving continues and remain available.");
             form.SetBusy(false, "Retry");
             Check(close.Text == "CANCEL", "Failed-save retry did not restore the ordinary cancel action.");
+            if (_failures.Count > 0) throw new InvalidOperationException(string.Join("\n", _failures));
             form.QueueFree(); await Frames();
             await PauseLoadoutSmoke.VerifyAsync(this);
             GD.Print("[bug-menu-smoke] PASS: mouse, D-pad, activation, focus return, busy/empty states and scrolling");
