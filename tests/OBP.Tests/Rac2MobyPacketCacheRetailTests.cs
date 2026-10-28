@@ -126,5 +126,6 @@ public sealed class Rac2MobyPacketCacheRetailTests(ITestOutputHelper log)
         Assert.Equal(1, alternateFormatClasses); // Class 2700 is R&C1-format.
         Assert.Equal(0, totalImpossible);
         Assert.Equal(0, badEpilogue);
+        Assert.Equal(0, skipped);
     }
 }

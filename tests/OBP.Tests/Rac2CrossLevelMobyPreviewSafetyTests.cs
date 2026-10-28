@@ -41,12 +41,19 @@ public sealed class Rac2CrossLevelMobyPreviewSafetyTests(ITestOutputHelper log)
                 Assert.Equal(a.Mesh.Positions.Length, b.Mesh.Positions.Length);
                 Assert.Equal(a.Mesh.Indices, b.Mesh.Indices);
                 Assert.Equal(a.Mesh.Uvs, b.Mesh.Uvs);
-                Assert.Equal(a.Mesh.Normals, b.Mesh.Normals);
+                if (!b.Mesh.NativeInitialPoseApplied)
+                    Assert.Equal(a.Mesh.Normals, b.Mesh.Normals);
+                else
+                    Assert.All(b.Mesh.Normals, n => Assert.True(float.IsFinite(n)));
                 Assert.Equal(a.Mesh.TriangleMaterialSlots, b.Mesh.TriangleMaterialSlots);
                 Assert.Equal(a.Mesh.TriangleMaterialStateIndices, b.Mesh.TriangleMaterialStateIndices);
                 Assert.Equal(a.Mesh.VertexJoints, b.Mesh.VertexJoints);
                 Assert.Equal(a.Mesh.VertexWeights, b.Mesh.VertexWeights);
                 Assert.Equal(a.Mesh.SkinLocalPositions, b.Mesh.SkinLocalPositions);
+                Assert.Equal(a.Mesh.Scale, b.Mesh.Scale);
+                Assert.Equal(a.Mesh.Skinned, b.Mesh.Skinned);
+                Assert.Equal(a.Mesh.SkinningApplied, b.Mesh.SkinningApplied);
+                Assert.Equal(a.Mesh.SkinStateFullyResolved, b.Mesh.SkinStateFullyResolved);
                 Assert.Equal(a.TriangleTextureIds, b.TriangleTextureIds);
                 Assert.Equal(a.Mesh.Materials, b.Mesh.Materials);
                 Assert.All(b.Mesh.Positions, x => Assert.True(double.IsFinite(x)));

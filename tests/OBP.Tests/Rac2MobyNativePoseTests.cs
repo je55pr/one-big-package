@@ -263,7 +263,8 @@ public sealed class Rac2MobyNativePoseTests
             previewNativeInitialPose: id => { Assert.Equal(2827, id); previewCalls++; return true; });
         Assert.True(classes.TryGetValue(2827, out var recovered));
         Assert.Equal(GcUyaMoby.ReadClass(source).Positions, recovered.Mesh.Positions);
-        Assert.Equal(1, previewCalls);
+        Assert.False(recovered.Mesh.NativeInitialPoseApplied);
+        Assert.Equal(0, previewCalls);
     }
 
     [Theory]
@@ -316,7 +317,7 @@ public sealed class Rac2MobyNativePoseTests
     }
 
     [Fact]
-    public void ClassTableDoesNotReinvokeAThrowingPreviewPredicateFromItsFilter()
+    public void ClassTableDoesNotInvokePreviewPredicateWithoutStrictRecovery()
     {
         var source = PacketClass();
         var assets = new byte[source.Length + 16];
@@ -327,8 +328,9 @@ public sealed class Rac2MobyNativePoseTests
         int previewCalls = 0;
         var classes = GcUyaMoby.ReadClasses(index, assets, [], new(1, 0),
             previewNativeInitialPose: _ => { previewCalls++; throw new InvalidDataException("Predicate failure"); });
-        Assert.Empty(classes);
-        Assert.Equal(1, previewCalls);
+        Assert.True(classes.ContainsKey(2827));
+        Assert.False(classes[2827].Mesh.NativeInitialPoseApplied);
+        Assert.Equal(0, previewCalls);
     }
 
     [Fact]

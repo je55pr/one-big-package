@@ -180,7 +180,7 @@ public static partial class Rac2WorldImport
             meshes, Grow, growBounds: true);
 
         CollectTextures("moby", Rac2LevelTextures.Table.Moby);
-        var animatedMeshes = BuildAnimatedMeshes(gameplay, mobyClasses, out var animatedInstances);
+        var animatedMeshes = BuildAnimatedMeshes(gameplay, mobyClasses, Core(), out var animatedInstances);
         var dynamicClasses = new HashSet<int> { 500 };
         if (level == 0)
         {

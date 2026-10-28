@@ -83,7 +83,6 @@ public sealed class Rac2OozlaSourceChainAuditTests(ITestOutputHelper output)
             Assert.InRange(start, 1, core.Assets.Length - 1);
             int end = core.SectionBoundaries.First(bound => bound > start);
             var buf = core.Assets.AsSpan(start, end - start).ToArray();
-            Assert.Equal(buf, core.Assets.AsSpan(start, buf.Length).ToArray());
             int packetTable = I32(buf, 0), packets = buf[4], joints = buf[8];
             // GC can embed R&C1-layout Mobys; native Wrench selects the packet
             // format from rac12_byte_b at class offset +0x0b.

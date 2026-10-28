@@ -160,6 +160,43 @@ public static class Ps2MobyNativePose
         return output;
     }
 
+    /// <summary>
+    /// Transform the authored vertex normals using the same affine native
+    /// palette as the vertices, without applying palette translations.
+    /// </summary>
+    public static float[] PoseNormals(
+        byte[] classBytes, GcUyaMoby.Mesh mesh, GcUyaMoby.MobyFrame frame, double[] posed)
+    {
+        if (mesh.Normals.Length != mesh.Positions.Length)
+            return mesh.Normals;
+        var displacedLocal = new double[mesh.SkinLocalPositions.Length];
+        for (int i = 0; i < displacedLocal.Length; i++)
+            displacedLocal[i] = mesh.SkinLocalPositions[i] + mesh.Normals[i];
+        var displaced = Pose(classBytes, mesh with { SkinLocalPositions = displacedLocal }, frame);
+        var normals = new float[mesh.Normals.Length];
+        for (int v = 0; v < posed.Length; v += 3)
+        {
+            double x = displaced[v] - posed[v], y = displaced[v + 1] - posed[v + 1],
+                z = displaced[v + 2] - posed[v + 2];
+            double length = Math.Sqrt(x * x + y * y + z * z);
+            if (!double.IsFinite(length))
+                throw new InvalidDataException("Native pose produced a nonfinite vertex normal.");
+            if (length < 1e-10)
+            {
+                // Degenerate authored normals have no stable skinned direction.
+                // Preserve their source value instead of failing the level import.
+                normals[v] = mesh.Normals[v];
+                normals[v + 1] = mesh.Normals[v + 1];
+                normals[v + 2] = mesh.Normals[v + 2];
+                continue;
+            }
+            normals[v] = (float)(x / length);
+            normals[v + 1] = (float)(y / length);
+            normals[v + 2] = (float)(z / length);
+        }
+        return normals;
+    }
+
     // Native quaternion uses a conjugate rotation relative to the common
     // conventional quaternion-to-matrix mapping (see original evaluator).
     private static M Rotation(Quaternion q)

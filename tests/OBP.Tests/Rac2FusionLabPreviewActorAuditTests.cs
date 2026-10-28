@@ -123,7 +123,13 @@ public sealed class Rac2FusionLabPreviewActorAuditTests(ITestOutputHelper log)
         var nativeSurfaces = source.Meshes.ToArray();
         // Runtime scene conversion may round coordinates; the vertex streams
         // must agree in length and order, not in pre/post conversion precision.
-        Assert.All(nativeSurfaces, surface => Assert.Equal(nativePose ? 2953 : 2760, surface.Positions.Length / 3));
+        Assert.All(nativeSurfaces, surface =>
+        {
+            Assert.Equal(nativePose ? 2953 : 2760, surface.Positions.Length / 3);
+            Assert.Equal(scenePositions.Length, surface.Positions.Length);
+            for (int i = 0; i < scenePositions.Length; i++)
+                Assert.InRange(Math.Abs(surface.Positions[i] - scenePositions[i]), 0, 0.01);
+        });
 
         // Before the fix, this loader threw on the recovered 193 additional
         // source vertices, which prevented actor registration in Fusion Lab.

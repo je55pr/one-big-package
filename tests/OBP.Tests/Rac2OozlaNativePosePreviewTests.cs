@@ -25,13 +25,18 @@ public sealed class Rac2OozlaNativePosePreviewTests
             recoverPersistentVertexCache: _ => true,
             previewNativeInitialPose: _ => true);
         Assert.Equal(control.Keys.Order(), preview.Keys.Order());
+        Assert.Contains(2466, control.Keys);
+        Assert.Contains(2859, control.Keys);
         int changed = 0;
         foreach (var (id, before) in control)
         {
             var after = preview[id];
             Assert.Equal(before.Mesh.Indices, after.Mesh.Indices);
             Assert.Equal(before.Mesh.Uvs, after.Mesh.Uvs);
-            Assert.Equal(before.Mesh.Normals, after.Mesh.Normals);
+            if (!after.Mesh.NativeInitialPoseApplied)
+                Assert.Equal(before.Mesh.Normals, after.Mesh.Normals);
+            else
+                Assert.All(after.Mesh.Normals, n => Assert.True(float.IsFinite(n)));
             Assert.Equal(before.Mesh.TriangleMaterialSlots, after.Mesh.TriangleMaterialSlots);
             Assert.Equal(before.Mesh.TriangleMaterialStateIndices, after.Mesh.TriangleMaterialStateIndices);
             Assert.Equal(before.Mesh.SkinLocalPositions, after.Mesh.SkinLocalPositions);

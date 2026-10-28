@@ -28,7 +28,7 @@ public sealed class Rac2OozlaFramePayloadAuditTests(ITestOutputHelper output)
         var hdr = Rac2LevelWad.ReadHeader(wad);
         var core = Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, hdr, 0));
         var table = core.Header.MobyClasses;
-        var decodedClasses = Rac2MobyClasses.Read(core, level: 1);
+        var decodedClasses = Rac2MobyClasses.Read(core, level: 1, nativePoseOverride: false);
         foreach (int id in new[] { 2466, 2859 })
         {
             int at = Enumerable.Range(0, table.Count)

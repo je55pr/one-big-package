@@ -26,7 +26,7 @@ public sealed class Rac2CrossLevelMobyEligibilityAuditTests(ITestOutputHelper lo
         for (int file = 0; file <= 26; file++)
         {
             var wad = fs.OpenFile($"/G/LEVEL{file}.WAD");
-            if (wad is null) continue;
+            Assert.NotNull(wad);
             var hdr = Rac2LevelWad.ReadHeader(wad);
             var core = Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, hdr, 0));
             var table = core.Header.MobyClasses;
@@ -56,7 +56,7 @@ public sealed class Rac2CrossLevelMobyEligibilityAuditTests(ITestOutputHelper lo
                     catch { failed++; }
                     continue;
                 }
-                if (result.SkinningApplied && result.SkinStateFullyResolved && bytes[8] > 1)
+                if (result.SkinningApplied && result.SkinStateFullyResolved && bytes[8] is > 0 and <= 112)
                 {
                     try
                     {
@@ -85,7 +85,7 @@ public sealed class Rac2CrossLevelMobyEligibilityAuditTests(ITestOutputHelper lo
         }
         log.WriteLine($"TOTAL levels={levels} classes={classes} cache={crossPacket} altFormat={formatVariants} initialNativePose={nativePose} legacyCacheFallback={fallback} noNativePose={noSeq} unreadable={failed} errors={totalErrors}");
         foreach (var row in failedRows) log.WriteLine(row);
-        Assert.True(levels >= 25);
+        Assert.Equal(27, levels);
         Assert.True(nativePose > 30);
         Assert.Equal(0, failed);
         Assert.Equal(0, totalErrors);

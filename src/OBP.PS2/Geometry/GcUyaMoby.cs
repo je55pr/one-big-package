@@ -63,6 +63,9 @@ public static class GcUyaMoby
         /// <summary>True only when every VU0 matrix-slot read and blend source was retail-valid.</summary>
         public bool SkinStateFullyResolved { get; init; } = true;
 
+        /// <summary>True when the mesh is initialized from a validated native regular key.</summary>
+        public bool NativeInitialPoseApplied { get; init; }
+
         /// <summary>Native per-switch Moby material records, in decode order.</summary>
         public IReadOnlyList<RcMaterialState> Materials { get; init; } = [];
 
@@ -591,7 +594,9 @@ public static class GcUyaMoby
         return attrs;
     }
 
-    public static Mesh ReadClass(byte[] buf, bool recoverPersistentVertexCache = false)
+    public static Mesh ReadClass(byte[] buf) => ReadClass(buf, false);
+
+    public static Mesh ReadClass(byte[] buf, bool recoverPersistentVertexCache)
     {
         if (buf.Length < ClassHeaderSize)
         {
@@ -1187,6 +1192,15 @@ public static class GcUyaMoby
     public readonly record struct ClassTable(int Count, int Offset);
 
     public static Dictionary<int, MobyClass> ReadClasses(
+        byte[] index, byte[] assets, IReadOnlyList<int> sectionBoundaries, ClassTable table) =>
+        ReadClasses(index, assets, sectionBoundaries, table, null, null);
+
+    public static Dictionary<int, MobyClass> ReadClasses(
+        byte[] index, byte[] assets, IReadOnlyList<int> sectionBoundaries, ClassTable table,
+        Func<int, bool>? recoverPersistentVertexCache) =>
+        ReadClasses(index, assets, sectionBoundaries, table, recoverPersistentVertexCache, null);
+
+    public static Dictionary<int, MobyClass> ReadClasses(
         byte[] index,
         byte[] assets,
         IReadOnlyList<int> sectionBoundaries,
@@ -1231,6 +1245,7 @@ public static class GcUyaMoby
                 bool recoverCache = recoverPersistentVertexCache?.Invoke(oClass) == true &&
                     compatiblePacketFormat;
                 Mesh mesh;
+                bool strictRecoverySucceeded = recoverCache;
                 try
                 {
                     mesh = ReadClass(classBuf, recoverCache);
@@ -1241,6 +1256,7 @@ public static class GcUyaMoby
                     // authored cache/epilogue variant is supported. Keep the
                     // previously available class on the established decoder
                     // when strict recovery rejects an unsupported packet.
+                    strictRecoverySucceeded = false;
                     mesh = ReadClass(classBuf);
                 }
                 var triTexIds = mesh.TriangleMaterialSlots
@@ -1249,7 +1265,7 @@ public static class GcUyaMoby
                 int jointCount = classBuf[0x08];
                 var joints = ReadJoints(classBuf, jointCount);
                 var sequences = joints.Count > 0 ? ReadSequences(classBuf, jointCount) : new List<MobySequence>();
-                if (compatiblePacketFormat &&
+                if (strictRecoverySucceeded && jointCount is > 0 and <= 112 &&
                     previewNativeInitialPose?.Invoke(oClass) == true &&
                     mesh.SkinningApplied && mesh.SkinStateFullyResolved &&
                     sequences.FirstOrDefault(s => s.Index == 0) is { Frames.Count: > 0 } first &&
@@ -1258,9 +1274,14 @@ public static class GcUyaMoby
                     // Source-backed initial pose. Gameplay may select another
                     // sequence after the native instance is initialized.
                     nativePoseAdmitted = true;
+                    var initialPositions = Ps2MobyNativePose.Pose(classBuf, mesh, first.Frames[0]);
+                    var initialNormals = Ps2MobyNativePose.PoseNormals(
+                        classBuf, mesh, first.Frames[0], initialPositions);
                     mesh = mesh with
                     {
-                        Positions = Ps2MobyNativePose.Pose(classBuf, mesh, first.Frames[0])
+                        Positions = initialPositions,
+                        Normals = initialNormals,
+                        NativeInitialPoseApplied = true
                     };
                 }
                 outp[oClass] = new MobyClass(
