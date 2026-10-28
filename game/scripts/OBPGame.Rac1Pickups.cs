@@ -37,7 +37,7 @@ public partial class OBPGame
         _rac1PickupMotion.Clear();
         _rac1Debris.Clear();
         _rac1EffectMeshes.Clear();
-        _playerEquipmentEffectMeshes.Clear(); _playerEquipmentEffectMaterials = null;
+        _equipmentPresentation.RetireWorld();
         _rac1CrateBodies.Clear();
         _rac1FallingCrates.Clear();
         _rac1PickupTickAccumulator = 0;
@@ -51,8 +51,8 @@ public partial class OBPGame
     {
         var source = Sources.Setup.Library.Get(OBP.Core.ObpSourceGame.Rac1);
         if (source is null) throw new InvalidOperationException("R&C1 pickup presentation requires the active source.");
-        _rac1PickupAssets = world.LevelId == 0 && _selectedRac1PresentationAssets is not null
-            ? _selectedRac1PresentationAssets : Rac1PickupAssets.Load(source.Path, world.LevelId);
+        _rac1PickupAssets = world.LevelId == 0 && _equipmentPresentation.SelectedAssets is not null
+            ? _equipmentPresentation.SelectedAssets : Rac1PickupAssets.Load(source.Path, world.LevelId);
         _rac1PickupMaterials = new WorldMaterialFactory(world with { Textures = _rac1PickupAssets.Textures });
         GD.Print($"[rac1-pickups] loaded {_rac1PickupAssets.Models.Count} retail bolt/debris models");
     }
@@ -60,8 +60,8 @@ public partial class OBPGame
     private Node3D CreateRac1EffectNode(int nativeClass, string name, bool playerEquipment = false)
     {
         var assets = playerEquipment ? PlayerPresentationAssets : _rac1PickupAssets;
-        var materials = playerEquipment ? _playerEquipmentEffectMaterials : _rac1PickupMaterials;
-        var cache = playerEquipment ? _playerEquipmentEffectMeshes : _rac1EffectMeshes;
+        var materials = playerEquipment ? _equipmentPresentation.EffectMaterials : _rac1PickupMaterials;
+        var cache = playerEquipment ? _equipmentPresentation.EffectMeshes : _rac1EffectMeshes;
         if (_sceneResult is null || materials is null || assets is null ||
             !assets.Models.TryGetValue(nativeClass, out var model))
             throw new InvalidDataException($"Retail R&C1 effect class {nativeClass} is unavailable.");

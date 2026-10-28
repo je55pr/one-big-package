@@ -42,7 +42,7 @@
     "Hash": "79a3f08772f4c7673590ea187a33cfa099b666db233029dc58c6314198a8fe92"
   },
   {
-    "Key": "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame.HideAuthoredWorldRatchetPresentation()",
+    "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.HideAuthoredWorldRatchetPresentation()",
     "Kind": "adapter",
     "Reason": "Hide duplicate R&C1 authored class-0 world surfaces; does not select the player avatar/provider.",
     "Hash": "637c9917e01f004025325d024952d7ece8c6ad83fbb62a1b3e13db5d9cdea1c6"

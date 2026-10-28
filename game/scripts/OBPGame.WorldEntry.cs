@@ -1,3 +1,8 @@
+using OBP.Runtime.Player;
+using OBP.RAC1.Player;
+using OBP.Godot.Player;
+using OBP.RAC1.Presentation;
+using OBP.IO;
 using Godot;
 using OBP.Core;
 using OBP.Fusion;
@@ -42,7 +47,7 @@ public partial class OBPGame
                 var spawn = ValidateSourceEntry(world);
                 return new(world, spawn, []); // Mixed native actor adapters are registered by #256.
             });
-            var plan = _worldEntries.Prepare(request, source, PlayerAvatarProviders);
+            var plan = _worldEntries.Prepare(request, source, PlayerAvatarPresentationHost.Registry);
             using var staged = WorldScenes.Prepare(plan, nativeDestination, lab, SourceEntrySnapReach(plan.Prepared.World),
                 () => new GodotWorldResources(WorldHost.PrepareScene(plan.Prepared.World, destinationId, WorldOptions(plan.Prepared.World))));
             // Recheck attachments before the destructive boundary. Native source
@@ -100,10 +105,25 @@ public partial class OBPGame
                 ApplicationLifecycle.RequestQuit(this, "world-entry-failed", 2);
             return false;
         }
+        finally
+        {
+            _avatarPresentation.DiscardPrepared();
+            _equipmentPresentation.DiscardPrepared();
+        }
     }
 
     private void ActivateOwnedWorld(WorldSceneLease<GodotWorldResources> entry)
     {
+        // The previous world has been retired. Only now may prepared source
+        // data replace the active avatar and equipment presentation bank.
+        if (_avatarPresentation.HasPrepared && _avatarPresentation.ApplyPrepared())
+        {
+            _equipmentPresentation.InvalidateSource();
+            _rac1EquipmentAssets = null;
+            _rac1EquipmentSource = null;
+        }
+        _avatarSourceStamp = _avatarPresentation.CommittedSourceStamp;
+        if (OrdinaryPlayerSession) _equipmentPresentation.ApplyPreparedBank();
         entry.Resources.EffectScope = entry.Plan.Request;
         ClearBootstrapSceneArtifacts();
         BeginPlayerHealthWorld(entry.Plan.Request.WorldInstanceId, entry.Plan.Request.Generation);
@@ -168,7 +188,7 @@ public partial class OBPGame
         _navigation.WorldActivated(_args.CaptureFrame is null);
         if (lab is not null)
         {
-            DecorateFusionLab(lab, _playerAvatarView is not null);
+            DecorateFusionLab(lab, _avatarPresentation.View is not null);
         }
         ConfigureRegisteredActors(lab);
         var effectScope = resources.EffectScope ?? throw new InvalidOperationException("Effects require the existing world lease.");
@@ -252,4 +272,228 @@ public partial class OBPGame
         _rac1CampaignSession.FinishLoadedLevel(entry);
         if (entry == Rac1LevelEntryKind.CampaignTravel) PersistRac1CampaignState("completed campaign travel");
     }
+
+
+    private void PrepareSelectedPlayerAssets()
+    {
+        EnsurePlayerSession();
+        RefreshPlayerSourceAvailability();
+        var selected = _playerSession!.Capture().Configuration;
+        _persistentPlayer.ResolvePresentationProfiles();
+        if (Engine.PhysicsTicksPerSecond != _playerAnimationProfile!.NativeTicksPerSecond)
+            throw new InvalidOperationException($"Selected player animation requires {_playerAnimationProfile.NativeTicksPerSecond} physics ticks per second.");
+        var identity = selected.Avatar;
+        if (identity.SourceGame == ObpSourceGame.Synthetic) return;
+        var availability = _playerSession.Availability(identity.SourceGame, identity.BuildId, true, true);
+        if (!availability.Usable) throw new InvalidOperationException(availability.Reason);
+        var source = Sources.Setup.Library.Get(identity.SourceGame)!;
+        var file = new FileInfo(source.Path);
+        if (!file.Exists || file.Length != source.SizeBytes)
+            throw new InvalidOperationException("The selected avatar source is missing or has changed size. Reattach it in Game Sources.");
+        using (var reader = new FileRandomAccessReader(source.Path))
+        {
+            var probe = Sources.Setup.Library.Probe(reader);
+            if (!probe.Supported || probe.Definition?.Authority.BuildId != identity.BuildId)
+                throw new InvalidOperationException("The selected avatar source no longer identifies as the selected supported build.");
+        }
+        _avatarPresentation.Prepare(identity, source.Path, (file.Length, file.LastWriteTimeUtc.Ticks));
+        if (identity.SourceGame == ObpSourceGame.Rac1)
+            _equipmentPresentation.PrepareSelectedBank(source.Path, OrdinaryPlayerSession,
+                _avatarPresentation.PreparedSourceChanged);
+    }
+
+
+    private PlayerSessionConfiguration SelectedPlayerConfiguration => _playerSession!.Capture().Configuration;
+
+
+
+    /// <summary>
+    /// Bind the staged, session-selected presentation independently of destination.
+    /// Missing required assets fail entry; the capsule is an explicit diagnostic.
+    /// </summary>
+
+    private void AttachPlayerAvatarVisual(PlayerHost player)
+    {
+        if (_playerSession is null) return;
+        var selected = SelectedPlayerConfiguration.Avatar;
+        if (selected.SourceGame == ObpSourceGame.Synthetic)
+        {
+            GD.Print("[player-avatar] EXPLICIT DIAGNOSTIC CAPSULE");
+            return;
+        }
+        var avatar = _avatarPresentation.Avatar ?? throw new InvalidOperationException("Selected avatar was not staged before world entry.");
+        ClearPlayerAvatarView();
+        var glove = selected.SourceGame == ObpSourceGame.Rac1
+            ? _avatarPresentation.GloveAsset ?? throw new InvalidOperationException("Selected glove asset was not staged.")
+            : null;
+        var materials = glove is null ? null : new WorldMaterialFactory(_world! with { Textures = glove.Textures });
+        var (view, controller) = _avatarPresentation.CreateWorldVisual(player, _playerAnimationProfile!, materials);
+        if (selected.SourceGame == ObpSourceGame.Rac1)
+        {
+            if (PlayerPresentationAssets is not null)
+                _avatarPresentation.InstallStagedBomb(CreatePlayerEquipmentEffectNode(121, "Rac1RetailStagedBomb_Class121"));
+            AttachRac1EquipmentViews(view);
+        }
+        player.VisualRoot.ReplaceVisual(view);
+        player.ConfigureAvatarPresentation((float)avatar.AnimationBounds.Height);
+        _avatarPresentation.Subscribe(player, StepPlayerAvatarPhysics, ResetPlayerAvatarPhysics);
+        BindPlayerEquipmentPresentation();
+        RefreshRac1WrenchPresentationVisibility();
+        HideAuthoredWorldRatchetPresentation();
+        GD.Print($"[player-avatar] attached selected {avatar.Identity.ModelId}: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
+    }
+
+
+    private void StepPlayerAvatarPhysics(
+        double delta, PlayerAnimationState state, Rac1LocomotionAnimationInput input)
+    {
+        if (_avatarPresentation.Controller is not Rac1PlayerAnimationPresentationController controller)
+            return;
+        StepRac1EquippedUseInput();
+        StepRac1BombWeaponPhysics();
+        StepRac1AdditionalWeapons();
+        StepFusionWeapons();
+        input = SelectRac1BombThrowAnimation(controller, input);
+        _avatarPresentation.StepNative(state, input);
+
+
+        bool holdGun = _rac1EquipmentUseTicks > 0 && OBP.RAC1.Gameplay.Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped) &&
+            OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence is > 0 and not 44 &&
+            IsRac1HandEquipmentVisible(_rac1Weapons.Equipped) && input.Traversal is null &&
+            PlayerAlive;
+        bool walloper = IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.Walloper) && _rac1WalloperAge > 0;
+        bool moving = input.Active || state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.JumpRise or PlayerAnimationState.Fall;
+        int? equipmentPose = walloper ? OBP.RAC1.Gameplay.Rac1ArsenalRules.WalloperSequence :
+            holdGun ? (moving ? OBP.RAC1.Gameplay.Rac1ArsenalRules.MovingBodySequence(_rac1Weapons.Equipped) :
+                OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence) : null;
+        // Jump/traversal clocks still own the body. Evaluate equipment from
+        // that clock too, including the attachment when no arm bank applies.
+        bool fusionPose = _fusion is { Selected.SourceGame: not ObpSourceGame.Rac1 } && _fusion.Hand.IsHolding(_fusion.Selected) &&
+            PlayerAlive && _player?.Rac1WrenchFrame.Active != true && _player?.Rac1WaterHandItemHidden != true;
+        if (equipmentPose < 0) equipmentPose = null;
+        if (fusionPose && _fusionAssets?.AvatarAnimations.TryGetValue(_fusion!.Selected, out var sourceAnimation) == true)
+            _avatarPresentation.Sink?.SetAnimationPresentation(controller.ApplySourceEquipment(sourceAnimation,
+                moving, input.CrouchHeld, _fusionUseStarted, _fusionPoseTriggerHeld));
+        else
+        {
+            controller.ClearSourceEquipment();
+            _avatarPresentation.Sink?.SetAnimationPresentation(controller.ApplyEquipmentPose(equipmentPose,
+                walloper ? _rac1WalloperAge / 60d : _rac1EquipmentUseAge / 60d, !walloper, fullBody: walloper || !moving));
+        }
+
+        if (_avatarPresentation.PhysicsPlayer is { } player)
+        {
+            _avatarPresentation.StepHandAttachments(controller, player.Rac1WrenchFrame,
+                _rac1WrenchThrow.Active, _rac1BombThrowGeneration);
+            StepRac1EquipmentViews(controller);
+            StepFusionWeaponViews(controller);
+        }
+
+
+        StepRac1PlayerAudio(controller);
+        StepRac1BombProjectilesPhysics();
+        StepRac1AdditionalWeaponWorld();
+        StepRac1BombEffectsPhysics();
+        _avatarPresentation.SampleClock();
+        RefreshRac1WrenchPresentationVisibility();
+    }
+
+
+    private void ResetPlayerAvatarPhysics()
+    {
+        ClearFusionTransients();
+        ResetRac1PlayerAudio();
+        ResetRac1WrenchHost();
+        _rac1BombThrowActive = false;
+        _avatarPresentation.ResetClock();
+    }
+
+    private int? CurrentPlayerAvatarSourceSequence() => _avatarPresentation.CurrentSourceSequence();
+    private bool PlayerAvatarPresentationIsSynchronized() => _avatarPresentation.IsSynchronized;
+
+    private void ClearPlayerAvatarView()
+    {
+        ResetRac1PlayerAudio();
+        _avatarPresentation.Retire();
+        _rac1EquipmentViews.Clear();
+        _rac1StagedEquipment.Clear();
+        _equipmentPresentation.ClearBindings();
+    }
+
+
+    private void HoldSelectedRac1HandItem()
+    {
+        int? previous = _rac1HeldItem.NativeItemId;
+        _rac1HeldItem.HoldSelected(_rac1Weapons);
+        RefreshRac1HeldItem(previous);
+    }
+
+    private void RefreshRac1HeldItem(int? previous)
+    {
+        if (previous != _rac1HeldItem.NativeItemId &&
+            _rac1EquipmentViews.TryGetValue(_rac1Weapons.Equipped, out var view) &&
+            _avatarPresentation.Controller is Rac1PlayerAnimationPresentationController controller)
+        {
+            // A hidden weapon has not been stepping. Refresh its attachment
+            // before the first shot reads its muzzle, without advancing its clock.
+            var profile = OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped);
+            view.RefreshAttachment(controller.CurrentAttachmentPose(
+                OBP.RAC1.Gameplay.Rac1WeaponProfiles.HandSocket(profile.HandSemantic)));
+        }
+        RefreshRac1WrenchPresentationVisibility();
+    }
+
+    private bool IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId item) =>
+        _fusion?.Selected.SourceGame is not (ObpSourceGame.Rac2 or ObpSourceGame.Rac3) &&
+        _rac1HeldItem.Hand.IsHolding(new(ObpSourceGame.Rac1, (int)item)) &&
+        _player?.Rac1WaterHandItemHidden != true &&
+        _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active;
+
+    private void RefreshRac1WrenchPresentationVisibility()
+    {
+        foreach (var pair in _rac1EquipmentViews)
+            if (IsInstanceValid(pair.Value)) pair.Value.Visible = IsRac1HandEquipmentVisible(pair.Key);
+        bool bombVisible = IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.FirstRanged);
+        if (_avatarPresentation.GloveView is not null && IsInstanceValid(_avatarPresentation.GloveView))
+            _avatarPresentation.GloveView.Visible = bombVisible;
+        if (_avatarPresentation.StagedBombView is not null && IsInstanceValid(_avatarPresentation.StagedBombView))
+            _avatarPresentation.StagedBombView.Visible = bombVisible && _rac1Weapons.FirstRangedAmmo > 0;
+        if (_avatarPresentation.WrenchView is null || !GodotObject.IsInstanceValid(_avatarPresentation.WrenchView))
+            return;
+        _avatarPresentation.WrenchView.Visible =
+            _player?.Rac1WaterHandItemHidden != true &&
+            (_rac1HeldItem.Hand.WrenchHeld ||
+             _player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active);
+    }
+
+    /// <summary>
+    /// R&C1 still exposes the authored class-0 standing Ratchet through the world
+    /// importer for archaeology/equivalence. Once a player avatar is attached,
+    /// hide that duplicate Godot presentation only; RuntimeWorld stays untouched.
+    /// </summary>
+    private void HideAuthoredWorldRatchetPresentation()
+    {
+        if (_activeDestination?.Game != ObpSourceGame.Rac1 || _sceneResult?.AnimatedMeshes is null)
+        {
+            return;
+        }
+
+        int hidden = 0;
+        foreach (var animated in _sceneResult.AnimatedMeshes)
+        {
+            if (!animated.Name.StartsWith("ratchet_i", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            animated.Instance.Visible = false;
+            hidden++;
+        }
+
+        if (hidden > 0)
+        {
+            GD.Print($"[player-avatar] hid {hidden} authored Ratchet surface(s) from world presentation");
+        }
+    }
+
 }

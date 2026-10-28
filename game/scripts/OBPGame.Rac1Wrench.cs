@@ -27,7 +27,7 @@ public partial class OBPGame
     // wrench, swept contact points and return socket use the same pose.
     private void OnRac1WrenchPhysicsUpdated(Rac1WrenchAttackSession.Frame frame)
     {
-        if (_player is null || _playerAvatarView is null || _rac1WrenchView is null)
+        if (_player is null || !_avatarPresentation.TryWrenchContactPose(out var wrenchPose))
             return;
         if (!PlayerAlive)
         {
@@ -48,8 +48,8 @@ public partial class OBPGame
             _player.Rac1GameplayState = _rac1Nanotech.Probe();
         }
 
-        Vector3 hand = _playerAvatarView.ToGlobal(_rac1WrenchView.HandLocal);
-        Vector3 tip = _playerAvatarView.ToGlobal(_rac1WrenchView.TipLocal);
+        Vector3 hand = wrenchPose.Hand;
+        Vector3 tip = wrenchPose.Tip;
         if (frame.ReleaseWrench)
         {
             float yaw = (float)_player.Rac1CurrentYaw;
@@ -74,7 +74,7 @@ public partial class OBPGame
             ResolveRac1AnimatedWrenchContacts(previous, next, previous, next,
                 Rac1WrenchThrowSession.CollisionRadius, damage: 1);
             if (_rac1WrenchThrow.Active)
-                _rac1WrenchView.StepThrown(next, _rac1WrenchThrow.Spin);
+                _avatarPresentation.UpdateThrownWrenchVisual(next, _rac1WrenchThrow.Spin);
         }
         else if (frame.HitActive)
         {

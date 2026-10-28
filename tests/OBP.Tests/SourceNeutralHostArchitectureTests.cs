@@ -19,11 +19,11 @@ public sealed class SourceNeutralHostArchitectureTests
     public void InjectingDestinationDependentAvatarSelectionIntoTheRealHostFails()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.PlayerAvatar.cs");
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.WorldEntry.cs");
         const string mistake = """
             private void ChooseAvatarFromPlanet(OBP.Core.ObpDestination next) {
                 var origin = next;
-                var provider = PlayerAvatarProviders.Get(origin.Game);
+                var provider = OBP.Game.PlayerAvatarPresentationHost.Provider(origin.Game);
             }
             """;
         string source = original.GetText().ToString();
@@ -39,7 +39,7 @@ public sealed class SourceNeutralHostArchitectureTests
         var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.Rac1NovalisWater.cs");
         string source = original.GetText().ToString().Replace(
             "_rac1NovalisWater = Rac1NovalisWaterSurfaces.FromWorld(world);",
-            "var wrongProvider = PlayerAvatarProviders.Get(OBP.Core.ObpSourceGame.Rac1);\n" +
+            "var wrongProvider = OBP.Game.PlayerAvatarPresentationHost.Provider(OBP.Core.ObpSourceGame.Rac1);\n" +
             "_rac1NovalisWater = Rac1NovalisWaterSurfaces.FromWorld(world);", StringComparison.Ordinal);
         Assert.NotEqual(original.GetText().ToString(), source);
         var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
@@ -74,7 +74,7 @@ public sealed class SourceNeutralHostArchitectureTests
         Assert.All(method.DescendantNodes().OfType<InvocationExpressionSyntax>(), call =>
             Assert.Contains(call.Expression.ToString(), new[] { "_rac1Nanotech.Probe", "checkpoint.ResolveEnvironmentalRestart" }));
         string source = original.GetText().ToString().Replace("return checkpoint.ResolveEnvironmentalRestart();",
-            "var wrongProvider = PlayerAvatarProviders.Get(OBP.Core.ObpSourceGame.Rac1);\nreturn checkpoint.ResolveEnvironmentalRestart();", StringComparison.Ordinal);
+            "var wrongProvider = OBP.Game.PlayerAvatarPresentationHost.Provider(OBP.Core.ObpSourceGame.Rac1);\nreturn checkpoint.ResolveEnvironmentalRestart();", StringComparison.Ordinal);
         Assert.NotEqual(original.GetText().ToString(), source);
         var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
             CSharpSyntaxTree.ParseText(source, path: original.FilePath))), HostOwnershipAudit.Policy());
@@ -118,7 +118,7 @@ public sealed class SourceNeutralHostArchitectureTests
         Assert.DoesNotContain(usages, usage => usage.LegacyReads > 0);
         foreach (var tree in HostOwnershipAudit.Host.Value.SyntaxTrees.Where(tree => tree.FilePath.StartsWith("game/scripts/", StringComparison.Ordinal)))
             Assert.DoesNotContain("UseRac1Gameplay", tree.GetText().ToString(), StringComparison.Ordinal);
-        var avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.PlayerAvatar.cs"));
+        var avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.WorldEntry.cs"));
         Assert.DoesNotContain("Get(destination.Game)", avatar, StringComparison.Ordinal);
         var lab = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/ApplicationNavigationCoordinator.cs"));
         Assert.DoesNotContain("rac1:LEVEL0", lab, StringComparison.Ordinal);

@@ -71,6 +71,8 @@ public partial class OBPGame : Node3D
 
 
     private readonly PlayerSessionHost _persistentPlayer = new();
+    private readonly PlayerAvatarPresentationHost _avatarPresentation = new();
+    private readonly PlayerEquipmentPresentationBinder _equipmentPresentation = new();
     private ProfileCoordinator? _profileCoordinator;
     private ProfileCoordinator Profiles => _profileCoordinator ??= new(new(
         ProfilePath: () => _args.NoProfile || !OrdinaryPlayerSession ? null :
@@ -966,8 +968,8 @@ public partial class OBPGame : Node3D
     {
         var clock = new GodotDiagnosticFrameClock(this);
         var ports = new MovementScenarioPorts(new GodotMovementPlayer(() => _player, () => _world),
-            new GodotMovementAnimation(new(() => _playerAvatarView, () => _playerAvatarAnimationController, () => _playerAvatarAnimationSink,
-                CurrentPlayerAvatarSourceSequence, PlayerAvatarPresentationIsSynchronized, () => _playerAvatar?.AnimationBounds.Height ?? double.NaN)),
+            new GodotMovementAnimation(new(() => _avatarPresentation.View, () => _avatarPresentation.Controller, () => _avatarPresentation.Sink,
+                CurrentPlayerAvatarSourceSequence, PlayerAvatarPresentationIsSynchronized, () => _avatarPresentation.Avatar?.AnimationBounds.Height ?? double.NaN)),
             new GodotMovementGeometry(this), new GodotMovementWorld(() => _world,
                 () => _sceneResult?.CollisionBodies ?? 0, () => _rac1NovalisWater is not null),
             new GodotDiagnosticInputActions(), new GodotMovementPhysicalInput(), clock, message => GD.Print(message), message => GD.PrintErr(message));
@@ -982,7 +984,7 @@ public partial class OBPGame : Node3D
         {
             var player = _player ?? throw new DiagnosticUnavailableException("The controller fixture player is unavailable.");
             return new(_rac1Weapons.Equipped, _rac1Weapons.FirstRangedAmmo,
-                _rac1HeldItem.NativeItemId, _rac1WrenchView?.Visible == true, _rac1BombGloveView?.Visible == true,
+                _rac1HeldItem.NativeItemId, _avatarPresentation.WrenchView?.Visible == true, _avatarPresentation.GloveView?.Visible == true,
                 player.Rac1WrenchFrame.Active, player.Rac1AudioMovementAction, CurrentWeaponKey, [.. PlayerWeaponOrder()]);
         },
             OnRac1WeaponSelectionRequested, OnRac1WeaponCycleRequested);
@@ -1021,8 +1023,8 @@ public partial class OBPGame : Node3D
             Sources = () => Sources.Setup.Library,
             ReplaceSources = Sources.Setup.ReplaceDiagnosticLibrary,
             Views = () => [.. _fusionHeldViews],
-            Animation = () => _playerAvatarAnimationController,
-            Avatar = () => _playerAvatar,
+            Animation = () => _avatarPresentation.Controller,
+            Avatar = () => _avatarPresentation.Avatar,
             OriginalInventory = () => System.Text.Json.JsonSerializer.Serialize((_fusionOriginalCampaign ?? throw new DiagnosticUnavailableException("The isolated original campaign is unavailable.")).Weapons.CapturePersistentState()),
             CurrentInventory = () => System.Text.Json.JsonSerializer.Serialize(_rac1Weapons.CapturePersistentState()),
             Prepare = () => PrepareSharedWeaponSources(force: true),
@@ -1115,18 +1117,18 @@ public partial class OBPGame : Node3D
         var targets = new GodotRac1WeaponTargetFixture(new(() => [.. _rac1CrateNodes], () => [.. _rac1Enemies.Values],
             IsRac1GameplayActive, (node, position) => GodotRac1CrateStaging.Place(node, position, _rac1FallingCrates),
             id => _rac1Class1440?.Get(id).Health ?? throw new DiagnosticUnavailableException("The robot health source is unavailable.")), worlds);
-        var wrench = new GodotRac1WrenchDiagnosticFacts(new(() => _player, () => _rac1WrenchView, () => _playerAvatar,
-            () => _playerAvatarAnimationController, () => _rac1WrenchHostGeneration, () => _rac1WrenchThrow.Active,
-            WrenchWorldPosition, () => _rac1BombGloveView?.Visible == true));
+        var wrench = new GodotRac1WrenchDiagnosticFacts(new(() => _player, () => _avatarPresentation.WrenchView, () => _avatarPresentation.Avatar,
+            () => _avatarPresentation.Controller, () => _rac1WrenchHostGeneration, () => _rac1WrenchThrow.Active,
+            WrenchWorldPosition, () => _avatarPresentation.GloveView?.Visible == true));
         var capture = new GodotWeaponDiagnosticCapture(this, () => _player, () => _sceneResult?.Root, () => _ui, new GodotDiagnosticFrameClock(this));
         var bomb = new GodotRac1BombAcceptanceFixture(new(
             () =>
             {
-                var glove = _rac1BombGloveView; var staged = _rac1StagedBombView;
+                var glove = _avatarPresentation.GloveView; var staged = _avatarPresentation.StagedBombView;
                 bool glovePresent = glove is not null && IsInstanceValid(glove), stagedPresent = staged is not null && IsInstanceValid(staged);
                 return new(glovePresent && glove!.Visible, stagedPresent && staged!.Visible,
-                    _rac1WrenchView is { } view && IsInstanceValid(view) && view.Visible,
-                    _rac1BombGloveAsset?.VertexCount ?? 0, _rac1BombGloveAsset?.TriangleCount ?? 0,
+                    _avatarPresentation.WrenchView is { } view && IsInstanceValid(view) && view.Visible,
+                    _avatarPresentation.GloveAsset?.VertexCount ?? 0, _avatarPresentation.GloveAsset?.TriangleCount ?? 0,
                     glovePresent ? GodotMovementPlayer.Copy(glove!.BombLocal) : System.Numerics.Vector3.Zero,
                     stagedPresent ? GodotMovementPlayer.Copy(staged!.Position) : System.Numerics.Vector3.Zero,
                     glovePresent && stagedPresent && staged!.Position.IsEqualApprox(glove!.BombLocal));
@@ -1225,9 +1227,9 @@ public partial class OBPGame : Node3D
                 _rac1Class749PresentationNodes.Count(node => IsInstanceValid(node.Root) && node.Root.Visible), _rac1HostileNodes.Count, _rac1Hostiles.RegisteredCount),
             Presentation = () =>
             {
-                var wrench = _rac1WrenchView; bool present = wrench is not null && IsInstanceValid(wrench);
+                var wrench = _avatarPresentation.WrenchView; bool present = wrench is not null && IsInstanceValid(wrench);
                 return new(_hudState.Current.CurrentWeapon, present, present && wrench!.Visible,
-                    present && _playerAvatarView is not null && wrench!.GetParent() == _playerAvatarView);
+                    present && _avatarPresentation.View is not null && wrench!.GetParent() == _avatarPresentation.View);
             },
             Loot = () => new(_rac1BoltCrates.DestroyedCrateCount, _rac1BoltCrates.CollectedBolts,
                 [.. _rac1PickupNodes.Select(pair => new Rac1CombatPickupDiagnostic(pair.Key, IsInstanceValid(pair.Value),
@@ -1333,7 +1335,7 @@ public partial class OBPGame : Node3D
             Destination = _currentDestinationId,
             Configuration = _playerSession?.Capture().Configuration,
             ProfileJson = _playerSession is null ? "" : System.Text.Json.JsonSerializer.Serialize(OBP.Fusion.ProfilePlayer.Capture(_playerSession.Capture()) with { Generation = 0 }),
-            GenuineAvatar = _playerAvatarView is not null && _playerAvatar?.Identity == _playerSession?.Capture().Configuration.Avatar,
+            GenuineAvatar = _avatarPresentation.View is not null && _avatarPresentation.Avatar?.Identity == _playerSession?.Capture().Configuration.Avatar,
             NativeProfile = _player?.ControlProfile == PlayerHostProfiles.Native,
             PhysicsTicksPerSecond = Engine.PhysicsTicksPerSecond,
             HudHealth = _hudState.Current.Health is not null,
@@ -1342,7 +1344,7 @@ public partial class OBPGame : Node3D
             QuickSelectOpen = QuickSelectOpen,
             PauseOpen = PauseMenuOpen,
             TreePaused = GetTree().Paused,
-            PhysicsTick = _playerPhysicsClock?.Tick ?? 0,
+            PhysicsTick = _avatarPresentation.Clock?.Tick ?? 0,
             PlayerNode = _player?.GetInstanceId(),
             Shots = _fusion?.ShotsFired ?? 0,
         }, (width, height) => GetWindow().Size = new(width, height), () => _args.RecordPlaytest,
@@ -1405,7 +1407,7 @@ public partial class OBPGame : Node3D
         Player = () => _player,
         Scene = () => _sceneResult!.Root,
         Read = () => new(OrdinaryPlayerSession, _playerNative is not null, PlayerPresentationAssets is not null, _rac1PlayerAudio is not null,
-            _rac1HeldItem.Hand.WrenchHeld, _playerPhysicsClock?.Tick ?? 0, _fusion?.ShotsFired ?? 0, _pauseMenu?.UniversalEnabled == true,
+            _rac1HeldItem.Hand.WrenchHeld, _avatarPresentation.Clock?.Tick ?? 0, _fusion?.ShotsFired ?? 0, _pauseMenu?.UniversalEnabled == true,
             _pauseMenu?.RetailEnabled == true, _rac1PyroEmitting, _rac1Particles?.Live.Any(particle => particle.Type == 12) == true,
             _rac1ParticleView?.RenderedCount ?? 0, _playerNative?.Life.Capture().Current ?? 0, GodotMovementPlayer.Copy(_player?.GlobalPosition ?? Vector3.Zero),
             _player?.Rac1CurrentYaw ?? 0, _fusionAcceptedHits, _fusionProjectiles.Count, _fusionAudioPlayers.Count),
@@ -1448,7 +1450,7 @@ public partial class OBPGame : Node3D
                 (Sources.Setup.Access == SourceAccessMode.ExplicitDiagnostic), Sources.HasView, _navigation.Title is not null, _world is not null,
                 _currentDestinationId, _profileDocument?.Destination, _profileWriteBlocked, null, false, false),
             () => new([], _player?.VisualRoot.FallbackVisible == true, _sceneResult is not null,
-                _player is not null && IsInstanceValid(_player), _playerAvatarView is not null && IsInstanceValid(_playerAvatarView),
+                _player is not null && IsInstanceValid(_player), _avatarPresentation.View is not null && IsInstanceValid(_avatarPresentation.View),
                 _player is not null && ReferenceEquals(_activeCamera, _player.Camera) && _player.Camera.Current, _world?.LevelId),
             surface => surface switch
             {
@@ -1477,7 +1479,7 @@ public partial class OBPGame : Node3D
     {
         var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
         var player = new GodotPersistentPlayerFixture(new(() => OrdinaryPlayerSession, () => _playerSession, () => _playerNative,
-            () => _fusion, () => _player, () => _playerAvatarView, () => _playerAvatar?.Identity, _playerRoot, _worldRoot,
+            () => _fusion, () => _player, () => _avatarPresentation.View, () => _avatarPresentation.Avatar?.Identity, _playerRoot, _worldRoot,
             () => (_fusionProjectiles.Count, _fusionAudioPlayers.Count, _fusionEffects.Count), () => _activeDestination is not null, () => _currentDestinationId),
             worlds, SelectWeaponKey, SetRac1WeaponPreview);
         var sources = new DiagnosticSourceAttachmentFixture(Sources.Setup.Library, RefreshPlayerSourceAvailability);
@@ -1492,8 +1494,8 @@ public partial class OBPGame : Node3D
             () => CloseWeaponQuickSelect(), TryToggleRac1MetalDetector);
         var profile = new DiagnosticSharedProfileFixture(() => new(OrdinaryPlayerSession, SharedProfilePath is not null, _profileWriteBlocked,
             _fusionPreparation is not null, _profileDocument?.Destination, _currentDestinationId, _profileDocument?.Sources.Count ?? 0), () => _playerNative);
-        var samples = new GodotCapabilitySamples(new(() => _player, () => _playerPhysicsClock, () => _playerServiceTick,
-            () => _playerAvatarAnimationController, () => _fusion?.ShotsFired ?? 0));
+        var samples = new GodotCapabilitySamples(new(() => _player, () => _avatarPresentation.Clock, () => _playerServiceTick,
+            () => _avatarPresentation.Controller, () => _fusion?.ShotsFired ?? 0));
         var health = new GodotCapabilityHealthFixture(new(() => _playerNative, () => _player, () => _rac2RatchetNanotech.Current,
             () => _hudState.Current.Health, () => [.. _rac2OpeningMsr1.Values.Select(session => (session.Hostile.InstanceIndex, session.Node.Root))], RespawnPlayer));
         var audio = new GodotPlayerAudioFixture(this, new(() => _player,
@@ -1503,8 +1505,8 @@ public partial class OBPGame : Node3D
             OnRac1WeaponSelectionRequested, SetRac1WeaponPreview, () => [.. _rac1CrateNodes], IsRac1GameplayActive,
             (node, position) => GodotRac1CrateStaging.Place(node, position, _rac1FallingCrates), ApplyRac1EnemyPlayerDamage));
         var ports = new PlayerSessionDiagnosticPorts(player,
-            new GodotPlayerObservations(() => _player, () => _playerAvatar?.Identity,
-                () => _playerPhysicsClock?.Tick ?? throw new DiagnosticUnavailableException("The native player clock is unavailable."), () => _playerNative?.Life.Capture().Current),
+            new GodotPlayerObservations(() => _player, () => _avatarPresentation.Avatar?.Identity,
+                () => _avatarPresentation.Clock?.Tick ?? throw new DiagnosticUnavailableException("The native player clock is unavailable."), () => _playerNative?.Life.Capture().Current),
             new GodotPlayerInputFixture(() => _player), navigation, menus, sources,
             new GodotWorldLifecycleFixture(this, WorldScenes, EnterFusionLab,
                 () => EnterWorld(DiagnosticWorldFailures.Destination, DiagnosticWorldFailures.Load, null, null)),

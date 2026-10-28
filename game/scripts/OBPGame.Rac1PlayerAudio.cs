@@ -1,3 +1,8 @@
+using OBP.Runtime.Player;
+using OBP.Runtime.Gameplay;
+using OBP.Runtime;
+using OBP.Fusion;
+using OBP.Godot.Player;
 using Godot;
 using OBP.Core;
 using OBP.Game.Diagnostics;
@@ -49,7 +54,7 @@ public partial class OBPGame
 
     private void StepRac1WrenchAudio(Rac1WrenchAttackSession.Frame attack, Vector3 hand)
     {
-        if (_rac1PlayerAudio is null || _playerAvatarAnimationController is not Rac1PlayerAnimationPresentationController controller)
+        if (_rac1PlayerAudio is null || _avatarPresentation.Controller is not Rac1PlayerAnimationPresentationController controller)
             return;
         bool nearCatch = _rac1WrenchThrow.NativeState == 11 && _rac1WrenchThrow.StepLength > 0 &&
             WrenchWorldPosition().DistanceTo(hand) / _rac1WrenchThrow.StepLength < 4;
@@ -87,7 +92,7 @@ public partial class OBPGame
         {
             // Retain a source-qualified diagnostic outcome for an admitted probability branch; this is not playback.
             if (_args.Rac1PlayerAudioSmoke) _playerAudioDiagnosticEvents.Record(new(ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId,
-                _playerAudioBankLevel, _playerPhysicsClock?.Tick ?? 0, cue.Class, cue.Sound, false, cue.LevelSound)
+                _playerAudioBankLevel, _avatarPresentation.Clock?.Tick ?? 0, cue.Class, cue.Sound, false, cue.LevelSound)
             { Playback = DiagnosticAudioPlayback.NativeSilence });
             return;
         }
@@ -124,7 +129,7 @@ public partial class OBPGame
         TraceSelectedPlayerAudio(cue.Class, cue.Sound, loop, cue.LevelSound);
         if (!_args.Rac1WrenchSmoke && !_args.Rac1WeaponsSmoke && !_args.Rac1PlayerAudioSmoke) return;
         _playerAudioDiagnosticEvents.Record(new(ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId, _playerAudioBankLevel,
-            _playerPhysicsClock?.Tick ?? 0, cue.Class, cue.Sound, loop, cue.LevelSound));
+            _avatarPresentation.Clock?.Tick ?? 0, cue.Class, cue.Sound, loop, cue.LevelSound));
     }
 
     private void TryPlayRac1WrenchWorldContact(global::Godot.Collections.Dictionary hit)
@@ -137,4 +142,106 @@ public partial class OBPGame
             (material & 0x1f) == 0) return;
         if (_rac1PlayerAudio.WrenchContact(false, world: true) is { } cue) PlayRac1PlayerSound(cue);
     }
+
+
+    // Audio cue policy and diagnostics remain for the dedicated #354 extraction.
+    private int _playerAudioBankLevel;
+    private readonly List<string> _playerAudioDiagnostics = [];
+    private readonly List<(string Source, string Build, int Level, int Class, int Sound, bool Loop, bool LevelSound, long Tick)> _selectedPlayerAudioTrace = [];
+    private Rac1PickupAssets.Catalogue? PlayerPresentationAssets =>
+        OrdinaryPlayerSession ? _equipmentPresentation.SelectedAssets : _rac1PickupAssets;
+
+
+    private bool PlayerEquipmentModelAvailable(SourceWeaponKey key) =>
+        key == PlayerEquipmentRegistrations.Wrench ? _avatarPresentation.WrenchAsset is not null :
+        key == FusionWeaponSession.BombGlove ? _avatarPresentation.GloveAsset is not null : key.SourceGame == ObpSourceGame.Rac1
+            ? _rac1EquipmentAssets?.Models.ContainsKey(Rac1WeaponProfiles.Get((Rac1WeaponId)key.NativeItemId).ModelClass) == true
+            : _fusionAssets?.Available(key) == true;
+
+
+    private void BindPlayerEquipmentPresentation()
+    {
+        _equipmentPresentation.Bind(_avatarPresentation.Controller is null ? null : _avatarPresentation.Avatar,
+            PlayerEquipmentSources, PlayerEquipmentModelAvailable, key =>
+            {
+                if (_avatarPresentation.Avatar?.Skeletal is not { } rig ||
+                    _fusionAssets is not { } assets ||
+                    !assets.AvatarAnimations.TryGetValue(key, out var animation))
+                    return false;
+                try
+                {
+                    new PlayerSkeletalSampler(rig.Skeleton).RequireCompatible(animation.Skeleton);
+                    return true;
+                }
+                catch (InvalidDataException) { return false; }
+            });
+    }
+
+
+    private void ConfigurePlayerEquipmentPresentation(RuntimeWorld world)
+    {
+        _equipmentPresentation.ConfigureWorld(world, PlayerPresentationAssets);
+        _playerAudioDiagnostics.Clear();
+        _selectedPlayerAudioTrace.Clear();
+        var assets = PlayerPresentationAssets;
+
+        _playerAudioBankLevel = OrdinaryPlayerSession ? 0 : world.LevelId;
+        _rac1PlayerAudio = assets?.PlayerAudio is { } audio ? new Rac1PlayerAudioSession(audio.Animations) : null;
+        _rac1PlayerReactions = assets?.PlayerAudio is { } reactions ? new Rac1PlayerReactionAudioSession(reactions.Animations) : null;
+        _playerAudioDiagnosticEvents.Clear();
+        if (assets is null) _playerAudioDiagnostics.Add("Selected player audio bank is unavailable.");
+        // Foreign/unclassified contact material is deliberately treated as a
+        // dry surface by the selected movement adapter. The authentic LEVEL0
+        // footstep bank is an OBP fallback, not a recovered GC/UYA surface map.
+    }
+
+    private Node3D CreatePlayerEquipmentEffectNode(int nativeClass, string name) =>
+        CreateRac1EffectNode(nativeClass, name, playerEquipment: true);
+
+    private void PlayPlayerEquipmentSound(int nativeClass, int localSound, Vector3 position)
+    {
+        if (PlayerPresentationAssets?.Sounds?.TryGetValue((nativeClass, localSound), out var sound) != true)
+        {
+            ReportPlayerAudioMissing(nativeClass, localSound);
+            return;
+        }
+        var clip = sound!.SelectPitch(PlayerAudioRandom);
+        if (clip.FrameCount == 0) return; // Source probability program can choose silence.
+        if (!_worldHost.PlayEffect(new(clip, RuntimeAudioCategory.SoundEffect, gain: sound.Gain,
+            position: new(-position.X, position.Y, position.Z)))) return;
+        TraceSelectedPlayerAudio(nativeClass, localSound, false);
+        RecordRac1WeaponSound(nativeClass, localSound);
+    }
+
+    private void ReportPlayerAudioMissing(int nativeClass, int localSound)
+    {
+        string reason = $"R&C1 {_playerAudioBankLevel} class {nativeClass} sound {localSound} is unavailable in the selected source bank.";
+        if (_playerAudioDiagnostics.Contains(reason)) return;
+        _playerAudioDiagnostics.Add(reason);
+        GD.Print("[player-audio] " + reason);
+    }
+
+    private void TraceSelectedPlayerAudio(int nativeClass, int localSound, bool loop, bool levelSound = false)
+    {
+        if (_selectedPlayerAudioTrace.Count == 1024) _selectedPlayerAudioTrace.RemoveRange(0, 512);
+        _selectedPlayerAudioTrace.Add(("rac1", OBP.RAC1.Rac1Authority.Primary.BuildId, _playerAudioBankLevel, nativeClass, localSound, loop, levelSound, _avatarPresentation.Clock?.Tick ?? 0));
+    }
+
+    private void SetPlayerAudioPaused(bool paused)
+    {
+        // Suspend playback without rewinding native cue cursors, reselecting
+        // probability programs or allocating duplicate looping voices.
+        foreach (var host in new[] { _rac1PlayerOneShots, _rac1PackAudio, _rac1ThrownWrenchAudio,
+            _rac1AnimationAudio, _rac1ReactionAudio, _rac1WeaponLoopAudio, _rac1TaunterAudio }) host.SetPaused(paused);
+        foreach (var owned in _fusionAudioPlayers)
+            if (IsInstanceValid(owned.Player)) owned.Player.StreamPaused = paused;
+    }
+
+
+    private Control? CreateEquipmentAppearancePreview(EquipmentCatalogEntry entry) =>
+        _avatarPresentation.CreateAppearancePreview(entry);
+
+
+
+
 }

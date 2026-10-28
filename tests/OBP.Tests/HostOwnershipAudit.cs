@@ -86,7 +86,8 @@ internal static class HostOwnershipAudit
             model.GetTypeInfo(creation).Type?.Name is "PlayerHost" or "PauseMenuUi" or "WeaponQuickSelectUi" or
                 "PlayerAvatarView" or "PlayerSessionConfiguration" ||
             node is InvocationExpressionSyntax invocation && model.GetSymbolInfo(invocation).Symbol is IMethodSymbol method &&
-            (method.ContainingType.ToDisplayString() == "OBP.Runtime.Player.PlayerAvatarProviderRegistry" && method.Name == "Get" ||
+            ((method.ContainingType.ToDisplayString() == "OBP.Runtime.Player.PlayerAvatarProviderRegistry" && method.Name == "Get") ||
+             (method.ContainingType.ToDisplayString() == "OBP.Game.PlayerAvatarPresentationHost" && method.Name == "Provider") ||
              method.Name is "SpawnPlayer" or "AttachPlayerAvatarVisual" or "TryOpenPauseMenu" or "TryOpenWeaponQuickSelect" &&
              invocation.Ancestors().OfType<IfStatementSyntax>().Any(branch =>
                  branch.Condition.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Any(name => IsWorldOrigin(name, model)))));

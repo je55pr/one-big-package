@@ -235,6 +235,36 @@ unchanged player and native state, version/build
 rejection, blocked saves, absent profile, world-only autosave and opaque campaign
 preservation.
 
+The #350 avatar/equipment presentation extraction retires
+`OBPGame.PlayerAvatar.cs` and `OBPGame.EquipmentPresentation.cs` plus their
+Godot UID sidecars. `PlayerAvatarPresentationHost` owns validated source-stamped
+avatar and R&C1 hand asset caches, world-scoped visual nodes, native animation
+controller and fixed 60-Hz clock, pose sampling, hand attachments and event
+unsubscription. `PlayerEquipmentPresentationBinder` owns the selected R&C1
+presentation bank, weapon model/socket admissions and per-world effect material
+and mesh cache. World entry decodes both avatar and selected equipment data
+into pending candidates without retiring the currently active presentation.
+A rejected or superseded pre-commit preparation discards those candidates while
+the live avatar, 60-Hz clock and animation callbacks remain intact. The next
+world publishes them only after the previous world has begun its committed
+retirement. On teardown, the avatar detaches from `PlayerHost`, restores the
+fallback visual and releases references to world nodes; the committed source
+avatar can be reused for a same-source destination. Identity or stamp changes
+also force a refresh of the selected equipment bank, including a replacement ISO
+at the same path. The persistent player session is not invalidated. No synthetic
+assets replace missing retail data.
+
+Compared with #349 (64 files, 15,910 lines, 589 methods, 399 fields / 256
+mutable), the four-configuration root census is **62 files, 15,767 lines,
+588 methods, 380 fields / 238 mutable, 43 exposed members**. The retired
+original fields are replaced by two readonly composition references, not new
+player-global feature state. Original weapon decisions/physics callback order,
+selected bank audio cues, native source animation/skeleton sampling, equipment
+icons, world-entry profile identity and saved/replay formats stay with their
+existing owners. Existing host callbacks (including native weapon presentation)
+remain recorded as expiry-scoped composition bridges for #351/#354/#375/#376.
+Original root member retirements, relocated bridge hashes, and exact exceptions
+are recorded in the versioned architecture ledger; the frozen origin is unchanged.
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

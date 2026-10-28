@@ -23,8 +23,8 @@ public partial class OBPGame
             (item.SourceGame == ObpSourceGame.Rac1 ? _rac1Weapons.OwnsNativeItem(item.NativeItemId) :
                 _playerNative?.LoadoutPolicy == PlayerLoadoutPolicy.DevelopmentAvailable || _playerNative is null && _fusion is not null);
         if (definition.Category == EquipmentCategory.Appearance)
-            return new(owned, _playerSession?.Capture().Configuration.Avatar == definition.Appearance, _playerAvatar?.Identity == definition.Appearance,
-                _playerAvatar?.Identity == definition.Appearance ? EquipmentResourceStatus.Available : EquipmentResourceStatus.Unavailable,
+            return new(owned, _playerSession?.Capture().Configuration.Avatar == definition.Appearance, _avatarPresentation.Avatar?.Identity == definition.Appearance,
+                _avatarPresentation.Avatar?.Identity == definition.Appearance ? EquipmentResourceStatus.Available : EquipmentResourceStatus.Unavailable,
                 EquipmentResourceStatus.Unavailable);
         if (definition.Category == EquipmentCategory.Gadget)
         {
@@ -36,7 +36,7 @@ public partial class OBPGame
             return new(owned, enabled, enabled && reason is null, EquipmentResourceStatus.NotRequired,
                 EquipmentResourceStatus.Unavailable, ContextAllowed: reason is null, ContextReason: reason);
         }
-        var binding = _equipmentPresentationBindings.GetValueOrDefault(key!.Value);
+        var binding = _equipmentPresentation.Binding(key!.Value);
         bool model = PlayerEquipmentModelAvailable(key.Value) && binding?.Ready == true;
         string? context = binding is { Ready: false } ? binding.Reason : key.Value.SourceGame == ObpSourceGame.Rac1 && key != PlayerEquipmentRegistrations.Wrench && PlayerPresentationAssets is null
             ? "The selected source-native equipment effect bank is not prepared." : null;
