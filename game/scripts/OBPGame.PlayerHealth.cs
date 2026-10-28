@@ -1,3 +1,5 @@
+using OBP.RAC1.Presentation;
+using OBP.Runtime.Presentation;
 using OBP.Core;
 using Godot;
 using OBP.Fusion;
@@ -8,6 +10,20 @@ namespace OBP.Game;
 
 public partial class OBPGame
 {
+    private void PublishPersistentPlayerHud(params HudFeedbackDraft[] feedback)
+    {
+        var state = _playerSession!.Capture();
+        var health = state.Health;
+        var projection = Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, capturedMobyCount: _rac1AdditionalWeapons?.Cargo.Count ?? 0,
+            swimming: _player?.Rac1SwimState, ownsOxygenMask: _player?.Rac1MovementEquipment.OxygenMask == true) with
+        {
+            Health = new((int)health.Current, (int)health.Capacity, "nanotech", health.Alive ? HudLifeState.Alive : HudLifeState.Dead),
+            Bolts = new(Rac1HudProjection.BoltsResourceKey, (int)state.Currencies.GetValueOrDefault("obp/bolts")),
+        };
+        if (_hudState.Current.Epoch == 0) _hudState.BeginSession(FusionHud(projection));
+        else _hudState.Publish(FusionHud(projection), feedback);
+    }
+
     private readonly HashSet<ActorInstanceKey> _playerDamageActors = [];
     private string? _playerDamageWorld;
     private long _playerDamageLease;

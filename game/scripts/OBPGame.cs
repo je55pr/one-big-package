@@ -1,3 +1,4 @@
+using System.Text.Json;
 using OBP.Core;
 using OBP.Fusion;
 using Godot;
@@ -67,6 +68,105 @@ public partial class OBPGame : Node3D
     private Camera3D _camera = null!;
 
     private CommandLineArgs _args = new();
+
+
+    private readonly PlayerSessionHost _persistentPlayer = new();
+    private ProfileCoordinator? _profileCoordinator;
+    private ProfileCoordinator Profiles => _profileCoordinator ??= new(new(
+        ProfilePath: () => _args.NoProfile || !OrdinaryPlayerSession ? null :
+            _args.ProfilePath is { } path ? Path.GetFullPath(path) :
+            DisplayServer.GetName() == "headless" || AutomationRunPolicy.IsAutomated(OS.GetCmdlineUserArgs(), OS.GetCmdlineArgs()) ?
+                null : ProjectSettings.GlobalizePath("user://obp-profile.json"),
+        OrdinaryPlayer: () => OrdinaryPlayerSession,
+        Player: () => _persistentPlayer.Session,
+        Native: () => _persistentPlayer.Native,
+        AttachedSources: () => [.. Sources.Setup.Library.Attached.Values.Select(source => new ProfileSource(
+            source.Game, source.Identity.BuildId, source.Identity.Sha256 ?? throw new InvalidDataException("Source has no authority digest.")))],
+        LegacyCampaignExists: () => File.Exists(ProjectSettings.GlobalizePath("user://rac1-campaign.json")),
+        CaptureCampaign: previous => new ProfilePayload("rac1/campaign", 1,
+            JsonSerializer.SerializeToElement(Rac1CampaignSavePolicy.Capture(_rac1CampaignSession.Campaign,
+                _rac1CampaignSession.Weapons, _parityBoltWallet, _rac1CollectedNovalisGoldBolts,
+                _rac1CampaignSession.BuriedBolts))).RetainUnknownFields(previous),
+        RestoreCampaign: restored =>
+        {
+            _rac1CampaignSession = new(restored.Campaign, restored.Weapons, Rac1BuriedBoltProgress.Restore(restored.BuriedBoltHistory));
+            _parityBoltWallet = new(restored.Bolts);
+            _rac1CollectedNovalisGoldBolts.Clear();
+            _rac1CollectedNovalisGoldBolts.UnionWith(restored.NovalisGoldBoltInstances);
+        },
+        RefreshPlayerSources: RefreshPlayerSourceAvailability,
+        WritesSuspended: () => Sources.Setup.ProfileSuspended,
+        PlaytestActive: () => _playtest is not null,
+        WorldActive: () => _mode == Mode.World,
+        Log: message => GD.Print(message)));
+
+    // Owner-backed projections keep existing world and diagnostic clients compatible.
+    // The avatar stamp and committed destination setters write through to their owners;
+    // no duplicate mutable player/profile state lives in the application root.
+    private ObpPlayerSession? _playerSession => _persistentPlayer.Session;
+    private PlayerSessionNativeState? _playerNative => _persistentPlayer.Native;
+    private WorldEntrySession? _worldEntries => _persistentPlayer.WorldEntries;
+    private PlayerControlProfile? _playerControlProfile => _persistentPlayer.ControlProfile;
+    private PlayerAnimationProfile? _playerAnimationProfile => _persistentPlayer.AnimationProfile;
+    private (long Length, long Written)? _avatarSourceStamp
+    {
+        get => _persistentPlayer.AvatarSourceStamp;
+        set => _persistentPlayer.AvatarSourceStamp = value;
+    }
+    private WorldEntryMode PlayerEntryMode => _persistentPlayer.EntryMode ??
+        (_args.DiagnosticPlayer ? WorldEntryMode.Diagnostic :
+            _args.NativeParityRequested ? WorldEntryMode.RetailParity : WorldEntryMode.OrdinaryFusion);
+    private bool OrdinaryPlayerSession => PlayerEntryMode == WorldEntryMode.OrdinaryFusion;
+    internal bool ProfileRecoveryRequired => Profiles.RecoveryRequired;
+    private string? _profileStatus => Profiles.Status;
+    private bool _profileWriteBlocked => Profiles.WriteBlocked;
+    private ObpProfile? _profileDocument => Profiles.Document;
+    private string? PlayerSaveNotice => Profiles.SaveNotice;
+    private string? SharedProfilePath => Profiles.SharedProfilePath;
+    private string? _lastCommittedProfileDestination
+    {
+        get => Profiles.LastCommittedDestination;
+        set => Profiles.LastCommittedDestination = value;
+    }
+
+    private void EnsurePlayerSession()
+    {
+        if (_playerSession is not null) return;
+        Sources.Initialize();
+        if (!_persistentPlayer.Ensure(PlayerEntryMode, _rac1CampaignSession.Weapons,
+            _parityBoltWallet.Balance, _args.FixedSeed ?? 1440, new PlayerCameraPreferences())) return;
+        if (_playerNative is not null) _fusion = _playerNative.Weapons;
+        RefreshPlayerSourceAvailability();
+        InitializeSharedProfile();
+        if (_captureStartingProfile is { } capture)
+        {
+            ApplySharedProfile(capture);
+            _captureStartingProfile = null;
+        }
+    }
+
+    private void RefreshPlayerSourceAvailability()
+    {
+        _playerSession?.SetAttachedSources(Sources.Setup.Library.Attached.Values.Select(source => source.Identity));
+        _playerNative?.RefreshDevelopmentSources(PlayerEquipmentSources);
+        RefreshPlayerEquipmentAvailability();
+    }
+
+    private void InitializeSharedProfile() => Profiles.Initialize();
+    private void ApplySharedProfile(ObpProfile profile) => Profiles.Apply(profile);
+    private ObpProfile CaptureSharedProfile() => Profiles.Capture();
+    private IReadOnlyList<ProfileSource> CaptureProfileSources() => Profiles.CaptureProfileSources();
+    private bool SaveSharedProfile(string reason) => Profiles.Save(reason);
+    private void TickSharedProfile(double delta) => Profiles.Tick(delta);
+
+    public bool TryResumeSharedProfileFromBootstrap()
+    {
+        if (!Sources.RequireOrdinary("profile resume")) return false;
+        EnsurePlayerSession();
+        if (Profiles.WriteBlocked || Profiles.Document?.Destination is not { } destination) return false;
+        if (destination == "obp:fusion-lab") return EnterFusionLab();
+        return TrilogyWorldProviders.Resolve(destination) is { } native && OnDestinationChosen(native);
+    }
     internal CommandLineArgs StartupArgs => _args;
 
     private long _frame;

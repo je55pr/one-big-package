@@ -139,6 +139,8 @@
     <Compile Include="../../game/scripts/ApplicationPointer.cs" Link="Game/ApplicationPointer.cs" />
     <Compile Include="../../game/scripts/FusionWeaponSession.cs" Link="Game/FusionWeaponSession.cs" />
     <Compile Include="../../game/scripts/PlayerSessionNativeState.cs" Link="Game/PlayerSessionNativeState.cs" />
+    <Compile Include="../../game/scripts/PlayerSessionHost.cs" Link="Game/PlayerSessionHost.cs" />
+    <Compile Include="../../game/scripts/ProfileCoordinator.cs" Link="Game/ProfileCoordinator.cs" />
     <Compile Include="../../game/scripts/PlayerEquipmentRegistrations.cs" Link="Game/PlayerEquipmentRegistrations.cs" />
     <Compile Include="../../game/scripts/PlayerHostProfiles.cs" Link="Game/PlayerHostProfiles.cs" />
     <Compile Include="../../game/scripts/DiagnosticAvatarProvider.cs" Link="Game/DiagnosticAvatarProvider.cs" />
