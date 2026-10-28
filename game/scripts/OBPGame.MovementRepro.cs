@@ -97,7 +97,7 @@ public partial class OBPGame
     {
         if (OrdinaryPlayerSession)
         {
-            if (_playtest is { } capture) capture.RequestBookmark(MovementStatePath);
+            if (_captureReplay?.Recorder is { } capture) capture.RequestBookmark(MovementStatePath);
             else ReportMovementState("Universal bookmarks need an input history. Start Bug Capture or --record-playtest, then press F12; the completed prefix preserves native actors too.");
             return;
         }
@@ -127,7 +127,7 @@ public partial class OBPGame
     {
         if (!cancellationToken.CanBeCanceled) cancellationToken = _hostOperations.Token;
         cancellationToken.ThrowIfCancellationRequested();
-        if (_playtest?.RejectMovementLoad() == true) return null;
+        if (_captureReplay?.Recorder?.RejectMovementLoad() == true) return null;
         if (_movementStateLoading) return null;
         PlayerHost? restoringPlayer = null;
         try

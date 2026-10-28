@@ -113,6 +113,11 @@ public sealed class HostOperationOwnershipArchitectureTests
         var root = HostOwnershipAudit.Host.Value.GetTypeByMetadataName("OBP.Game.OBPGame")!;
         Assert.Empty(root.GetMembers("_verifyOutcome"));
         Assert.Empty(root.GetMembers("_verifyProgressBits"));
-        Assert.Single(root.GetMembers("_verification").OfType<IFieldSymbol>());
+        Assert.Empty(root.GetMembers("_verification"));
+        var owner = Assert.Single(root.GetMembers("_sourceVerification").OfType<IFieldSymbol>());
+        Assert.Equal("SourceVerificationCoordinator", owner.Type.Name);
+        var verification = HostOwnershipAudit.Host.Value.GetTypeByMetadataName("OBP.Game.SourceVerificationCoordinator")!;
+        Assert.Single(verification.GetMembers("_active").OfType<IFieldSymbol>());
+        Assert.Single(verification.GetMembers("_operations").OfType<IFieldSymbol>());
     }
 }
