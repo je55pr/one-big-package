@@ -10,7 +10,7 @@ Private data, deliberately NOT committed:
 - PCSX2 screenshot and matching GS dump: Ratchet & Clank_SCUS-97199_20261027213131.png / .gs.zst in the PCSX2 snaps directory
 - Corrected parsed summary: captures/retail-gs-416/draw-state-pr418.json (the earlier draw-state.json is retained for comparison)
 
-The source-independent tool tools/rac1-gs-dump-audit.py reads GS dump packets and GIF packed, REGLIST and A+D register writes. Portable synthetic tests cover packet parsing, state accounting and malformed input. It does not simply assume that the boot-time register values remain active during gameplay.
+The source-independent tool tools/rac1-gs-dump-audit.py parses GS dump packets and records register writes from GIF packed, REGLIST and A+D transfers. Portable synthetic tests cover packet parsing, state accounting and malformed input. It does not simply assume that the boot-time register values remain active during gameplay.
 
 ## Streamed GS state (not just startup state)
 
@@ -24,7 +24,7 @@ All four analysed frame periods produce identical observed distributions, with *
 | GEQUAL, depth write on, other alpha-test states | 1,622 |
 | ALWAYS, various alpha/depth-write modes | 791 |
 
-The per-frame rows are derived from the private full JSON report (generated using `--out`), by grouping `draw_batches` by `frame` and the depth/alpha values in `gs_state`, then summing `vertex_writes`. The default console summary does not print these combined groups. These figures were regenerated from the same private retail dump with the corrected parser in this PR. The previous report missed 621 A+D vertex-register writes per frame (81,299 instead of 81,920). Each corrected frame contains 79,559 packed, 1,740 REGLIST and 621 A+D vertex-register writes; there are no incomplete GIF paths.
+The per-frame rows are derived from the private full JSON report (generated using `--out`), by grouping `draw_batches` by `frame` and the depth/alpha values in `gs_state`, then summing `vertex_writes`. The default console summary does not print these combined groups. These figures were regenerated from the same private retail dump with the corrected parser in this PR. The previous report missed 621 A+D vertex-register writes per frame (81,299 instead of 81,920). Each corrected frame contains 79,559 packed, 1,740 REGLIST and 621 A+D vertex-register writes; there are no incomplete GIF paths. The streamed trace also sets PRMODECONT=1, so PRIM supplies attribute bits in this capture; the analyser now supports PRMODECONT=0 selecting PRMODE attributes for other traces.
 
 Therefore **81,129 / 81,920** vertex writes use an inclusive GEQUAL depth comparison with depth writes enabled. Representative actual streamed values include TEST_1 = 0x000000000005360B, TEST_1 = 0x000000000005380B, and ZBUF_1 = 0x00000000010000D8. The latter TEST register has a threshold of 128, alpha comparison GEQUAL, alpha-fail mode 3, depth-test GEQUAL and depth testing enabled; the ZBUF register permits depth writes.
 

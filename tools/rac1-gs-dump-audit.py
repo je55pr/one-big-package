@@ -18,6 +18,7 @@ from dataclasses import dataclass
 REGISTER_NAMES = {
     0x06: "TEX0_1", 0x07: "TEX0_2",
     0x14: "TEX1_1", 0x15: "TEX1_2",
+    0x1A: "PRMODECONT", 0x1B: "PRMODE",
     0x42: "ALPHA_1", 0x43: "ALPHA_2",
     0x47: "TEST_1", 0x48: "TEST_2",
     0x4E: "ZBUF_1", 0x4F: "ZBUF_2",
@@ -66,6 +67,11 @@ def decompress(path: Path) -> bytes:
                 if not decoder.eof and decoder.needs_input:
                     raise ValueError("Truncated XZ stream")
             remaining = decoder.unused_data
+            # XZ permits zero-byte Stream Padding in multiples of four bytes.
+            padding = len(remaining) - len(remaining.lstrip(b"\x00"))
+            if padding % 4:
+                raise ValueError("Invalid XZ stream padding length")
+            remaining = remaining[padding:]
         return bytes(output)
     if not name.endswith(".zst"):
         return data
@@ -198,13 +204,19 @@ class GsAudit:
             })
 
     def vertex(self, path: int, source: str):
-        context = (self.registers.get(0x00, 0) >> 9) & 1
+        prim = self.registers.get(0x00)
+        # PRMODECONT.AC selects the source of attribute bits 3-10.
+        # PRIM always supplies the primitive type in bits 0-2.
+        use_prim_attributes = bool(self.registers.get(0x1A, 1) & 1)
+        attributes = prim if use_prim_attributes else self.registers.get(0x1B)
+        effective_prim = (None if prim is None or attributes is None else
+                          (prim & 7) | (attributes & ~7))
+        context = ((attributes or 0) >> 9) & 1
         test = self.registers.get(0x47 + context)
         zbuf = self.registers.get(0x4E + context)
         tex0 = self.registers.get(0x06 + context)
         alpha = self.registers.get(0x42 + context)
-        prim = self.registers.get(0x00)
-        key = (self.frame, context, test, zbuf, tex0, alpha, prim)
+        key = (self.frame, context, test, zbuf, tex0, alpha, effective_prim)
         if self.batches and self.batches[-1]["_key"] == key:
             self.batches[-1]["vertex_writes"] += 1
             sources = self.batches[-1]["vertex_sources"]
@@ -216,8 +228,9 @@ class GsAudit:
             "vertex_writes": 1, "vertex_sources": {source: 1},
             "gs_state": depth_state(test, zbuf),
             "primitive": None if prim is None else prim & 7,
-            "texture_mapping_enabled": None if prim is None else bool((prim >> 4) & 1),
-            "alpha_blending_enabled": None if prim is None else bool((prim >> 6) & 1),
+            "primitive_attributes_source": "PRIM" if use_prim_attributes else "PRMODE",
+            "texture_mapping_enabled": None if attributes is None else bool((attributes >> 4) & 1),
+            "alpha_blending_enabled": None if attributes is None else bool((attributes >> 6) & 1),
             "texture_base": None if tex0 is None else tex0 & 0x3FFF,
             "tex0": None if tex0 is None else f"0x{tex0:016x}",
             "alpha": None if alpha is None else f"0x{alpha:016x}",

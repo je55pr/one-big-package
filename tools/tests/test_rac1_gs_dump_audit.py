@@ -88,6 +88,27 @@ class GsDumpAuditTests(unittest.TestCase):
         self.assertEqual("gequal", batch["gs_state"]["depth_function"])
         self.assertEqual(0x4BEEF & 0x3FFF, batch["texture_base"])
 
+    def test_prmodecont_uses_prmode_attributes_but_prim_type(self):
+        state = tag(4, 0xE) + ad(0x47, 0x10000) + ad(0x48, 0x5360B) + ad(0x4E, 0x010000D8) + ad(0x4F, 0x010000D8)
+        mode = tag(3, 0xE) + ad(0x1A, 0) + ad(0x1B, (1 << 9) | (1 << 4) | (1 << 6)) + ad(0x00, 3)
+        vertices = tag(1, 0x5) + b"\0" * 16
+        select_prim = tag(1, 0xE) + ad(0x1A, 1)
+        parsed = audit.GsAudit().analyse(dump(state + mode + vertices + select_prim + vertices))
+        self.assertEqual(2, len(parsed["draw_batches"]))
+        from_mode, from_prim = parsed["draw_batches"]
+        self.assertEqual(1, from_mode["context"])
+        self.assertEqual(3, from_mode["primitive"])
+        self.assertEqual("gequal", from_mode["gs_state"]["depth_function"])
+        self.assertTrue(from_mode["texture_mapping_enabled"])
+        self.assertTrue(from_mode["alpha_blending_enabled"])
+        self.assertEqual("PRMODE", from_mode["primitive_attributes_source"])
+        self.assertEqual(0, from_prim["context"])
+        self.assertEqual(3, from_prim["primitive"])
+        self.assertEqual("never", from_prim["gs_state"]["depth_function"])
+        self.assertFalse(from_prim["texture_mapping_enabled"])
+        self.assertFalse(from_prim["alpha_blending_enabled"])
+        self.assertEqual("PRIM", from_prim["primitive_attributes_source"])
+
     def test_packed_tex0_register_is_observed(self):
         tex0 = tag(1, 0x6) + struct.pack("<QQ", 0x812345, 0)
         vertices = tag(1, 0x5) + b"\0" * 16
@@ -118,10 +139,13 @@ class GsDumpAuditTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "sample.gs.xz"
-            path.write_bytes(lzma.compress(b"a" * 20) + lzma.compress(b"b" * 20))
+            path.write_bytes(lzma.compress(b"a" * 20) + b"\0" * 4 + lzma.compress(b"b" * 20) + b"\0" * 8)
             with patch.object(audit, "MAX_DECOMPRESSED_BYTES", 64):
                 self.assertEqual(b"a" * 20 + b"b" * 20, audit.decompress(path))
-            path.write_bytes(lzma.compress(b"a" * 40) + lzma.compress(b"b" * 40))
+            path.write_bytes(lzma.compress(b"a" * 20) + b"\0" * 2 + lzma.compress(b"b" * 20))
+            with self.assertRaises(ValueError):
+                audit.decompress(path)
+            path.write_bytes(lzma.compress(b"a" * 40) + b"\0" * 4 + lzma.compress(b"b" * 40))
             with patch.object(audit, "MAX_DECOMPRESSED_BYTES", 64):
                 with self.assertRaises(ValueError):
                     audit.decompress(path)
