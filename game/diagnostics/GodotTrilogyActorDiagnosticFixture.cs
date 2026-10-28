@@ -5,6 +5,7 @@ namespace OBP.Game.Diagnostics;
 
 internal sealed class GodotTrilogyActorDiagnosticBindings
 {
+    /// <summary>Returns the same host's diagnostic facade throughout the fixture lifetime, including across awaits and world leases.</summary>
     internal required Func<IActorWorldDiagnostics> Actors { get; init; }
     internal required Action ResetEncounter { get; init; }
     internal required Action ResetSharedAssets { get; init; }

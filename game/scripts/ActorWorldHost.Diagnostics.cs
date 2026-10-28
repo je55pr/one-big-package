@@ -98,7 +98,8 @@ internal sealed partial class ActorWorldHost : IActorWorldDiagnostics
         var retired = CaptureRetirement();
         const string pending = "source-invalidation-pending-fixture";
         preparation.Add(placement with { Id = pending });
-        InvalidateSources();
+        try { InvalidateSources(); }
+        catch { preparation.Remove(pending); throw; }
         return new InvalidationObservation(retired, preparation.Problems.ContainsKey(pending), () =>
         {
             if (ReferenceEquals(_preparation, preparation)) preparation.Remove(pending);
