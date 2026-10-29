@@ -1,31 +1,48 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  One-shot dev bootstrap: check the .NET SDK, fetch the pinned Godot, restore
-  and build, and generate the Godot import cache. After this:
-    ./tools/build.ps1 ; ./tools/test.ps1 ; ./tools/capture.ps1 smoke
+  Bootstrap a checkout with the SDK from global.json and pinned Godot .NET.
+  If the SDK is missing, run ./tools/bootstrap-dotnet.ps1 first.
 #>
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$manifest = Get-Content (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | ConvertFrom-Json
 
-$sdk = (& dotnet --version)
-$major = [int]($sdk.Split('.')[0])
-if ($major -lt $manifest.dotnet.minimumSdkMajor) {
-  throw "Need .NET SDK $($manifest.dotnet.minimumSdkMajor).x or newer; found $sdk. Install from https://dotnet.microsoft.com/download"
+# Prefer an SDK bootstrapped locally, without modifying machine PATH.
+$localDotnet = Join-Path $root '.tools/dotnet'
+if (Test-Path (Join-Path $localDotnet 'dotnet.exe')) {
+  Push-Location $root
+  try {
+    $localVersion = & (Join-Path $localDotnet 'dotnet.exe') --version 2>&1
+    $useLocal = $LASTEXITCODE -eq 0
+  }
+  catch { $useLocal = $false }
+  finally { Pop-Location }
+  if ($useLocal) {
+    $env:DOTNET_ROOT = $localDotnet
+    $env:PATH = "$localDotnet;$env:PATH"
+  }
 }
-Write-Host ".NET SDK $sdk OK (target $($manifest.dotnet.targetFramework))"
 
-$godot = & (Join-Path $PSScriptRoot 'bootstrap-godot.ps1') -Platform win64 | Select-Object -Last 1
+Push-Location $root
+try {
+  & (Join-Path $PSScriptRoot 'check-toolchain.ps1')
+  if ($LASTEXITCODE -ne 0) { throw "Toolchain validation failed." }
 
-& dotnet restore (Join-Path $root 'OneBigPackage.sln')
-& dotnet build (Join-Path $root 'OneBigPackage.sln') -c Debug --nologo
-if ($LASTEXITCODE -ne 0) { throw "build failed" }
+  $godot = & (Join-Path $PSScriptRoot 'bootstrap-godot.ps1') -Platform win64 | Select-Object -Last 1
 
-# Automatically sync script identities during the normal first-time setup.
-# The command skips the extra build/import when every sidecar already exists.
-& dotnet run --project (Join-Path $PSScriptRoot 'OBP.GodotUidTool/OBP.GodotUidTool.csproj') -- --sync --root $root --godot $godot
-if ($LASTEXITCODE -ne 0) { throw "Godot UID sync failed" }
-& $godot --headless --path (Join-Path $root 'game') --editor --import --quit
-if ($LASTEXITCODE -ne 0) { throw "Godot import failed" }
-Write-Host "`nBootstrap complete. Next: ./tools/test.ps1 ; ./tools/capture.ps1 smoke"
+  & dotnet restore (Join-Path $root 'OneBigPackage.sln')
+  if ($LASTEXITCODE -ne 0) { throw "Restore failed." }
+  & dotnet build (Join-Path $root 'OneBigPackage.sln') -c Debug --nologo
+  if ($LASTEXITCODE -ne 0) { throw "Build failed." }
+
+  # Sync script identities; this skips import/build when sidecars exist.
+  & dotnet run --project (Join-Path $PSScriptRoot 'OBP.GodotUidTool/OBP.GodotUidTool.csproj') -- --sync --root $root --godot $godot
+  if ($LASTEXITCODE -ne 0) { throw "Godot UID sync failed." }
+  & $godot --headless --path (Join-Path $root 'game') --editor --import --quit
+  if ($LASTEXITCODE -ne 0) { throw "Godot import failed." }
+
+  Write-Host "`nBootstrap complete. Next: ./tools/test.ps1 ; ./tools/capture.ps1 smoke"
+}
+finally {
+  Pop-Location
+}

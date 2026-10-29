@@ -22,8 +22,7 @@
     }
   },
   "dotnet": {
-    "minimumSdkMajor": 8,
     "targetFramework": "net8.0",
-    "note": "Godot 4.4+ requires net8.0 minimum. Any .NET SDK 8.0+ builds it; use the newest available."
+    "note": "The SDK and roll-forward policy are pinned in repository-root global.json; the C# language version is fixed in Directory.Build.props."
   }
 }

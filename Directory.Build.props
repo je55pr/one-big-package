@@ -1,7 +1,8 @@
 <Project>
   <!-- Shared MSBuild settings for the OBP C# projects under src/, game/ and tests/. -->
   <PropertyGroup>
-    <LangVersion>latest</LangVersion>
+    <!-- Keep the net8.0 project's C# grammar stable under the newer tooling SDK. -->
+    <LangVersion>12.0</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>true</InvariantGlobalization>

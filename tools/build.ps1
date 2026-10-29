@@ -14,5 +14,11 @@ $arguments = @('build', (Join-Path $root $target), '-c', $Configuration, '--nolo
 if ($NoRestore) { $arguments += '--no-restore' }
 if ($WarningsAsErrors) { $arguments += '-warnaserror' }
 if ($Quiet) { $arguments += @('-v', 'quiet') }
-& dotnet @arguments
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+Push-Location $root
+try {
+    & dotnet @arguments
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+finally {
+    Pop-Location
+}
