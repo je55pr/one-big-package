@@ -124,6 +124,24 @@ A specific native instance 394..399 can still be selected with
 The original Maktar collision, authored transforms, level meshes and
 normal-play mode are unchanged.
 
+## Third live-tester correction: active arm only
+
+The player confirmed that the five inactive housings were already at the
+correct locations. However, the one animated arm was still **180° out**.
+This is a useful distinction: the visible geometry extending from class
+2581 is not necessarily the model axis assumed by the radial facing
+test. Rather than rotating the entire set of six and breaking the accepted
+housings, the opt-in full/animated dispenser now receives exactly a
+half-turn relative to its previous preview facing. Instances 395–399
+keep their existing housing-only rotations and all six retain their
+source positions. The display interpolation and source clip are unchanged.
+
+A new test checks that the complete native instance matrices for each
+housing and corresponding active model point in opposite directions
+while retaining their common origin and vertical axis. This is a
+tester-guided **visual preview correction**, not evidence for retail
+actor orientation or original arena wave timing.
+
 ## Status and next work
 
 The static class-2581 meshes **remain hidden in normal gameplay**.

@@ -152,6 +152,35 @@ public sealed class Rac2MaktarArenaTests
     }
 
     [Fact]
+    public void ActiveArmReversesFacingWithoutChangingAnyStationaryHousing()
+    {
+        // The player confirmed the five inactive housings are correct;
+        // only the deployed arm needs the half-turn. Compare actual importer
+        // transforms for all six original placements, not estimated yaw.
+        foreach (var (x, y, yaw) in new[]
+        {
+            (514.02, 568.43, -2.740), (485.91, 568.45, 2.740),
+            (514.09, 634.66, -.401), (485.97, 634.69, .402),
+            (464.02, 601.79, 1.566), (535.97, 601.32, -1.576),
+        })
+        {
+            var housing = Rac2MaktarDispenserMotion.InwardPreviewRotation((0, 0, yaw), x, y);
+            var active = Rac2MaktarDispenserMotion.ActiveArmPreviewRotation(housing);
+            Assert.Equal(housing.X, active.X);
+            Assert.Equal(housing.Y, active.Y);
+            Assert.Equal(housing.Z + Math.PI, active.Z, 8);
+
+            var housingMatrix = Rac2Instances.MatrixFromPosRotScale((x, y, 503), housing, 1);
+            var activeMatrix = Rac2Instances.MatrixFromPosRotScale((x, y, 503), active, 1);
+            var (hx, hy, hz) = Rac2Instances.TransformPoint(housingMatrix, 0, 1, 0);
+            var (ax, ay, az) = Rac2Instances.TransformPoint(activeMatrix, 0, 1, 0);
+            Assert.Equal(x, (hx + ax) / 2, 7);
+            Assert.Equal(y, (hy + ay) / 2, 7);
+            Assert.Equal(hz, az, 7);
+        }
+    }
+
+    [Fact]
     public void SmoothedPreviewKeepsAllOriginalKeysAndHasContinuousSeams()
     {
         var keys = new double[][]

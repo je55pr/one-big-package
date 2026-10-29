@@ -29,6 +29,16 @@ public static class Rac2MaktarDispenserMotion
     }
 
     /// <summary>
+    /// Tester-confirmed visual calibration: the deploying arm points 180°
+    /// opposite the housing's radial preview facing. Apply this only to
+    /// the full, active dispenser, not the five correctly positioned
+    /// stationary housings. It is not a recovered native gameplay state.
+    /// </summary>
+    public static (double X, double Y, double Z) ActiveArmPreviewRotation(
+        (double X, double Y, double Z) housingRotation) =>
+        (housingRotation.X, housingRotation.Y, housingRotation.Z + Math.PI);
+
+    /// <summary>
     /// Smooth a native sequence of posed vertex arrays in either direction.
     /// A ping-pong loop prevents the sudden last-to-first snap of the old
     /// stepwise preview. Vertex-space blending approximates native joint

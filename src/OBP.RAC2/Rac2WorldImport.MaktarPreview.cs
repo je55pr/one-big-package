@@ -57,8 +57,14 @@ public static partial class Rac2WorldImport
 
         var bytes = Rac2MobyClasses.ClassBytes(core, cls.OClass);
         var nativeRotation = (inst.Rotation.X, inst.Rotation.Y, inst.Rotation.Z);
-        var facing = Rac2MaktarDispenserMotion.InwardPreviewRotation(
+        var housingFacing = Rac2MaktarDispenserMotion.InwardPreviewRotation(
             nativeRotation, inst.Position.X, inst.Position.Y);
+        // The active arm was observed facing exactly backwards; the five
+        // inactive housings are already positioned correctly. Correct only
+        // the full animated/inspectable model, never the housing-only units.
+        var facing = housingOnly
+            ? housingFacing
+            : Rac2MaktarDispenserMotion.ActiveArmPreviewRotation(housingFacing);
         var native = Rac2Instances.MatrixFromPosRotScale(
             (inst.Position.X, inst.Position.Y, inst.Position.Z),
             facing, inst.Scale == 0 ? 1 : inst.Scale);
