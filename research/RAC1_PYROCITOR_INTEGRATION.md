@@ -49,19 +49,23 @@ game or a matching native class number alone is never proof of target identity.
   are parented under the animated torso joint6, giving a high/left weapon
   position; borrowing Blaster sequence57 was also visually incorrect.
   Initial shoulder retargeting fixed the source51 direction during movement
-  but made **stationary idle look like active firing**, because the full-body
-  source51 terminal pose was kept even between shots. The corrected host
-  separates the two states: the Pyrocitor uses ordinary sequence0 as its
-  passive *moving* upper-body/hand pose, preserves ordinary standing idle
-  with no forced equipment overlay, and uses source51's held terminal pose
-  **only while firing**. Running and ordinary jump upper-body overlays are
-  stabilized by compensating the arm roots (52/72) against the current torso
-  rotation; the legs and locomotion clock are unchanged. The hand/socket
-  still follows the composed pose. Directional flips interrupt the overlay,
-  while special traversal animation clocks retain ownership. The reference
-  hierarchy is evaluated without skinning a duplicate mesh. Passive
-  sequence0 layering and shoulder retargeting are OBP presentation choices,
-  not claims of retail animation equivalence.
+  but made **stationary idle look like active firing**, because source51 was
+  kept even between shots. Switching idle to sequence0 also failed playtesting:
+  the neutral wrench arm was **one-handed** and lowered the Pyrocitor mesh
+  through the floor. Inspection of the actual Ratchet skeleton and the class176
+  mesh found that the opposite wrist (joint76) sits ~0.13 units from the mesh
+  in authored **source54 frame0 (Devastator hold)**, whereas it sits ~0.43
+  units away in neutral0 and ~0.86 in Blaster hold56. With source54 the gun
+  is ~0.25 units above the reference ground plane, instead of -0.42 in
+  neutral0. This is an explicit **host-only two-handed ready fallback**, not
+  the native Pyrocitor moving selector. Firing still uses Pyrocitor's
+  original source51 terminal pose. Both shoulder roots (52/72) are retargeted
+  against torso rotation while maintaining ordinary idle/running/jump lower
+  body animation. The ready layer is admitted at full strength immediately,
+  avoiding the initial wrist-to-floor blend through sequence0. Directional
+  flips interrupt the overlay, while special traversal animation clocks
+  retain ownership. The reference hierarchy is evaluated without skinning
+  a duplicate mesh. Visual approval remains outstanding.
 - Host 60 Hz sound start/stop and fade/pause behavior; complete retail audio
   transitions and player-body animation interruption still need comparison.
 - No claimed exact side-by-side flame density, camera-response, type-25 ember

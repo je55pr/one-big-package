@@ -23,7 +23,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     /// Equipment channels compose before skinning over the source joint lists.
     /// The ordinary animation clock and its unmodified vertices stay intact.
     /// </summary>
-    public PlayerAnimationPresentation ApplyEquipmentPose(int? sourceSequence, double? phaseSeconds = null, bool loop = true, bool fullBody = false, bool stabilizeShoulders = false)
+    public PlayerAnimationPresentation ApplyEquipmentPose(int? sourceSequence, double? phaseSeconds = null, bool loop = true, bool fullBody = false, bool stabilizeShoulders = false, bool immediate = false)
     {
         RestoreEquipmentBasePose();
         if (_equipmentMask is null) { _equipmentAmount = 0; return Current; }
@@ -38,7 +38,9 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         {
             _equipmentSequence = sourceSequence; _equipmentPhase = phaseSeconds;
             _equipmentLoop = loop; _equipmentFullBody = fullBody;
-            _equipmentAmount = Math.Min(1, _equipmentAmount + .2f);
+            // Heavy two-handed carries cannot blend in from the wrench pose:
+            // the hand-mounted mesh would pass below the ground during that fade.
+            _equipmentAmount = immediate ? 1f : Math.Min(1, _equipmentAmount + .2f);
         }
         var descriptor = Rac1PlayerAvatarProvider.AnimationDescriptor(sourceSequence.Value);
         var clip = _avatar.AnimationClips.Single(clip => clip.Id == descriptor.Id);

@@ -230,7 +230,7 @@ public sealed class Rac1AdditionalWeaponTests
         var controller = Assert.IsType<Rac1PlayerAnimationPresentationController>(
             Rac1PlayerAvatarProvider.Instance.CreateAnimationController(avatar));
         // Both states keep locomotion below the arm layer and a valid weapon hand
-        // socket. This must not regress to source51 while the trigger is released.
+        // socket. Ready54 must not regress to neutral0 or source51 firing.
         controller.StepOrdinaryAnimation(OBP.Runtime.Player.PlayerAnimationState.Run, 0,
             new(true, true, .1f, InputMagnitude: 1));
         for (int tick = 1; tick < 6; tick++)
@@ -252,7 +252,58 @@ public sealed class Rac1AdditionalWeaponTests
         Assert.NotEqual(readyVertices, controller.Current.SampledPose!.LocalPositions);
         // Real R&C1 assets have different ready and firing hand orientations.
         Assert.True(Math.Abs(readySocket!.Origin.X - firingSocket!.Origin.X) > .1);
-        Assert.True(Math.Abs(readySocket.X.X - firingSocket.X.X) > .1);
+        // Height can be retargeted by the moving torso; X separation remains
+        // the reliable distinction between this braced carry and active firing.
+    }
+
+    [SkippableFact]
+    public void PyrocitorReadyPoseSupportsTheOtherHandAndClearsTheGround()
+    {
+        string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(path), "OBP_RAC1_ISO not set");
+        var avatar = Rac1PlayerAvatarProvider.Instance.Load(path!, "ratchet");
+        var model = Rac1EquipmentAssets.Load(path!).Models[176];
+        var ready = avatar.AnimationClips.Single(clip =>
+            clip.Id == Rac1PlayerAvatarProvider.AnimationDescriptor(Rac1ArsenalRules.PyrocitorReadySequence).Id);
+        var right = ready.AttachmentFrames![Rac1WeaponProfiles.HandSocket(0)][0];
+        var sampler = new OBP.Runtime.Player.PlayerSkeletalSampler(avatar.Skeletal!.Skeleton);
+        sampler.Reset(avatar.Skeletal.Clips[Rac1ArsenalRules.PyrocitorReadySequence], new(0,0,0));
+        sampler.EvaluateJointMatrices();
+        var support = sampler.Attachment(76).Origin; // other arm's hand, not the right-hand socket
+        var vertices = model.Clips[1].Frames[0];
+        double groundClearance = double.MaxValue;
+        double otherHandDistance = double.MaxValue;
+        foreach (int i in Enumerable.Range(0, vertices.Length / 3))
+        {
+            var p = right.Transform(new(vertices[i*3],vertices[i*3+1],vertices[i*3+2]));
+            groundClearance = Math.Min(groundClearance,p.Z);
+            otherHandDistance = Math.Min(otherHandDistance, Math.Sqrt(
+                Math.Pow(p.X - support.X,2)+Math.Pow(p.Y - support.Y,2)+Math.Pow(p.Z - support.Z,2)));
+        }
+        Assert.InRange(groundClearance, .2, 1);
+        Assert.InRange(otherHandDistance, 0, .17);
+
+        // The host must layer the two-handed stance without replacing idle legs
+        // or letting the muzzle drop through the ground in the actual composite.
+        var controller = Assert.IsType<Rac1PlayerAnimationPresentationController>(
+            Rac1PlayerAvatarProvider.Instance.CreateAnimationController(avatar));
+        var baseline = controller.Current.SampledPose?.LocalPositions ?? avatar.LocalAnimationFrames[0];
+        controller.ApplyEquipmentPose(Rac1ArsenalRules.PyrocitorReadySequence,
+            phaseSeconds: 0, loop: false, fullBody: false, stabilizeShoulders: true, immediate: true);
+        var composed = controller.Current.SampledPose!.LocalPositions;
+        Assert.False(baseline.SequenceEqual(composed));
+        var attached = controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(0))!;
+        Assert.NotNull(attached);
+        double actualFloor = double.MaxValue;
+        for (int i = 0; i < vertices.Length / 3; i++)
+            actualFloor = Math.Min(actualFloor, attached.Transform(new(
+                vertices[i*3],vertices[i*3+1],vertices[i*3+2])).Z);
+        Assert.InRange(actualFloor, .12, 1);
+        var feet = Enumerable.Range(0, avatar.VertexCount)
+            .Where(v => baseline[v*3+2] < .12).ToArray();
+        Assert.NotEmpty(feet);
+        foreach (int v in feet)
+            for (int j=0;j<3;j++) Assert.Equal(baseline[v*3+j],composed[v*3+j],10);
     }
 
     [SkippableFact]

@@ -366,10 +366,11 @@ public partial class OBPGame
         _avatarPresentation.StepNative(state, input);
 
 
-        // Pyrocitor's source51 is a firing pose, not its passive held stance.
-        // The unfired gun uses ordinary idle when standing and the neutral
-        // upper-body pose while moving, with the same shoulder stabilization.
-        // Authored flips and special traversal animations own the body instead.
+        // Pyrocitor's source51 is its firing pose, not its idle carry. The
+        // retail item has no authored moving arm slot, so we use the recovered
+        // two-handed source54 bracing stance as a host-only ready fallback.
+        // The same shoulder retarget preserves aim when walking or running;
+        // authored flips and special traversal animations keep ownership.
         bool pyrocitorReady = _rac1Weapons.Equipped == OBP.RAC1.Gameplay.Rac1WeaponId.Pyrocitor &&
             IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.Pyrocitor) &&
             (input.Traversal?.NativeAction is null or OBP.RAC1.Player.Rac1PlayerActionDomain.Jump or
@@ -403,8 +404,8 @@ public partial class OBPGame
             _avatarPresentation.Sink?.SetAnimationPresentation(controller.ApplyEquipmentPose(equipmentPose,
                 pyrocitorReady ? pyrocitorFiring ? OBP.RAC1.Gameplay.Rac1ArsenalRules.PyrocitorFirePhaseSeconds : 0 :
                     walloper ? _rac1WalloperAge / 60d : _rac1EquipmentUseAge / 60d,
-                loop: !walloper && !pyrocitorReady, fullBody: walloper || !moving,
-                stabilizeShoulders: pyrocitorReady && moving));
+                loop: !walloper && !pyrocitorReady, fullBody: walloper || !moving && !pyrocitorReady,
+                stabilizeShoulders: pyrocitorReady, immediate: pyrocitorReady));
         }
 
         if (_avatarPresentation.PhysicsPlayer is { } player)
