@@ -170,6 +170,13 @@ public static partial class Rac2WorldImport
 
         CollectTextures("shrub", Rac2LevelTextures.Table.Shrub);
         var shrubClasses = Rac2Shrub.ReadClasses(Core());
+        var shrubAlpha = textures.Where(t => t.AssetKind == "shrub")
+            .ToDictionary(t => t.TextureId, t => AlphaProfile.Analyse(t.Rgba));
+        var shrubCutouts = shrubClasses.ToDictionary(entry => entry.Key, entry =>
+            RcFoliageCutoutPolicy.FindLayeredCutoutTextures(
+                entry.Value.Mesh.Positions, entry.Value.Mesh.Indices,
+                entry.Value.TriangleTextureIds, entry.Value.Mesh.TriangleMaterialStateIndices,
+                entry.Value.Mesh.TriangleAlphaBlendEnabled, entry.Value.Mesh.Materials, shrubAlpha));
         PlaceMatrixInstances("shrub", gameplay.ShrubInstances,
             id => shrubClasses.TryGetValue(id, out var c)
                 ? (c.Mesh.Positions, c.Mesh.Uvs, c.Mesh.Indices, c.TriangleTextureIds,
@@ -177,7 +184,7 @@ public static partial class Rac2WorldImport
                         c.Mesh.Materials, c.Mesh.TriangleMaterialStateIndices,
                         c.Mesh.TriangleAlphaBlendEnabled, c.TriangleTextureIds.Length))
                 : null,
-            meshes, Grow, growBounds: true);
+            meshes, Grow, growBounds: true, shrubAlpha, shrubCutouts);
 
         CollectTextures("moby", Rac2LevelTextures.Table.Moby);
         var animatedMeshes = BuildAnimatedMeshes(gameplay, mobyClasses, Core(), out var animatedInstances);

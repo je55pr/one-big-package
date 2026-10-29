@@ -17,10 +17,8 @@ internal sealed record Rac1NativeActorPorts(Func<Rac1EnemyHost?> Enemies,
     Func<Rac1PickupAssets.Catalogue?> PickupBank, Func<Rac1PickupAssets.Catalogue?> SelectedBank,
     Action<Rac1PickupAssets.Catalogue, WorldMaterialFactory> AttachPickupBank,
     Action<double> TickPickups);
-internal sealed record Rac2NativeActorPorts(IDictionary<int, Rac2Class2827HostileSession> Hostiles,
-    IDictionary<int, Rac2OpeningMsr1HostSession> Sessions, Action Tick);
-internal sealed record Rac3NativeActorPorts(Func<Rac3WorldModule?> World);
-internal sealed record ActorNativePorts(Rac1NativeActorPorts Rac1, Rac2NativeActorPorts Rac2, Rac3NativeActorPorts Rac3);
+internal sealed record Rac2NativeActorPorts(Func<Rac2WorldModule?> World);
+internal sealed record Rac3NativeActorPorts(Func<Rac3WorldModule?> World);internal sealed record ActorNativePorts(Rac1NativeActorPorts Rac1, Rac2NativeActorPorts Rac2, Rac3NativeActorPorts Rac3);
 internal sealed record ActorNativeCounts(int Rac1Enemies, int Rac1Hostiles);
 
 /// <summary>Typed bridges into the existing source controllers. Native amounts, reaction gates and update clocks stay source-owned.</summary>
@@ -29,15 +27,24 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
 {
     internal Rac1PickupAssets.Catalogue? PickupBank => ports.Rac1.PickupBank();
     internal ActorNativeCounts Counts => new(ports.Rac1.Enemies()?.Roster.Count ?? 0, ports.Rac1.Enemies()?.Presentation.HostileNodes.Count ?? 0);
-    internal bool Rac2AnimationPresented => ports.Rac2.Sessions.Count == 1 && ports.Rac2.Sessions.Values.Single().Node.AnimationSample is not null;
+    internal bool Rac2AnimationPresented => ports.Rac2.World() is { } world && world.Current &&
+        world.OpeningSessions.Count == 1 && world.OpeningSessions.Values.Single().Node.AnimationSample is not null;
 
     internal IReadOnlyList<IActorFactory> CreateFactories(ActorSceneFactory scenes, ActorSourceCache sources) =>
         [new Rac1ToadActorFactory(scenes, sources, Rac1Bindings()),
-            new Rac2Msr1ActorFactory(scenes, sources, new(ports.Rac2.Hostiles, ports.Rac2.Sessions, ObserveRac2, ApplyRac2, _ =>
+            new Rac2Msr1ActorFactory(scenes, sources, Rac2Bindings()), new Rac3PropActorFactory(scenes)];
+
+    private Rac2ActorBindings Rac2Bindings()
+    {
+        var world = ports.Rac2.World() ?? throw new InvalidOperationException("R&C2 actor host requires a world lease.");
+        return new(world.Hostiles, world.OpeningSessions, () => world.Current,
+            ObserveRac2, ApplyRac2, _ =>
             {
-                foreach (var hostile in ports.Rac2.Hostiles.Values) hostile.TickCooldown();
-                ports.Rac2.Tick();
-            })), new Rac3PropActorFactory(scenes)];
+                if (!world.Current) return;
+                foreach (var hostile in world.Hostiles.Values) hostile.TickCooldown();
+                world.TickOpeningMsr1FromActor();
+            });
+    }
 
     private Rac1ActorBindings Rac1Bindings()
     {
@@ -68,16 +75,19 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
         if (ports.Rac1.Enemies() is { } owner)
             foreach (var node in ports.Rac1.OriginalTargets().DistinctBy(ActorWorldHost.Target))
                 register(node, () => ObserveRac1(node, owner), intent => ApplyRac1(node, intent, owner));
-        foreach (var hostile in ports.Rac2.Hostiles.Values)
-        {
-            var node = ports.Rac2.Sessions.TryGetValue(hostile.InstanceIndex, out var session) ? session.Node : null;
-            if (node is not null) register(node, () => ObserveRac2(node, hostile), intent => ApplyRac2(node, hostile, intent));
-        }
+        if (ports.Rac2.World() is { } rac2)
+            foreach (var hostile in rac2.Hostiles.Values)
+            {
+                var node = rac2.OpeningSessions.TryGetValue(hostile.InstanceIndex, out var session) ? session.Node : null;
+                if (node is not null)
+                    register(node, () => rac2.IsLiveHostile(node, hostile) ? ObserveRac2(node, hostile) : RetiredRac2(),
+                        intent => rac2.IsLiveHostile(node, hostile) ? ApplyRac2(node, hostile, intent) :
+                            new(false, false, "The R&C2 encounter has retired."));
+            }
         if (ports.Rac3.World() is { } rac3)
             foreach (var node in rac3.OriginalTargets)
                 register(node, () => rac3.Observe(node), intent => rac3.Apply(node, intent,
-                    () => disableBody(ActorWorldHost.Target(node))));
-    }
+                    () => disableBody(ActorWorldHost.Target(node))));    }
 
     private static ActorObservation ObserveRac1(RuntimeWorldScene.DynamicObjectNode node, Rac1EnemyHost owner)
     {
@@ -90,6 +100,9 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
             (!owner.Roster.TryGetValue(node.Source.InstanceIndex, out var enemy) || !enemy.RewardEmitted), !native.IsActive,
             health, native.State.NativeState, node.Source.NativeClassId == 749 ? owner.Context.Hostiles.Probe(node.Source).NativeSequence : null);
     }
+
+    private static ActorObservation RetiredRac2() =>
+        new(System.Numerics.Vector3.Zero, false, true, null, 0, null);
 
     private static ActorObservation ObserveRac2(RuntimeWorldScene.DynamicObjectNode node, Rac2Class2827HostileSession native) =>
         new(new(node.Root.GlobalPosition.X, node.Root.GlobalPosition.Y, node.Root.GlobalPosition.Z), !native.IsTerminal, native.IsTerminal,

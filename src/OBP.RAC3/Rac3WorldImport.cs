@@ -69,8 +69,16 @@ public static partial class Rac3WorldImport
 
         var ties = Rac3Assets.ReadTieClasses(core);
         var shrubs = Rac3Assets.ReadShrubClasses(core);
+        var shrubAlpha = texByKind["shrub"].ToDictionary(
+            t => t.Index, t => AlphaProfile.Analyse(t.Rgba));
+        var shrubCutouts = shrubs.ToDictionary(entry => entry.Key, entry =>
+            RcFoliageCutoutPolicy.FindLayeredCutoutTextures(
+                entry.Value.Positions, entry.Value.Indices, entry.Value.TriangleTextureIds,
+                entry.Value.TriangleMaterialStateIndices, entry.Value.TriangleAlphaBlendEnabled,
+                entry.Value.Materials, shrubAlpha));
         PlaceStatics("tie", gameplay.TieInstances, ties, texByKind["tie"].Count, meshes, Grow);
-        PlaceStatics("shrub", gameplay.ShrubInstances, shrubs, texByKind["shrub"].Count, meshes, Grow);
+        PlaceStatics("shrub", gameplay.ShrubInstances, shrubs, texByKind["shrub"].Count,
+            meshes, Grow, shrubAlpha, shrubCutouts);
 
         var collisionRange = Rac3LevelCore.SectionRange(core, core.Header.Collision)
             ?? throw new InvalidDataException("UYA core has no bounded collision section.");
@@ -274,7 +282,9 @@ public static partial class Rac3WorldImport
     }
 
     internal static void PlaceStatics(string kind, IReadOnlyList<Rac3Gameplay.MatrixInstance> instances, IReadOnlyDictionary<int, Rac3Assets.StaticClass> classes,
-        int textureCount, List<RuntimeMesh> meshes, Action<double, double, double> grow)
+        int textureCount, List<RuntimeMesh> meshes, Action<double, double, double> grow,
+        IReadOnlyDictionary<int, AlphaProfile>? alphaProfiles = null,
+        IReadOnlyDictionary<int, HashSet<int>>? cutoutSurfaces = null)
     {
         var groups = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), (List<double> P, List<float> U, List<int> I)>();
         foreach (var inst in instances)
@@ -296,9 +306,12 @@ public static partial class Rac3WorldImport
                 var presentation = PresentationFor(
                     cls.Materials, cls.TriangleMaterialStateIndices,
                     cls.TriangleAlphaBlendEnabled, f);
+                presentation = RcFoliageCutoutPolicy.WithLayeredCutout(
+                    inst.OClass, tex, presentation, alphaProfiles, cutoutSurfaces);
                 var surface = (tex, presentation);
                 if (!groups.TryGetValue(surface, out var g)) groups[surface] = g = ([], [], []);
-                if (!localRemaps.TryGetValue(surface, out var remap)) localRemaps[surface] = remap = [];
+                if (!localRemaps.TryGetValue(surface, out var remap))
+                    localRemaps[surface] = remap = [];
                 bool unwrapS = false, unwrapT = false;
                 if (kind == "tie")
                 {
