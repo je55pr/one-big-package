@@ -62,7 +62,10 @@ public partial class OBPGame
             if (IsInstanceValid(node)) node.QueueFree();
         foreach (var chicken in _rac1Chickens.Values.Where(chicken => IsInstanceValid(chicken.Enemy.Node.Root) && IsInstanceValid(chicken.Enemy.Body)))
         {
-            foreach (var mesh in chicken.Enemy.Node.Root.GetChildren().OfType<MeshInstance3D>()) mesh.Visible = true;
+            // Restore only surfaces that had supported materials before morphing.
+            // Materialless Moby children must remain hidden after the chicken resets.
+            foreach (var mesh in chicken.Enemy.Node.Root.GetChildren().OfType<MeshInstance3D>())
+                mesh.Visible = mesh.MaterialOverride is not null;
             var collider = chicken.Enemy.Body.GetChild<CollisionShape3D>(0);
             collider.Shape = chicken.OriginalShape; collider.Position = chicken.OriginalShapePosition;
         }
