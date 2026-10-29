@@ -183,19 +183,21 @@ public sealed class Rac1LedgeTraversalTests
         session.AdvanceInput(true);
         var exit = session.Step(StepInput with { JumpPressAgeTicks = session.JumpPressAgeTicks }, _ => Candidate);
         Assert.Equal(Rac1LedgeExitKind.LedgeJump, exit.ExitKind);
-        Assert.Equal(Rac1LedgeTraversalSession.ExitRegrabDelayTicks, session.GrabCooldownTicks);
+        Assert.Equal(20, Rac1LedgeTraversalSession.ExitRegrabDelayTicks);
+        Assert.Equal(20, session.GrabCooldownTicks);
         Assert.False(session.CanProbeForGrab);
         Assert.False(session.TryGrab(Candidate));
-        for (int tick = 1; tick < Rac1LedgeTraversalSession.ExitRegrabDelayTicks; tick++)
+        for (int tick = 1; tick < 20; tick++)
         {
             session.AdvanceInput(false);
             Assert.False(session.CanProbeForGrab);
         }
         session.AdvanceInput(false);
         Assert.True(session.CanProbeForGrab);
-        for (int tick = 0; tick < Rac1LedgeTraversalSession.MaximumJumpPressAgeTicks + 2; tick++)
+        for (int tick = 0; tick < 1002; tick++)
             session.AdvanceInput(false);
-        Assert.Equal(Rac1LedgeTraversalSession.MaximumJumpPressAgeTicks, session.JumpPressAgeTicks);
+        Assert.Equal(1000, Rac1LedgeTraversalSession.MaximumJumpPressAgeTicks);
+        Assert.Equal(1000, session.JumpPressAgeTicks);
         Assert.True(session.TryGrab(Candidate));
         Assert.Null(session.JumpPressAgeTicks);
         session.Reset();
