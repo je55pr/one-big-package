@@ -37,7 +37,9 @@ public static partial class Rac2WorldImport
         Func<int, (double[] Positions, float[] Uvs, int[] Indices, int[] TriTexIds, RuntimeMaterialPresentation?[] TriPresentations)?> lookup,
         List<RuntimeMesh> meshes,
         Action<double, double, double> grow,
-        bool growBounds)
+        bool growBounds,
+        IReadOnlyDictionary<int, AlphaProfile>? alphaProfiles = null,
+        IReadOnlyDictionary<int, HashSet<int>>? cutoutSurfaces = null)
     {
         var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation),
             (List<double> P, List<float> U, List<int> I, Dictionary<(double, double, double, double, double), int> Weld)>();
@@ -70,6 +72,8 @@ public static partial class Rac2WorldImport
                 var presentation = (uint)f < (uint)c.TriPresentations.Length
                     ? c.TriPresentations[f]
                     : null;
+                presentation = RcFoliageCutoutPolicy.WithLayeredCutout(
+                    inst.OClass, tex, presentation, alphaProfiles, cutoutSurfaces);
                 var surface = (tex, presentation);
                 if (!bySurface.TryGetValue(surface, out var g))
                 {
