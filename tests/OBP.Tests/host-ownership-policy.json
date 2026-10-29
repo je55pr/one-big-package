@@ -8,8 +8,8 @@
   {
     "Key": "game/scripts/OBPGame.cs::OBPGame.UpdateWorldHud()",
     "Kind": "adapter",
-    "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected. #360/#356 integration reads lease-owned gameplay and the existing owned capture metadata projection; no player service is selected. Metadata wire tests and fresh native/shared replay cover this binding.",
-    "Hash": "548251fea9b98635ba6aaa087d6e79609dc3abed6ed48294f56836b0bd841522"
+    "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected. #360/#356 integration reads lease-owned gameplay and the existing owned capture metadata projection; no player service is selected. Metadata wire tests and fresh native/shared replay cover this binding. #374 reads optional R&C3 HUD facts from the active world lease; ordinary player HUD remains independently owned.",
+    "Hash": "d638564c54ba8347a5fc59b71d399529e953ab38918f3557fa9690f9dafca11d"
   },
   {
     "Key": "game/scripts/ApplicationNavigationCoordinator.cs::ApplicationNavigationCoordinator.Choose(ObpDestination)",
@@ -118,30 +118,6 @@
     "Kind": "adapter",
     "Reason": "Refresh only the original R&C1 metal-detector world query after equipment changes; diagnostic loadout ownership is persistent-player state, covered by PlayerNativeSessionStateTests.",
     "Hash": "122dd921da2ba59e460032c0685849e8301154db74bc60af8dd9bd469b25041f"
-  },
-  {
-    "Key": "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame.ConfigureRac3Gameplay(RuntimeWorld,RuntimeWorldScene.Result)",
-    "Kind": "adapter",
-    "Reason": "Register original-world UYA native actors/context; state and placement admission is atomic, covered by UyaClass5821ActorTests. No player-global controller/menu selection. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "e7ebb1594e6e0d69df898bb69fabb354b8e41c65bd4ae16575d0235500c0db34"
-  },
-  {
-    "Key": "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame.GetRac3GameplayHudLine()",
-    "Kind": "adapter",
-    "Reason": "Optional original-world UYA actor diagnostic overlay, explicitly labelled as a one-shot/refreshed snapshot; not ordinary HUD selection. DiagnosticSnapshotGateTests cover its cadence.",
-    "Hash": "5f1d157d2d888ae5219bbc9fd3eeca57c1b71525e5487d66c45cba5d08c5dc35"
-  },
-  {
-    "Key": "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame.SelectRac3Class500HostContact()",
-    "Kind": "adapter",
-    "Reason": "Contact selection against the original-world UYA actor set; native target source is not player origin.",
-    "Hash": "8454623701d1c61d5074e9c2f00ab0b9c41ec01c4da2dc200241e25459ad1015"
-  },
-  {
-    "Key": "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame.TickRac3Gameplay(double)",
-    "Kind": "adapter",
-    "Reason": "Original UYA target-selection diagnostics only, once after entry settles or on inspector-open request; no native actor/controller timing is gated. DiagnosticSnapshotGateTests count inactive and requested calls.",
-    "Hash": "a29952235b3befc1b3373d500cec31d6014753e3be61bfd463cfc64458c7ad5c"
   },
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.BeginSourceWorldEntry(RuntimeWorld)",

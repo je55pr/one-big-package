@@ -18,7 +18,8 @@ internal static class WorldSmokeHarness
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisPeckbot = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisBirdbot = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisMusic = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Weapons = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? PlayerAudio = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? MetropolisTaxi = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? MissionPlay = null,
-        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisRoute = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Frogs = null);
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisRoute = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Frogs = null,
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Rac3SeedAudit = null);
 
     private sealed record Entry(DiagnosticRegistration Registration, Func<Entrypoints, ObpDestination, DiagnosticRunContext, Task?>? Invoke,
         Func<Entrypoints, DiagnosticScenarioDefinition, IDiagnosticScenario>? Create = null);
@@ -68,6 +69,10 @@ internal static class WorldSmokeHarness
         TypedCase("rac1-mission-play-smoke", a => a.Rac1MissionPlaySmoke, (e, definition) => e.MissionPlay?.Invoke(definition)
             ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No mission-play diagnostic is bound."))),
         TypedCase("movement-smoke", a => a.MovementSmoke, (e, definition) => e.Movement(definition), source: null),
+        TypedCase("rac3-target-seed-audit", a => a.Rac3TargetSeedAudit,
+            (e, definition) => e.Rac3SeedAudit?.Invoke(definition)
+                ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("R&C3 audit port is unavailable.")),
+            source: ObpSourceGame.Rac3),
     ];
     internal static DiagnosticScenarioRegistry Registry { get; } = new(Entries.Select(entry => entry.Registration));
 

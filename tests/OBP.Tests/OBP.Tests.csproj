@@ -44,6 +44,7 @@
     <Compile Include="../../game/diagnostics/SourceFreeStartupScenario.cs" Link="Diagnostics/SourceFreeStartupScenario.cs" />
     <Compile Include="../../game/diagnostics/AcceptanceEvidence.cs" Link="Diagnostics/AcceptanceEvidence.cs" />
     <Compile Include="../../game/diagnostics/DiagnosticScenarioRegistry.cs" Link="Diagnostics/DiagnosticScenarioRegistry.cs" />
+    <Compile Include="../../game/diagnostics/Rac3RatchetSeedScenario.cs" Link="Diagnostics/Rac3RatchetSeedScenario.cs" />
     <Compile Include="../../game/diagnostics/LegacyDiagnosticScenario.cs" Link="Diagnostics/LegacyDiagnosticScenario.cs" />
     <Compile Include="../../game/diagnostics/ExistingDiagnosticWorld.cs" Link="Diagnostics/ExistingDiagnosticWorld.cs" />
     <Compile Include="../../game/diagnostics/WorldSmokeHarness.cs" Link="Diagnostics/WorldSmokeHarness.cs" />

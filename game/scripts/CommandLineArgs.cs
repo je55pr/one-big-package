@@ -46,7 +46,7 @@ public sealed record CommandLineArgs
         Rac1CombatContractSmoke || Rac1WrenchSmoke || Rac1CrateSmoke || Rac1EnemySmoke || Rac1FrogSmoke ||
         Rac1BombGloveSmoke || Rac1NovalisSwimSmoke || Rac1NovalisRouteSmoke || Rac1NovalisPeckbotSmoke ||
         Rac1NovalisBirdbotSmoke || Rac1NovalisMusicSmoke || Rac1MetropolisTaxiSmoke || Rac1WeaponsSmoke ||
-        Rac1PlacedBoltSmoke || Rac1CampaignSmoke || Rac1MissionPlaySmoke || Rac1PlayerAudioSmoke || MovementStateSmoke ||
+        Rac1PlacedBoltSmoke || Rac1CampaignSmoke || Rac1MissionPlaySmoke || Rac1PlayerAudioSmoke || Rac3TargetSeedAudit || MovementStateSmoke ||
         MovementCase is "environmental-death" or "swim";
     public bool DefaultWeaponsSmoke { get; init; }
     public bool BugCapture { get; init; }
@@ -64,6 +64,7 @@ public sealed record CommandLineArgs
     public bool MovementStateSmoke { get; init; }
     public bool ControllerSmoke { get; init; }
     public bool Rac1PlayerAudioSmoke { get; init; }
+    public bool Rac3TargetSeedAudit { get; init; }
 
     /// <summary>Path to a Going Commando retail ISO.</summary>
     public string? Rac2Iso { get; init; }
@@ -272,6 +273,7 @@ public sealed record CommandLineArgs
                 "--anim-solo" => result with { AnimSolo = true },
                 "--crate-focus" => result with { CrateFocus = true },
                 "--crate-auto-strike" => result with { CrateAutoStrike = true },
+                "--rac3-target-seed-audit" => result with { Rac3TargetSeedAudit = true },
                 "--rac1-veldin-play-smoke" => result with { Rac1VeldinPlaySmoke = true },
                 "--rac1-movement-contact-smoke" => result with { Rac1MovementContactSmoke = true },
                 "--rac1-startup-visibility-smoke" => result with { Rac1StartupVisibilitySmoke = true },

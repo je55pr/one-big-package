@@ -69,7 +69,10 @@ public partial class OBPGame
                         definition => CreateRac1EncounterDiagnosticHarness().CreateBirdbot(definition),
                         definition => CreateRac1WorldRouteDiagnosticHarness().CreateMusic(definition), definition => CreateWeaponDiagnosticHarness().CreateWeapons(definition), definition => CreatePlayerDiagnosticHarness().CreateAudio(definition),
                         definition => CreateRac1WorldRouteDiagnosticHarness().CreateTaxi(definition), definition => CreateRac1CampaignDiagnosticHarness().CreateMission(definition), definition => CreateRac1WorldRouteDiagnosticHarness().CreateRoute(definition),
-                        definition => CreateRac1EncounterDiagnosticHarness().CreateFrogs(definition)), Sources.Setup.Access != SourceAccessMode.ExplicitDiagnostic, TrilogySourceDefinitions.All);
+                        definition => CreateRac1EncounterDiagnosticHarness().CreateFrogs(definition),
+                        definition => new Rac3RatchetSeedScenario(definition,
+                            new GodotRac3RatchetSeedFixture(_worldScenes?.Current?.Resources.Rac3Gameplay, () => _player).Sample,
+                            message => GD.Print(message))), Sources.Setup.Access != SourceAccessMode.ExplicitDiagnostic, TrilogySourceDefinitions.All);
                 var runner = new DiagnosticScenarioRunner(
                     new GodotDiagnosticSources(() => [.. Sources.Setup.Library.Attached.Values.Select(source =>
                         new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
@@ -127,6 +130,7 @@ public partial class OBPGame
         _navigation.RetireMenuPages();
         Sources.RetireView();
         entry.Resources.Rac1Gameplay = CreateRac1WorldModule(entry.Plan.Prepared.World, entry.Resources.Scene);
+        entry.Resources.Rac3Gameplay = new Rac3WorldModule(entry.Plan.Prepared.World, entry.Resources.Scene);
         ActivateWorld(entry.Plan.Prepared.World, entry.Resources, entry.NativeDestination, entry.Lab);
         entry.Resources.BindPlayer(_player);
     }
@@ -176,7 +180,7 @@ public partial class OBPGame
         if (!staticCamera)
         {
             Rac1World.Configure();
-            ConfigureRac3Gameplay(world, resources.Scene);
+            resources.Rac3Gameplay?.Configure();
         }
         resources.FusionWeapons = FusionWeapons.BindWorld(resources.Scene.Root);
         if (_args.AnimSolo) FrameAnimatedMobies(world);

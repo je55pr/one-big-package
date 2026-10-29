@@ -770,3 +770,31 @@ move architecture checks with its new owner. Fresh same-build replay validates
 each revision; older recordings carry different assembly IDs and require
 explicit cross-build investigation/trace comparison without weakening the
 same-build gate.
+
+
+## #374 R&C3 original-world gameplay owner
+
+The former `OBPGame.Rac3Gameplay.cs` fragment is retired. The world lease's
+`GodotWorldResources.Rac3Gameplay` now owns the R&C3 class-500 node roster,
+native moby/damage sessions, original-host contact envelope, class-5821 admission
+counts, and optional original-world HUD facts. `ActorNativeAdapters` captures
+the specific lease module for class-500 observations and source-damage dispatch,
+so callbacks referring to a retired world cannot dispatch into the next world.
+The existing class-500 host interaction still uses native UYA damage and state
+transitions; the source-neutral shared player/weapon selection is unchanged.
+This path is event-driven: the former root per-frame R&C3 method advanced only
+the diagnostic snapshot gate, not a native gameplay clock.
+
+The R&C3 class-5821 Ratchet-target/pose sampler now belongs to a read-only,
+explicit diagnostic scenario (`--rac3-target-seed-audit` on a compatible R&C3
+world). The scenario is admitted through the existing bounded source/build/world
+runner, waits for entry settling and samples the recovered native selector once.
+It does not run on the ordinary gameplay tick or upon opening the inspector,
+and it does not mutate an actor or the persistent player. Native subtype +0x95
+and AI/player consequences remain unrecovered and are not synthesized.
+
+The frozen root-origin ledger remains immutable. #374 marks all 33 retired
+partial members in the retirement set, removes four obsolete source-origin
+exceptions, and refreshes only the exact affected actor composition and debug
+HUD adapter fingerprints. Full source-free architecture checks and optional
+source-authorized UYA TABLE1 sampling cover the extraction.
