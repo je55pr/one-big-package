@@ -11,13 +11,12 @@ using OBP.Runtime.Gameplay;
 
 namespace OBP.Game;
 
-internal sealed record Rac1NativeActorPorts(Func<Rac1MobyRuntimeSession> Runtime, Func<Rac1Class749HostileSession> Hostiles,
-    Func<IDictionary<int, RuntimeWorldScene.DynamicObjectNode>?> Nodes, IDictionary<int, Rac1HostedEnemy> Enemies,
+internal sealed record Rac1NativeActorPorts(Func<Rac1EnemyHost?> Enemies,
     Func<IEnumerable<RuntimeWorldScene.DynamicObjectNode>> OriginalTargets,
     Func<RuntimeWorldScene.DynamicObjectNode, Rac1GameplayDamageEvent, bool> ApplyDamage, Action<Rac1MobyRuntimeKey> ClearCaptures,
     Func<Rac1PickupAssets.Catalogue?> PickupBank, Func<Rac1PickupAssets.Catalogue?> SelectedBank,
     Action<Rac1PickupAssets.Catalogue, WorldMaterialFactory> AttachPickupBank,
-    Action<double> TickHostiles, Action<double> TickPickups);
+    Action<double> TickPickups);
 internal sealed record Rac2NativeActorPorts(IDictionary<int, Rac2Class2827HostileSession> Hostiles,
     IDictionary<int, Rac2OpeningMsr1HostSession> Sessions, Action Tick);
 internal sealed record Rac3NativeActorPorts(Func<IEnumerable<RuntimeWorldScene.DynamicObjectNode>> OriginalTargets,
@@ -30,7 +29,7 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
     Action<WeaponTargetKey> disableBody, Action<string, Action<ActorTickFacts>> registerUpdate)
 {
     internal Rac1PickupAssets.Catalogue? PickupBank => ports.Rac1.PickupBank();
-    internal ActorNativeCounts Counts => new(ports.Rac1.Enemies.Count, ports.Rac1.Nodes()?.Count ?? 0);
+    internal ActorNativeCounts Counts => new(ports.Rac1.Enemies()?.Roster.Count ?? 0, ports.Rac1.Enemies()?.Presentation.HostileNodes.Count ?? 0);
     internal bool Rac2AnimationPresented => ports.Rac2.Sessions.Count == 1 && ports.Rac2.Sessions.Values.Single().Node.AnimationSample is not null;
 
     internal IReadOnlyList<IActorFactory> CreateFactories(ActorSceneFactory scenes, ActorSourceCache sources) =>
@@ -41,10 +40,14 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
                 ports.Rac2.Tick();
             })), new Rac3PropActorFactory(scenes)];
 
-    private Rac1ActorBindings Rac1Bindings() => new(ports.Rac1.Hostiles(),
-        ports.Rac1.Nodes() ?? throw new InvalidOperationException("R&C1 actors require an active world scene lease."), ports.Rac1.Enemies,
-        ObserveRac1, ApplyRac1, clearTransients, index => ports.Rac1.ClearCaptures(new(749, index)), EnsurePickupBank,
-        _ => { if (ports.Rac1.Enemies.Count > 0) ports.Rac1.TickHostiles(1d / 60); });
+    private Rac1ActorBindings Rac1Bindings()
+    {
+        var owner = ports.Rac1.Enemies() ?? throw new InvalidOperationException("R&C1 actors require an active world scene lease.");
+        return new(owner.Context.Hostiles, owner.Presentation.HostileNodes, owner.Roster,
+            node => ObserveRac1(node, owner), (node, intent) => ApplyRac1(node, intent, owner), clearTransients,
+            index => ports.Rac1.ClearCaptures(new(749, index)), world => EnsurePickupBank(world, owner),
+            _ => { if (owner.Roster.Count > 0) owner.TickRac1Hostiles(1d / 60); }, () => owner.Current);
+    }
 
     internal IActorFactory ConstructionTrialFactory(ActorSceneFactory scenes, ActorSourceCache sources) =>
         new Rac1ToadActorFactory(scenes, sources, Rac1Bindings() with
@@ -53,18 +56,19 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
             Tick = _ => { },
         });
 
-    private void EnsurePickupBank(RuntimeWorld library)
+    private void EnsurePickupBank(RuntimeWorld library, Rac1EnemyHost owner)
     {
         if (ports.Rac1.PickupBank() is not null) return;
         var assets = ports.Rac1.SelectedBank() ?? throw new InvalidDataException("R&C1 actor's original sound/pickup bank is unavailable.");
         ports.Rac1.AttachPickupBank(assets, new(library with { Textures = assets.Textures }));
-        registerUpdate("rac1/actor-pickups", _ => ports.Rac1.TickPickups(1d / 60));
+        registerUpdate("rac1/actor-pickups", _ => { if (owner.Current) ports.Rac1.TickPickups(1d / 60); });
     }
 
     internal void RegisterOriginalTargets(Action<RuntimeWorldScene.DynamicObjectNode, Func<ActorObservation>, Func<WeaponDamageIntent, ActorHitResult>> register)
     {
-        foreach (var node in ports.Rac1.OriginalTargets().DistinctBy(ActorWorldHost.Target))
-            register(node, () => ObserveRac1(node), intent => ApplyRac1(node, intent));
+        if (ports.Rac1.Enemies() is { } owner)
+            foreach (var node in ports.Rac1.OriginalTargets().DistinctBy(ActorWorldHost.Target))
+                register(node, () => ObserveRac1(node, owner), intent => ApplyRac1(node, intent, owner));
         foreach (var hostile in ports.Rac2.Hostiles.Values)
         {
             var node = ports.Rac2.Sessions.TryGetValue(hostile.InstanceIndex, out var session) ? session.Node : null;
@@ -74,13 +78,16 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
             register(node, () => ObserveRac3(node, ports.Rac3.Runtime()), intent => ApplyRac3(node, ports.Rac3.Runtime(), intent));
     }
 
-    private ActorObservation ObserveRac1(RuntimeWorldScene.DynamicObjectNode node)
+    private static ActorObservation ObserveRac1(RuntimeWorldScene.DynamicObjectNode node, Rac1EnemyHost owner)
     {
-        var native = ports.Rac1.Runtime().Require(node.Source);
-        double? health = node.Source.NativeClassId == 749 ? ports.Rac1.Hostiles().Probe(node.Source).Health : null;
+        if (!owner.Current || !GodotObject.IsInstanceValid(node.Root) || node.Source.NativeClassId == 749 &&
+            (!owner.Roster.TryGetValue(node.Source.InstanceIndex, out var registered) || !ReferenceEquals(registered.Node, node)))
+            return new(System.Numerics.Vector3.Zero, false, true, null, 0, null);
+        var native = owner.Context.MobyRuntime.Require(node.Source);
+        double? health = node.Source.NativeClassId == 749 ? owner.Context.Hostiles.Probe(node.Source).Health : null;
         return new(new(node.Root.GlobalPosition.X, node.Root.GlobalPosition.Y, node.Root.GlobalPosition.Z), native.IsActive && !(health <= 0) &&
-            (!ports.Rac1.Enemies.TryGetValue(node.Source.InstanceIndex, out var enemy) || !enemy.RewardEmitted), !native.IsActive,
-            health, native.State.NativeState, node.Source.NativeClassId == 749 ? ports.Rac1.Hostiles().Probe(node.Source).NativeSequence : null);
+            (!owner.Roster.TryGetValue(node.Source.InstanceIndex, out var enemy) || !enemy.RewardEmitted), !native.IsActive,
+            health, native.State.NativeState, node.Source.NativeClassId == 749 ? owner.Context.Hostiles.Probe(node.Source).NativeSequence : null);
     }
 
     private static ActorObservation ObserveRac2(RuntimeWorldScene.DynamicObjectNode node, Rac2Class2827HostileSession native) =>
@@ -92,12 +99,15 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
             !native.Require(node.Source).IsActive, null, native.Require(node.Source).IsActive
                 ? Rac3Class500Destructible.ActiveNativeState : Rac3Class500Destructible.BreakTransitionNativeState, null);
 
-    private ActorHitResult ApplyRac1(RuntimeWorldScene.DynamicObjectNode node, WeaponDamageIntent intent)
+    private ActorHitResult ApplyRac1(RuntimeWorldScene.DynamicObjectNode node, WeaponDamageIntent intent, Rac1EnemyHost owner)
     {
+        if (!owner.Current || node.Source.NativeClassId == 749 &&
+            (!owner.Roster.TryGetValue(node.Source.InstanceIndex, out var registered) || !ReferenceEquals(registered.Node, node)))
+            return new(false, false, "The R&C1 enemy scene or actor has retired.");
         var translated = FusionDamagePolicy.Translate(intent);
         if (translated is null) return new(false, false, "The native R&C1 receiver does not admit this source damage; class-749 sublethal reactions are unrecovered.");
         bool applied = ports.Rac1.ApplyDamage(node, translated);
-        return new(applied, !ObserveRac1(node).Alive, applied ? null : "Native R&C1 immunity or reaction gate.");
+        return new(applied, !ObserveRac1(node, owner).Alive, applied ? null : "Native R&C1 immunity or reaction gate.");
     }
 
     private ActorHitResult ApplyRac2(RuntimeWorldScene.DynamicObjectNode node, Rac2Class2827HostileSession native, WeaponDamageIntent intent)

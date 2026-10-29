@@ -265,7 +265,7 @@ public partial class OBPGame
                         {
                             Vector3 toward = playerPosition - position; toward.Y = 0;
                             if (toward.LengthSquared() > 1e-8f)
-                                facingError = EnemyForward(session.Node).SignedAngleTo(toward.Normalized(), Vector3.Up);
+                                facingError = Rac1EnemyHost.EnemyForward(session.Node).SignedAngleTo(toward.Normalized(), Vector3.Up);
                         }
                         if (session.Hostile.TryEnterAttack(distance, facingError))
                         {
@@ -390,7 +390,7 @@ public partial class OBPGame
             {
                 // OBP facing projection for the bounded planar context. A full
                 // native GC steering controller is not asserted by this adapter.
-                float angle = EnemyForward(session.Node).SignedAngleTo(toward.Normalized(), Vector3.Up);
+                float angle = Rac1EnemyHost.EnemyForward(session.Node).SignedAngleTo(toward.Normalized(), Vector3.Up);
                 sceneTransform.Basis = new Basis(Vector3.Up, angle) * sceneTransform.Basis;
             }
         }

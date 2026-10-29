@@ -163,14 +163,14 @@ public sealed class Rac1HostArchitectureTests
             RepoPaths.Root,
             "game",
             "scripts",
-            "OBPGame.Rac1Hostiles.cs"));
+            "Rac1EnemyHost.Queries.cs"));
 
         Assert.DoesNotContain(".Root.Visible", hostiles, StringComparison.Ordinal);
         Assert.Contains(
-            "Rac1World.Context.MobyRuntime.Require(node.Source).IsActive",
+            "TryOwnedRuntime(node, out var runtime) && runtime!.IsActive",
             hostiles,
             StringComparison.Ordinal);
-        string enemies = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.Rac1Enemies.cs"));
+        string enemies = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "Rac1EnemyHost.cs"));
         Assert.DoesNotContain(".Root.Visible", enemies, StringComparison.Ordinal);
     }
 

@@ -21,7 +21,7 @@ public partial class OBPGame
     private void ConfigureRac1FrogCarriers(RuntimeWorldScene.Result result)
     {
         if (_rac1Frogs is null) return;
-        var carrierEnemies = _rac1Enemies.Values.Where(e =>
+        var carrierEnemies = Rac1World.Enemies.Roster.Values.Where(e =>
             e.Node.Source.NativeClassId == Rac1FrogSession.ClassId &&
             _rac1Frogs.Get(e.Node.Source.InstanceIndex).CarrierMode).ToArray();
         if (carrierEnemies.Length == 0) return;
@@ -85,7 +85,7 @@ public partial class OBPGame
     {
         if (_rac1Frogs is null ||
             !_rac1FrogCarrierChildren.TryGetValue(instance, out var child) ||
-            !IsInstanceValid(child) || !_rac1Enemies.TryGetValue(instance, out var enemy) ||
+            !IsInstanceValid(child) || !Rac1World.Enemies.Roster.TryGetValue(instance, out var enemy) ||
             !_rac1Frogs.HitCarrierChild(instance, sourceClass))
             return false;
         EmitRac1FrogCarrierBurst(enemy.Node.Root.GlobalPosition);
@@ -134,7 +134,7 @@ public partial class OBPGame
         if (authored.TargetInstance >= 0)
         {
             if (!Rac1World.Presentation.LinkedTargets.TryGetValue(authored.TargetInstance, out var linked) ||
-                !IsInstanceValid(linked.Root) || !IsRac1GameplayActive(linked))
+                !IsInstanceValid(linked.Root) || !Rac1World.Enemies.IsRac1GameplayActive(linked))
                 eligible = false;
             else target = linked.Root.GlobalPosition;
         }
@@ -148,7 +148,7 @@ public partial class OBPGame
         enemy.Body.CollisionLayer = active ? 1u : 0u;
         enemy.Body.CollisionMask = active ? 1u : 0u;
         enemy.Node.ApplyState(Rac1World.Context.MobyRuntime.Require(enemy.Node.Source).EntityState);
-        SelectRac1EnemySequence(enemy, frame.Sequence, 5);
+        Rac1EnemyHost.SelectRac1EnemySequence(enemy, frame.Sequence, 5);
         GD.Print($"[frog-carrier] parent i{instance} released native class500 child at four-unit target gate");
     }
 }

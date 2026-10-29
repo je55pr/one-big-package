@@ -150,7 +150,7 @@ public partial class OBPGame
                 Vector3 target = player.GlobalPosition;
                 Vector3 planar = target - position;
                 planar.Y = 0;
-                Vector3 facing = EnemyForward(enemy.Node);
+                Vector3 facing = Rac1EnemyHost.EnemyForward(enemy.Node);
                 facing.Y = 0;
                 float facingError = planar.LengthSquared() > .00001f &&
                     facing.LengthSquared() > .00001f
@@ -240,7 +240,7 @@ public partial class OBPGame
             // used by this host's movement/grounding path, excluding actors.
             // This grounded signal is still a provisional mapping to native
             // bit 0x40, not an unconditional or elapsed-time recovery.
-            bool floorContact = TryGroundRac1Enemy(
+            bool floorContact = Rac1World.Enemies.TryGroundRac1Enemy(
                 enemy, upwardReach: 0, downwardReach: .3f);
             enemy.Grounded = floorContact;
             var next = Rac1AridiaConstructorbotNative.StepRecovery(
@@ -258,10 +258,10 @@ public partial class OBPGame
         // It starts at the original sequence's semantic joint-0 socket, and
         // approximates the native segment/contact solver with a Godot ray.
         // The native shape, descriptor flags and target filters still differ.
-        Vector3 origin = EnemySocket(enemy);
-        Vector3 direction = EnemyForward(enemy.Node);
+        Vector3 origin = Rac1World.Enemies.EnemySocket(enemy);
+        Vector3 direction = Rac1EnemyHost.EnemyForward(enemy.Node);
         Vector3 target = origin + direction + Vector3.Down * .1f;
-        return EnemyRayTouchesPlayer(enemy, origin, target);
+        return Rac1World.Enemies.EnemyRayTouchesPlayer(enemy, origin, target);
     }
 
     /// <summary>
@@ -280,7 +280,7 @@ public partial class OBPGame
         // Terrain queries must not report another hosted enemy capsule as
         // floor. Share exclusions with the shape-sweep fallback below.
         var excludedActors = new global::Godot.Collections.Array<Rid>(
-            _rac1Enemies.Values.Select(other => other.Body.GetRid())
+            Rac1World.Enemies.Roster.Values.Select(other => other.Body.GetRid())
                 .Append(_player!.GetRid()));
         var ray = PhysicsRayQueryParameters3D.Create(from, to);
         ray.Exclude = excludedActors;
@@ -334,7 +334,7 @@ public partial class OBPGame
         // Match the capsule sweep's actor exclusions. A different enemy
         // sitting over terrain must not become the source walker floor.
         var excludedActors = new global::Godot.Collections.Array<Rid>(
-            _rac1Enemies.Values.Select(other => other.Body.GetRid())
+            Rac1World.Enemies.Roster.Values.Select(other => other.Body.GetRid())
                 .Append(_player!.GetRid()));
         var query = PhysicsRayQueryParameters3D.Create(start, end);
         query.Exclude = excludedActors;
@@ -401,7 +401,7 @@ public partial class OBPGame
         int instance = enemy.Node.Source.InstanceIndex;
         int observedContacts = 0;
         var excluded = new global::Godot.Collections.Array<Rid>(
-            _rac1Enemies.Values.Select(other => other.Body.GetRid())
+            Rac1World.Enemies.Roster.Values.Select(other => other.Body.GetRid())
                 .Append(_player!.GetRid()));
         var result = Rac1AridiaConstructorbotNative.StepSpherePushouts(
             ToEffectNative(proposed), sourceCandidate =>
@@ -473,7 +473,7 @@ public partial class OBPGame
         var query = PhysicsRayQueryParameters3D.Create(
             FromEffectNative(segment.Start), FromEffectNative(segment.End));
         query.Exclude = new global::Godot.Collections.Array<Rid>(
-            _rac1Enemies.Values.Select(other => other.Body.GetRid())
+            Rac1World.Enemies.Roster.Values.Select(other => other.Body.GetRid())
                 .Append(_player!.GetRid()));
         var hit = enemy.Body.GetWorld3D().DirectSpaceState.IntersectRay(query);
         if (!hit.TryGetValue("position", out var contact) ||
@@ -517,7 +517,7 @@ public partial class OBPGame
                 FromEffectNative(sourceSweep.Start),
                 FromEffectNative(sourceSweep.End));
             query.Exclude = new global::Godot.Collections.Array<Rid>(
-                _rac1Enemies.Values.Select(other => other.Body.GetRid())
+                Rac1World.Enemies.Roster.Values.Select(other => other.Body.GetRid())
                     .Append(_player!.GetRid()));
             var hit = enemy.Body.GetWorld3D().DirectSpaceState.IntersectRay(query);
             if (hit.TryGetValue("position", out var hitPoint))
@@ -572,7 +572,7 @@ public partial class OBPGame
         }
         bool rising = enemy.Reaction?.Velocity.Z > 0;
         enemy.Grounded = !rising && (appliedNativeLift ||
-            TryGroundRac1Enemy(enemy, upwardReach: 0, downwardReach: .3f));
+            Rac1World.Enemies.TryGroundRac1Enemy(enemy, upwardReach: 0, downwardReach: .3f));
         enemy.Node.Root.GlobalPosition = enemy.Body.GlobalPosition;
         return touched;
     }
@@ -584,7 +584,7 @@ public partial class OBPGame
         int instance = node.Source.InstanceIndex;
         if (_rac1AridiaEnemies.Health(instance) <= 0 && !_rac1AridiaEnemies.CanReleaseFromNest(instance))
         {
-            SetRac1EnemyFlame(enemy, false);
+            Rac1World.Enemies.SetRac1EnemyFlame(enemy, false);
             if (++enemy.DeathTicks >= 36)
             {
                 // Native shark state 26 is a reusable nest pool, not a terminal
@@ -598,7 +598,7 @@ public partial class OBPGame
                     enemy.Body.CollisionLayer = enemy.Body.CollisionMask = 0;
                     HideBuriedRac1AridiaEnemy(enemy);
                 }
-                else SetRac1HostedPresence(node, RuntimeEntityPresence.Inactive);
+                else Rac1World.Enemies.SetRac1HostedPresence(node, RuntimeEntityPresence.Inactive);
             }
             return;
         }
@@ -646,7 +646,7 @@ public partial class OBPGame
                         ToEffectNative(origin), ToEffectNative(destination), frameScale);
                     Vector3 toTarget = player - origin;
                     toTarget.Y = 0;
-                    Vector3 forward = EnemyForward(node);
+                    Vector3 forward = Rac1EnemyHost.EnemyForward(node);
                     forward.Y = 0;
                     float yawError = toTarget.LengthSquared() > .00001f &&
                         forward.LengthSquared() > .00001f
@@ -688,7 +688,7 @@ public partial class OBPGame
                     Vector3 worldDelta = sourceWalkerGoal - node.Root.GlobalPosition;
                     worldDelta.Y = 0;
                     float planarDistance = worldDelta.Length();
-                    Vector3 forward = EnemyForward(node);
+                    Vector3 forward = Rac1EnemyHost.EnemyForward(node);
                     forward.Y = 0;
                     sourceWalkerYawError = forward.LengthSquared() > .00001f &&
                         planarDistance > .00001f
@@ -778,8 +778,8 @@ public partial class OBPGame
             }
             var nativeInstance = Rac1World.Context.MobyRuntime.Require(node.Source);
             sourceParticlePreview = Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
-                nativeInstance.State.NativeState, _rac1AridiaNativeFrameCounter,
-                IsRac1GameplayActive(node));
+                nativeInstance.State.NativeState, Rac1World.Enemies.NativeFrame,
+                Rac1World.Enemies.IsRac1GameplayActive(node));
         }
         if (node.Source.NativeClassId == Rac1AridiaEnemies.Sandshark &&
             _rac1AridiaEnemies.LinkedActivationSatisfied(instance))
@@ -797,7 +797,7 @@ public partial class OBPGame
         enemy.Body.CollisionLayer = enemy.Body.CollisionMask = enemy.Buried ? 0u : 1u;
         node.Root.Visible = !enemy.Buried;
         if (enemy.Animation.SupportsSequence(frame.Sequence))
-            SelectRac1EnemySequence(enemy, frame.Sequence, 6);
+            Rac1EnemyHost.SelectRac1EnemySequence(enemy, frame.Sequence, 6);
         node.Root.Rotation = new(0, frame.Yaw, 0);
         if (sourceStateThreeMotion)
         {
@@ -818,7 +818,7 @@ public partial class OBPGame
             sourceWalkerTouched = MoveRac1AridiaWalkerContact(
                 enemy, FromEffectNative(frame.Motion));
         else if (frame.Motion.LengthSquared() > 0)
-            MoveRac1EnemyContact(enemy, FromEffectNative(frame.Motion));
+            Rac1World.Enemies.MoveRac1EnemyContact(enemy, FromEffectNative(frame.Motion));
         else
             enemy.Node.Root.GlobalPosition = enemy.Body.GlobalPosition;
         if (sourceStateThreeMotion)
@@ -908,7 +908,7 @@ public partial class OBPGame
                 Rac1World.Context.MobyRuntime.Require(node.Source).State.NativeState,
                 frame.FlameActive, sourceParticlePreview)
             : frame.FlameActive;
-        SetRac1EnemyFlame(enemy, flameVisible);
+        Rac1World.Enemies.SetRac1EnemyFlame(enemy, flameVisible);
         if (jointContact)
             ApplyRac1AridiaPlayerDamage(node);
         else if (frame.DamagePlayer &&
@@ -934,7 +934,7 @@ public partial class OBPGame
         enemy.Node.Root.Visible = false;
 
     private void RestoreRac1AridiaEnemyVisibility(Rac1HostedEnemy enemy) =>
-        enemy.Node.Root.Visible = IsRac1GameplayActive(enemy.Node) && !enemy.Buried;
+        enemy.Node.Root.Visible = Rac1World.Enemies.IsRac1GameplayActive(enemy.Node) && !enemy.Buried;
 
     private void ApplyRac1AridiaPlayerDamage(RuntimeWorldScene.DynamicObjectNode source)
     {
@@ -950,7 +950,7 @@ public partial class OBPGame
         {
             PlayerLife.ApplySourceDamage(source, OBP.RAC1.Rac1Authority.Primary.BuildId,
                 PlayerSessionNativeState.AridiaDamageAdapter, PlayerSessionNativeState.AridiaDamageDescriptor,
-                _rac1AridiaNativeFrameCounter, 1, 0);
+                Rac1World.Enemies.NativeFrame, 1, 0);
             return;
         }
         var after = _rac1Nanotech.ApplyHostAridiaContactDamage();
@@ -965,7 +965,7 @@ public partial class OBPGame
         // L2:0x2dd2a8 walks the nest's authored group (+0x21) and selects
         // class 580 in state 26 only. No distance-based candidate fallback.
         int? candidate = _rac1AridiaEnemies.FindWaitingSharkForNest(nestInstance);
-        if (candidate is not int id || !_rac1Enemies.TryGetValue(id, out var shark)) return;
+        if (candidate is not int id || !Rac1World.Enemies.Roster.TryGetValue(id, out var shark)) return;
         if (!_rac1AridiaEnemies.ReleaseFromNest(nestInstance, id,
                 ToEffectNative(nestPosition), ToEffectNative(shark.AuthoredHomePosition))) return;
         var native = Rac1World.Context.MobyRuntime.Require(shark.Node.Source);
@@ -978,7 +978,7 @@ public partial class OBPGame
         shark.DeathTicks = 0;
         shark.Body.CollisionLayer = shark.Body.CollisionMask = 1;
         if (shark.Animation.SupportsSequence(Rac1AridiaEnemies.NestReleasedSharkSequence))
-            SelectRac1EnemySequence(shark, Rac1AridiaEnemies.NestReleasedSharkSequence, 1);
+            Rac1EnemyHost.SelectRac1EnemySequence(shark, Rac1AridiaEnemies.NestReleasedSharkSequence, 1);
         GD.Print($"[rac1-aridia] nest released authored class580 instance {id} with native state27/sequence11");
     }
 
@@ -987,7 +987,7 @@ public partial class OBPGame
     {
         int id = node.Source.InstanceIndex;
         if (!_rac1AridiaEnemies.Damage(id, damage.NativeDamage)) return false;
-        var enemy = _rac1Enemies[id];
+        var enemy = Rac1World.Enemies.Roster[id];
         bool lethal = _rac1AridiaEnemies.Health(id) == 0;
         if (lethal)
         {
@@ -995,7 +995,7 @@ public partial class OBPGame
             enemy.DeathTicks = 0;
             int preferredSequence = node.Source.NativeClassId == Rac1AridiaEnemies.Nest ? 3 : 6;
             if (enemy.Animation.SupportsSequence(preferredSequence))
-                SelectRac1EnemySequence(enemy, preferredSequence, 1);
+                Rac1EnemyHost.SelectRac1EnemySequence(enemy, preferredSequence, 1);
             if (node.Source.NativeClassId is Rac1AridiaEnemies.Sandshark or Rac1AridiaEnemies.Constructorbot)
             {
                 // L2:0x2d54e0 (shark) / 0x2d8430 (bot) call moby_drop_bolts
@@ -1009,7 +1009,7 @@ public partial class OBPGame
             // does not invoke moby_drop_bolts in the translated routine.
         }
         else if (enemy.Animation.SupportsSequence(3))
-            SelectRac1EnemySequence(enemy, 3, 1);
+            Rac1EnemyHost.SelectRac1EnemySequence(enemy, 3, 1);
         GD.Print($"[rac1-aridia] class{node.Source.NativeClassId} i{id}: " +
             (lethal ? "defeated" : $"hit ({_rac1AridiaEnemies.Health(id)} remaining)"));
         return true;

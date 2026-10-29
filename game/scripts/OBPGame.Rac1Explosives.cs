@@ -127,14 +127,14 @@ public partial class OBPGame
             BombHasLineOfSight(origin, _player.GlobalPosition + Vector3.Up * .5f))
         {
             _rac1ExplosivePlayerHits.Add(sourceIndex);
-            ApplyRac1EnemyPlayerDamage(Rac1ExplosiveCrateBlast.ToPlayer(sourceIndex));
+            Rac1World.Enemies.ApplyRac1EnemyPlayerDamage(Rac1ExplosiveCrateBlast.ToPlayer(sourceIndex));
         }
 
-        foreach (var target in Rac1World.Presentation.CrateNodes.Concat(Rac1EnemyNodes))
+        foreach (var target in Rac1World.Presentation.CrateNodes.Concat(Rac1World.Enemies.Targets))
         {
             int targetIndex = target.Source.InstanceIndex;
             if (targetIndex == sourceIndex || _rac1ExplosiveHits.Contains((sourceIndex, targetIndex)) ||
-                !IsInstanceValid(target.Root) || !IsRac1GameplayActive(target)) continue;
+                !IsInstanceValid(target.Root) || !Rac1World.Enemies.IsRac1GameplayActive(target)) continue;
             var centre = target.Root.GlobalPosition + Vector3.Up * .5f;
             if (origin.DistanceTo(centre) > frame.MobyBlastRadius + .35f ||
                 !BombHasLineOfSight(origin, centre)) continue;
@@ -150,8 +150,8 @@ public partial class OBPGame
                     Rac1World.Context.MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage));
                 accepted = true;
             }
-            else accepted = _rac1Enemies.ContainsKey(targetIndex) &&
-                ApplyRac1EnemyWeaponDamage(target, damage);
+            else accepted = Rac1World.Enemies.Roster.ContainsKey(targetIndex) &&
+                Rac1World.Enemies.ApplyRac1EnemyWeaponDamage(target, damage);
             if (accepted)
             {
                 _rac1ExplosiveHits.Add((sourceIndex, targetIndex));

@@ -47,7 +47,7 @@ public partial class OBPGame
         {
             var node = Rac1WorldPresentation.FindPresentedDynamic(result, authored)
                 ?? throw new InvalidDataException("Original Frog mesh unavailable.");
-            var forward = ToEffectNative(EnemyForward(node));
+            var forward = ToEffectNative(Rac1EnemyHost.EnemyForward(node));
             var frame = _rac1Frogs.Register(authored, node.State,
                 ToEffectNative(node.Root.GlobalPosition), MathF.Atan2(forward.Y, forward.X));
             node.ApplyState(Rac1World.Context.MobyRuntime.Require(authored).EntityState);
@@ -294,7 +294,7 @@ public partial class OBPGame
         var heroForward = _player is not null && IsInstanceValid(_player)
             ? ToEffectNative(_player.GlobalTransform.Basis.Z) : NVector3.UnitY;
         _rac1QueenPendingCamera = _rac1QueenFlight.SampleCamera(
-            worldPosition, ToEffectNative(EnemyForward(_rac1QueenNode)),
+            worldPosition, ToEffectNative(Rac1EnemyHost.EnemyForward(_rac1QueenNode)),
             hero, heroForward, _rac1QueenCameraAnchor);
         bool cameraApplied = ApplyRac1QueenScriptedCamera(_rac1QueenPendingCamera);
         if (_rac1QueenFlight.CommitCameraAndComplete(cameraApplied))
@@ -345,7 +345,7 @@ public partial class OBPGame
         int count = 0;
         foreach (var candidate in _rac1FrogQueen.ObserveNativeUpdate(
             queenState, queenSequence, completed,
-            id => ToEffectNative(_rac1Enemies[id].Node.Root.GlobalPosition), Rac1EffectRandom))
+            id => ToEffectNative(Rac1World.Enemies.Roster[id].Node.Root.GlobalPosition), Rac1EffectRandom))
             if (LaunchRac1FrogFromNativeProducer(candidate.FrogInstance,
                 candidate.NativePosition, Rac1FrogLaunchProducer.QueenGroup))
                 count++;
@@ -435,7 +435,7 @@ public partial class OBPGame
         if (_rac1FrogShuttle is null || _rac1Frogs is null) return;
         foreach (int instance in _rac1Frogs.ApplyShuttleSwitch(_rac1FrogShuttle.SwitchEnabled))
         {
-            if (!_rac1Enemies.TryGetValue(instance, out var enemy)) continue;
+            if (!Rac1World.Enemies.Roster.TryGetValue(instance, out var enemy)) continue;
             bool active = _rac1Frogs.Get(instance).Presented;
             enemy.Body.CollisionLayer = active ? 1u : 0u;
             enemy.Body.CollisionMask = active ? 1u : 0u;
@@ -451,7 +451,7 @@ public partial class OBPGame
     private bool LaunchRac1FrogFromNativeProducer(int instance, NVector3 nativePosition,
         Rac1FrogLaunchProducer producer)
     {
-        if (_rac1Frogs is null || !_rac1Enemies.TryGetValue(instance, out var enemy))
+        if (_rac1Frogs is null || !Rac1World.Enemies.Roster.TryGetValue(instance, out var enemy))
             return false;
         var launched = _rac1Frogs.LaunchFromNativeProducer(instance, nativePosition, producer);
         if (launched is null) return false;
@@ -462,7 +462,7 @@ public partial class OBPGame
         enemy.Body.CollisionLayer = 1;
         enemy.Body.CollisionMask = 1;
         enemy.Grounded = false; // Native state6 awaits mine_fall landing.
-        SynchronizeRac1Enemy(enemy);
+        Rac1World.Enemies.SynchronizeRac1Enemy(enemy);
         GD.Print($"[frog-launch] native {producer} activated class827 i{instance} state15->6");
         return true;
     }
@@ -482,7 +482,7 @@ public partial class OBPGame
             // Fixed target_id+0x204 addresses a native Moby, not Ratchet.
             // Never silently turn this special path into player pursuit.
             if (Rac1World.Presentation.LinkedTargets.TryGetValue(authored.TargetInstance, out var linked) &&
-                IsInstanceValid(linked.Root) && IsRac1GameplayActive(linked))
+                IsInstanceValid(linked.Root) && Rac1World.Enemies.IsRac1GameplayActive(linked))
             {
                 goal = linked.Root.GlobalPosition;
                 eligible = true;
@@ -494,13 +494,13 @@ public partial class OBPGame
         var native = _rac1Frogs.Step(index,
             ToEffectNative(node.Root.GlobalPosition), ToEffectNative(goal), eligible,
             enemy.Animation.Wrapped, enemy.Animation.Position,
-            hitsPlayer && EnemyMeleeTouchesPlayer(enemy), enemy.Grounded);
+            hitsPlayer && Rac1World.Enemies.EnemyMeleeTouchesPlayer(enemy), enemy.Grounded);
         if (native.Sequence != enemy.Animation.Sequence)
-            SelectRac1EnemySequence(enemy, native.Sequence, 10);
+            Rac1EnemyHost.SelectRac1EnemySequence(enemy, native.Sequence, 10);
         if (native.Displacement.LengthSquared() > 0)
-            MoveRac1EnemyContact(enemy, FromEffectNative(native.Displacement));
+            Rac1World.Enemies.MoveRac1EnemyContact(enemy, FromEffectNative(native.Displacement));
         node.Root.Rotation = new(0, native.Yaw, 0);
         if (native.Contact && !ArsenalEnemyHitsDecoy(enemy))
-            ApplyRac1EnemyPlayerDamage(Rac1FrogContact.DamageToPlayer(index));
+            Rac1World.Enemies.ApplyRac1EnemyPlayerDamage(Rac1FrogContact.DamageToPlayer(index));
     }
 }

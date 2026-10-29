@@ -33,4 +33,5 @@ internal sealed class Rac1HostedEnemy(RuntimeWorldScene.DynamicObjectNode node, 
     public bool DeathPresented { get; set; }
     public GpuParticles3D? Flame { get; set; }
     public Rac1MobyReaction? Reaction { get; set; }
+    internal bool Retired { get; set; }
 }

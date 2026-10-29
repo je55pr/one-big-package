@@ -271,13 +271,13 @@ public partial class OBPGame
             if (_rac1EquipmentGeometryFrame == frame) return _rac1EquipmentGeometry;
             _rac1EquipmentGeometryFrame = frame;
             var geometry = new List<(RuntimeWorldScene.DynamicObjectNode, Aabb)>();
-            foreach (var node in Rac1EnemyNodes.Concat(Rac1World.Presentation.CrateNodes).Concat(Rac1QueenDamageTargets))
+            foreach (var node in Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes).Concat(Rac1QueenDamageTargets))
             {
                 if (!IsInstanceValid(node.Root) ||
                     (node.Source.NativeClassId == Rac1FrogQueenGroup.QueenClassId
                         ? _rac1QueenRecovery?.CanReceiveHostWeaponContact != true
-                        : !IsRac1GameplayActive(node)) ||
-                    _rac1Enemies.TryGetValue(node.Source.InstanceIndex, out var enemy) && enemy.RewardEmitted) continue;
+                        : !Rac1World.Enemies.IsRac1GameplayActive(node)) ||
+                    Rac1World.Enemies.Roster.TryGetValue(node.Source.InstanceIndex, out var enemy) && enemy.RewardEmitted) continue;
                 Aabb? bounds = null;
                 var meshes = _rac1Chickens.TryGetValue(node.Source.InstanceIndex, out var chicken)
                     ? chicken.View.GetChildren().OfType<MeshInstance3D>() : node.Root.GetChildren().OfType<MeshInstance3D>();
@@ -295,15 +295,15 @@ public partial class OBPGame
         .Select(entry => entry.Node).Where(node =>
             node.Source.NativeClassId == Rac1FrogQueenGroup.QueenClassId
                 ? _rac1QueenRecovery?.CanReceiveHostWeaponContact == true
-                : IsRac1GameplayActive(node));
+                : Rac1World.Enemies.IsRac1GameplayActive(node));
     private bool IsRac1WeaponAimTarget(RuntimeWorldScene.DynamicObjectNode node) =>
         node.Source.NativeClassId == Rac1FrogQueenGroup.QueenClassId
             ? _rac1QueenNode == node && _rac1QueenRecovery?.CanReceiveHostWeaponContact == true
-            : IsRac1GameplayActive(node) && (!_rac1Enemies.TryGetValue(node.Source.InstanceIndex, out var enemy) || !enemy.RewardEmitted);
+            : Rac1World.Enemies.IsRac1GameplayActive(node) && (!Rac1World.Enemies.Roster.TryGetValue(node.Source.InstanceIndex, out var enemy) || !enemy.RewardEmitted);
 
     private Vector3 EquipmentAim(Vector3 origin, float distance, float coneDot)
     {
-        var target = Rac1EnemyNodes.Concat(Rac1QueenDamageTargets).Where(IsRac1WeaponAimTarget)
+        var target = Rac1World.Enemies.Targets.Concat(Rac1QueenDamageTargets).Where(IsRac1WeaponAimTarget)
             .Select(node => node.Root.GlobalPosition + Vector3.Up * .45f)
             .Where(point => point.DistanceSquaredTo(origin) is > .1f && point.DistanceSquaredTo(origin) < distance * distance &&
                 (point - origin).Normalized().Dot(EquipmentForward) > coneDot && BombHasLineOfSight(origin, point))
@@ -345,7 +345,7 @@ public partial class OBPGame
         }
         else if (target.Source.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
             applied = TryTriggerRac1ExplosiveDamage(target, damage);
-        else applied = ApplyRac1EnemyWeaponDamage(target, damage);
+        else applied = Rac1World.Enemies.ApplyRac1EnemyWeaponDamage(target, damage);
         if (applied) Rac1World.Context.DamageTransport.Publish(damage);
         return applied;
     }

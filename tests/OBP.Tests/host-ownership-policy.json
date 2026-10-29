@@ -50,14 +50,14 @@
   {
     "Key": "game/scripts/OBPGame.Rac1Checkpoints.cs::OBPGame.TickRac1CheckpointTriggers()",
     "Kind": "adapter",
-    "Reason": "Recovered source-world checkpoint trigger admission; checkpoint identity belongs to the R&C1 campaign adapter. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "354ffbaa9dfbd36b2620366a2b0be9ddd9297c64b03082fb18526990bec40276"
+    "Reason": "Recovered source-world checkpoint trigger admission; checkpoint identity belongs to the R&C1 campaign adapter. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected. #361 routes the existing presence reset through the owned enemy query/command port. The checkpoint player-selection rejection regression retains the source-campaign boundary.",
+    "Hash": "dd0731c4f94baf168c7e4e7b81b6c6d95cd5697a0598db5775a222a34b7335cb"
   },
   {
-    "Key": "game/scripts/OBPGame.Rac1Enemies.cs::OBPGame.TickRac1Hostiles(double)",
+    "Key": "game/scripts/Rac1EnemyHost.cs::Rac1EnemyHost.TickNativeActors()",
     "Kind": "adapter",
-    "Reason": "R&C1 native actor/session updates and original source context; placed actors use lease-owned voice scopes. TrilogyGameplaySmoke verifies live motion, native combat, scoped audio/pickup cleanup and reset. Only explicit parity retains native player health stepping here; no ordinary player service is selected. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "df0f6585b22234150b385d89e1fd006b820eeb658b002dd4a3a3fbc623864c26"
+    "Reason": "R&C1 native actor/session updates and original source context; placed actors use lease-owned voice scopes. TrilogyGameplaySmoke verifies live motion, native combat, scoped audio/pickup cleanup and reset. Only explicit parity retains native player health stepping here; no ordinary player service is selected. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected. #361 preserves native per-actor ordering and source-world sleep/animation admission in the lease-owned enemy host. Rac1EnemyTickClockTests, the actor-voice/provider rejection regression and authorised enemy/family/reconciliation traces cover this move. No player capability is selected by world origin.",
+    "Hash": "0e907c910945cbd7d2a0f93bad3fc540689007b0a306c2782386d4757f965517"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1GoldBolts.cs::OBPGame.TickRac1GoldBolts()",
@@ -66,10 +66,10 @@
     "Hash": "a3690c3c412a28b313c6efb0a6bd9d7496293c05e6851e7c150096888a142cf9"
   },
   {
-    "Key": "game/scripts/OBPGame.Rac1Hostiles.cs::OBPGame.TryGetRac1Hostile(int,RuntimeWorldScene.DynamicObjectNode?,Rac1Class749HostProbe?)",
+    "Key": "game/scripts/Rac1EnemyHost.Queries.cs::Rac1EnemyHost.TryGetRac1Hostile(int,RuntimeWorldScene.DynamicObjectNode?,Rac1Class749HostProbe?)",
     "Kind": "adapter",
-    "Reason": "Resolve a native R&C1 actor from the current original-world actor set, never a player identity. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "91cc3a381b15af23d5b5f618e0e7cd9e33d0d08543cfa029f8ed692f09efce50"
+    "Reason": "Resolve a native R&C1 actor from the current original-world actor set, never a player identity. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected. #361 makes this an explicit query of the current scene-owned enemy host. The focused provider-selection rejection test and native hostile/activity tests retain the original ownership boundary.",
+    "Hash": "bcee12d3fce2c52446debae2cf982904e248d9eda6a77cbed843e5b35bd7e094"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Lifecycle.cs::OBPGame.TickRac1VeldinEnvironmentalDeath()",
@@ -194,8 +194,8 @@
   {
     "Key": "game/scripts/Rac1WorldModule.cs::Rac1WorldModule.ConfigureActors(RuntimeWorld,RuntimeWorldScene.Result)",
     "Kind": "adapter",
-    "Reason": "Source-owned R&C1 actor, pickup, mission and environment registration only. Player controller, equipment owner and HUD composition are outside this origin check. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "1ef7fa720583bcae6bfee072eee08d068a0233888942edc3095d09858525f68c"
+    "Reason": "Source-owned R&C1 actor, pickup, mission and environment registration only. Player controller, equipment owner and HUD composition are outside this origin check. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected. #361 delegates the existing enemy admission phase to this same lease's enemy host. Native source, build, placement and controller admission remain unchanged; ownership and authorised entry/reset traces cover the binding.",
+    "Hash": "db56475ad02ba09979a7a6cf5e0b019dc982bbbea9c25081dcdd62e30756f563"
   },
   {
     "Key": "game/scripts/Rac1GameplayHudPresenter.cs::Rac1GameplayHudPresenter.Line()",
@@ -212,7 +212,7 @@
   {
     "Key": "game/scripts/Rac1WorldModule.cs::Rac1WorldModule.Tick(double)",
     "Kind": "adapter",
-    "Reason": "Original R&C1 missions/environment/pickups remain world-owned; ordinary enemy updates moved to the source-registered fixed actor clock. Explicit parity retains its source route; ActorRuntimeSetTests and TrilogyGameplaySmoke cover separate player and actor lifetimes. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "19d9bf06fd0f940b264e0cf39914ebb1d8ab8e7ba44c879f55f32d4f74fc1369"
+    "Reason": "Original R&C1 missions/environment/pickups remain world-owned; ordinary enemy updates moved to the source-registered fixed actor clock. Explicit parity retains its source route; ActorRuntimeSetTests and TrilogyGameplaySmoke cover separate player and actor lifetimes. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected. #361 replaces the root enemy tick callback with the lease-owned host in the same explicit parity phase. Ordinary actors retain their registered update group; clock and reconciliation tests protect the unchanged ordering.",
+    "Hash": "3fb7dc0afe526c5c33f09eab3654f5935e4c2d949c0d01de95518b19c7589df4"
   }
 ]

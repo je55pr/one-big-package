@@ -182,7 +182,7 @@ public partial class OBPGame
             hostile.Source.NativeClassId,
             hostile.Source.InstanceIndex);
         var damageEvent = Rac1DamageRuntime.FromWrench(targetKey, damage);
-        if (!ApplyRac1EnemyWeaponDamage(hostile, damageEvent)) return false;
+        if (!Rac1World.Enemies.ApplyRac1EnemyWeaponDamage(hostile, damageEvent)) return false;
         Rac1World.Context.DamageTransport.Publish(damageEvent);
         return true;
     }

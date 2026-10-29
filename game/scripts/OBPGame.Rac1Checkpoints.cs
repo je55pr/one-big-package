@@ -58,7 +58,7 @@ public partial class OBPGame
             query.Exclude = [_player.GetRid()];
             foreach (var body in _rac1CrateBodies.Values)
                 if (IsInstanceValid(body)) query.Exclude.Add(body.GetRid());
-            foreach (var enemy in _rac1Enemies.Values)
+            foreach (var enemy in Rac1World.Enemies.Roster.Values)
                 if (IsInstanceValid(enemy.Body)) query.Exclude.Add(enemy.Body.GetRid());
             var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(query);
             double groundedZ = trigger.NativeZ;

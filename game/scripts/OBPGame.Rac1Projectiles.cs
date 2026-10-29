@@ -75,8 +75,8 @@ public partial class OBPGame
         // OBP target discovery only; launch/elevation/clamping are source-owned.
         // Prefer a nearby visible enemy in front, then a crate. The full native
         // reticle/target-history selector and strafe aiming remain separate work.
-        var candidates = Rac1EnemyNodes.Concat(Rac1World.Presentation.CrateNodes)
-            .Where(node => IsInstanceValid(node.Root) && IsRac1GameplayActive(node) && HasRac1HostContactGeometry(node))
+        var candidates = Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes)
+            .Where(node => IsInstanceValid(node.Root) && Rac1World.Enemies.IsRac1GameplayActive(node) && Rac1EnemyHost.HasRac1HostContactGeometry(node))
             .Select(node => (Node: node, Point: ToEffectNative(node.Root.GlobalPosition + Vector3.Up * .5f)));
         if (ActorHost.Active)
             candidates = ActorHost.Combat.ReadGeometry().Select(target => (target.Node, ToEffectNative(target.Bounds.GetCenter())));
@@ -85,7 +85,7 @@ public partial class OBPGame
             .Where(candidate => candidate.Offset.LengthSquared() is > .25f and < 225f &&
                 NVector3.Dot(NVector3.Normalize(candidate.Offset), forward) > .94f &&
                 BombHasLineOfSight(FromEffectNative(origin), FromEffectNative(candidate.Point)))
-            .OrderBy(candidate => _rac1Enemies.ContainsKey(candidate.Node.Source.InstanceIndex) ? 0 : 1)
+            .OrderBy(candidate => Rac1World.Enemies.Roster.ContainsKey(candidate.Node.Source.InstanceIndex) ? 0 : 1)
             .ThenBy(candidate => candidate.Offset.LengthSquared()).FirstOrDefault();
         if (aim.Node is not null) target = aim.Point;
         var motion = new Rac1BombProjectileSession(origin, Rac1BombProjectileSession.LaunchVelocity(origin, target, yaw),
@@ -116,9 +116,9 @@ public partial class OBPGame
                 Vector3 to = FromEffectNative(motion.AdvanceFlight());
                 Vector3? contact = ProbeBombWorldContact(from, to);
                 float closest = contact is { } hit ? from.DistanceTo(hit) : float.PositiveInfinity;
-                foreach (var target in Rac1EnemyNodes.Concat(Rac1World.Presentation.CrateNodes))
+                foreach (var target in Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes))
                 {
-                    if (!IsInstanceValid(target.Root) || !IsRac1GameplayActive(target) || !HasRac1HostContactGeometry(target)) continue;
+                    if (!IsInstanceValid(target.Root) || !Rac1World.Enemies.IsRac1GameplayActive(target) || !Rac1EnemyHost.HasRac1HostContactGeometry(target)) continue;
                     Vector3 centre = target.Root.GlobalPosition + Vector3.Up * .5f;
                     Vector3 segment = to - from;
                     float t = segment.LengthSquared() > 1e-8f ? Mathf.Clamp((centre - from).Dot(segment) / segment.LengthSquared(), 0, 1) : 0;
@@ -206,7 +206,7 @@ public partial class OBPGame
             _rac1BombOcclusionFrame = Engine.GetPhysicsFrames();
             _rac1BombOcclusionPlayer = player.GetRid();
             _rac1BombOcclusionExclusions = [player.GetRid()];
-            foreach (var body in _rac1CrateBodies.Values.Concat<CollisionObject3D>(_rac1Enemies.Values.Select(enemy => enemy.Body)))
+            foreach (var body in _rac1CrateBodies.Values.Concat<CollisionObject3D>(Rac1World.Enemies.Roster.Values.Select(enemy => enemy.Body)))
                 if (IsInstanceValid(body)) _rac1BombOcclusionExclusions.Add(body.GetRid());
             ActorHost.AddRayExclusions(_rac1BombOcclusionExclusions);
         }
@@ -217,8 +217,8 @@ public partial class OBPGame
     {
         Vector3 origin = FromEffectNative(motion.Position);
         ResolveRac1NovalisBombBreakables(origin, motion.BlastRadius);
-        var facts = Rac1EnemyNodes.Concat(Rac1World.Presentation.CrateNodes)
-            .Where(node => IsInstanceValid(node.Root) && IsRac1GameplayActive(node) && HasRac1HostContactGeometry(node))
+        var facts = Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes)
+            .Where(node => IsInstanceValid(node.Root) && Rac1World.Enemies.IsRac1GameplayActive(node) && Rac1EnemyHost.HasRac1HostContactGeometry(node))
             .Where(node => origin.DistanceTo(node.Root.GlobalPosition + Vector3.Up * .5f) <= motion.BlastRadius + .35f &&
                 BombHasLineOfSight(origin, node.Root.GlobalPosition + Vector3.Up * .5f))
             .OrderBy(node => node.Source.InstanceIndex)
@@ -241,8 +241,8 @@ public partial class OBPGame
             else if (damage.Target.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
                 TryTriggerRac1ExplosiveDamage(
                     _rac1ExplosiveNodes[(int)damage.Target.RuntimeId], damage);
-            else if (_rac1Enemies.TryGetValue((int)damage.Target.RuntimeId, out var enemy))
-                ApplyRac1EnemyWeaponDamage(enemy.Node, damage);
+            else if (Rac1World.Enemies.Roster.TryGetValue((int)damage.Target.RuntimeId, out var enemy))
+                Rac1World.Enemies.ApplyRac1EnemyWeaponDamage(enemy.Node, damage);
         }
         Rac1World.Context.CombatStatus = $"Bomb Glove blast: {resolution.DamageEvents.Count} target(s)";
         GD.Print($"[rac1-gameplay] {Rac1World.Context.CombatStatus}");
