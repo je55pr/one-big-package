@@ -103,9 +103,21 @@ joint-quaternion path:
 | 6317 / 4 | 3 | 111 | 25 | 0.9934 | **0** | 1.8860 |
 | 6886 / 15 | 28 | 22 | 8 | 0.9884 | **0** | 0.2100 |
 
-The tempting 62-instance oClass 5821 is **not admitted**: even its best currently
-decoded sequence retains measurable sphere escapes. That class remains an
-archaeology target rather than being made visually plausible by relaxed limits.
+The tempting 62-instance oClass 5821 was **not admitted** by this initial
+strict-sphere study: even its best then-decoded sequence retained measurable
+sphere escapes. That class remained an archaeology target at that milestone.
+
+**29 October 2026 follow-up (#297):** with the later recovered native
+scale/translation frame channels and existing *native-pose-only* 10% sphere
+margin, all 13 class-5821 sequences (192 decoded frames) fit the bounded
+pose evaluator. The largest observed sphere ratio was 1.0688. Veldin's actual
+class-5821 mesh is the one-eyed Tyhrranoid, and eight authored UYA tables
+share exactly the same decoded class geometry. See
+`UYA_CLASS5821_DAMAGE_STAGING.md` and the local retail regression tests.
+These observations lift the **geometric blocker only**; native action/state
+selection, attack/locomotion controller, hit/death animation choices and
+ordinary-game rendered fidelity remain unverified. No arbitrary clip is
+promoted as a recovered retail action.
 
 ## Production admission
 

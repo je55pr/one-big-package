@@ -116,6 +116,7 @@ public sealed class Rac3Class5821DamagePortTests
         public ActorObservation Observe() => new(Vector3.Zero,
             native.Lifetime > 0f, false, native.Lifetime,
             Rac3Class5821Actor.NativeDormantState, null);
+        // Damage-only test actor: no simulated movement, native tick, or owned resources.
         public void Tick(ActorTickFacts facts) { }
         public ActorHitResult Apply(WeaponDamageIntent damage) => native.Apply(damage);
         public void Dispose() { }

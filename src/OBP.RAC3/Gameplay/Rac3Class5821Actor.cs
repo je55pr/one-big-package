@@ -6,7 +6,9 @@ using OBP.Runtime.Gameplay;
 namespace OBP.RAC3.Gameplay;
 
 /// <summary>
-/// TABLE1 retail-backed profile for UYA native class 5821.
+/// TABLE1 retail-backed profile for the visually identified one-eyed UYA
+/// Tyhrranoid (native class 5821). Other palettes and action states still
+/// require their own source-backed verification.
 ///
 /// The native update owns a one-unit lifetime scalar, consumes UYA damage records
 /// through the common owned-record resolver, can acquire Ratchet through a PVar

@@ -9,10 +9,10 @@ using OBP.Runtime.Gameplay;
 namespace OBP.Game;
 
 /// <summary>
-/// TABLE1 class-5821 incoming-damage admission only. This is NOT a recovered
-/// moving Tyhrranoid: the visual variant, native locomotion, attack scheduler,
-/// animation selection, terminal reaction and reward policy are unverified.
-/// Never advertise it as a playable native enemy until those facts are proved.
+/// Damage-only adapter for the retail-identified one-eyed UYA Tyhrranoid
+/// (TABLE1 oClass 5821). Only visual class identity and incoming lifetime
+/// damage are currently supported. Native locomotion, attack scheduling,
+/// animation selection, death/rewards and audio remain unrecovered.
 /// </summary>
 internal sealed class Rac3Class5821DamageActorFactory(ActorSceneFactory scenes) : IActorFactory
 {
@@ -28,6 +28,16 @@ internal sealed class Rac3Class5821DamageActorFactory(ActorSceneFactory scenes) 
 
     public HostedActor Create(ActorPlacement placement, RuntimeWorld library, ActorSourceVersion source)
     {
+        // The source was checked at preparation, but repeat the build check at
+        // construction so a stale/mismatched source cannot bypass this seam.
+        if (source.Game != ObpSourceGame.Rac3 ||
+            source.Build != Rac3Authority.Primary.BuildId ||
+            placement.Source.Game != source.Game ||
+            placement.Source.Build != source.Build ||
+            library.Game != source.Game ||
+            library.BuildId != source.Build)
+            throw new InvalidDataException("UYA class-5821 actor source/build changed before construction.");
+
         var scene = scenes.Create(placement, library, candidate =>
             Rac3Class5821Admission.TryRead(candidate, out _, out _));
         try
@@ -46,8 +56,7 @@ internal sealed class Rac3Class5821DamageActorFactory(ActorSceneFactory scenes) 
                         "The TABLE1 class-5821 skeletal clips are not animation-safe or native-state selected."),
                     new("terminal-reaction", CapabilityAdmission.Unimplemented,
                         "Native death, despawn and reward transitions after exhausted lifetime are not recovered."),
-                    new("variant-identity", CapabilityAdmission.Unimplemented,
-                        "Class 5821 has not been visually verified as the one-eyed Tyhrranoid.")
+                    new("variant-identity", CapabilityAdmission.Ready)
                 ]
             };
             ActorObservation Observe()
