@@ -29,6 +29,26 @@ public sealed class CoverageReportTests
         Assert.Equal(1, summary.RootElement.GetProperty("Version").GetInt32());
     }
 
+    [Theory]
+    [InlineData("OBP.Tests", "src/OBP.Core/Fixture.cs")]
+    [InlineData("OBP.Core", "game/scripts/Fixture.cs")]
+    [InlineData("OBP.Runtime", "src/OBP.Core/Fixture.cs")]
+    public void CrossAssemblySourceAttributionIsRejected(string module, string falseSource)
+    {
+        using var fixture = new Fixture();
+        fixture.CreateReports();
+        var cobertura = XDocument.Load(fixture.Cobertura);
+        cobertura.Descendants("package").Single(item => (string?)item.Attribute("name") == module)
+            .Descendants("class").Single().SetAttributeValue("filename", falseSource);
+        cobertura.Save(fixture.Cobertura);
+        var open = XDocument.Load(fixture.OpenCover);
+        open.Descendants("Module").Single(item => item.Element("ModuleName")?.Value == module)
+            .Descendants("File").Single().SetAttributeValue("fullPath", falseSource);
+        open.Save(fixture.OpenCover);
+        Assert.Throws<InvalidDataException>(fixture.Write);
+        Assert.False(Directory.Exists(fixture.Output));
+    }
+
     [Fact]
     public void MissingCollectionFailsInsteadOfPublishingAZeroReport()
     {

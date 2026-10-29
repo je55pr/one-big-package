@@ -109,7 +109,7 @@ public static class CoverageReport
             measuredModules.Add(module);
             foreach (var type in package.Descendants("class"))
             {
-                string file = SourcePath(root, Required(type, "filename"), sourceRepository);
+                string file = SourcePath(root, Required(type, "filename"), sourceRepository, module);
                 type.SetAttributeValue("filename", file);
                 if (!lines.TryGetValue((module, file), out var fileLines)) lines[(module, file)] = fileLines = [];
                 foreach (var line in type.Element("lines")?.Elements("line") ?? [])
@@ -131,7 +131,7 @@ public static class CoverageReport
             var paths = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var file in module.Descendants("File"))
             {
-                string path = SourcePath(root, Required(file, "fullPath"), sourceRepository);
+                string path = SourcePath(root, Required(file, "fullPath"), sourceRepository, name);
                 file.SetAttributeValue("fullPath", path);
                 if (!paths.TryAdd(Required(file, "uid"), path)) throw new InvalidDataException("Coverage has duplicate source identifiers.");
             }
@@ -175,7 +175,7 @@ public static class CoverageReport
         return XDocument.Load(reader);
     }
 
-    private static string SourcePath(string root, string reported, string sourceRepository)
+    private static string SourcePath(string root, string reported, string sourceRepository, string module)
     {
         string candidate = reported.Replace('\\', '/');
         string prefix = root.Replace('\\', '/').TrimEnd('/') + '/';
@@ -191,7 +191,9 @@ public static class CoverageReport
         }
         string[] segments = candidate.Split('/');
         if (segments.Any(segment => segment is "" or "." or "..") || candidate.Contains(':') ||
-            !(candidate.StartsWith("src/OBP.", StringComparison.Ordinal) || candidate.StartsWith("game/scripts/", StringComparison.Ordinal) || LinkedDiagnosticSources.Contains(candidate)) ||
+            !(module == "OBP.Tests"
+                ? candidate.StartsWith("game/scripts/", StringComparison.Ordinal) || LinkedDiagnosticSources.Contains(candidate)
+                : candidate.StartsWith("src/" + module + "/", StringComparison.Ordinal)) ||
             !candidate.EndsWith(".cs", StringComparison.Ordinal) || !File.Exists(Path.Combine(root, candidate)))
             throw new InvalidDataException("Coverage has a file outside the declared repository source scope.");
         return candidate;
