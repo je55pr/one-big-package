@@ -146,12 +146,29 @@ adapter manifest. Earlier recordings retain their original provenance and
 checkpoint fields and do not wait for unused effect banks. Effect controls are
 unavailable during a recording that did not opt in.
 
-The focused input tape covers two native windows of at least 20 ticks. A longer
-idle Lab tape currently exposes small class-749 actor wall-contact differences
-across fresh processes, tracked in [#404](https://github.com/je55pr/one-big-package/issues/404).
-Effect clocks/counts/RNG agree in those longer runs, but whole-scene replay is
-not claimed past that contact. Actor checkpoint strictness is unchanged; full
-effect expiry/reset/unload is exercised by the separate rendered scenario.
+The default focused input tape stops at process frame 65, covering two native
+windows of at least 20 ticks. For the extended class-749 wall-contact regression
+from [#404](https://github.com/je55pr/one-big-package/issues/404), record and
+replay *fresh processes* against the same Debug assemblies and admitted sources:
+
+```powershell
+./tools/test-effects.ps1 -Mode record -RecordingStopFrame 180 -OutputDirectory captures/effects-contact-404/run-a
+./tools/test-effects.ps1 -Mode replay -RecordingStopFrame 180 -SkipBuild -OutputDirectory captures/effects-contact-404/run-a
+```
+
+Repeat with a new output directory; 140 is another useful stop frame. Do not
+reuse an existing recording directory or change assemblies between the two
+commands. The longer recording keeps all actor checkpoint tolerances unchanged.
+The baseline first diverged at actor `rac1.749.1000000` after touching a Lab
+wall (step 359 in a 180-frame recording). Instrumenting the native motion input
+and host contacts showed matching first wall normals and steering, but an
+additional upward floor contact on the *second* slide in only one process.
+That changed the residual X travel even though effect clocks/counts/RNG agreed.
+For grounded class-749 ordinary movement, the host now resolves downward support
+in its existing support sweep rather than including gravity in the wall slide;
+airborne, reaction and all other enemy-family vertical motion remain unchanged.
+The short tape remains the default, and full effect expiry/reset/unload is still exercised by the separate
+rendered scenario.
 
 Godot presentation remains bounded: full native depth-bucket sorting,
 conditional GS depth writes/alpha tests, VU1 rasterization, GS colour response

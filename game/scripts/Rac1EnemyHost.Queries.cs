@@ -106,7 +106,8 @@ internal sealed partial class Rac1EnemyHost
             enemy.Body.GlobalPosition += FromEffectNative(motion);
             enemy.Node.Root.GlobalPosition = enemy.Body.GlobalPosition;
         }
-        else MoveRac1EnemyContact(enemy, FromEffectNative(motion));
+        else MoveRac1EnemyContact(enemy, Rac1EnemyContactMotion.PrepareOrdinary(
+            enemy.Node.Source.NativeClassId, enemy.Grounded, enemy.Reaction is not null, FromEffectNative(motion)));
     }
 
     internal void StepRac1EnemyReaction(Rac1HostedEnemy enemy)
