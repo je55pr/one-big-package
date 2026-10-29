@@ -366,13 +366,23 @@ public partial class OBPGame
         _avatarPresentation.StepNative(state, input);
 
 
-        bool holdGun = _rac1EquipmentUseTicks > 0 && OBP.RAC1.Gameplay.Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped) &&
+        // Pyrocitor's item row has a standing hold51 but no moving arm slot.
+        // Keep its own authored pose even between trigger presses. Only the
+        // host shoulder retarget stabilizes its heading during ordinary running.
+        // Authored flips and other traversal animations take ownership instead.
+        bool pyrocitorReady = _rac1Weapons.Equipped == OBP.RAC1.Gameplay.Rac1WeaponId.Pyrocitor &&
+            IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.Pyrocitor) &&
+            (input.Traversal?.NativeAction is null or OBP.RAC1.Player.Rac1PlayerActionDomain.Jump or
+                OBP.RAC1.Player.Rac1PlayerActionDomain.MovingJump) && PlayerLife.Alive;
+        bool holdGun = pyrocitorReady || _rac1EquipmentUseTicks > 0 &&
+            OBP.RAC1.Gameplay.Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped) &&
             OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence is > 0 and not 44 &&
             IsRac1HandEquipmentVisible(_rac1Weapons.Equipped) && input.Traversal is null &&
             PlayerLife.Alive;
         bool walloper = IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.Walloper) && _rac1WalloperAge > 0;
         bool moving = input.Active || state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.JumpRise or PlayerAnimationState.Fall;
         int? equipmentPose = walloper ? OBP.RAC1.Gameplay.Rac1ArsenalRules.WalloperSequence :
+            pyrocitorReady ? OBP.RAC1.Gameplay.Rac1ArsenalRules.PyrocitorHoldSequence :
             holdGun ? (moving ? OBP.RAC1.Gameplay.Rac1ArsenalRules.MovingBodySequence(_rac1Weapons.Equipped) :
                 OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence) : null;
         // Jump/traversal clocks still own the body. Evaluate equipment from
@@ -380,6 +390,9 @@ public partial class OBPGame
         bool fusionPose = FusionWeapons.Session is { Selected.SourceGame: not ObpSourceGame.Rac1 } && FusionWeapons.Session.Hand.IsHolding(FusionWeapons.Session.Selected) &&
             PlayerLife.Alive && _player?.Rac1WrenchFrame.Active != true && _player?.Rac1WaterHandItemHidden != true;
         if (equipmentPose < 0) equipmentPose = null;
+        if (_rac1Weapons.Equipped == OBP.RAC1.Gameplay.Rac1WeaponId.Pyrocitor &&
+            input.Traversal?.NativeAction == OBP.RAC1.Player.Rac1PlayerActionDomain.DirectionalFlip)
+            controller.InterruptEquipmentPose();
         if (fusionPose && FusionWeapons.Sources.Assets?.AvatarAnimations.TryGetValue(FusionWeapons.Session!.Selected, out var sourceAnimation) == true)
             _avatarPresentation.Sink?.SetAnimationPresentation(controller.ApplySourceEquipment(sourceAnimation,
                 moving, input.CrouchHeld, FusionWeapons.Pose.UseStarted, FusionWeapons.Pose.TriggerHeld));
@@ -387,7 +400,10 @@ public partial class OBPGame
         {
             controller.ClearSourceEquipment();
             _avatarPresentation.Sink?.SetAnimationPresentation(controller.ApplyEquipmentPose(equipmentPose,
-                walloper ? _rac1WalloperAge / 60d : _rac1EquipmentUseAge / 60d, !walloper, fullBody: walloper || !moving));
+                pyrocitorReady ? OBP.RAC1.Gameplay.Rac1ArsenalRules.PyrocitorReadyPhaseSeconds :
+                    walloper ? _rac1WalloperAge / 60d : _rac1EquipmentUseAge / 60d,
+                loop: !walloper && !pyrocitorReady, fullBody: walloper || !moving,
+                stabilizeShoulders: pyrocitorReady && moving));
         }
 
         if (_avatarPresentation.PhysicsPlayer is { } player)

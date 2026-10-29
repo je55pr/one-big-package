@@ -9,6 +9,7 @@ namespace OBP.RAC1.Player;
 public sealed class Rac1RatchetEquipmentRig
 {
     private readonly PlayerSkeletalSampler _sampler;
+    private readonly PlayerSkeletalSampler _referenceSampler;
     private readonly IReadOnlyDictionary<int, PlayerSkeletalClip> _armClips;
     public PlayerSkeletalAsset Asset { get; }
     public IReadOnlyList<int> LayerJoints { get; }
@@ -18,6 +19,7 @@ public sealed class Rac1RatchetEquipmentRig
         LayerJoints = layerJoints;
         Asset = Convert(asset);
         _sampler = new(Asset.Skeleton, Asset.Skin);
+        _referenceSampler = new(Asset.Skeleton);
         _armClips = Asset.Clips.ToDictionary(p => p.Key, p => Subset(p.Value, layerJoints));
     }
 
@@ -81,10 +83,27 @@ public sealed class Rac1RatchetEquipmentRig
     };
 
     public double[] Sample(Rac1AnimationFrameClock.Sample basis, Rac1AnimationFrameClock.Sample layer,
-        float amount, bool fullBody, double[] baseline)
+        float amount, bool fullBody, double[] baseline, bool stabilizeShoulders = false)
     {
         _sampler.Reset(Asset.Clips[basis.Sequence], Sample(basis));
+        if (stabilizeShoulders && !fullBody)
+        {
+            // The authored held pose and ordinary running pose disagree about
+            // their shared torso parent (joint 6). Replacing only the arm-local
+            // channels lets the running torso pitch/yaw pull the held gun off axis.
+            // Keep both arm roots' reference world heading, leaving the legs and
+            // torso on the ordinary locomotion clock. This is a host retarget,
+            // not an invented R&C1 source moving animation.
+            _sampler.EvaluateJointMatrices();
+            _referenceSampler.Reset(Asset.Clips[layer.Sequence], Sample(layer));
+            _referenceSampler.EvaluateJointMatrices();
+        }
         _sampler.Apply((fullBody ? Asset.Clips : _armClips)[layer.Sequence], Sample(layer), amount);
+        if (stabilizeShoulders && !fullBody)
+        {
+            _sampler.AlignJointHeading(52, _referenceSampler.JointMatrices[52], amount);
+            _sampler.AlignJointHeading(72, _referenceSampler.JointMatrices[72], amount);
+        }
         return _sampler.Skin(baseline, fullBody ? null : LayerJoints.ToArray());
     }
 

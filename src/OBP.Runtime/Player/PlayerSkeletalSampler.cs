@@ -109,6 +109,43 @@ public sealed class PlayerSkeletalSampler
         }
     }
 
+    /// <summary>
+    /// Keep a joint's reference world heading despite changes in its parent.
+    /// Only its local rotation is changed; the ordinary animation owns the
+    /// parent, translation, and the rest of the skeleton.
+    /// Call after evaluating the base parent matrices and before final skinning.
+    /// </summary>
+    public void AlignJointHeading(int joint, Matrix4x4 referenceWorld, float weight)
+    {
+        if ((uint)joint >= _local.Length || !float.IsFinite(weight) || weight is < 0 or > 1)
+            throw new ArgumentOutOfRangeException(nameof(joint));
+        int parent = _skeleton.Joints[joint].Parent;
+        if (parent < 0 || !Matrix4x4.Decompose(referenceWorld, out _, out var referenceRotation, out _) ||
+            !Matrix4x4.Decompose(_world[parent], out _, out var parentRotation, out _))
+            throw new InvalidDataException("The shoulder reference pose has no valid parent orientation.");
+        // World = local * parent (row matrices). The channel quaternion is
+        // conjugated by the skeletal sampler when composed into a matrix.
+        var local = Quaternion.Conjugate(Quaternion.Normalize(
+            referenceRotation * Quaternion.Inverse(parentRotation)));
+        _local[joint] = _local[joint] with {
+            Rotation = Quaternion.Slerp(_local[joint].Rotation, local, weight)
+        };
+    }
+
+    /// <summary>Compose joint-world transforms without skinning any vertices.</summary>
+    public void EvaluateJointMatrices()
+    {
+        foreach (int j in _order)
+        {
+            var channels = _local[j];
+            var local = Matrix4x4.CreateScale(channels.Scale!.Value) *
+                Matrix4x4.CreateFromQuaternion(Quaternion.Conjugate(channels.Rotation));
+            local.Translation = channels.Translation!.Value;
+            int parent = _skeleton.Joints[j].Parent;
+            _world[j] = parent < 0 ? local : local * _world[parent];
+        }
+    }
+
     public double[] Skin(double[]? baseline = null, IReadOnlyCollection<int>? changedJoints = null)
     {
         if (baseline is not null && baseline.Length != _skin.Positions.Length)
@@ -119,14 +156,10 @@ public sealed class PlayerSkeletalSampler
             if ((uint)j >= _local.Length) throw new ArgumentException("Changed joint is outside the skeleton.");
             _affected[j] = true;
         }
+        EvaluateJointMatrices();
         foreach (int j in _order)
         {
-            var channels = _local[j];
-            var local = Matrix4x4.CreateScale(channels.Scale!.Value) *
-                Matrix4x4.CreateFromQuaternion(Quaternion.Conjugate(channels.Rotation));
-            local.Translation = channels.Translation!.Value;
             int parent = _skeleton.Joints[j].Parent;
-            _world[j] = parent < 0 ? local : local * _world[parent];
             if (parent >= 0) _affected[j] |= _affected[parent];
         }
         var result = (double[])(baseline ?? _skin.Positions).Clone();

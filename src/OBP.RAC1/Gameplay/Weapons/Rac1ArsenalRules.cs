@@ -37,14 +37,16 @@ public static class Rac1ArsenalRules
     public const float RynoRocketScale = .25f; // 0x2ccf70..2ccf9c constructor.
 
     /// <summary>
-    /// Item table+0x28 while moving. The Pyrocitor has no moving clip; using
-    /// its stationary hold51 over running arms lifts the weapon high and left.
-    /// Temporarily use the recovered mobile firearm clip57 on the arm layer to
-    /// keep the muzzle aimed forward, pending an in-engine retail comparison.
+    /// Native upper-body slot at item table+0x28. The Pyrocitor has no
+    /// authored moving slot. Its host-only stabilized hold is composed separately
+    /// from source51 instead of pretending that the Blaster's 57 belongs to it.
     /// </summary>
+    public const int PyrocitorHoldSequence = 51;
+    public const double PyrocitorReadyPhaseSeconds = 0.5; // source51 is five frames × 1/15 s; hold at its final frame.
+
     public static int MovingBodySequence(Rac1WeaponId weapon) => weapon switch
     {
-        Rac1WeaponId.Pyrocitor => 57, // visual fallback: recovered Blaster moving firearm layer, not retail Pyrocitor
+        Rac1WeaponId.Pyrocitor => -1, // native moving upper-body slot absent
         Rac1WeaponId.Blaster or Rac1WeaponId.MorphORay => 57,
         Rac1WeaponId.Devastator => 73,
         _ => -1,

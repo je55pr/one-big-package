@@ -33,14 +33,31 @@ game or a matching native class number alone is never proof of target identity.
   world geometry obstruction uses a ray rather than native primitive collision.
 - Fifteen tracked native-style flame records but not the full flame PVar/flags
   algorithm or complete native pool bookkeeping.
-- Moving Pyrocitor pose: the retail item row has no separate moving upper-body
-  sequence, and the previous host implementation fell back to an ordinary
-  running pose while the flame muzzle remained attached to the moving hand.
-  Reusing the stationary hold 51 on running arms stabilized firing but raised
-  the weapon up and left during an actual playtest. OBP now experimentally
-  layers the recovered **Blaster moving-firearm sequence 57** over the arm joints
-  while the legs continue their locomotion clip. This is a **host visual
-  fallback awaiting player signoff**, not a retail Pyrocitor moving selector.
+- Pyrocitor held pose: the original NTSC-U decompilation (Lombyte,
+  `src/overlays/shared/gameplay/hero/hero_check_damage.c`,
+  `start_equipped_item_animation` at `0x20e4c8` and
+  `update_hero_held_items_and_orientation` at `0x20e728`) confirms
+  that equipment uses a full body hold (`+0x24`) or source arm slots
+  (`+0x28`, with a distinct mode-12 `+0x2c`). The original
+  `pyrocitor_update` in `src/overlays/shared/gameplay/entities/devastator.c`
+  triggers the hold on firing and releases it when firing stops. The Pyrocitor
+  has **no** native moving arm slot. We read these GPL-3.0 research sources
+  only as evidence, without copying any of their implementation.
+- **OBP playtest override, pending visual signoff:** the first host attempt
+  dropped the arm hold whenever Ratchet ran. Layering source51 on the running
+  arms changed their world heading because both arm chains (roots 52 and 72)
+  are parented under the animated torso joint6, giving a high/left weapon
+  position; borrowing Blaster sequence57 was also visually incorrect.
+  The new host keeps Pyrocitor's **own source51 terminal pose** while equipped,
+  including between shots. During ordinary locomotion and ordinary jumps,
+  the arm-root local rotations counter the torso's current rotation so their
+  world heading matches the source51 full-body hold. Legs, torso and their
+  native locomotion clock are unchanged; the hand/socket remains attached to
+  the composed pose. Directional flips immediately interrupt the overlay,
+  while other special traversal animation clocks retain ownership. The
+  per-frame reference hierarchy is evaluated without skinning a duplicate
+  mesh. Persistent hold and shoulder retargeting are intentional OBP
+  presentation choices, not claims of retail animation equivalence.
 - Host 60 Hz sound start/stop and fade/pause behavior; complete retail audio
   transitions and player-body animation interruption still need comparison.
 - No claimed exact side-by-side flame density, camera-response, type-25 ember

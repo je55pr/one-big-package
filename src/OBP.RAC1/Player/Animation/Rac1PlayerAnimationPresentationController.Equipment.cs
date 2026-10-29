@@ -23,7 +23,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     /// Equipment channels compose before skinning over the source joint lists.
     /// The ordinary animation clock and its unmodified vertices stay intact.
     /// </summary>
-    public PlayerAnimationPresentation ApplyEquipmentPose(int? sourceSequence, double? phaseSeconds = null, bool loop = true, bool fullBody = false)
+    public PlayerAnimationPresentation ApplyEquipmentPose(int? sourceSequence, double? phaseSeconds = null, bool loop = true, bool fullBody = false, bool stabilizeShoulders = false)
     {
         RestoreEquipmentBasePose();
         if (_equipmentMask is null) { _equipmentAmount = 0; return Current; }
@@ -52,7 +52,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         {
             var basis = EquipmentBaseSample();
             var positions = _equipmentRig.Sample(basis, new(sourceSequence.Value, frame, next, fraction, false),
-                _equipmentAmount, fullBody, baseline);
+                _equipmentAmount, fullBody, baseline, stabilizeShoulders);
             var sockets = _attachments.GetOrCreateValue(positions);
             sockets[Rac1WrenchAttachment.SocketKey] = _equipmentRig.Attachment(56);
             sockets[Gameplay.Rac1BombProjectileSession.GloveSocketKey] = _equipmentRig.Attachment(54);
@@ -80,6 +80,15 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         _equipmentBase = Current;
         Current = Current with { SampledPose = new(Current.SampledPose?.FrameIndex ?? 0, result) };
         return Current;
+    }
+
+    /// <summary>Special traversal animations, including flips, own the full body immediately.</summary>
+    public void InterruptEquipmentPose()
+    {
+        RestoreEquipmentBasePose();
+        _equipmentAmount = 0;
+        _equipmentSequence = null;
+        _equipmentPhase = null;
     }
 
     public Rac1AnimationFrameClock.Sample AnimationSoundSample => EquipmentBaseSample();

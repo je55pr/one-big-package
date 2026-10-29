@@ -180,23 +180,44 @@ public sealed class Rac1AdditionalWeaponTests
         Skip.If(string.IsNullOrWhiteSpace(path), "OBP_RAC1_ISO not set");
         var avatar = Rac1PlayerAvatarProvider.Instance.Load(path!, "ratchet");
         var controller = Assert.IsType<Rac1PlayerAnimationPresentationController>(Rac1PlayerAvatarProvider.Instance.CreateAnimationController(avatar));
-        int sequence = Rac1ArsenalRules.MovingBodySequence(Rac1WeaponId.Pyrocitor);
-        Assert.Equal(57, sequence);
+        int sequence = Rac1ArsenalRules.PyrocitorHoldSequence;
+        Assert.Equal(51, sequence);
+        var reference = Assert.IsType<Rac1PlayerAnimationPresentationController>(
+            Rac1PlayerAvatarProvider.Instance.CreateAnimationController(avatar));
+        for (int tick = 0; tick < 10; tick++)
+            reference.ApplyEquipmentPose(sequence, Rac1ArsenalRules.PyrocitorReadyPhaseSeconds,
+                loop: false, fullBody: true);
+        var referenceHand = reference.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(0))!;
         for (int tick = 0; tick < 10; tick++)
         {
             controller.StepOrdinaryAnimation(OBP.Runtime.Player.PlayerAnimationState.Run, tick / 60d,
                 new(true, true, .1f, InputMagnitude: 1));
             var moving = controller.Current.SampledPose!.LocalPositions;
             var phase = controller.OrdinaryLocomotionSample;
-            var held = controller.ApplyEquipmentPose(sequence, tick / 60d, loop: true, fullBody: false).SampledPose!.LocalPositions;
+            var held = controller.ApplyEquipmentPose(sequence, Rac1ArsenalRules.PyrocitorReadyPhaseSeconds,
+                loop: false, fullBody: false, stabilizeShoulders: true).SampledPose!.LocalPositions;
             var feet = Enumerable.Range(0, avatar.VertexCount)
                 .Where(vertex => avatar.LocalAnimationFrames[0][vertex * 3 + 2] < .12).ToArray();
             Assert.NotEmpty(feet);
             foreach (int vertex in feet)
                 for (int axis = 0; axis < 3; axis++) Assert.Equal(moving[vertex * 3 + axis], held[vertex * 3 + axis], 10);
             Assert.Equal(phase, controller.OrdinaryLocomotionSample);
-            Assert.NotNull(controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(0)));
-            if (tick == 9) Assert.False(moving.SequenceEqual(held));
+            var socket = controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(0));
+            Assert.NotNull(socket);
+            if (tick == 9)
+            {
+                Assert.False(moving.SequenceEqual(held));
+                // The two shoulder roots are retargeted into Ratchet's authored
+                // forward hold, not left to pitch/roll with his running torso.
+                static System.Numerics.Vector3 Unit(OBP.Runtime.Player.PlayerAvatarPoint p) =>
+                    System.Numerics.Vector3.Normalize(new((float)p.X, (float)p.Y, (float)p.Z));
+                Assert.True(System.Numerics.Vector3.Dot(Unit(socket!.X), Unit(referenceHand.X)) > .99f);
+                Assert.True(System.Numerics.Vector3.Dot(Unit(socket.Y), Unit(referenceHand.Y)) > .99f);
+                Assert.True(System.Numerics.Vector3.Dot(Unit(socket.Z), Unit(referenceHand.Z)) > .99f);
+                controller.InterruptEquipmentPose();
+                Assert.Equal(moving, controller.Current.SampledPose!.LocalPositions);
+                Assert.Equal(moving, controller.ApplyEquipmentPose(null).SampledPose!.LocalPositions);
+            }
         }
     }
 
