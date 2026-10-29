@@ -508,11 +508,18 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
 
     private void ReleaseSceneBindings()
     {
-        Ports.Host.ReleasePlayerInput();
-        Ports.Reports.Close();
-        _bugUiSuspension?.Dispose();
-        _bugUiSuspension = null;
-        _bugSuspended = _bugResumePending = false;
+        try { Ports.Host.ReleasePlayerInput(); }
+        finally
+        {
+            try { Ports.Reports.Close(); }
+            finally
+            {
+                var suspension = _bugUiSuspension;
+                _bugUiSuspension = null;
+                _bugSuspended = _bugResumePending = false;
+                suspension?.Dispose();
+            }
+        }
     }
 
     public override void _ExitTree() => FinishOnExit();
@@ -550,9 +557,12 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
         finally
         {
             _finished = true;
-            Reader?.Dispose();
-            ReleaseSceneBindings();
-            _lifetime.Cancel();
+            try { Reader?.Dispose(); }
+            catch (Exception error) { GD.PrintErr("[playtest] reader cleanup failed: " + error.Message); }
+            try { ReleaseSceneBindings(); }
+            catch (Exception error) { GD.PrintErr("[playtest] scene cleanup failed: " + error.Message); }
+            try { _lifetime.Cancel(); }
+            catch (Exception error) { GD.PrintErr("[playtest] cancellation failed: " + error.Message); }
             _lifetime.Dispose();
             PlaytestClock.Active = false;
             if (OriginalCameraOptions is not null) CameraSettingsStore.Set(OriginalCameraOptions, persist: false);

@@ -38,6 +38,9 @@ internal sealed class CaptureDiagnosticHarness(CaptureDiagnosticAuthorities auth
         operations.Start(id, async token =>
         {
             var result = await runner.RunAsync(Scenario(Definition(id), context => AwaitCommitAsync(context, execute, terminal)), true, token);
+            // Cancellation retires the driver, not the host: preserve cleanup faults for host supervision.
+            if (token.IsCancellationRequested && result.Status == DiagnosticRunStatus.Failed && result.Error is { } cleanupError)
+                throw cleanupError;
             Finish(result, id, failureReason, failureCode, terminal, evidence, token);
         }, lifetime);
     }
@@ -51,7 +54,7 @@ internal sealed class CaptureDiagnosticHarness(CaptureDiagnosticAuthorities auth
     }
     private void Finish(DiagnosticRunResult result, string id, string failureReason, int failureCode, bool terminal, string? evidence, CancellationToken token)
     {
-        if (operations.Stopping || result.Status == DiagnosticRunStatus.Canceled && token.IsCancellationRequested) return;
+        if (operations.Stopping || token.IsCancellationRequested) return;
         if (result.Status == DiagnosticRunStatus.Passed)
         {
             if (terminal) { quit(id + "-pass", 0); }

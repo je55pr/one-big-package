@@ -37,7 +37,7 @@ internal sealed partial class PlaytestDriver
                 state = state with { Replay = new(Path.GetFileName(recording), Convert.ToHexString(SHA256.HashData(stream)), step) };
             MovementReproStateFile.Save(path, state);
             recording = null;
-            if (previous is not null) await Task.Run(() => MovementReproStateFile.RetireSupersededPrefix(path, previous));
+            if (previous is not null) await Task.Run(() => MovementReproStateFile.RetireSupersededPrefix(path, previous), CancellationToken.None);
             if (!_finalized && !Ports.Operations.Stopping)
                 Ports.MovementNotice("Universal bookmark saved with a completed replay prefix. Move both sibling files together.");
             GD.Print("[movement-state] universal bookmark saved at step " + step);
