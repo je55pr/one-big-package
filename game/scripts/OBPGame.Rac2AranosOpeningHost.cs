@@ -137,7 +137,7 @@ public partial class OBPGame
 
     private void TickRac2OpeningMsr1NativeTick()
     {
-        if (_player is null || !IsInstanceValid(_player) || !PlayerAlive)
+        if (_player is null || !IsInstanceValid(_player) || !PlayerLife.Alive)
         {
             return;
         }
@@ -304,7 +304,7 @@ public partial class OBPGame
                                     {
                                         var admitted = new Rac2RatchetNanotechSession().Apply(admittedDamage);
                                         if (admitted.Admitted)
-                                            playerDamageCommitted = ApplyPlayerSourceDamage(session.Node, OBP.RAC2.Rac2Authority.Primary.BuildId,
+                                            playerDamageCommitted = PlayerLife.ApplySourceDamage(session.Node, OBP.RAC2.Rac2Authority.Primary.BuildId,
                                                 PlayerSessionNativeState.Rac2DamageAdapter, PlayerSessionNativeState.Rac2DamageDescriptor,
                                                 session.AttackCount, admitted.DamageNanotech, admittedDamage.QueryMask).Applied;
                                         break;

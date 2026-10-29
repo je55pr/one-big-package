@@ -2584,9 +2584,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateActorHost():ActorWorldHost:private",
       "Owner": "#359",
-      "Rationale": "Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings. #354 routes accepted cross-source wrench feedback to the player audio presenter. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Reads source availability or equipment order through the persistent PlayerEquipmentFacade.",
+      "Rationale": "Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings. #354 routes accepted cross-source wrench feedback to the player audio presenter. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Reads source availability or equipment order through the persistent PlayerEquipmentFacade. #353 delegates the same health facts/actions to the scene-bound lifecycle owner.",
       "ExpiresWith": "#376",
-      "Hash": "c43b8de6ba0d6aa01eb7e5d6a7faf4f19b430c8a8f2a55bd9afa040275470f4a"
+      "Hash": "cfeea7c6a41a410f289e7e603b3882571b4c178c096ee04194214d20115166b2"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ResetPlacedActor(:string):EquipmentChangeResult:public",
@@ -2780,9 +2780,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlayerDiagnosticHarness():PlayerSessionDiagnosticHarness:private",
       "Owner": "#338",
-      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376. #354 binds the owned native player audio presenter and its copied observations. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
+      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376. #354 binds the owned native player audio presenter and its copied observations. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #353 delegates the same health facts/actions to the scene-bound lifecycle owner.",
       "ExpiresWith": "#376",
-      "Hash": "fb2b72f0012d04e06317a69b51173f276b481dd76f345a70425eeb92743abc26"
+      "Hash": "66849594d96a651392969653c0eda1fc869bc6730fe1c22c34b1d428f009d73d"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AdditionalWeaponDiagnosticFixture(:IDiagnosticWorldObservations):GodotRac1AdditionalWeaponDiagnosticFixture:private",
@@ -2822,9 +2822,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1EncounterDiagnosticHarness():Rac1EncounterDiagnosticHarness:private",
       "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #361. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added.",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #361. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #353 delegates the same health facts/actions to the scene-bound lifecycle owner.",
       "ExpiresWith": "#361",
-      "Hash": "591916c1920d85521a6cc5bc7ce7e7d08956726dadd4c43bdaf15f9b7b858775"
+      "Hash": "f76686f3f45a6af75d910a6fb1634c0e72323caad95ce3ff23b951133844230e"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1FrogDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1FrogDiagnosticFixture:private",
@@ -3415,13 +3415,6 @@
       "Hash": "f066fa120be074e32846b992f08b41e0889b1b7bed1a0ca6dee6fb3c0cc76025"
     },
     {
-      "Key": "game/scripts/OBPGame.PlayerHealth.cs::OBPGame::method:PublishPersistentPlayerHud(params:HudFeedbackDraft [  ]):void:private",
-      "Owner": "#349",
-      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
-      "ExpiresWith": "#376",
-      "Hash": "7c0a716d154ddb70b0f87b548126904c57bdd409d5bc20f871b402891348ee2a"
-    },
-    {
       "Key": "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::method:SetPlayerAudioPaused(:bool):void:private",
       "Owner": "#354",
       "Rationale": "Delegates pause state to the player presenter and existing native weapon/fusion audio owners without advancing or resetting native cue cursors. Retire this pause composition binding with #376. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
@@ -3508,9 +3501,9 @@
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:StepPlayerAvatarPhysics(:double,:PlayerAnimationState,:Rac1LocomotionAnimationInput):void:private",
       "Owner": "#350",
-      "Rationale": "Existing 60Hz game/weapon callback order remains on the host until registered source-game tick scheduling; avatar clock, pose sampling and view lifetimes are owned by PlayerAvatarPresentationHost. #354 binds the owned native player audio presenter and its copied observations. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
+      "Rationale": "Existing 60Hz game/weapon callback order remains on the host until registered source-game tick scheduling; avatar clock, pose sampling and view lifetimes are owned by PlayerAvatarPresentationHost. #354 binds the owned native player audio presenter and its copied observations. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #353 delegates the same health facts/actions to the scene-bound lifecycle owner.",
       "ExpiresWith": "#375",
-      "Hash": "c732fb108927aa3af156ac3da0dc2811b0a5e4fb6b56da947dfbe176576079bd"
+      "Hash": "80cb77a6d48c88bf023b6aba8152275fdac30d326ccbe3adbfc5bd65201161e3"
     },
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:WorldOptions(:RuntimeWorld):WorldHost . Options:private",
@@ -3641,16 +3634,16 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1WorldModule(:RuntimeWorld,:RuntimeWorldScene . Result):Rac1WorldModule:private",
       "Owner": "#360",
-      "Rationale": "Temporary composition binding to the lease-owned R&C1 module or existing persistent player owner. No collection or native gameplay policy lives in the root; Rac1WorldContextTests and world/player lifecycle reconciliation cover isolation. Reconciled #351 equipment delegations with #360 lease-owned R&C1 state; only existing owner ports are wired, with no added state or native formulas. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
+      "Rationale": "Temporary composition binding to the lease-owned R&C1 module or existing persistent player owner. No collection or native gameplay policy lives in the root; Rac1WorldContextTests and world/player lifecycle reconciliation cover isolation. Reconciled #351 equipment delegations with #360 lease-owned R&C1 state; only existing owner ports are wired, with no added state or native formulas. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #353 delegates the same health facts/actions to the scene-bound lifecycle owner.",
       "ExpiresWith": "#376",
-      "Hash": "4bfe7e939752c687ba68860f5b970e93a080f0f7b49f48ac5f592922da818fe9"
+      "Hash": "176ee1cdd9a0151eaea2f9ef977328337314c5a3df474043391b5b67a0dc88bc"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RefreshRac1HudState(params:HudFeedbackDraft [  ]):void:private",
       "Owner": "#360",
-      "Rationale": "Temporary composition binding to the lease-owned R&C1 module or existing persistent player owner. No collection or native gameplay policy lives in the root; Rac1WorldContextTests and world/player lifecycle reconciliation cover isolation.",
+      "Rationale": "Temporary composition binding to the lease-owned R&C1 module or existing persistent player owner. No collection or native gameplay policy lives in the root; Rac1WorldContextTests and world/player lifecycle reconciliation cover isolation. #353 delegates the same health facts/actions to the scene-bound lifecycle owner.",
       "ExpiresWith": "#376",
-      "Hash": "c6bf088abfe2f88bf13a0a893bcb9fb9eeae080a6d072952f732cd3a12cbe203"
+      "Hash": "6f1e7e8fc083b92b2b0bd90cd655ec52b56e4a759fbe26464330cc88888f1771"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:Rac1World:Rac1WorldModule:get/:private",
@@ -3704,9 +3697,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateFusionWeaponHost():FusionWeaponHost:private",
       "Owner": "#352",
-      "Rationale": "Composes copied player/source observations and focused native equipment, collision, replay and renderer actions; existing native controllers retain rules and source authority.",
+      "Rationale": "Composes copied player/source observations and focused native equipment, collision, replay and renderer actions; existing native controllers retain rules and source authority. #353 delegates the same health facts/actions to the scene-bound lifecycle owner.",
       "ExpiresWith": "#376",
-      "Hash": "bac74c19c4ec3c7492430e814f083d3ce22f1a77c6db067dd6d25801a697b898"
+      "Hash": "f6fbb8c3b45fa12513607f2b2028d58d04644c83f294f12edeea789448c7e8ed"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ToNumerics(:Vector3):System . Numerics . Vector3:private,static",
@@ -3721,6 +3714,27 @@
       "Rationale": "Lazy owner access only; no native gameplay state or world-origin selection.",
       "ExpiresWith": "#376",
       "Hash": "30efe1e6108f6472251452109d95fb49dee3d81d4fa9067460c7c8a0fb20f54d"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_playerLife:GodotPlayerLifecycleHost ?:private",
+      "Owner": "#353",
+      "Rationale": "Single player lifecycle composition reference; service clock, damage registrations, subscriptions and ordinary retry view belong to the owner.",
+      "ExpiresWith": "#376",
+      "Hash": "351b4c33ed3451f042d7d5c137afcc9ccaee55f6bafa3e46c1d2d88f9d441e4c"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlayerLifecycle():GodotPlayerLifecycleHost:private",
+      "Owner": "#353",
+      "Rationale": "Composes existing persistent health/session services, authored hazard facts, source actor liveness, typed presentation events, HUD and existing world-entry actions; native parity restart stays with its source campaign adapters.",
+      "ExpiresWith": "#376",
+      "Hash": "ec19b36c2240fb8677c951af4b613a8341b97ef7aed6706f53b66a540bc4ca71"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:PlayerLife:GodotPlayerLifecycleHost:get/:private",
+      "Owner": "#353",
+      "Rationale": "Lazy lifecycle-owner access only; no health state or destination-dependent player selection.",
+      "ExpiresWith": "#376",
+      "Hash": "42868dcd177ab57e1666359ece12f1d4dccaa88d37b4caf3a2b85720e3ed8065"
     }
   ],
   "RetiredMembers": [
@@ -4517,7 +4531,18 @@
     "game/scripts/OBPGame.FusionWeapons.cs::OBPGame::property:FusionConfiguration:PlaytestWeaponConfiguration ?:get/:private",
     "game/scripts/OBPGame.FusionWeapons.cs::OBPGame::property:FusionMovementStateBlocked:bool:get/:private",
     "game/scripts/OBPGame.FusionWeapons.cs::OBPGame::property:FusionTestActive:bool:get/:private",
-    "game/scripts/OBPGame.FusionWeapons.cs::OBPGame+EquipmentAudioOwner::declaration:RecordStructDeclaration:private,readonly:::( SourceWeaponKey Weapon , int ? LoopSound )"
+    "game/scripts/OBPGame.FusionWeapons.cs::OBPGame+EquipmentAudioOwner::declaration:RecordStructDeclaration:private,readonly:::( SourceWeaponKey Weapon , int ? LoopSound )",
+    "game/scripts/OBPGame.PlayerHealth.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.PlayerHealth.cs::OBPGame::field:_playerDamageActors:HashSet < ActorInstanceKey >:private,readonly",
+    "game/scripts/OBPGame.PlayerHealth.cs::OBPGame::field:_playerDamageLease:long:private",
+    "game/scripts/OBPGame.PlayerHealth.cs::OBPGame::field:_playerDamageWorld:string ?:private",
+    "game/scripts/OBPGame.PlayerHealth.cs::OBPGame::field:_playerServiceTick:long:private",
+    "game/scripts/OBPGame.PlayerHealth.cs::OBPGame::method:ApplyPlayerSourceDamage(:RuntimeWorldScene . DynamicObjectNode,:string,:string,:string,:long,:int,:ulong):PlayerIntakeResult:private",
+    "game/scripts/OBPGame.PlayerHealth.cs::OBPGame::method:BeginPlayerHealthWorld(:string,:long):void:private",
+    "game/scripts/OBPGame.PlayerHealth.cs::OBPGame::method:RespawnPlayer():bool:private",
+    "game/scripts/OBPGame.PlayerHealth.cs::OBPGame::method:ShowPlayerRetry():void:private",
+    "game/scripts/OBPGame.PlayerHealth.cs::OBPGame::method:StepPlayerServicesPhysics():void:private",
+    "game/scripts/OBPGame.PlayerHealth.cs::OBPGame::property:PlayerAlive:bool:get/:private"
   ],
   "RetiredAccess": [
     "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()"

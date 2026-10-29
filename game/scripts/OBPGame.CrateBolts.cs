@@ -58,7 +58,7 @@ public partial class OBPGame
             if (_playerNative is not null)
             {
                 int index = checked((_world!.DynamicObjects?.Select(source => source.InstanceIndex).DefaultIfEmpty(0).Max() ?? 0) + ++_playerEmittedRewardIndex);
-                receipt = new(new(_playerDamageWorld!, _playerDamageLease, new(ObpSourceGame.Rac2, 500, index)));
+                receipt = new(new(PlayerLife.WorldId!, PlayerLife.Generation, new(ObpSourceGame.Rac2, 500, index)));
                 var owned = receipt;
                 _playerNative.Life.RegisterActor(new(owned.Actor,
                     new(ObpSourceGame.Rac2, OBP.RAC2.Rac2Authority.Primary.BuildId, $"class500:{payout.Uid}:bolt:{pickup.PickupId}"),
@@ -70,8 +70,8 @@ public partial class OBPGame
 
     private void OnCrateBoltPickupEntered(Node3D body, Area3D area, Rac2BoltPickup pickup, PlayerBoltReceipt? receipt = null)
     {
-        if (_player is null || body != _player || !IsInstanceValid(area) || !PlayerAlive ||
-            receipt is not null && (receipt.Collected || receipt.Actor.WorldInstanceId != _playerDamageWorld || receipt.Actor.Generation != _playerDamageLease))
+        if (_player is null || body != _player || !IsInstanceValid(area) || !PlayerLife.Alive ||
+            receipt is not null && (receipt.Collected || receipt.Actor.WorldInstanceId != PlayerLife.WorldId || receipt.Actor.Generation != PlayerLife.Generation))
         {
             return;
         }

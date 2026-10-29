@@ -122,7 +122,8 @@ public partial class OBPGame
         if (OrdinaryPlayerSession) _equipmentPresentation.ApplyPreparedBank();
         entry.Resources.EffectScope = entry.Plan.Request;
         ClearBootstrapSceneArtifacts();
-        BeginPlayerHealthWorld(entry.Plan.Request.WorldInstanceId, entry.Plan.Request.Generation);
+        entry.Resources.PlayerLife = PlayerLife.BindWorld(entry.Plan.Request.WorldInstanceId, entry.Plan.Request.Generation, entry.Resources.Scene.Root);
+        _playerEmittedRewardIndex = 0;
         _navigation.RetireMenuPages();
         Sources.RetireView();
         entry.Resources.Rac1Gameplay = CreateRac1WorldModule(entry.Plan.Prepared.World, entry.Resources.Scene);
@@ -188,7 +189,7 @@ public partial class OBPGame
         {
             DecorateFusionLab(lab, _avatarPresentation.View is not null);
         }
-        ActorHost.Configure(OrdinaryPlayerSession, _playerDamageWorld, _playerDamageLease, lab, resources.Scene.Root);
+        ActorHost.Configure(OrdinaryPlayerSession, PlayerLife.WorldId, PlayerLife.Generation, lab, resources.Scene.Root);
         var effectScope = resources.EffectScope ?? throw new InvalidOperationException("Effects require the existing world lease.");
         try
         {
@@ -208,7 +209,7 @@ public partial class OBPGame
             GD.PrintErr("[effects] " + resources.EffectsFailure);
         }
         EnsurePlayerHud(); EnsureWorldHud();
-        if (OrdinaryPlayerSession) PublishPersistentPlayerHud();
+        if (OrdinaryPlayerSession) PlayerLife.PublishHud();
         UpdatePlayerHud(); UpdateWorldHud();
         CommitSourceWorldEntry(world);
         if (_args.EffectsSmoke && !_args.PlaytestRequested && _worldSwitches == 1)
@@ -360,7 +361,7 @@ public partial class OBPGame
         bool holdGun = _rac1EquipmentUseTicks > 0 && OBP.RAC1.Gameplay.Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped) &&
             OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence is > 0 and not 44 &&
             IsRac1HandEquipmentVisible(_rac1Weapons.Equipped) && input.Traversal is null &&
-            PlayerAlive;
+            PlayerLife.Alive;
         bool walloper = IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.Walloper) && _rac1WalloperAge > 0;
         bool moving = input.Active || state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.JumpRise or PlayerAnimationState.Fall;
         int? equipmentPose = walloper ? OBP.RAC1.Gameplay.Rac1ArsenalRules.WalloperSequence :
@@ -369,7 +370,7 @@ public partial class OBPGame
         // Jump/traversal clocks still own the body. Evaluate equipment from
         // that clock too, including the attachment when no arm bank applies.
         bool fusionPose = FusionWeapons.Session is { Selected.SourceGame: not ObpSourceGame.Rac1 } && FusionWeapons.Session.Hand.IsHolding(FusionWeapons.Session.Selected) &&
-            PlayerAlive && _player?.Rac1WrenchFrame.Active != true && _player?.Rac1WaterHandItemHidden != true;
+            PlayerLife.Alive && _player?.Rac1WrenchFrame.Active != true && _player?.Rac1WaterHandItemHidden != true;
         if (equipmentPose < 0) equipmentPose = null;
         if (fusionPose && FusionWeapons.Sources.Assets?.AvatarAnimations.TryGetValue(FusionWeapons.Session!.Selected, out var sourceAnimation) == true)
             _avatarPresentation.Sink?.SetAnimationPresentation(controller.ApplySourceEquipment(sourceAnimation,

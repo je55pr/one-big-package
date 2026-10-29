@@ -18,6 +18,7 @@ public partial class OBPGame
 
     private void ResetRac1CombatRetry()
     {
+        PlayerLife.ResetRetry();
         if (_rac1CombatRetry is { } panel && IsInstanceValid(panel)) panel.QueueFree();
         _rac1CombatRetry = null;
     }
