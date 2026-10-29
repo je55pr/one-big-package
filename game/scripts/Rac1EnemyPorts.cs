@@ -27,33 +27,38 @@ internal sealed record Rac1EnemyCombatPorts(Func<Rac1HostedEnemy, Vector3, Vecto
     Action<RuntimeWorldScene.DynamicObjectNode, Rac1BoltCrateDamageAdmission> CrateDamage,
     Action<int, RuntimeEntityPresence> CratePresence, Func<int, bool> Chicken);
 
-internal delegate void Rac1FrogEnemyConfiguration(RuntimeWorld world, RuntimeWorldScene.Result scene,
-    IReadOnlyList<NVector3[]> paths, IReadOnlyList<Rac1ClipVolume> volumes, List<RuntimeWorldScene.DynamicObjectNode> nodes);
-internal delegate void Rac1QueenEnemyConfiguration(RuntimeWorld world, RuntimeWorldScene.Result scene,
-    IReadOnlyList<int[]> groups, Rac1StaticClasses.MobyClass cls, ReadOnlySpan<byte> payload,
-    Rac1AlienQueenGateNative tuning, NVector3 camera);
-internal delegate void Rac1WaveEnemyConfiguration(RuntimeWorld world, RuntimeWorldScene.Result scene,
-    IReadOnlyList<int[]> groups, IReadOnlyList<Rac1ClipVolume> volumes, Rac1StaticClasses.MobyClass cls, ReadOnlySpan<byte> payload);
-
-// Temporary integration ports to #362/#363/#368's existing source owners.
+// Temporary integration ports to #363/#368's existing source owners.
 // They contain no root reference, shared AI, inventory or player-selection policy.
 internal sealed record Rac1EnemyNeighborPorts(Func<bool> Current,
-    Action EndQueenCamera, Action ResetCarriers, Action ResetQueenChildren, Action ClearFrogState,
     Action ResetAridia, Action ResetAridiaScripts, Action ResetConstructorbots,
     Func<Rac1AridiaEnemySession> Aridia, Action<IReadOnlyList<Rac1ClipVolume>> AridiaVolumes,
     IDictionary<int, Rac1AridiaConstructorbotNative.Frame> Constructorbots, IDictionary<int, Vector3> ConstructorbotWaypoints,
     Action<RuntimeWorld, RuntimeWorldScene.Result, IReadOnlyList<Rac1Instances.MobyInstance>> AridiaScripts,
-    Rac1FrogEnemyConfiguration Frogs, Rac1QueenEnemyConfiguration Queen, Rac1WaveEnemyConfiguration Waves,
-    Action<RuntimeWorldScene.Result> Carriers,
-    Func<Rac1FrogSession?> FrogSession,
-    Action TickShuttle, Action TickWaves, Action TickQueenFlight, Action TickQueenRecovery, Action TickQueenChildren,
-    Func<int, bool> CarrierChild, Action<Rac1HostedEnemy> TickCarrier,
-    Action<Rac1HostedEnemy> TickAridia, Action<Rac1HostedEnemy> TickFrog,
+    Action<Rac1HostedEnemy> TickAridia,
     Action<Rac1HostedEnemy> HideAridia, Action<Rac1HostedEnemy> ShowAridia,
     Func<RuntimeWorldScene.DynamicObjectNode, Rac1GameplayDamageEvent, bool> AridiaDamage);
 
 internal sealed record Rac1EnemyPorts(Func<string> SourcePath, Func<Rac1PickupRandom> Random,
-    Rac1EnemyPlayerPorts Player, Rac1EnemyCombatPorts Combat, Rac1EnemyNeighborPorts Neighbors);
+    Rac1EnemyPlayerPorts Player, Rac1EnemyCombatPorts Combat, Rac1EnemyNeighborPorts Neighbors,
+    Rac1FrogEncounterPorts Frogs);
+
+/// <summary>
+/// Non-owning engine integration for one R&C1 frog encounter lease. Camera,
+/// effect and contact callbacks have no access to the native family internals.
+/// </summary>
+internal sealed record Rac1FrogEncounterPorts(
+    Func<Viewport> Viewport,
+    Func<Camera3D?> ActiveCamera,
+    Action<Camera3D?> SetActiveCamera,
+    Func<Camera3D?> FallbackCamera,
+    Func<Camera3D?> GuidedCamera,
+    Func<Rac1MobyRuntimeKey, bool> HasWrenchContact,
+    Action<Rac1MobyRuntimeKey> AddWrenchContact,
+    Func<bool> HasFragmentAssets,
+    Func<int, bool> HasFragmentModel,
+    Func<int, string, Node3D> CreateFragmentNode,
+    Action<Node3D, Rac1CrateDebris> TrackFragment,
+    Func<System.Numerics.Quaternion, Quaternion> FromEffectOrientation);
 
 internal static class Rac1EnemyCoordinates
 {

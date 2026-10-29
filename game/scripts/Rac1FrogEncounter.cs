@@ -1,4 +1,6 @@
 using Godot;
+using static Godot.GodotObject;
+using static OBP.Game.Rac1EnemyCoordinates;
 using OBP.RAC1.Animation;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -11,8 +13,77 @@ namespace OBP.Game;
 
 /// <summary>Level 6/10 class-827 host adapters only. Native selectors, combat
 /// transitions and damage ownership belong to Rac1FrogSession.</summary>
-public partial class OBPGame
+internal sealed partial class Rac1FrogEncounter
 {
+    private readonly Rac1EnemyHost _host;
+    private readonly Rac1FrogEncounterPorts _ports;
+    private PlayerHost? _player => _host.Player;
+    private RuntimeWorldScene.Result _sceneResult => _host.Scene;
+    private Rac1PickupRandom Rac1EffectRandom => _host.Random;
+
+    internal Rac1FrogEncounter(Rac1EnemyHost host, Rac1FrogEncounterPorts ports)
+    {
+        _host = host;
+        _ports = ports;
+    }
+
+    internal Rac1FrogSession? Session => _rac1Frogs;
+    internal Rac1FrogShuttleSwitch? Shuttle => _rac1FrogShuttle;
+    internal Rac1FrogWaveTriggers? Waves => _rac1FrogWaves;
+    internal Rac1FrogQueenGroup? QueenGroup => _rac1FrogQueen;
+    internal Rac1AlienQueenRecovery? Recovery => _rac1QueenRecovery;
+    internal Rac1AlienQueenEntrance? Entrance => _rac1QueenEntrance;
+    internal Rac1AlienQueenFlight? Flight => _rac1QueenFlight;
+    internal Rac1AlienQueenFlightCamera? PendingCamera => _rac1QueenPendingCamera;
+    internal Rac1AlienQueenLinkedGate? LinkedGate => _rac1QueenLinkedGate;
+    internal Rac1AlienQueenGateNative? GateNative => _rac1QueenGateNative;
+    internal Rac1MobySequenceClock? QueenAnimation => _rac1QueenAnimation;
+    internal RuntimeWorldScene.DynamicObjectNode? QueenNode => _rac1QueenNode;
+    internal Camera3D? QueenCamera => _rac1QueenScriptedCamera;
+    internal float AuthoredQueenZ => _rac1QueenAuthoredNativeZ;
+    internal System.Collections.Immutable.ImmutableArray<int> WaveControllerIds => [.. _rac1FrogWaveNodes.Keys];
+    internal System.Collections.Immutable.ImmutableDictionary<int, RuntimeWorldScene.DynamicObjectNode> QueenParents =>
+        System.Collections.Immutable.ImmutableDictionary.CreateRange(_rac1QueenLinkedNodes);
+    internal System.Collections.Immutable.ImmutableDictionary<int, Node3D> CarrierChildren =>
+        System.Collections.Immutable.ImmutableDictionary.CreateRange(_rac1FrogCarrierChildren);
+    internal System.Collections.Immutable.ImmutableDictionary<int, Node3D> QueenChildren =>
+        System.Collections.Immutable.ImmutableDictionary.CreateRange(_rac1QueenLinkedChildVisuals);
+    internal bool HasCarrierChild(int instance) => _rac1FrogCarrierChildren.ContainsKey(instance);
+    internal bool QueenDamageAdmitted => _rac1QueenRecovery?.CanReceiveHostWeaponContact == true;
+    internal bool IsQueenNode(RuntimeWorldScene.DynamicObjectNode node) =>
+        ReferenceEquals(_rac1QueenNode, node) && QueenDamageAdmitted;
+    internal bool FrogPresented(int instance) => _rac1Frogs!.Get(instance).Presented;
+    internal int FrogSequence(int instance) => _rac1Frogs!.Get(instance).Sequence;
+
+    internal void Reset()
+    {
+        EndRac1QueenScriptedCamera();
+        ResetRac1FrogCarriers();
+        ResetRac1QueenLinkedChildren();
+        _rac1Frogs = null; _rac1FrogShuttle = null;
+        _rac1FrogWaves = null; _rac1FrogQueen = null; _rac1FrogWaveNodes.Clear();
+        _rac1QueenRecovery = null; _rac1QueenEntrance = null;
+        _rac1QueenFlight = null; _rac1QueenPendingCamera = null;
+        _rac1QueenAnimation = null; _rac1QueenNode = null;
+        _rac1QueenLinkedGate = null; _rac1QueenGateNative = null;
+        _rac1QueenLinkedNodes.Clear(); _rac1QueenLinkedBaseRotations.Clear();
+    }
+
+    /// <summary>Keep source-native class827 damage and resulting body presence
+    /// with the frog encounter; the enemy host still owns the single roster.</summary>
+    internal Rac1FrogDamageResult ApplyFrogDamage(Rac1HostedEnemy enemy, Rac1GameplayDamageEvent damage)
+    {
+        if (!_host.Owns(enemy) || _rac1Frogs is null)
+            throw new InvalidOperationException("Frog damage requires a live source encounter.");
+        var result = _host.Context.MobyRuntime.DispatchDamage<Rac1FrogDamageResult>(damage);
+        if (!result.Frame.Presented)
+        {
+            enemy.Node.ApplyState(_host.Context.MobyRuntime.Require(enemy.Node.Source).EntityState);
+            enemy.Body.CollisionLayer = enemy.Body.CollisionMask = 0;
+        }
+        return result;
+    }
+
     private Rac1FrogSession? _rac1Frogs;
     private Rac1FrogShuttleSwitch? _rac1FrogShuttle;
     private Rac1FrogWaveTriggers? _rac1FrogWaves;
@@ -36,11 +107,18 @@ public partial class OBPGame
     private const float FrogHostSleepRadius = 30f;
     private const float FrogHostAggroRadius = 12f; // provisional common-target query
 
-    private void ConfigureRac1Frogs(RuntimeWorld world, RuntimeWorldScene.Result result,
+    // The family owns its source-specific sleep admission; the enemy host
+    // preserves the common 60Hz update order without knowing its radius.
+    internal bool ShouldTickFrog(Rac1HostedEnemy enemy) =>
+        _player is { } player && IsInstanceValid(player) &&
+        enemy.Node.Root.GlobalPosition.DistanceSquaredTo(player.GlobalPosition) <=
+            FrogHostSleepRadius * FrogHostSleepRadius;
+
+    internal void ConfigureRac1Frogs(RuntimeWorld world, RuntimeWorldScene.Result result,
         IReadOnlyList<NVector3[]> paths, IReadOnlyList<Rac1ClipVolume> volumes,
         List<RuntimeWorldScene.DynamicObjectNode> nodes)
     {
-        _rac1Frogs = new Rac1FrogSession(Rac1World.Context.MobyRuntime, paths);
+        _rac1Frogs = new Rac1FrogSession(_host.Context.MobyRuntime, paths);
         _rac1FrogShuttle = world.LevelId == 6
             ? Rac1FrogShuttleSwitch.FromRetail(world.DynamicObjects ?? [], volumes) : null;
         foreach (var authored in (world.DynamicObjects ?? []).Where(item => item.NativeClassId == Rac1FrogAuthored.ClassId))
@@ -50,12 +128,12 @@ public partial class OBPGame
             var forward = ToEffectNative(Rac1EnemyHost.EnemyForward(node));
             var frame = _rac1Frogs.Register(authored, node.State,
                 ToEffectNative(node.Root.GlobalPosition), MathF.Atan2(forward.Y, forward.X));
-            node.ApplyState(Rac1World.Context.MobyRuntime.Require(authored).EntityState);
+            node.ApplyState(_host.Context.MobyRuntime.Require(authored).EntityState);
             nodes.Add(node);
         }
     }
 
-    private void ConfigureRac1FrogQueen(RuntimeWorld world, RuntimeWorldScene.Result result,
+    internal void ConfigureRac1FrogQueen(RuntimeWorld world, RuntimeWorldScene.Result result,
         IReadOnlyList<int[]> groups, Rac1StaticClasses.MobyClass cls,
         ReadOnlySpan<byte> classBytes, Rac1AlienQueenGateNative tuning,
         NVector3 cameraAnchor)
@@ -110,7 +188,7 @@ public partial class OBPGame
     /// and child visibility. Source rotation constants are read from retail;
     /// native child collision/contact remains separately unhosted.
     /// </summary>
-    private void SynchronizeRac1QueenLinkedParents()
+    internal void SynchronizeRac1QueenLinkedParents()
     {
         if (_rac1QueenLinkedGate is null) return;
         foreach (var pair in _rac1QueenLinkedNodes)
@@ -129,7 +207,7 @@ public partial class OBPGame
     /// after the real encounter admits a combat state. Her native entrance,
     /// camera and boss navigation remain independent source work.
     /// </summary>
-    private IEnumerable<RuntimeWorldScene.DynamicObjectNode> Rac1QueenDamageTargets
+    internal IEnumerable<RuntimeWorldScene.DynamicObjectNode> Rac1QueenDamageTargets
     {
         get
         {
@@ -139,40 +217,40 @@ public partial class OBPGame
         }
     }
 
-    private bool ApplyRac1QueenWeaponDamage(RuntimeWorldScene.DynamicObjectNode target,
+    internal bool ApplyRac1QueenWeaponDamage(RuntimeWorldScene.DynamicObjectNode target,
         Rac1GameplayDamageEvent damage)
     {
         if (_rac1QueenNode != target || _rac1QueenRecovery is null) return false;
         var result = _rac1QueenRecovery.ApplyNativeDamageEvent(damage);
         if (!result.Accepted) return false;
-        Rac1World.Context.DamageTransport.Publish(damage);
+        _host.Context.DamageTransport.Publish(damage);
         GD.Print($"[frog-queen] real weapon event {damage.Source.Kind} class{damage.Source.NativeClassId}, health={result.Health}, recovery={result.RecoveryStarted}");
         if (result.DeathTriggered)
             _rac1QueenAnimation?.Select(10, 10);
         return true;
     }
 
-    private void ResolveRac1QueenWrenchContacts(Vector3 previousHand, Vector3 previousTip,
+    internal void ResolveRac1QueenWrenchContacts(Vector3 previousHand, Vector3 previousTip,
         Vector3 hand, Vector3 tip, float radius, Rac1WrenchDamageResult result)
     {
         foreach (var queen in Rac1QueenDamageTargets)
         {
             var key = new Rac1MobyRuntimeKey(queen.Source.NativeClassId, queen.Source.InstanceIndex);
-            if (_rac1WrenchHitTargets.Contains(key)) continue;
+            if (_ports.HasWrenchContact(key)) continue;
             bool contact = queen.Root.GetChildren().OfType<MeshInstance3D>().Any(mesh =>
             {
                 Aabb bounds = (mesh.GlobalTransform * mesh.GetAabb()).Grow(radius);
-                return WrenchSegmentIntersects(bounds, previousHand, previousTip) ||
-                    WrenchSegmentIntersects(bounds, hand, tip) ||
-                    WrenchSegmentIntersects(bounds, previousHand, hand) ||
-                    WrenchSegmentIntersects(bounds, previousTip, tip) ||
-                    WrenchSegmentIntersects(bounds, previousHand, tip) ||
-                    WrenchSegmentIntersects(bounds, previousTip, hand);
+                return ActorContactGeometry.WrenchSegmentIntersects(bounds, previousHand, previousTip) ||
+                    ActorContactGeometry.WrenchSegmentIntersects(bounds, hand, tip) ||
+                    ActorContactGeometry.WrenchSegmentIntersects(bounds, previousHand, hand) ||
+                    ActorContactGeometry.WrenchSegmentIntersects(bounds, previousTip, tip) ||
+                    ActorContactGeometry.WrenchSegmentIntersects(bounds, previousHand, tip) ||
+                    ActorContactGeometry.WrenchSegmentIntersects(bounds, previousTip, hand);
             });
             if (!contact) continue;
             if (!ApplyRac1QueenWeaponDamage(queen, Rac1DamageRuntime.FromWrench(key, result)))
                 continue;
-            _rac1WrenchHitTargets.Add(key);
+            _ports.AddWrenchContact(key);
         }
     }
 
@@ -189,7 +267,7 @@ public partial class OBPGame
         // End only releases Queen-owned controls, preserving Visibomb's lock.
         if (_rac1QueenScriptedCamera is { } leased &&
             (!IsInstanceValid(leased) || !leased.Current ||
-                GetViewport().GetCamera3D() != leased))
+                _ports.Viewport().GetCamera3D() != leased))
         {
             EndRac1QueenScriptedCamera();
             return false;
@@ -200,7 +278,7 @@ public partial class OBPGame
         {
             if (!IsInstanceValid(_player.Camera) || !_player.Camera.Current ||
                 _player.Rac1RemoteControlActive ||
-                GetViewport().GetCamera3D() != _player.Camera) return false;
+                _ports.Viewport().GetCamera3D() != _player.Camera) return false;
             _rac1QueenScriptedCamera = new Camera3D
             {
                 Name = "AlienQueenSourceCamera59",
@@ -210,25 +288,25 @@ public partial class OBPGame
             };
             _sceneResult.Root.AddChild(_rac1QueenScriptedCamera);
             _rac1QueenScriptedCamera.MakeCurrent();
-            _activeCamera = _rac1QueenScriptedCamera;
+            _ports.SetActiveCamera(_rac1QueenScriptedCamera);
             _player.Rac1RemoteControlActive = true;
         }
         var shot = _rac1QueenScriptedCamera;
         if (!IsInstanceValid(shot) || !shot.Current ||
-            GetViewport().GetCamera3D() != shot) return false;
+            _ports.Viewport().GetCamera3D() != shot) return false;
         Vector3 position = FromEffectNative(cue.NativeCameraPosition);
         Vector3 target = FromEffectNative(cue.NativeLookAt);
         if (position.DistanceSquaredTo(target) < .0001f) return false;
         shot.GlobalPosition = position;
         shot.LookAt(target, Vector3.Up);
-        return shot.Current && GetViewport().GetCamera3D() == shot;
+        return shot.Current && _ports.Viewport().GetCamera3D() == shot;
     }
 
-    private void EndRac1QueenScriptedCamera()
+    internal void EndRac1QueenScriptedCamera()
     {
         var shot = _rac1QueenScriptedCamera;
         if (shot is null) return;
-        bool owned = IsInstanceValid(shot) && GetViewport().GetCamera3D() == shot;
+        bool owned = IsInstanceValid(shot) && _ports.Viewport().GetCamera3D() == shot;
         if (_player is { } player && IsInstanceValid(player))
         {
             // Do not reclaim the viewport if another scripted camera has
@@ -237,21 +315,21 @@ public partial class OBPGame
             if (owned && IsInstanceValid(player.Camera))
                 player.Camera.MakeCurrent();
             // Visibomb owns its own remote-control lock if it interrupted us.
-            bool guidedOwnsInput = _rac1MissileCamera is { } guided &&
-                IsInstanceValid(guided) && GetViewport().GetCamera3D() == guided;
+            bool guidedOwnsInput = _ports.GuidedCamera() is { } guided &&
+                IsInstanceValid(guided) && _ports.Viewport().GetCamera3D() == guided;
             if (!guidedOwnsInput) player.Rac1RemoteControlActive = false;
             if (owned) player.CenterCameraBehindPlayer();
         }
-        if (_activeCamera == shot)
+        if (_ports.ActiveCamera() == shot)
         {
             // The other viewport owner may also be temporary (Visibomb).
             // Keep the world-host pointer on Ratchet's stable camera, rather
             // than retaining a camera another system will later free.
             if (_player is { } remainingPlayer && IsInstanceValid(remainingPlayer) &&
                 IsInstanceValid(remainingPlayer.Camera))
-                _activeCamera = remainingPlayer.Camera;
+                _ports.SetActiveCamera(remainingPlayer.Camera);
             else
-                _activeCamera = _camera;
+                _ports.SetActiveCamera(_ports.FallbackCamera());
         }
         if (IsInstanceValid(shot)) shot.QueueFree();
         _rac1QueenScriptedCamera = null;
@@ -262,7 +340,7 @@ public partial class OBPGame
     /// camera blend. A camera takeover and applied cue must be acknowledged
     /// before this source helper can enter state7.
     /// </summary>
-    private Rac1AlienQueenFlightFrame? TickRac1QueenFlight()
+    internal Rac1AlienQueenFlightFrame? TickRac1QueenFlight()
     {
         if (_rac1QueenEntrance?.NativeState != 2 ||
             _rac1QueenNode is null || _rac1QueenAnimation is null ||
@@ -307,7 +385,7 @@ public partial class OBPGame
         return frame;
     }
 
-    private void TickRac1QueenRecovery()
+    internal void TickRac1QueenRecovery()
     {
         if (_rac1QueenRecovery is null || _rac1QueenAnimation is null ||
             _rac1QueenNode is null) return;
@@ -339,20 +417,20 @@ public partial class OBPGame
     /// genuine Queen state4 update may feed this native subroutine.
     /// The Queen boss AI itself has not yet been hosted: no player-distance
     /// or elapsed-time fallback is permitted to emit this event.</summary>
-    private int ObserveRac1QueenFrogEvent(int queenState, int queenSequence, bool completed)
+    internal int ObserveRac1QueenFrogEvent(int queenState, int queenSequence, bool completed)
     {
         if (_rac1FrogQueen is null || _rac1Frogs is null) return 0;
         int count = 0;
         foreach (var candidate in _rac1FrogQueen.ObserveNativeUpdate(
             queenState, queenSequence, completed,
-            id => ToEffectNative(Rac1World.Enemies.Roster[id].Node.Root.GlobalPosition), Rac1EffectRandom))
+            id => ToEffectNative(_host.Roster[id].Node.Root.GlobalPosition), Rac1EffectRandom))
             if (LaunchRac1FrogFromNativeProducer(candidate.FrogInstance,
                 candidate.NativePosition, Rac1FrogLaunchProducer.QueenGroup))
                 count++;
         return count;
     }
 
-    private void ConfigureRac1FrogWaves(RuntimeWorld world, RuntimeWorldScene.Result result,
+    internal void ConfigureRac1FrogWaves(RuntimeWorld world, RuntimeWorldScene.Result result,
         IReadOnlyList<int[]> groups, IReadOnlyList<Rac1ClipVolume> volumes,
         Rac1StaticClasses.MobyClass cls, ReadOnlySpan<byte> classBytes)
     {
@@ -384,7 +462,7 @@ public partial class OBPGame
         GD.Print($"[frog-wave] {_rac1FrogWaveNodes.Count} original class1066 trigger actors with retail clips 0/1/2 and signed Moby groups");
     }
 
-    private void TickRac1FrogWaves()
+    internal void TickRac1FrogWaves()
     {
         if (_rac1FrogWaves is null || _rac1Frogs is null || _player is null) return;
         NVector3 player = ToEffectNative(_player.GlobalPosition);
@@ -402,7 +480,7 @@ public partial class OBPGame
                 continue;
             foreach (int sound in view.Animation.Tick())
                 if (view.Node.Root.GlobalPosition.DistanceTo(_player.GlobalPosition) < 40f)
-                    PlayRac1PickupSound(Rac1FrogWaveTriggers.ClassId, sound,
+                    _host.Combat.Sound(Rac1FrogWaveTriggers.ClassId, sound,
                         view.Node.Root.GlobalPosition);
             var tick = _rac1FrogWaves.Step(pair.Key, player, view.Animation.Wrapped,
                 index => _rac1Frogs.Get(index).NativeState == 15 &&
@@ -420,7 +498,7 @@ public partial class OBPGame
         }
     }
 
-    private void TickRac1FrogShuttleSwitch()
+    internal void TickRac1FrogShuttleSwitch()
     {
         if (_rac1FrogShuttle is null || _rac1Frogs is null || _player is null) return;
         // The LEVEL6 shuttle's class-1109 waiting-state volume test is native.
@@ -430,16 +508,16 @@ public partial class OBPGame
             ApplyRac1FrogShuttleSelection();
     }
 
-    private void ApplyRac1FrogShuttleSelection()
+    internal void ApplyRac1FrogShuttleSelection()
     {
         if (_rac1FrogShuttle is null || _rac1Frogs is null) return;
         foreach (int instance in _rac1Frogs.ApplyShuttleSwitch(_rac1FrogShuttle.SwitchEnabled))
         {
-            if (!Rac1World.Enemies.Roster.TryGetValue(instance, out var enemy)) continue;
+            if (!_host.Roster.TryGetValue(instance, out var enemy)) continue;
             bool active = _rac1Frogs.Get(instance).Presented;
             enemy.Body.CollisionLayer = active ? 1u : 0u;
             enemy.Body.CollisionMask = active ? 1u : 0u;
-            enemy.Node.ApplyState(Rac1World.Context.MobyRuntime.Require(enemy.Node.Source).EntityState);
+            enemy.Node.ApplyState(_host.Context.MobyRuntime.Require(enemy.Node.Source).EntityState);
         }
     }
 
@@ -451,7 +529,7 @@ public partial class OBPGame
     private bool LaunchRac1FrogFromNativeProducer(int instance, NVector3 nativePosition,
         Rac1FrogLaunchProducer producer)
     {
-        if (_rac1Frogs is null || !Rac1World.Enemies.Roster.TryGetValue(instance, out var enemy))
+        if (_rac1Frogs is null || !_host.Roster.TryGetValue(instance, out var enemy))
             return false;
         var launched = _rac1Frogs.LaunchFromNativeProducer(instance, nativePosition, producer);
         if (launched is null) return false;
@@ -462,18 +540,18 @@ public partial class OBPGame
         enemy.Body.CollisionLayer = 1;
         enemy.Body.CollisionMask = 1;
         enemy.Grounded = false; // Native state6 awaits mine_fall landing.
-        Rac1World.Enemies.SynchronizeRac1Enemy(enemy);
+        _host.SynchronizeRac1Enemy(enemy);
         GD.Print($"[frog-launch] native {producer} activated class827 i{instance} state15->6");
         return true;
     }
 
-    private void TickRac1Frog(Rac1HostedEnemy enemy)
+    internal void TickRac1Frog(Rac1HostedEnemy enemy)
     {
         if (_rac1Frogs is null || _player is null) return;
         var node = enemy.Node;
         int index = node.Source.InstanceIndex;
         var authored = _rac1Frogs.GetAuthored(index);
-        Vector3 goal = ArsenalEnemyGoal(enemy, _player.GlobalPosition);
+        Vector3 goal = _host.Combat.Goal(enemy, _player.GlobalPosition);
         bool eligible = goal.DistanceSquaredTo(node.Root.GlobalPosition) <
             FrogHostAggroRadius * FrogHostAggroRadius;
         bool hitsPlayer = true;
@@ -481,8 +559,8 @@ public partial class OBPGame
         {
             // Fixed target_id+0x204 addresses a native Moby, not Ratchet.
             // Never silently turn this special path into player pursuit.
-            if (Rac1World.Presentation.LinkedTargets.TryGetValue(authored.TargetInstance, out var linked) &&
-                IsInstanceValid(linked.Root) && Rac1World.Enemies.IsRac1GameplayActive(linked))
+            if (_host.Presentation.LinkedTargets.TryGetValue(authored.TargetInstance, out var linked) &&
+                IsInstanceValid(linked.Root) && _host.IsRac1GameplayActive(linked))
             {
                 goal = linked.Root.GlobalPosition;
                 eligible = true;
@@ -490,17 +568,16 @@ public partial class OBPGame
             else eligible = false;
             hitsPlayer = false;
         }
-        var old = _rac1Frogs.Get(index);
         var native = _rac1Frogs.Step(index,
             ToEffectNative(node.Root.GlobalPosition), ToEffectNative(goal), eligible,
             enemy.Animation.Wrapped, enemy.Animation.Position,
-            hitsPlayer && Rac1World.Enemies.EnemyMeleeTouchesPlayer(enemy), enemy.Grounded);
+            hitsPlayer && _host.EnemyMeleeTouchesPlayer(enemy), enemy.Grounded);
         if (native.Sequence != enemy.Animation.Sequence)
             Rac1EnemyHost.SelectRac1EnemySequence(enemy, native.Sequence, 10);
         if (native.Displacement.LengthSquared() > 0)
-            Rac1World.Enemies.MoveRac1EnemyContact(enemy, FromEffectNative(native.Displacement));
+            _host.MoveRac1EnemyContact(enemy, FromEffectNative(native.Displacement));
         node.Root.Rotation = new(0, native.Yaw, 0);
-        if (native.Contact && !ArsenalEnemyHitsDecoy(enemy))
-            Rac1World.Enemies.ApplyRac1EnemyPlayerDamage(Rac1FrogContact.DamageToPlayer(index));
+        if (native.Contact && !_host.Combat.HitsDecoy(enemy))
+            _host.ApplyRac1EnemyPlayerDamage(Rac1FrogContact.DamageToPlayer(index));
     }
 }

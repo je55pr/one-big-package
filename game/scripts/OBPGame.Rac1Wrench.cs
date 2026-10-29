@@ -107,8 +107,8 @@ public partial class OBPGame
     {
         var result = new Rac1WrenchDamageResult(Rac1WrenchContactPath.AnimatedSweepHostGeometry,
             damage, Rac1WrenchAttackProfile.NativeDamageFlags);
-        ResolveRac1FrogCarrierWrenchContacts(previousHand, previousTip, hand, tip, radius);
-        ResolveRac1QueenWrenchContacts(previousHand, previousTip, hand, tip, radius, result);
+        Rac1World.Enemies.Frogs.ResolveRac1FrogCarrierWrenchContacts(previousHand, previousTip, hand, tip, radius);
+        Rac1World.Enemies.Frogs.ResolveRac1QueenWrenchContacts(previousHand, previousTip, hand, tip, radius, result);
         ActorHost.Combat.ResolveWrench(previousHand, previousTip, hand, tip, radius, damage);
         foreach (var target in Rac1World.Presentation.CrateNodes.Concat(Rac1World.Enemies.Targets).Concat(_rac1NovalisBreakableNodes.Values))
         {
