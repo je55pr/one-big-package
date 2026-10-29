@@ -19,7 +19,7 @@ internal sealed class Rac1NovalisRouteMechanism(Rac1AuthoredMechanismPorts ports
 
     internal override void Configure(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
-        if (world.LevelId != 1 || world.BuildId != "rac1-ntscu-original") return;
+        if (world.LevelId != 1 || world.BuildId != OBP.RAC1.Rac1Authority.Primary.BuildId) return;
         var path = ports.SourcePath() ?? throw new InvalidOperationException("Novalis mechanisms require the retail source.");
         using var reader = new FileRandomAccessReader(path);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == 1);

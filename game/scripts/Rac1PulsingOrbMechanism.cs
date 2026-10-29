@@ -15,7 +15,7 @@ internal sealed class Rac1PulsingOrbMechanism : Rac1AuthoredMechanism
 
     internal override void Configure(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
-        if (world.LevelId is not (0 or 2 or 5 or 18)) return;
+        if (!Rac1PulsingOrbSession.SupportsLevel(world.LevelId)) return;
         foreach (var source in (world.DynamicObjects ?? [])
             .Where(source => source.NativeClassId == Rac1PulsingOrbSession.NativeClassId))
         {
@@ -46,9 +46,11 @@ internal sealed class Rac1PulsingOrbMechanism : Rac1AuthoredMechanism
         while (_carry >= 1)
         {
             _carry--;
+            bool applyColour = _carry < 1;
             foreach (var entry in _materials)
             {
                 var rgb = _session.Step(entry.Key);
+                if (!applyColour) continue;
                 var colour = new Color(rgb.Red / 255f, rgb.Green / 255f, rgb.Blue / 255f);
                 foreach (var material in entry.Value) material.AlbedoColor = colour;
             }

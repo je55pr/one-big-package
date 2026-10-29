@@ -25,6 +25,7 @@ internal abstract class Rac1AuthoredMechanism : IDisposable
 {
     internal abstract void Configure(RuntimeWorld world, RuntimeWorldScene.Result scene);
     internal virtual void Tick(double delta, Rac1AuthoredTickPhase phase, PlayerHost? player) { }
+    internal virtual void OnVisualTickSkipped() { }
     internal virtual void PhysicsStep(PlayerHost? player, bool suspended, bool waitingForReplay) { }
     public virtual void Dispose() { }
 }
@@ -84,7 +85,8 @@ internal sealed class Rac1AuthoredMechanismRegistry : IDisposable
         }
         catch
         {
-            Dispose();
+            try { Dispose(); }
+            catch (Exception cleanup) { GD.PrintErr($"[rac1-mechanisms] cleanup after failed configure: {cleanup}"); }
             throw;
         }
     }
@@ -99,6 +101,11 @@ internal sealed class Rac1AuthoredMechanismRegistry : IDisposable
     {
         if (_disposed) return;
         foreach (var mechanism in _registered) mechanism.Tick(delta, phase, _player);
+    }
+    internal void OnVisualTickSkipped()
+    {
+        if (_disposed) return;
+        foreach (var mechanism in _registered) mechanism.OnVisualTickSkipped();
     }
     internal void PhysicsStep(bool suspended, bool waitingForReplay)
     {
@@ -141,7 +148,7 @@ internal static class Rac1AuthoredMechanismCatalog
         }
         if (world.LevelId == Rac1RedPlantSession.NativeLevelId)
             registry.Register(new Rac1RedPlantMechanism());
-        if (world.LevelId is 0 or 2 or 5 or 18)
+        if (Rac1PulsingOrbSession.SupportsLevel(world.LevelId))
             registry.Register(new Rac1PulsingOrbMechanism());
     }
 }

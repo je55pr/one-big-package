@@ -55,6 +55,8 @@ internal sealed class Rac1RedPlantMechanism : Rac1AuthoredMechanism
         }
     }
 
+    internal override void OnVisualTickSkipped() => _lastPlayerPosition = null;
+
     public override void Dispose()
     {
         _nodes.Clear();

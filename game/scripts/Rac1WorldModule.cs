@@ -92,6 +92,7 @@ internal sealed class Rac1WorldModule : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         _binding.Arm(player);
         _player = player;
+        Mechanisms.OnVisualTickSkipped();
         Mechanisms.BindPlayer(player);
         BindSourcePlayerContacts(player);
     }
@@ -108,10 +109,24 @@ internal sealed class Rac1WorldModule : IDisposable
 
     internal void Tick(double delta)
     {
-        if (_disposed || _ticks.Suspended() || _world.Game != ObpSourceGame.Rac1 ||
-            _player is null || !GodotObject.IsInstanceValid(_player)) return;
-        if (!_playerPorts.Persistent() && !_binding.TickParityLifecycle()) return;
-        if (!_playerPorts.Alive()) { Taxis.AbortRide(); return; }
+        if (_disposed) return;
+        if (_ticks.Suspended() || _world.Game != ObpSourceGame.Rac1 ||
+            _player is null || !GodotObject.IsInstanceValid(_player))
+        {
+            Mechanisms.OnVisualTickSkipped();
+            return;
+        }
+        if (!_playerPorts.Persistent() && !_binding.TickParityLifecycle())
+        {
+            Mechanisms.OnVisualTickSkipped();
+            return;
+        }
+        if (!_playerPorts.Alive())
+        {
+            Taxis.AbortRide();
+            Mechanisms.OnVisualTickSkipped();
+            return;
+        }
         Taxis.Tick(delta);
         Mechanisms.Tick(delta, Rac1AuthoredTickPhase.Music);
         _ticks.Swing(delta);
