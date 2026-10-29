@@ -168,15 +168,13 @@ public sealed class WorldMaterialFactory
             mat.AlphaScissorThreshold = 0.5f;
         }
 
-        if (assetKind == "shrub" && presentation is
-            { PreferPerPlacementFoliageDepth: true, AlphaBlendEnabled: true } &&
-            presentation.BlendEquation is not (RuntimeBlendEquation.FixedAlpha or
-                RuntimeBlendEquation.AdditiveSourceAlpha or RuntimeBlendEquation.AdditiveFixedAlpha) &&
-            _alpha.TryGetValue(textureKey, out var alpha) && !alpha.HasTransparency)
+        if (assetKind == "shrub" && _alpha.TryGetValue(textureKey, out var alpha) &&
+            MaterialModel.UsesOpaqueShrubDepth(assetKind, alpha, presentation))
         {
-            // Native shrub PRIM enables blending even for 255-alpha bark and
-            // branches. Under our MIX mapping the colour is identical in the
-            // opaque pass, which must write depth ahead of translucent cards.
+            // Native shrub PRIM enables blending even for fully opaque soil,
+            // planter edges, bark and branches. Under the host MIX mapping
+            // these texels are already opaque; make them write depth instead
+            // of sorting over nearby cutout plants (Marcadia's planters).
             mat.Transparency = BaseMaterial3D.TransparencyEnum.Disabled;
         }
 

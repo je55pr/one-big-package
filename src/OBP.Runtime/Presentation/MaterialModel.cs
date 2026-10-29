@@ -115,6 +115,21 @@ public static class MaterialModel
             RuntimeBlendEquation.AdditiveFixedAlpha);
 
     /// <summary>
+    /// A native shrub can request blending even when every decoded texel is
+    /// opaque. In the host's source-alpha/MIX approximation such surfaces are
+    /// visually opaque, so draw them in the depth-writing pass. Otherwise an
+    /// opaque soil or planter surface can sort in front of cutout vegetation.
+    /// Fixed-alpha and additive equations must retain blending even with a
+    /// fully opaque source texture.
+    /// </summary>
+    public static bool UsesOpaqueShrubDepth(
+        string assetKind, AlphaProfile alpha, RuntimeMaterialPresentation? presentation) =>
+        assetKind == "shrub" && !alpha.HasTransparency && presentation is
+        { AlphaBlendEnabled: true } &&
+        presentation.BlendEquation is not (RuntimeBlendEquation.FixedAlpha or
+            RuntimeBlendEquation.AdditiveSourceAlpha or RuntimeBlendEquation.AdditiveFixedAlpha);
+
+    /// <summary>
     /// A native Moby with neither a decoded texture nor authored vertex colour
     /// has no supported visible appearance. Do not invent an opaque beige
     /// material for its geometry (including unresolved chrome/glass selectors).

@@ -16,6 +16,42 @@ namespace OBP.Tests;
 public sealed class TrilogyFoliagePresentationTests
 {
     [SkippableFact]
+    public void Rac3MarcadiaPlanterSoilWritesDepthAheadOfNearbyWheat()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_UYA_ISO not set");
+        using var disc = new FileRandomAccessReader(iso!);
+        var core = Rac3LevelCore.Open(disc, 4).Core;
+        var classes = Rac3Assets.ReadShrubClasses(core);
+        var alpha = Rac3Assets.ReadTextures(core, Rac3Assets.TextureTable.Shrub)
+            .ToDictionary(t => t.Index, t => AlphaProfile.Analyse(t.Rgba));
+
+        // Retail Marcadia: class 3058 is cutout wheat; classes 3292/3293
+        // supply opaque soil and planter surfaces. All have native blend
+        // enabled, so an unsorted Alpha pass previously allowed the soil to
+        // overdraw the little plants.
+        var wheat = classes[3058];
+        Assert.Equal(new[] { 1, 2, 3 }, wheat.TriangleTextureIds.Distinct().Order());
+        Assert.All(wheat.TriangleTextureIds, id =>
+            Assert.True(alpha[id].HasTransparency));
+        foreach (int classId in new[] { 3292, 3293 })
+        {
+            var soil = classes[classId];
+            Assert.NotEmpty(soil.TriangleTextureIds);
+            for (int face = 0; face < soil.TriangleTextureIds.Length; face++)
+            {
+                var profile = alpha[soil.TriangleTextureIds[face]];
+                Assert.False(profile.HasTransparency);
+                Assert.True(soil.TriangleAlphaBlendEnabled[face]);
+                var presentation = Ps2MaterialPresentation.From(
+                    soil.Materials[soil.TriangleMaterialStateIndices[face]],
+                    soil.TriangleAlphaBlendEnabled[face]);
+                Assert.True(MaterialModel.UsesOpaqueShrubDepth("shrub", profile, presentation));
+            }
+        }
+    }
+
+    [SkippableFact]
     public void Rac3VeldinInterleavedBlueLeavesUseTheSameDepthCutoutAsRac1()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
