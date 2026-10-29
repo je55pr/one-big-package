@@ -3818,7 +3818,7 @@
       "Owner": "#358",
       "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
       "ExpiresWith": "#376",
-      "Hash": "7d386d8f67d718cca023f6aa0f6ee790cd5fe161a92e42cd191719c3060beb0c"
+      "Hash": "8f69c712a276d76ebbafdd05fef3f13e94435420b2e7c18a6ce83a6300a3e292"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:ReplayBookmarkNavigation:GodotReplayBookmarkNavigation:get/:private",
@@ -3826,6 +3826,13 @@
       "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
       "ExpiresWith": "#376",
       "Hash": "2c91044e611744574ac381484e5d70e96de1e1bee3a463f63be4d463e2c8260f"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1SuckCannon.cs::OBPGame::method:RetireRac1CapturedCargoPresentation():void:private",
+      "Owner": "#358",
+      "Rationale": "R&C1 Suck Cannon presentation owns retirement of captured cargo visuals when resetting a world or applying a saved movement state; no additional world controller is introduced.",
+      "ExpiresWith": "#376",
+      "Hash": "8516f95c9b088d999aa4687fcd215046a02a4dc43658fc84651cadac1e1d818f"
     }
   ],
   "RetiredMembers": [

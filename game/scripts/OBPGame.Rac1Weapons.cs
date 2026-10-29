@@ -70,9 +70,10 @@ public partial class OBPGame
         ResetRac1WeaponAudio();
         ResetRac1Arsenal();
         foreach (var node in _rac1EquipmentShots.Select(shot => shot.Node).Concat(_rac1DoomAgents.Select(agent => agent.Body))
-            .Concat(_rac1Captures.Select(capture => capture.Visual)).Concat(_rac1CargoModels.Values).Concat(_rac1WeaponMotes.Select(mote => mote.Node)))
+            .Concat(_rac1WeaponMotes.Select(mote => mote.Node)))
             if (IsInstanceValid(node)) node.QueueFree();
-        _rac1EquipmentShots.Clear(); _rac1DoomAgents.Clear(); _rac1Captures.Clear(); _rac1CargoModels.Clear();
+        RetireRac1CapturedCargoPresentation();
+        _rac1EquipmentShots.Clear(); _rac1DoomAgents.Clear();
         _rac1WeaponMotes.Clear(); _rac1FlameHitTicks.Clear(); _rac1WeaponGenerations.Clear();
         _rac1NativeFlames.Clear(); _rac1Particles?.RemoveType(12); _rac1Particles?.RemoveType(2);
         _rac1ChickenCargo.Clear();

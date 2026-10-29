@@ -140,6 +140,27 @@ public sealed class CrossWorldReplayTests : IDisposable
             Replay = state.Replay with { FileName = "../escaped.run.jsonl.gz" }
         }));
         Assert.Equal(original, File.ReadAllBytes(bookmark));
+
+        // The filename is valid and the digest matches, but the file is a link
+        // to an unrelated location rather than a sibling recording.
+        string external = Path.Combine(Path.GetTempPath(), "obp-outside-prefix-" + Guid.NewGuid().ToString("N") + ".run.jsonl.gz");
+        File.WriteAllText(external, "test-owned prefix bytes");
+        try
+        {
+            try { File.CreateSymbolicLink(prefix, external); }
+            catch (Exception error) when (error is UnauthorizedAccessException or IOException or PlatformNotSupportedException)
+            {
+                // Symlink creation requires developer privileges on some Windows runners.
+                return;
+            }
+            Assert.Throws<InvalidDataException>(() => ReplayBookmarkResolver.Resolve(bookmark, state));
+            Assert.Equal(original, File.ReadAllBytes(bookmark));
+        }
+        finally
+        {
+            if (File.Exists(prefix)) File.Delete(prefix);
+            File.Delete(external);
+        }
     }
 
     [Fact]

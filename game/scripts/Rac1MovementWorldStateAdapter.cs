@@ -20,6 +20,7 @@ internal sealed record Rac1MovementWorldPorts(
     Func<bool> WeaponPreview,
     Func<IReadOnlyList<Rac1MobyRuntimeKey>> MorphedMobies,
     ISet<Rac1MobyRuntimeKey> ChickenCargo,
+    Action RetireCapturedCargoPresentation,
     Func<int?> HeldItemId,
     Action<RuntimeWorldScene.DynamicObjectNode> MorphEnemy,
     Action<int> DisableCrateCollider,
@@ -64,6 +65,10 @@ internal sealed class Rac1MovementWorldStateAdapter(Rac1MovementWorldPorts ports
             if (!enemies.Roster.TryGetValue(key.InstanceIndex, out var enemy) || enemy.Node.Source.NativeClassId != key.NativeClassId)
                 throw new InvalidDataException("Saved Morph-o-Ray victim is unavailable in this level.");
 
+        // Restoration replaces, rather than accumulates, captured cargo and its
+        // presentation/morph metadata. Retire stale visuals before importing the save.
+        ports.RetireCapturedCargoPresentation();
+        ports.ChickenCargo.Clear();
         ports.AdditionalWeapons()?.RestoreCargo(world.CapturedMobies ?? []);
         foreach (var key in world.MorphedMobies ?? [])
         {

@@ -53,7 +53,8 @@ public partial class OBPGame : Node3D
             .Where(chicken => Rac1World.Enemies.IsRac1GameplayActive(chicken.Enemy.Node) && !chicken.Enemy.RewardEmitted)
             .Select(chicken => new Rac1MobyRuntimeKey(chicken.Enemy.Node.Source.NativeClassId, chicken.Enemy.Node.Source.InstanceIndex))
             .Concat(_rac1ChickenCargo).Distinct().ToArray(),
-        ChickenCargo: _rac1ChickenCargo, HeldItemId: () => _rac1HeldItem.NativeItemId,
+        ChickenCargo: _rac1ChickenCargo, RetireCapturedCargoPresentation: RetireRac1CapturedCargoPresentation,
+        HeldItemId: () => _rac1HeldItem.NativeItemId,
         MorphEnemy: MorphArsenalEnemy, DisableCrateCollider: DisableRac1CrateCollider,
         RemovePlacedBolt: id =>
         {
