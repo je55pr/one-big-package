@@ -5,6 +5,17 @@ namespace OBP.Tests;
 public sealed class CommandLineArgsTests
 {
     [Fact]
+    public void EightTyhrranoidTestIsExplicitAndDoesNotChangeOrdinaryLabOrReplayMode()
+    {
+        Assert.False(CommandLineArgs.Parse([]).TyhrranoidTest);
+        var test = CommandLineArgs.Parse(["--destination", "obp:fusion-lab", "--tyhrranoid-test"]);
+        Assert.True(test.TyhrranoidTest);
+        Assert.Equal("obp:fusion-lab", test.Destination);
+        Assert.False(test.FusionSmoke);
+        Assert.False(test.NativeParityRequested);
+    }
+
+    [Fact]
     public void PlayerModesAreExplicitAndIndependentOfDestination()
     {
         foreach (var destination in new[] { "rac1:LEVEL0", "rac2:LEVEL1", "rac3:TABLE1", "obp:fusion-lab" })

@@ -90,6 +90,38 @@ fabricate native AI, so the factory continues to report the overall
 `animation` and `native-update` capabilities as unimplemented while
 `native-state10-clip` is separately marked ready.
 
+## Eight-instance visual / Pyrocitor test you can launch
+
+`tools/start-tyhrranoid-test.ps1` opens an **explicit test-only Fusion Lab**
+through `--tyhrranoid-test`, using
+`game/data/fusion_lab_tyhrranoid_test.json`. This isolated OBP-authored
+layout contains **eight independent** source/build/context-qualified
+class-5821 actors in the test chamber, and a universal loadout station for
+selecting the R&C1 Pyrocitor. It clones a genuine TABLE1 class-5821 source
+instance's model and original PVar initialization into **eight separate**
+registered actor lifetimes. This is **not** an authored UYA wave, does not
+claim native Maktar placement, and does not affect the normal Fusion Lab
+definition or existing three-actor acceptance smoke.
+
+For visual inspection **only**, the special scenario-group tag enables a
+separate, clearly OBP-only preview clock: it samples the retail-verified
+20-frame **state-10 action-12** clip on the ordinary 60Hz actor tick, holds
+the last pose for a second and repeats. The preview is not a native
+state-8-to-state-10 transition, AI attack, chase or player-damage emitter.
+Other worlds and actor placements never enable this preview. During the
+diagnostic the actor may be hit by actual moving R&C1 Pyrocitor flame
+particles; the **source-native incoming lifetime consumer** is unchanged.
+There is not yet a source-backed hit reaction, death animation, despawn
+or bolt drop, so a depleted actor's visual model can remain standing even
+after its collision body stops accepting hits.
+
+The command uses the pinned Godot, attached source images (or a local,
+ignored source config), and an isolated no-profile launch. Original game
+assets, private disc paths and capture output stay out of Git. The
+headless diagnostic loaded and registered all eight actors without errors.
+The follow-up visible manual test should check texture/ocular silhouette,
+animated skin fidelity and actual Pyrocitor hit registration.
+
 ## Live R&C1 Pyrocitor-to-source-qualified actor contact bridge
 
 The original R&C1 `StepRac1NativeFlameContacts` still uses the existing

@@ -272,8 +272,13 @@ internal sealed class ApplicationNavigationCoordinator
         _ports.CancelPreparation();
         try
         {
+            // Explicit, non-retail encounter fixture. Normal Lab and CI keep
+            // their existing three-actor source-backed scenario unchanged.
+            string layout = _ports.Args().TyhrranoidTest
+                ? "res://data/fusion_lab_tyhrranoid_test.json"
+                : "res://data/fusion_lab.json";
             var definition = FusionLabDefinition.Parse(
-                File.ReadAllText(ProjectSettings.GlobalizePath("res://data/fusion_lab.json")));
+                File.ReadAllText(ProjectSettings.GlobalizePath(layout)));
             return _ports.EnterWorld(definition.Id,
                 () => FusionLabWorldFactory.Build(definition), null, null, definition);
         }

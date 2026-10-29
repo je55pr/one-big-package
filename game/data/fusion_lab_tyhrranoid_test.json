@@ -1,0 +1,394 @@
+﻿{
+    "version":  1,
+    "id":  "obp:fusion-lab",
+    "spawn":  {
+                  "y":  1.4,
+                  "z":  10,
+                  "x":  0
+              },
+    "rooms":  [
+                  {
+                      "id":  "entrance",
+                      "label":  "Arrival Gallery",
+                      "centerX":  0,
+                      "centerZ":  -16,
+                      "width":  12,
+                      "depth":  10,
+                      "tint":  [
+                                   0.27,
+                                   0.52,
+                                   0.70
+                               ]
+                  },
+                  {
+                      "id":  "south-link",
+                      "label":  "Southern Passage",
+                      "centerX":  0,
+                      "centerZ":  -8.5,
+                      "width":  8,
+                      "depth":  5,
+                      "tint":  [
+                                   0.34,
+                                   0.40,
+                                   0.55
+                               ]
+                  },
+                  {
+                      "id":  "hub",
+                      "label":  "Loadout Hub",
+                      "centerX":  0,
+                      "centerZ":  0,
+                      "width":  22,
+                      "depth":  12,
+                      "tint":  [
+                                   0.40,
+                                   0.56,
+                                   0.70
+                               ]
+                  },
+                  {
+                      "id":  "north-link",
+                      "label":  "Testing Corridor",
+                      "centerX":  0,
+                      "centerZ":  8.5,
+                      "width":  8,
+                      "depth":  5,
+                      "tint":  [
+                                   0.34,
+                                   0.40,
+                                   0.55
+                               ]
+                  },
+                  {
+                      "id":  "test-room",
+                      "label":  "Test Chamber Alpha",
+                      "centerX":  0,
+                      "centerZ":  17,
+                      "width":  18,
+                      "depth":  12,
+                      "tint":  [
+                                   0.62,
+                                   0.50,
+                                   0.32
+                               ]
+                  }
+              ],
+    "connections":  [
+                        {
+                            "from":  "entrance",
+                            "to":  "south-link",
+                            "openingWidth":  6
+                        },
+                        {
+                            "from":  "south-link",
+                            "to":  "hub",
+                            "openingWidth":  6
+                        },
+                        {
+                            "from":  "hub",
+                            "to":  "north-link",
+                            "openingWidth":  6
+                        },
+                        {
+                            "from":  "north-link",
+                            "to":  "test-room",
+                            "openingWidth":  6
+                        }
+                    ],
+    "stations":  [
+                     {
+                         "id":  "tyhrranoid-loadout",
+                         "label":  "Universal Loadout (Pyrocitor available)",
+                         "roomId":  "test-room",
+                         "resetKey":  "tyhrranoid-loadout",
+                         "adapterId":  "obp/universal-loadout/v1",
+                         "position":  {
+                                          "y":  0.2,
+                                          "z":  13,
+                                          "x":  -7
+                                      }
+                     }
+                 ],
+    "actors":  [
+                   {
+                       "Source":  {
+                                      "NativeId":  "TABLE1/class5821",
+                                      "Game":  "rac3",
+                                      "Build":  "rac3-ntscu-original"
+                                  },
+                       "Id":  "tyhrranoid-01",
+                       "InitialNativeState":  0,
+                       "ScenarioGroup":  "obp-eighth-tyhrranoid-visual-and-pyrocitor-diagnostic",
+                       "Transform":  {
+                                         "Matrix":  [
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        -6,
+                                                        0.3,
+                                                        15,
+                                                        1
+                                                    ]
+                                     },
+                       "SourceInstanceIndex":  430,
+                       "LevelId":  1,
+                       "NativeClassId":  5821,
+                       "NativeContextId":  "uya/table1-class5821-damage-only/v1",
+                       "AdapterId":  "rac3/class5821-damage-only/v1"
+                   },
+                   {
+                       "Source":  {
+                                      "NativeId":  "TABLE1/class5821",
+                                      "Game":  "rac3",
+                                      "Build":  "rac3-ntscu-original"
+                                  },
+                       "Id":  "tyhrranoid-02",
+                       "InitialNativeState":  0,
+                       "ScenarioGroup":  "obp-eighth-tyhrranoid-visual-and-pyrocitor-diagnostic",
+                       "Transform":  {
+                                         "Matrix":  [
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        -2,
+                                                        0.3,
+                                                        15,
+                                                        1
+                                                    ]
+                                     },
+                       "SourceInstanceIndex":  430,
+                       "LevelId":  1,
+                       "NativeClassId":  5821,
+                       "NativeContextId":  "uya/table1-class5821-damage-only/v1",
+                       "AdapterId":  "rac3/class5821-damage-only/v1"
+                   },
+                   {
+                       "Source":  {
+                                      "NativeId":  "TABLE1/class5821",
+                                      "Game":  "rac3",
+                                      "Build":  "rac3-ntscu-original"
+                                  },
+                       "Id":  "tyhrranoid-03",
+                       "InitialNativeState":  0,
+                       "ScenarioGroup":  "obp-eighth-tyhrranoid-visual-and-pyrocitor-diagnostic",
+                       "Transform":  {
+                                         "Matrix":  [
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        2,
+                                                        0.3,
+                                                        15,
+                                                        1
+                                                    ]
+                                     },
+                       "SourceInstanceIndex":  430,
+                       "LevelId":  1,
+                       "NativeClassId":  5821,
+                       "NativeContextId":  "uya/table1-class5821-damage-only/v1",
+                       "AdapterId":  "rac3/class5821-damage-only/v1"
+                   },
+                   {
+                       "Source":  {
+                                      "NativeId":  "TABLE1/class5821",
+                                      "Game":  "rac3",
+                                      "Build":  "rac3-ntscu-original"
+                                  },
+                       "Id":  "tyhrranoid-04",
+                       "InitialNativeState":  0,
+                       "ScenarioGroup":  "obp-eighth-tyhrranoid-visual-and-pyrocitor-diagnostic",
+                       "Transform":  {
+                                         "Matrix":  [
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        6,
+                                                        0.3,
+                                                        15,
+                                                        1
+                                                    ]
+                                     },
+                       "SourceInstanceIndex":  430,
+                       "LevelId":  1,
+                       "NativeClassId":  5821,
+                       "NativeContextId":  "uya/table1-class5821-damage-only/v1",
+                       "AdapterId":  "rac3/class5821-damage-only/v1"
+                   },
+                   {
+                       "Source":  {
+                                      "NativeId":  "TABLE1/class5821",
+                                      "Game":  "rac3",
+                                      "Build":  "rac3-ntscu-original"
+                                  },
+                       "Id":  "tyhrranoid-05",
+                       "InitialNativeState":  0,
+                       "ScenarioGroup":  "obp-eighth-tyhrranoid-visual-and-pyrocitor-diagnostic",
+                       "Transform":  {
+                                         "Matrix":  [
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        -6,
+                                                        0.3,
+                                                        20,
+                                                        1
+                                                    ]
+                                     },
+                       "SourceInstanceIndex":  430,
+                       "LevelId":  1,
+                       "NativeClassId":  5821,
+                       "NativeContextId":  "uya/table1-class5821-damage-only/v1",
+                       "AdapterId":  "rac3/class5821-damage-only/v1"
+                   },
+                   {
+                       "Source":  {
+                                      "NativeId":  "TABLE1/class5821",
+                                      "Game":  "rac3",
+                                      "Build":  "rac3-ntscu-original"
+                                  },
+                       "Id":  "tyhrranoid-06",
+                       "InitialNativeState":  0,
+                       "ScenarioGroup":  "obp-eighth-tyhrranoid-visual-and-pyrocitor-diagnostic",
+                       "Transform":  {
+                                         "Matrix":  [
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        -2,
+                                                        0.3,
+                                                        20,
+                                                        1
+                                                    ]
+                                     },
+                       "SourceInstanceIndex":  430,
+                       "LevelId":  1,
+                       "NativeClassId":  5821,
+                       "NativeContextId":  "uya/table1-class5821-damage-only/v1",
+                       "AdapterId":  "rac3/class5821-damage-only/v1"
+                   },
+                   {
+                       "Source":  {
+                                      "NativeId":  "TABLE1/class5821",
+                                      "Game":  "rac3",
+                                      "Build":  "rac3-ntscu-original"
+                                  },
+                       "Id":  "tyhrranoid-07",
+                       "InitialNativeState":  0,
+                       "ScenarioGroup":  "obp-eighth-tyhrranoid-visual-and-pyrocitor-diagnostic",
+                       "Transform":  {
+                                         "Matrix":  [
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        2,
+                                                        0.3,
+                                                        20,
+                                                        1
+                                                    ]
+                                     },
+                       "SourceInstanceIndex":  430,
+                       "LevelId":  1,
+                       "NativeClassId":  5821,
+                       "NativeContextId":  "uya/table1-class5821-damage-only/v1",
+                       "AdapterId":  "rac3/class5821-damage-only/v1"
+                   },
+                   {
+                       "Source":  {
+                                      "NativeId":  "TABLE1/class5821",
+                                      "Game":  "rac3",
+                                      "Build":  "rac3-ntscu-original"
+                                  },
+                       "Id":  "tyhrranoid-08",
+                       "InitialNativeState":  0,
+                       "ScenarioGroup":  "obp-eighth-tyhrranoid-visual-and-pyrocitor-diagnostic",
+                       "Transform":  {
+                                         "Matrix":  [
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        1,
+                                                        0,
+                                                        6,
+                                                        0.3,
+                                                        20,
+                                                        1
+                                                    ]
+                                     },
+                       "SourceInstanceIndex":  430,
+                       "LevelId":  1,
+                       "NativeClassId":  5821,
+                       "NativeContextId":  "uya/table1-class5821-damage-only/v1",
+                       "AdapterId":  "rac3/class5821-damage-only/v1"
+                   }
+               ]
+}

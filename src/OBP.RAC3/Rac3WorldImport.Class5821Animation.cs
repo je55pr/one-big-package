@@ -102,4 +102,29 @@ public static partial class Rac3WorldImport
         return new("uya-class5821-state10-action12", RuntimeObjectAnimationRole.Reaction,
             surfaces, sequence.Frames.Select(frame => 1d / (60d * frame.Speed)).ToArray());
     }
+
+    /// <summary>
+    /// Explicit OBP-only visual audition for #297's eight-actor diagnostic.
+    /// Repeats the genuine native frames on a 60Hz diagnostic clock with a
+    /// one-second held final pose. This is NOT recovered UYA state progression.
+    /// </summary>
+    public static RuntimeObjectAnimationSample SampleClass5821Diagnostic(
+        RuntimeObjectAnimationClip clip, long elapsedTicks)
+    {
+        ArgumentNullException.ThrowIfNull(clip);
+        if (clip.Id != "uya-class5821-state10-action12" || clip.FrameCount != 20)
+            throw new ArgumentException("Only the verified UYA state-10 action-12 clip is auditable.", nameof(clip));
+        if (elapsedTicks < 0) throw new ArgumentOutOfRangeException(nameof(elapsedTicks));
+        // Quantize only the OBP diagnostic repeat boundary, not the retail
+        // clip's frame durations. Floating sums can otherwise keep the final
+        // frame one extra tick at an exact cycle boundary.
+        long cycleTicks = checked((long)Math.Round(clip.DurationSeconds * 60d,
+            MidpointRounding.AwayFromZero)) + 60;
+        double seconds = (elapsedTicks % cycleTicks) / 60d;
+        int frame = clip.FrameIndexAt(seconds);
+        double start = 0;
+        for (int index = 0; index < frame; index++) start += clip.FrameDurationsSeconds[index];
+        float fraction = (float)Math.Clamp((seconds - start) / clip.FrameDurationsSeconds[frame], 0d, 1d);
+        return new(clip.Id, frame, Math.Min(frame + 1, clip.FrameCount - 1), fraction);
+    }
 }

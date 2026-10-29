@@ -215,7 +215,8 @@ public partial class OBPGame
 
     private void StepRac1NativeFlameContacts()
     {
-        if (_equipmentPresentation.Explosions.Particles is not { } particles) return;
+        if (_rac1NativeFlames.Count == 0 ||
+            _equipmentPresentation.Explosions.Particles is not { } particles) return;
         // A single actor geometry read for the entire native flame tick; a
         // stale hit cannot land because ResolveFlame rechecks live victims.
         var foreign = OrdinaryPlayerSession

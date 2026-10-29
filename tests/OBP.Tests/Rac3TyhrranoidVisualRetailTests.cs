@@ -73,6 +73,7 @@ public sealed class Rac3TyhrranoidVisualRetailTests
         Assert.NotNull(twoEye);
         Assert.Equal(1300, twoEye!.Mesh.Indices.Length / 3);
         Assert.Equal(72, twoEye.Joints.Count);
+        Assert.Equal(20, twoEye.Sequences.Count);
         Assert.NotEqual(OneEyePositionSha256, PositionHash(twoEye.Mesh.Positions));
     }
 

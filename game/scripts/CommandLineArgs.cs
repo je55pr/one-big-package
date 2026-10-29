@@ -24,6 +24,8 @@ public sealed record CommandLineArgs
     /// <summary>Explicit, ephemeral three-game weapon demo on fresh R&amp;C1 Veldin.</summary>
     public bool FusionTest { get; init; }
     public bool FusionSmoke { get; init; }
+    /// <summary>Explicit OBP-authored eight-class-5821 visual/contact diagnostic in Fusion Lab.</summary>
+    public bool TyhrranoidTest { get; init; }
     public bool EffectsSmoke { get; init; }
     public bool RetailParity { get; init; }
     public bool DiagnosticPlayer { get; init; }
@@ -223,6 +225,7 @@ public sealed record CommandLineArgs
                 "--playtest-smoke" => result with { PlaytestSmoke = true },
                 "--fusion-test" => result with { FusionTest = true },
                 "--fusion-smoke" => result with { FusionTest = true, FusionSmoke = true },
+                "--tyhrranoid-test" => result with { TyhrranoidTest = true },
                 "--effects-smoke" => result with { EffectsSmoke = true },
                 "--record-effects" => result with { RecordEffects = true },
                 "--default-weapons-smoke" => result with { DefaultWeaponsSmoke = true },
