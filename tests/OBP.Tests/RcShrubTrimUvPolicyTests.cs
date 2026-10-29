@@ -61,8 +61,8 @@ public sealed class RcShrubTrimUvPolicyTests
         Assert.Empty(Classify());
         stateIds[0] = 0;
         Assert.Equal(new[] { 7 }, Classify().Order());
-        Assert.Empty(Classify(points, uv.Select((v, i) => (i % 2) == 1 ? 3 - v : v).ToArray()));
-        Assert.Empty(Classify(points.Select((v, i) => (i % 3) == 2 ? v * 5 : v).ToArray(), uv));
+        Assert.Empty(Classify(points, uv.Select((v, i) => (i & 1) != 0 ? 3 - v : v).ToArray()));
+        Assert.Empty(Classify(points.Select((v, i) => (uint)i % 3u == 2u ? v * 5 : v).ToArray(), uv));
 
         images[7] = gradient with { Rgba = gradient.Rgba.ToArray() };
         images[7].Rgba[3] = 0;
