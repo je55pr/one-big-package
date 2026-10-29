@@ -224,6 +224,51 @@ public sealed class CaptureDiagnosticTests
     }
 
     [Fact]
+    public async Task DriverCancellationReleasesItsInputWithoutStoppingTheHostOrPublishingAResult()
+    {
+        var fixture = new Fixture { HoldFrames = true };
+        using var operations = new HostOperationScope();
+        using var driver = new CancellationTokenSource();
+        fixture.Harness(operations).Start("capture-fixture", context => context.Run.WaitAsync(DiagnosticFramePhase.Process),
+            "capture-failed", 7, true, lifetime: driver.Token);
+        Assert.Equal(1, operations.PendingCount);
+        driver.Cancel();
+        await fixture.Released.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        while (operations.PendingCount != 0) await Task.Delay(10, timeout.Token);
+        Assert.True(fixture.Disposed);
+        Assert.False(operations.Stopping);
+        Assert.Empty(fixture.Quits);
+        Assert.Empty(fixture.Failures);
+        bool nextOwnerRan = false;
+        operations.Start("next-owner", _ => { nextOwnerRan = true; return Task.CompletedTask; });
+        Assert.True(nextOwnerRan);
+        await operations.StopAsync();
+        Assert.Empty(operations.TakeFailures());
+    }
+
+    [Fact]
+    public async Task RetiredDriverCleanupFailureIsSupervisedWithoutPublishingALateResult()
+    {
+        var fixture = new Fixture { HoldFrames = true, FailDispose = true };
+        using var operations = new HostOperationScope();
+        using var driver = new CancellationTokenSource();
+        fixture.Harness(operations).Start("capture-fixture", context => context.Run.WaitAsync(DiagnosticFramePhase.Process),
+            "capture-failed", 7, true, lifetime: driver.Token);
+        Assert.Equal(1, operations.PendingCount);
+        driver.Cancel();
+        await fixture.Released.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        while (operations.PendingCount != 0) await Task.Delay(10, timeout.Token);
+        Assert.Empty(fixture.Quits);
+        Assert.Empty(fixture.Failures);
+        Assert.False(operations.Stopping);
+        var fault = Assert.Single(operations.TakeFailures());
+        Assert.True(fault.Superseded);
+        Assert.Contains("fixture cleanup failure", fault.Error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task HostCancellationReleasesInputWithoutClaimingAResult()
     {
         var fixture = new Fixture { HoldFrames = true };

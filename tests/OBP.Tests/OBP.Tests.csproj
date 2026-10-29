@@ -29,6 +29,7 @@
     <Compile Include="../../game/scripts/PhysicalSourceSetupStorage.cs" Link="Game/PhysicalSourceSetupStorage.cs" />
     <Compile Include="../../game/scripts/EffectCaptureContract.cs" Link="Game/EffectCaptureContract.cs" />
     <Compile Include="../../game/scripts/CaptureReplayCoordinator.cs" Link="Game/CaptureReplayCoordinator.cs" />
+    <Compile Include="../../game/scripts/ReplayInputLease.cs" Link="Game/ReplayInputLease.cs" />
     <Compile Include="../../game/scripts/CaptureCheckpointSnapshot.cs" Link="Game/CaptureCheckpointSnapshot.cs" />
     <Compile Include="../../game/scripts/CaptureFrameSnapshot.cs" Link="Game/CaptureFrameSnapshot.cs" />
     <Compile Include="../../game/scripts/SourceVerificationCoordinator.cs" Link="Game/SourceVerificationCoordinator.cs" />

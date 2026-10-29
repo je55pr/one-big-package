@@ -353,13 +353,18 @@ public partial class OBPGame : Node3D
             ?? throw new InvalidDataException("Recording source attachment is unavailable.")).ToArray()),
         GodotCaptureReplayStartup.Environment(), CaptureBuildIdentity.Read(typeof(OBPGame).Assembly));
 
-    private PlaytestDriverPorts CreatePlaytestDriverPorts() => new(this, _hostOperations, () => _player, () => OrdinaryPlayerSession,
-        () => _movementStateLoading, () => _bookmarkReplayStep, () => _bugReporting, () => _pauseMenu, () => _world?.BuildId, () => FusionWeapons.Configuration,
+    private PlaytestDriverPorts CreatePlaytestDriverPorts() => new(new(this, () => _player, () => _pauseMenu), _hostOperations, () => OrdinaryPlayerSession,
+        () => _movementStateLoading, () => _bookmarkReplayStep,
+        new(() => _bugReporting?.ReplayReport, report => _bugReporting!.OpenForm(report), () => _bugReporting!.OpenInbox(), () => _bugReporting?.Close()),
+        () => _world?.BuildId, () => FusionWeapons.Configuration,
         () => (_currentDestinationId!, _activeDestination?.DisplayName ?? "Fusion Lab"),
         () => new MovementReproState(MovementReproState.CurrentVersion, _currentDestinationId!, _world!.BuildId, DateTimeOffset.UtcNow,
             CaptureReplay.Build.AssemblyId, _player!.CaptureMovementRepro())
         { Profile = JsonSerializer.Deserialize<JsonElement>(CaptureSharedProfile().Encode()) },
-        ReportMovementState, CreateCaptureDiagnosticHarness);
+        ReportMovementState, new((fusion, token) => CreateCaptureDiagnosticHarness().StartRecording(fusion, token),
+            token => CreateCaptureDiagnosticHarness().StartReports(token), token => CreateCaptureDiagnosticHarness().StartReconciliation(token),
+            token => CreateCaptureDiagnosticHarness().VerifyFinishedContinuationAsync(token),
+            error => CreateCaptureDiagnosticHarness().Acceptance.Fail("capture-route", error, "playtest-save-failed")));
 
     private GodotCapturePresentation CreateCapturePresentation() => new(this, () => new(_frame, CaptureHarness.ActiveRenderer(),
         (string)Engine.GetVersionInfo()["string"], _world?.BuildId ?? Rac2Authority.Primary.BuildId, _world?.Game,

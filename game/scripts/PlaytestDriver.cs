@@ -57,7 +57,8 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
     }
     private IReadOnlyDictionary<string, float> _previousActions = new Dictionary<string, float>();
     private PlaytestRunHeader? _header;
-    private PlayerHost? _attachedPlayer;
+    private readonly CancellationTokenSource _lifetime = new();
+    private bool _diagnosticsStarted, _finalized;
     private bool _entered, _finished, _injecting, _saving, _stopRequested, _markRequested;
     private int _nextStep, _playerReads, _processSteps, _marks, _checks;
     private ulong _epoch;
@@ -89,20 +90,24 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
         {
             _epoch = Time.GetTicksMsec();
             _entered = true;
-            if (Reader is { } reader) Ports.Host.GetWindow().Size = new(reader.Header.Width, reader.Header.Height);
+            if (Reader is { } reader) Ports.Host.WindowSize = new(reader.Header.Width, reader.Header.Height);
         }
         AttachPlayer();
         if (Ports.OrdinaryPlayer())
         {
             PreparingWorld = true;
-            Ports.Host.SetPhysicsProcess(false); Ports.Player()?.SetPhysicsProcess(false);
+            Ports.Host.SetSimulationEnabled(false);
         }
-        if (Session.Arguments.PlaytestSmoke && Reader is null && WaitingForEntry)
-            Callable.From(() => Ports.Diagnostics().StartRecording(Session.Arguments.FusionTest || Session.Arguments.DefaultWeaponsSmoke)).CallDeferred();
-        if (Session.Arguments.BugReportSmoke && Reader is null && WaitingForEntry)
-            Callable.From(() => Ports.Diagnostics().StartReports()).CallDeferred();
-        if (Session.Arguments.ReconciliationSmoke && Reader is null && WaitingForEntry)
-            Callable.From(() => Ports.Diagnostics().StartReconciliation()).CallDeferred();
+        if (_diagnosticsStarted || Reader is not null || !WaitingForEntry) return;
+        _diagnosticsStarted = true;
+        var lifetime = _lifetime.Token;
+        Callable.From(() =>
+        {
+            if (_finished || lifetime.IsCancellationRequested || Ports.Operations.Stopping) return;
+            if (Session.Arguments.PlaytestSmoke) Ports.Diagnostics.StartRecording(Session.Arguments.FusionTest || Session.Arguments.DefaultWeaponsSmoke, lifetime);
+            if (Session.Arguments.BugReportSmoke) Ports.Diagnostics.StartReports(lifetime);
+            if (Session.Arguments.ReconciliationSmoke) Ports.Diagnostics.StartReconciliation(lifetime);
+        }).CallDeferred();
     }
 
     public override void _PhysicsProcess(double delta) => Begin(PlaytestStepKind.Physics, delta);
@@ -176,7 +181,7 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
         {
             if (Ports.MovementLoading()) throw new InvalidOperationException("Movement-state loads cannot be mixed into an input tape.");
             if (Ports.BookmarkStep() is { } bookmarkStep && _nextStep > bookmarkStep) { CompleteReplay(atBookmark: true); return; }
-            if (Ports.Reports()?.ReplayReport is { } report && _nextStep > report.Step) { CompleteReplay(atReportMarker: true); return; }
+            if (Ports.Reports.ReplayReport() is { } report && _nextStep > report.Step) { CompleteReplay(atReportMarker: true); return; }
             if (Reader is not null)
             {
                 _bufferedStep ??= Reader.ReadNextStep();
@@ -194,7 +199,7 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
             if (PreparingWorld)
             {
                 if (!Session.WorldReady() || kind != (_bufferedStep?.Kind ?? PlaytestStepKind.Physics)) return;
-                PreparingWorld = false; Ports.Host.SetPhysicsProcess(true); Ports.Player()?.SetPhysicsProcess(true);
+                PreparingWorld = false; Ports.Host.SetSimulationEnabled(true);
             }
             if (Math.Abs(delta - 1d / 60) > .00001)
                 throw new InvalidOperationException("Simulation timing changed; playtest requires fixed 60-Hz updates.");
@@ -220,8 +225,8 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
                     .Where(a => a.Strength > 0).ToDictionary(a => a.Name, a => a.Strength, StringComparer.Ordinal);
                 _step = new(_nextStep, kind, PlaytestClock.RecordedMilliseconds, delta, _pending.ToArray(), actions, [])
                 {
-                    Width = Ports.Host.GetWindow().Size.X,
-                    Height = Ports.Host.GetWindow().Size.Y,
+                    Width = Ports.Host.WindowSize.X,
+                    Height = Ports.Host.WindowSize.Y,
                 };
                 _pending.Clear();
                 _commands.Clear(); _commands.AddRange(_pendingCommands); _pendingCommands.Clear();
@@ -233,7 +238,7 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
                 if (_step is null) { CompleteReplay(); return; }
                 if (_step.Kind != kind) throw new InvalidOperationException($"Step {_nextStep}: expected {_step.Kind}, engine called {kind}.");
                 var size = new Vector2I(_step.Width, _step.Height);
-                if (Ports.Host.GetWindow().Size != size) Ports.Host.GetWindow().Size = size;
+                if (Ports.Host.WindowSize != size) Ports.Host.WindowSize = size;
                 RestoreActions(_previousActions);
                 _injecting = true;
                 try
@@ -271,33 +276,30 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
         catch (Exception error) { Fail(error); }
     }
 
-    private void AttachPlayer()
+    private void AttachPlayer() => Ports.Host.AttachPlayerInput(FilterPlayerInput);
+
+    private RawPlayerInputFrame FilterPlayerInput(RawPlayerInputFrame input)
     {
-        if (Ports.Player() is not { } player || player == _attachedPlayer) return;
-        _attachedPlayer = player;
-        player.PlaytestInputFilter = input =>
+        if (_finished) return input;
+        try
         {
-            if (_finished) return input;
-            try
+            if (PreparingWorld || WaitingForEntry && _step is null) return default;
+            if (_step?.Kind != PlaytestStepKind.Physics) throw new InvalidOperationException("Player input escaped its recorded physics step.");
+            if (Reader is null)
             {
-                if (PreparingWorld || WaitingForEntry && _step is null) return default;
-                if (_step?.Kind != PlaytestStepKind.Physics) throw new InvalidOperationException("Player input escaped its recorded physics step.");
-                if (Reader is null)
+                var controls = PlaytestInputCodec.Capture(input);
+                if (_bugMouseControl)
                 {
-                    var controls = PlaytestInputCodec.Capture(input);
-                    if (_bugMouseControl)
-                    {
-                        controls = controls with { Jump = false, Crouch = false, ActionPressed = false, ActionHeld = false, UsePressed = false, UseHeld = false };
-                        input = PlaytestInputCodec.Restore(controls);
-                    }
-                    _players.Add(controls);
-                    return input;
+                    controls = controls with { Jump = false, Crouch = false, ActionPressed = false, ActionHeld = false, UsePressed = false, UseHeld = false };
+                    input = PlaytestInputCodec.Restore(controls);
                 }
-                if (_playerReads >= _step.Players.Count) throw new InvalidOperationException($"Step {_nextStep}: replay consumed extra player input.");
-                return PlaytestInputCodec.Restore(_step.Players[_playerReads++]);
+                _players.Add(controls);
+                return input;
             }
-            catch (Exception error) { Fail(error); return default; }
-        };
+            if (_playerReads >= _step.Players.Count) throw new InvalidOperationException($"Step {_nextStep}: replay consumed extra player input.");
+            return PlaytestInputCodec.Restore(_step.Players[_playerReads++]);
+        }
+        catch (Exception error) { Fail(error); return default; }
     }
 
     public void End(PlaytestStepKind kind)
@@ -332,7 +334,7 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
             _step = null;
             if (Reader is null && kind == PlaytestStepKind.Process)
             {
-                string focus = Ports.Host.GetWindow().HasFocus() ? "" : "\nClick the game window to give F8/F9 keyboard focus.";
+                string focus = Ports.Host.WindowFocused ? "" : "\nClick the game window to give F8/F9 keyboard focus.";
                 SetNotice(Session.Arguments.BugCapture
                     ? $"BUG CAPTURE · {_processSteps / 60}s\nF8: Report · F7: Inbox · Paused: Square Report / Select Inbox\n{(_processSteps < _bugNoticeUntil ? _bugNotice : "")}"
                     : $"RECORDING  ·  {_processSteps / 60}s  ·  {_marks} bug markers\nF8: Mark bug   F9: Save run\nPaused: Square marks · Select saves{focus}");
@@ -391,6 +393,7 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
     {
         if (_finished || _saving) return;
         _saving = _finished = true;
+        ReleaseSceneBindings();
         PlaytestClock.Active = false;
         SetNotice("Saving recorded run…");
         try
@@ -398,22 +401,27 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
             Session.ValidateRecordingSources();
             _flush = _writer!.FinishAsync("saved");
             await _flush;
-            SetNotice($"Recording saved · {_marks} bug markers\n{Path.GetFileName(_writer.Path)}");
+            if (!_finalized) SetNotice($"Recording saved · {_marks} bug markers\n{Path.GetFileName(_writer.Path)}");
             GD.Print($"[playtest] SAVED {_writer.Path}; steps={_nextStep}; markers={_marks}");
-            if (Session.Arguments.ReconciliationSmoke) await Ports.Diagnostics().VerifyFinishedContinuationAsync();
-            if (!Ports.Operations.Stopping && (Session.Arguments.PlaytestSmoke || Session.Arguments.ReconciliationSmoke || Session.Arguments.EffectsSmoke))
-                ApplicationLifecycle.RequestQuit(Ports.Host, "playtest-record-smoke-pass");
+            if (_finalized || Ports.Operations.Stopping) return;
+            if (Session.Arguments.ReconciliationSmoke) await Ports.Diagnostics.VerifyFinishedContinuation(_lifetime.Token);
+            if (!_finalized && !Ports.Operations.Stopping && (Session.Arguments.PlaytestSmoke || Session.Arguments.ReconciliationSmoke || Session.Arguments.EffectsSmoke))
+                Ports.Host.Quit("playtest-record-smoke-pass");
         }
-        catch (OperationCanceledException error) when (Ports.Operations.Stopping && error.CancellationToken == Ports.Operations.Token)
+        catch (OperationCanceledException error) when ((Ports.Operations.Stopping || _finalized) && error.CancellationToken.IsCancellationRequested)
         { /* Durable tape committed; the host's original quit still owns the canceled continuation. */ }
         catch (Exception error)
         {
             _recordingError = error.Message;
-            SetNotice("Recording could not be saved: " + error.Message);
+            if (!_finalized) SetNotice("Recording could not be saved: " + error.Message);
             GD.PrintErr("[playtest] save failed: " + error.Message);
-            if (Session.Arguments.ReconciliationSmoke) Ports.Diagnostics().Acceptance.Fail("capture-route", error, "playtest-save-failed");
-            else if (Session.Arguments.PlaytestSmoke || Session.Arguments.EffectsSmoke) ApplicationLifecycle.RequestQuit(Ports.Host, "playtest-save-failed", 2);
-            if (Ports.Operations.Stopping) throw;
+            if (_finalized || Ports.Operations.Stopping) throw;
+            if (Session.Arguments.ReconciliationSmoke) Ports.Diagnostics.SaveFailed(error);
+            else if (Session.Arguments.PlaytestSmoke || Session.Arguments.EffectsSmoke) Ports.Host.Quit("playtest-save-failed", 2);
+        }
+        finally
+        {
+            if (!_finalized) _lifetime.Cancel();
         }
     }
 
@@ -426,6 +434,8 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
         bool matched = _firstDifference is null;
         WriteReport(matched ? "matched" : "diverged", null);
         _finished = true;
+        ReleaseSceneBindings();
+        _lifetime.Cancel();
         PlaytestClock.Active = false;
         GD.Print($"[playtest] {(matched ? "PASS" : "DIVERGED")}; steps={_nextStep}; checkpoints={_checks}; markers={Reader!.Markers.Count}");
         if (atBookmark && matched && DisplayServer.GetName() != "headless" && !AutomationRunPolicy.IsAutomated(OS.GetCmdlineUserArgs(), OS.GetCmdlineArgs()))
@@ -438,10 +448,10 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
         if (atReportMarker && Session.Arguments.PlaytestInspectMarker)
         {
             GetTree().Paused = true;
-            SetNotice($"REPLAY · {Ports.Reports()!.ReplayReport!.Title}\nMarked moment reached · {(matched ? "sampled checks matched" : "state divergence recorded")}\nClose this window to return to the report inbox.");
+            SetNotice($"REPLAY · {Ports.Reports.ReplayReport()!.Title}\nMarked moment reached · {(matched ? "sampled checks matched" : "state divergence recorded")}\nClose this window to return to the report inbox.");
             return;
         }
-        ApplicationLifecycle.RequestQuit(Ports.Host, "playtest-replay-complete", matched ? 0 : 3);
+        Ports.Host.Quit("playtest-replay-complete", matched ? 0 : 3);
     }
 
     private void WriteReport(string result, string? error)
@@ -461,7 +471,7 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
             BuildChanged = !Session.Build.Matches(Reader.Header),
             FirstDifference = _firstDifference,
             Reader.Markers,
-            ReportMarker = Ports.Reports()?.ReplayReport,
+            ReportMarker = Ports.Reports.ReplayReport(),
             LastObserved = _lastObserved,
         }, new JsonSerializerOptions { WriteIndented = true }));
     }
@@ -473,29 +483,51 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
         WaitingForEntry = false;
         if (PreparingWorld)
         {
-            PreparingWorld = false; Ports.Host.SetPhysicsProcess(true); Ports.Player()?.SetPhysicsProcess(true);
+            PreparingWorld = false; Ports.Host.SetSimulationEnabled(true);
         }
         _recordingError = error.Message;
         _finished = true;
+        ReleaseSceneBindings();
+        _lifetime.Cancel();
         if (Reader is not null)
         {
             try { WriteReport("invalid", error.Message); }
             catch (Exception reportError) { GD.PrintErr("[playtest] report failed: " + reportError.Message); }
-            ApplicationLifecycle.RequestQuit(Ports.Host, "playtest-replay-failed", 2);
+            Ports.Host.Quit("playtest-replay-failed", 2);
         }
         else
         {
             SetNotice("Recording stopped: " + error.Message);
             if (Session.Arguments.BugCapture && _bugReportButton is { } reportButton) reportButton.Disabled = true;
-            if (Session.Arguments.PlaytestSmoke || Session.Arguments.ReconciliationSmoke || Session.Arguments.BugReportSmoke || Session.Arguments.EffectsSmoke) ApplicationLifecycle.RequestQuit(Ports.Host, "playtest-record-failed", 2);
+            if (Session.Arguments.PlaytestSmoke || Session.Arguments.ReconciliationSmoke || Session.Arguments.BugReportSmoke || Session.Arguments.EffectsSmoke) Ports.Host.Quit("playtest-record-failed", 2);
         }
         PlaytestClock.Active = false;
     }
 
     private void SetNotice(string message) { if (_hud is not null && IsInstanceValid(_hud)) _hud.Text = message; }
 
+    private void ReleaseSceneBindings()
+    {
+        try { Ports.Host.ReleasePlayerInput(); }
+        finally
+        {
+            try { Ports.Reports.Close(); }
+            finally
+            {
+                var suspension = _bugUiSuspension;
+                _bugUiSuspension = null;
+                _bugSuspended = _bugResumePending = false;
+                suspension?.Dispose();
+            }
+        }
+    }
+
+    public override void _ExitTree() => FinishOnExit();
+
     public void FinishOnExit()
     {
+        if (_finalized) return;
+        _finalized = true;
         try
         {
             if (Reader is not null && !_finished)
@@ -507,11 +539,13 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
             }
             if (_writer is not null)
             {
-                _flush ??= _writer.FinishAsync(_recordingError is null ? "closed" : "error");
-                _flush.GetAwaiter().GetResult();
-                _writer.Dispose();
+                try
+                {
+                    _flush ??= _writer.FinishAsync(_recordingError is null ? "closed" : "error");
+                    _flush.GetAwaiter().GetResult();
+                }
+                finally { _writer.Dispose(); }
             }
-            Reader?.Dispose();
         }
         catch (Exception error)
         {
@@ -523,21 +557,16 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
         finally
         {
             _finished = true;
+            try { Reader?.Dispose(); }
+            catch (Exception error) { GD.PrintErr("[playtest] reader cleanup failed: " + error.Message); }
+            try { ReleaseSceneBindings(); }
+            catch (Exception error) { GD.PrintErr("[playtest] scene cleanup failed: " + error.Message); }
+            try { _lifetime.Cancel(); }
+            catch (Exception error) { GD.PrintErr("[playtest] cancellation failed: " + error.Message); }
+            _lifetime.Dispose();
             PlaytestClock.Active = false;
             if (OriginalCameraOptions is not null) CameraSettingsStore.Set(OriginalCameraOptions, persist: false);
             QueueFree();
         }
     }
-}
-
-internal sealed partial class PlaytestEndDriver : Node
-{
-    public PlaytestDriver Driver { get; init; } = null!;
-    public override void _Ready()
-    {
-        ProcessMode = ProcessModeEnum.Always;
-        ProcessPriority = ProcessPhysicsPriority = 10000;
-    }
-    public override void _PhysicsProcess(double delta) => Driver.End(PlaytestStepKind.Physics);
-    public override void _Process(double delta) => Driver.End(PlaytestStepKind.Process);
 }

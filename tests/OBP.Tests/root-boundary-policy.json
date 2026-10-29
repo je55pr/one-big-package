@@ -3556,10 +3556,10 @@
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlaytestDriverPorts():PlaytestDriverPorts:private",
-      "Owner": "#356",
-      "Rationale": "Exact capture/replay composition: copied world/player/native facts, focused command actions and independent optional verification lifetime. No recording, checkpoint, native algorithm or diagnostic policy is implemented in the root. Final host composition removes this binding. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
+      "Owner": "#357",
+      "Rationale": "Exact replay composition: a narrow Godot scene adapter owns player input attachment and UI suspension; report and diagnostic actions receive the driver lifetime. Copied world/player facts and bookmark snapshots retain the existing owners. The root supplies no recording, checkpoint, native algorithm or diagnostic policy. Final host composition removes this binding.",
       "ExpiresWith": "#376",
-      "Hash": "ca4ba58e9b5fa71f19a6b5a8b2d76d7d6422fe63ac29305ba45efaf2f25ba072"
+      "Hash": "9e090cd115b4a735dd2d9fff406757bd55d33972545e4e1a533b8c19a579030d"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:CapturePresentation:GodotCapturePresentation:get/:private",

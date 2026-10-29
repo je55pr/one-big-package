@@ -15,10 +15,10 @@ internal sealed class CaptureDiagnosticHarness(CaptureDiagnosticAuthorities auth
     Action<string, int> quit, Action<string> log, Action<string> error)
 {
     internal IDiagnosticAcceptanceReporter Acceptance => acceptance;
-    internal void StartRecording(bool fusion) => Start("playtest-smoke", context => fusion ? ports.FusionRecording(context.Run.CancellationToken)
-        : new PlaytestRecordingScenario(context, ports.Recorder).RunAsync(), "playtest-smoke-failed", 2, false);
-    internal void StartReports() => Start("bug-report-smoke", context => new BugReporterScenario(context, ports.Recorder, ports.Reports).RunAsync(), "bug-report-smoke-fail", 1, true);
-    internal void StartReconciliation() => Start("reconciliation-capture", context => Reconciliation(context).RunAsync(), "reconciliation-capture-fail", 2, false, "capture-route");
+    internal void StartRecording(bool fusion, CancellationToken lifetime = default) => Start("playtest-smoke", context => fusion ? ports.FusionRecording(context.Run.CancellationToken)
+        : new PlaytestRecordingScenario(context, ports.Recorder).RunAsync(), "playtest-smoke-failed", 2, false, lifetime: lifetime);
+    internal void StartReports(CancellationToken lifetime = default) => Start("bug-report-smoke", context => new BugReporterScenario(context, ports.Recorder, ports.Reports).RunAsync(), "bug-report-smoke-fail", 1, true, lifetime: lifetime);
+    internal void StartReconciliation(CancellationToken lifetime = default) => Start("reconciliation-capture", context => Reconciliation(context).RunAsync(), "reconciliation-capture-fail", 2, false, "capture-route", lifetime);
     internal void StartTrilogy() => Start("trilogy-gameplay-smoke", context => new TrilogyGameplayScenario(context, ports.Player, ports.Actors, ports.Navigation, ports.Equipment).RunAsync(), "trilogy-gameplay-smoke-fail", 1, true);
     private ReconciliationCaptureScenario Reconciliation(CaptureDiagnosticContext context) => new(context, ports.Recorder, ports.Navigation, ports.Equipment, acceptance);
     private DiagnosticScenarioDefinition Definition(string id) => new(id + "/v1", DiagnosticSourceAccess.ExplicitSourceDiagnostic,
@@ -32,14 +32,17 @@ internal sealed class CaptureDiagnosticHarness(CaptureDiagnosticAuthorities auth
             if (!ports.Isolated()) throw new DiagnosticUnavailableException("Capture diagnostics require --no-profile or an isolated temporary profile/inbox under captures or the temporary directory.");
             await execute(context);
         });
-    internal void Start(string id, Func<CaptureDiagnosticContext, Task> execute, string failureReason, int failureCode, bool terminal, string? evidence = null)
+    internal void Start(string id, Func<CaptureDiagnosticContext, Task> execute, string failureReason, int failureCode, bool terminal, string? evidence = null, CancellationToken lifetime = default)
     {
         if (operations.Stopping) return;
         operations.Start(id, async token =>
         {
             var result = await runner.RunAsync(Scenario(Definition(id), context => AwaitCommitAsync(context, execute, terminal)), true, token);
+            // Cancellation retires the driver, not the host: preserve cleanup faults for host supervision.
+            if (token.IsCancellationRequested && result.Status == DiagnosticRunStatus.Failed && result.Error is { } cleanupError)
+                throw cleanupError;
             Finish(result, id, failureReason, failureCode, terminal, evidence, token);
-        });
+        }, lifetime);
     }
     private async Task AwaitCommitAsync(CaptureDiagnosticContext context, Func<CaptureDiagnosticContext, Task> execute, bool terminal)
     {
@@ -51,7 +54,7 @@ internal sealed class CaptureDiagnosticHarness(CaptureDiagnosticAuthorities auth
     }
     private void Finish(DiagnosticRunResult result, string id, string failureReason, int failureCode, bool terminal, string? evidence, CancellationToken token)
     {
-        if (operations.Stopping || result.Status == DiagnosticRunStatus.Canceled && token.IsCancellationRequested) return;
+        if (operations.Stopping || token.IsCancellationRequested) return;
         if (result.Status == DiagnosticRunStatus.Passed)
         {
             if (terminal) { quit(id + "-pass", 0); }
@@ -61,11 +64,13 @@ internal sealed class CaptureDiagnosticHarness(CaptureDiagnosticAuthorities auth
         if (evidence is not null) acceptance.Fail(evidence, failure, failureReason);
         else { error("[" + id + "] FAIL: " + failure); quit(failureReason, failureCode); }
     }
-    internal async Task VerifyFinishedContinuationAsync()
+    internal async Task VerifyFinishedContinuationAsync(CancellationToken lifetime = default)
     {
-        var result = await runner.RunAsync(Scenario(Definition("finished-capture-continuation"), context => Reconciliation(context).VerifyFinishedContinuationAsync()), true, operations.Token);
-        if (result.Status == DiagnosticRunStatus.Canceled && operations.Token.IsCancellationRequested)
-            operations.Token.ThrowIfCancellationRequested();
+        using var cancellation = lifetime.CanBeCanceled ? CancellationTokenSource.CreateLinkedTokenSource(operations.Token, lifetime) : null;
+        var token = cancellation?.Token ?? operations.Token;
+        var result = await runner.RunAsync(Scenario(Definition("finished-capture-continuation"), context => Reconciliation(context).VerifyFinishedContinuationAsync()), true, token);
+        if (result.Status == DiagnosticRunStatus.Canceled && token.IsCancellationRequested)
+            token.ThrowIfCancellationRequested();
         if (result.Status != DiagnosticRunStatus.Passed) throw result.Error ?? new InvalidOperationException(result.Detail);
     }
     internal IDiagnosticScenario CreateMovement(DiagnosticScenarioDefinition definition) => new DiagnosticProcessScenario(
