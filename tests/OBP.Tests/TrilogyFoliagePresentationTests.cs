@@ -146,4 +146,40 @@ public sealed class TrilogyFoliagePresentationTests
         Assert.Equal(2, ordinary.TriangleCount);
         Assert.NotEqual(true, ordinary.MaterialPresentation?.PreferPerPlacementFoliageDepth);
     }
+
+    [Theory]
+    [InlineData(1, 12, true, RuntimeBlendEquation.SourceAlpha, true)]
+    [InlineData(2, 12, true, RuntimeBlendEquation.SourceAlpha, false)]
+    [InlineData(1, 13, true, RuntimeBlendEquation.SourceAlpha, false)]
+    [InlineData(1, 12, false, RuntimeBlendEquation.SourceAlpha, false)]
+    [InlineData(1, 12, true, RuntimeBlendEquation.FixedAlpha, false)]
+    [InlineData(1, 12, true, RuntimeBlendEquation.AdditiveSourceAlpha, false)]
+    [InlineData(1, 12, true, RuntimeBlendEquation.AdditiveFixedAlpha, false)]
+    public void SharedCutoutMaterialRequiresClassTextureAndNativeBlend(
+        int classId, int textureId, bool blend, RuntimeBlendEquation equation, bool expected)
+    {
+        var native = new RuntimeMaterialPresentation(
+            AlphaBlendEnabled: blend, BlendEquation: equation);
+        var alpha = new Dictionary<int, AlphaProfile>
+        {
+            [12] = new(.6, .35, .05, true),
+        };
+        var selected = new Dictionary<int, HashSet<int>> { [1] = [12] };
+        var actual = RcFoliageCutoutPolicy.WithLayeredCutout(
+            classId, textureId, native, alpha, selected);
+        Assert.Equal(expected, actual?.PreferFoliageCutout == true);
+        Assert.Equal(expected, actual?.PreferPerPlacementFoliageDepth == true);
+    }
+
+    [Fact]
+    public void SharedDetectorRejectsMalformedMaterialArrays()
+    {
+        var state = new RcMaterialState(0, RcTextureWrapHint.Unknown,
+            RcTextureWrapHint.Unknown, RcTextureMinFilterHint.Unknown,
+            0, 0, 0, 0, "synthetic");
+        Assert.Throws<InvalidDataException>(() =>
+            RcFoliageCutoutPolicy.FindLayeredCutoutTextures(
+                new double[9], [0, 1, 2], [12], [], [true], [state],
+                new Dictionary<int, AlphaProfile>()));
+    }
 }

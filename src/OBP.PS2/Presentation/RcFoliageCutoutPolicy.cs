@@ -19,6 +19,35 @@ public static class RcFoliageCutoutPolicy
     private const double MaximumTranslucentFraction = 0.20;
     private const double MaximumCutoutProfileDifference = 0.08;
 
+    /// <summary>
+    /// Opt only the proven (source class, texture) pair into depth-writing
+    /// cutout. Other shrub surfaces keep their source blend and mesh grouping.
+    /// </summary>
+    public static RuntimeMaterialPresentation? WithLayeredCutout(
+        int sourceClassId,
+        int textureId,
+        RuntimeMaterialPresentation? presentation,
+        IReadOnlyDictionary<int, AlphaProfile>? alphaProfiles,
+        IReadOnlyDictionary<int, HashSet<int>>? cutoutSurfaces)
+    {
+        if (presentation is not { AlphaBlendEnabled: true })
+            return presentation;
+
+        if (alphaProfiles is null || !alphaProfiles.TryGetValue(textureId, out var profile) ||
+            cutoutSurfaces is null || !cutoutSurfaces.TryGetValue(sourceClassId, out var selected) ||
+            !selected.Contains(textureId) ||
+            profile.CutoutFraction < 0.05 ||
+            presentation.BlendEquation is RuntimeBlendEquation.FixedAlpha or
+                RuntimeBlendEquation.AdditiveSourceAlpha or RuntimeBlendEquation.AdditiveFixedAlpha)
+            return presentation;
+
+        return presentation with
+        {
+            PreferPerPlacementFoliageDepth = true,
+            PreferFoliageCutout = true,
+        };
+    }
+
     private readonly record struct SourceVertex(long X, long Y, long Z);
 
     public static HashSet<int> FindLayeredCutoutTextures(

@@ -306,23 +306,8 @@ public static partial class Rac3WorldImport
                 var presentation = PresentationFor(
                     cls.Materials, cls.TriangleMaterialStateIndices,
                     cls.TriangleAlphaBlendEnabled, f);
-                // Only the proven overlapping leaf surfaces change rendering.
-                // Preserve grouping for all other shrubs to avoid multiplying
-                // draw calls across ordinary RAC2/RAC3 levels.
-                if (alphaProfiles?.TryGetValue(tex, out var profile) == true &&
-                    cutoutSurfaces?.TryGetValue(inst.OClass, out var cutoutTextures) == true &&
-                    cutoutTextures.Contains(tex) &&
-                    profile.CutoutFraction >= 0.05 &&
-                    presentation?.AlphaBlendEnabled is true &&
-                    presentation.BlendEquation is not (RuntimeBlendEquation.FixedAlpha or
-                        RuntimeBlendEquation.AdditiveSourceAlpha or RuntimeBlendEquation.AdditiveFixedAlpha))
-                {
-                    presentation = (presentation ?? new RuntimeMaterialPresentation()) with
-                    {
-                        PreferPerPlacementFoliageDepth = true,
-                        PreferFoliageCutout = true,
-                    };
-                }
+                presentation = RcFoliageCutoutPolicy.WithLayeredCutout(
+                    inst.OClass, tex, presentation, alphaProfiles, cutoutSurfaces);
                 var surface = (tex, presentation);
                 if (!groups.TryGetValue(surface, out var g)) groups[surface] = g = ([], [], []);
                 if (!localRemaps.TryGetValue(surface, out var remap))
