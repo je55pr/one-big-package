@@ -76,9 +76,15 @@ public static partial class Rac3WorldImport
                 entry.Value.Positions, entry.Value.Indices, entry.Value.TriangleTextureIds,
                 entry.Value.TriangleMaterialStateIndices, entry.Value.TriangleAlphaBlendEnabled,
                 entry.Value.Materials, shrubAlpha));
+        var shrubTextureMap = texByKind["shrub"].ToDictionary(t => t.Index);
+        var shrubTrimFlips = shrubs.ToDictionary(entry => entry.Key, entry =>
+            RcShrubTrimUvPolicy.FindInvertedTrimTextures(
+                entry.Value.Positions, entry.Value.Uvs, entry.Value.Indices,
+                entry.Value.TriangleTextureIds, entry.Value.TriangleMaterialStateIndices,
+                entry.Value.Materials, shrubTextureMap));
         PlaceStatics("tie", gameplay.TieInstances, ties, texByKind["tie"].Count, meshes, Grow);
         PlaceStatics("shrub", gameplay.ShrubInstances, shrubs, texByKind["shrub"].Count,
-            meshes, Grow, shrubAlpha, shrubCutouts);
+            meshes, Grow, shrubAlpha, shrubCutouts, shrubTrimFlips);
 
         var collisionRange = Rac3LevelCore.SectionRange(core, core.Header.Collision)
             ?? throw new InvalidDataException("UYA core has no bounded collision section.");
@@ -290,7 +296,8 @@ public static partial class Rac3WorldImport
     internal static void PlaceStatics(string kind, IReadOnlyList<Rac3Gameplay.MatrixInstance> instances, IReadOnlyDictionary<int, Rac3Assets.StaticClass> classes,
         int textureCount, List<RuntimeMesh> meshes, Action<double, double, double> grow,
         IReadOnlyDictionary<int, AlphaProfile>? alphaProfiles = null,
-        IReadOnlyDictionary<int, HashSet<int>>? cutoutSurfaces = null)
+        IReadOnlyDictionary<int, HashSet<int>>? cutoutSurfaces = null,
+        IReadOnlyDictionary<int, HashSet<int>>? reversedTrimTextures = null)
     {
         var groups = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), (List<double> P, List<float> U, List<int> I)>();
         foreach (var inst in instances)
@@ -314,6 +321,9 @@ public static partial class Rac3WorldImport
                     cls.TriangleAlphaBlendEnabled, f);
                 presentation = RcFoliageCutoutPolicy.WithFoliageCutout(
                     inst.OClass, tex, presentation, alphaProfiles, cutoutSurfaces);
+                bool invertTrimV = kind == "shrub" &&
+                    reversedTrimTextures?.TryGetValue(inst.OClass, out var reversed) == true &&
+                    reversed.Contains(tex);
                 var surface = (tex, presentation);
                 if (!groups.TryGetValue(surface, out var g)) groups[surface] = g = ([], [], []);
                 if (!localRemaps.TryGetValue(surface, out var remap))
@@ -340,7 +350,10 @@ public static partial class Rac3WorldImport
                         remap[key] = nv;
                         g.P.Add(world[v * 3]); g.P.Add(world[v * 3 + 1]); g.P.Add(world[v * 3 + 2]);
                         g.U.Add((float)RcTieUvSeam.Unwrap(cls.Uvs[v * 2], unwrapS));
-                        g.U.Add((float)RcTieUvSeam.Unwrap(cls.Uvs[v * 2 + 1], unwrapT));
+                        float sourceV = cls.Uvs[v * 2 + 1];
+                        if (invertTrimV)
+                            sourceV = 1f - sourceV;
+                        g.U.Add((float)RcTieUvSeam.Unwrap(sourceV, unwrapT));
                     }
                     g.I.Add(nv);
                 }
