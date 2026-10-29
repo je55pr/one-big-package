@@ -776,11 +776,11 @@ same-build gate.
 
 The former `OBPGame.Rac3Gameplay.cs` fragment is retired. The world lease's
 `GodotWorldResources.Rac3Gameplay` now owns the R&C3 class-500 node roster,
-native moby/damage sessions, original-host contact envelope, class-5821 admission
+a Godot-free `Rac3Class500WorldRuntime` native-session/admission owner, original-host contact envelope, class-5821 admission
 counts, and optional original-world HUD facts. `ActorNativeAdapters` captures
 the specific lease module for class-500 observations and source-damage dispatch,
 so callbacks referring to a retired world cannot dispatch into the next world.
-The existing class-500 host interaction still uses native UYA damage and state
+The native session has source/build admission, original class-500 damage and terminal-state tests, rejection tests and idempotent retirement tests. The existing class-500 host interaction still uses native UYA damage and state
 transitions; the source-neutral shared player/weapon selection is unchanged.
 This path is event-driven: the former root per-frame R&C3 method advanced only
 the diagnostic snapshot gate, not a native gameplay clock.

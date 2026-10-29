@@ -26,15 +26,12 @@ internal sealed class Rac3WorldModule : IDisposable
     private readonly RuntimeWorld _world;
     private readonly RuntimeWorldScene.Result _scene;
     private readonly List<RuntimeWorldScene.DynamicObjectNode> _class500 = [];
-    private readonly Rac3MobyRuntimeSession _native = new();
-    private readonly Rac3DamageTransportSession _damage = new();
+    private Rac3Class500WorldRuntime? _class500World;
     private PlayerHost? _player;
     private Rac3WorldGameplayContext? _gameplay;
     private bool _configured;
     private bool _subscribed;
     private bool _disposed;
-    private int _authored500;
-    private int _admitted500;
     private int _destroyed500;
     private int _authored5821;
     private int _admitted5821;
@@ -46,7 +43,7 @@ internal sealed class Rac3WorldModule : IDisposable
         _scene = scene;
     }
 
-    internal bool Current => !_disposed && _configured && _gameplay is not null;
+    internal bool Current => !_disposed && _configured && _gameplay is not null && _class500World?.Active == true;
     internal RuntimeWorld World => _world;
     internal bool HasPlayer(PlayerHost player) => Current && ReferenceEquals(_player, player);
     internal IReadOnlyList<RuntimeWorldScene.DynamicObjectNode> OriginalTargets =>
@@ -66,36 +63,14 @@ internal sealed class Rac3WorldModule : IDisposable
         }
 
         _gameplay = gameplay;
-        _native.RegisterWorld(_world);
-        _ = new Rac3Class500DestructibleSession(_native);
-        _ = new Rac3Class5821DamageSession(_native);
-        int rejected = 0;
+        _class500World = new Rac3Class500WorldRuntime(_world);
         int unpresented = 0;
-        foreach (var source in (_world.DynamicObjects ?? Array.Empty<RuntimeDynamicObject>())
-            .Where(source => source.NativeClassId == Rac3Class500Destructible.NativeClassId))
+        foreach (var source in _class500World.AdmittedSources)
         {
-            _authored500++;
-            try
-            {
-                var authored = Rac3Class500Destructible.ReadAuthored(source);
-                if (Rac3Class500Destructible.PostBreakRoute(authored) !=
-                    Rac3Class500PostBreakRoute.Deactivate)
-                {
-                    rejected++;
-                    continue;
-                }
-            }
-            catch (Exception ex) when (ex is ArgumentException or InvalidDataException)
-            {
-                rejected++;
-                continue;
-            }
-            _admitted500++;
             var node = Rac1WorldPresentation.FindPresentedDynamic(_scene, source);
             if (node is null) { unpresented++; continue; }
             _class500.Add(node);
         }
-
         int rejected5821 = 0;
         foreach (var source in (_world.DynamicObjects ?? Array.Empty<RuntimeDynamicObject>())
             .Where(source => source.NativeClassId == Rac3Class5821Actor.NativeClassId))
@@ -111,13 +86,13 @@ internal sealed class Rac3WorldModule : IDisposable
         }
 
         _status =
-            $"ready: {_admitted500}/{_authored500} class-500; " +
+            $"ready: {_class500World.AdmittedCount}/{_class500World.AuthoredCount} class-500; " +
             $"{_admitted5821}/{_authored5821} class-5821 profiles admitted; " +
             $"{gameplay.Gameplay.TargetGroups.Count} target groups / " +
             $"{gameplay.Gameplay.TargetPolygons.Count} polygons / " +
             $"{gameplay.Gameplay.TargetVolumes.Count} volumes sidecar";
         GD.Print($"[uya-gameplay] {_status}; {_class500.Count} class-500 presented, " +
-            $"{unpresented} unpresented, {rejected} class-500 rejected, {rejected5821} class-5821 rejected");
+            $"{unpresented} unpresented, {_class500World.RejectedCount} class-500 rejected, {rejected5821} class-5821 rejected");
     }
 
     internal void Arm(PlayerHost player, bool ordinaryPlayer)
@@ -144,24 +119,20 @@ internal sealed class Rac3WorldModule : IDisposable
             _status = "action: no recovered class-500 destructible in host contact";
             return;
         }
-        var damage = new Rac3GameplayDamageEvent(
-            Rac3GameplayEntityRef.Player,
-            Rac3GameplayEntityRef.Moby(new Rac3MobyRuntimeKey(
-                target.Source.NativeClassId, target.Source.InstanceIndex)),
-            nativeDamage: NativeDamageHp, nativeDamageFlags: NativeDamageFlags);
-        var dispatch = _damage.Publish(damage);
-        if (!_native.TryDispatchDamage<Rac3Class500BreakResult>(damage, out var result) ||
-            result is null)
+        if (!_class500World!.TryBreak(target.Source, NativeDamageHp, NativeDamageFlags,
+                publish: true, out var result, out long sequence))
         {
             _status = $"action: class-500 i{target.Source.InstanceIndex} rejected recovered damage";
             GD.Print($"[uya-gameplay] {_status}");
             return;
         }
+        // Authored world dynamic nodes have no ActorSceneFactory contact body;
+        // ordinary placed actors disable their separately owned bodies via the actor bridge.
         target.ApplyState(result.EntityState);
         _destroyed500++;
         _status = $"class-500 i{target.Source.InstanceIndex}: native state " +
             $"{result.NativeStateBefore} -> {result.NativeBreakTransitionState} -> " +
-            $"{result.PostBreakRoute}; damage event #{dispatch.Sequence}";
+            $"{result.PostBreakRoute}; damage event #{sequence}";
         GD.Print($"[uya-gameplay] {_status}");
     }
 
@@ -178,7 +149,7 @@ internal sealed class Rac3WorldModule : IDisposable
         foreach (var node in _class500)
         {
             if (!GodotObject.IsInstanceValid(node.Root) || !node.Root.Visible ||
-                !_native.Require(node.Source).IsActive) continue;
+                !_class500World!.IsActive(node.Source)) continue;
             Vector3 offset = node.Root.GlobalPosition - _player.GlobalPosition;
             float vertical = Math.Abs(offset.Y);
             offset.Y = 0f;
@@ -198,7 +169,7 @@ internal sealed class Rac3WorldModule : IDisposable
     {
         if (!Owns(node) || !GodotObject.IsInstanceValid(node.Root))
             return new(System.Numerics.Vector3.Zero, false, true, null, 0, null);
-        var active = _native.Require(node.Source).IsActive;
+        var active = _class500World!.IsActive(node.Source);
         return new(new(node.Root.GlobalPosition.X, node.Root.GlobalPosition.Y, node.Root.GlobalPosition.Z),
             active, !active, null,
             active ? Rac3Class500Destructible.ActiveNativeState :
@@ -212,10 +183,8 @@ internal sealed class Rac3WorldModule : IDisposable
             return new(false, false, "The R&C3 source world or actor has retired.");
         // Source-qualified weapon admission is performed by the shared actor set.
         // The recovered UYA receiver alone decides native class-500 damage.
-        var damage = new Rac3GameplayDamageEvent(Rac3GameplayEntityRef.Player,
-            Rac3GameplayEntityRef.Moby(new(node.Source.NativeClassId, node.Source.InstanceIndex)),
-            intent.SourceDamage, NativeDamageFlags);
-        if (!_native.TryDispatchDamage<Rac3Class500BreakResult>(damage, out var result) || result is null)
+        if (!_class500World!.TryBreak(node.Source, intent.SourceDamage, NativeDamageFlags,
+                publish: false, out var result, out _))
             return new(false, false, "Native UYA class-500 receiver rejected this contact.");
         node.ApplyState(result.EntityState);
         disableBody();
@@ -230,10 +199,10 @@ internal sealed class Rac3WorldModule : IDisposable
     {
         if (!Current || _status == "off") return string.Empty;
         int live = _class500.Count(node => GodotObject.IsInstanceValid(node.Root) &&
-            _native.Require(node.Source).IsActive);
+            _class500World!.IsActive(node.Source));
         return $"UYA TABLE1 slice: X / west-face action uses temporary host contact; " +
             $"UYA-native class-500 damage/lifecycle\n" +
-            $"class-500 authored {_authored500}, admitted {_admitted500}, " +
+            $"class-500 authored {_class500World!.AuthoredCount}, admitted {_class500World!.AdmittedCount}, " +
             $"presented live {live}, destroyed {_destroyed500}\n" +
             $"class-5821 profiles {_admitted5821}/{_authored5821}; " +
             $"native target-selection/AI/player consequence pending   {_status}";
@@ -248,6 +217,8 @@ internal sealed class Rac3WorldModule : IDisposable
         _subscribed = false;
         _player = null;
         _class500.Clear();
+        _class500World?.Dispose();
+        _class500World = null;
         _gameplay = null;
         _status = "off";
     }
