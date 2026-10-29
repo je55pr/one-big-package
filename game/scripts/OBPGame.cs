@@ -186,15 +186,18 @@ public partial class OBPGame : Node3D
 
     private Rac2WorldModule CreateRac2WorldModule(RuntimeWorld world, GodotWorldResources resources) => new(
         world, resources.Scene, resources, new Rac2WorldPorts(
-            () => ReferenceEquals(_worldScenes?.Current?.Resources, resources),
-            () => Sources.Setup.Library.Get(ObpSourceGame.Rac2)?.Identity.BuildId == OBP.RAC2.Rac2Authority.Primary.BuildId,
-            () => OrdinaryPlayerSession, () => PlayerLife.Alive, () => _playerNative is not null,
-            () => ActorHost, node => _worldHost.PlayRepresentativeAudioOneShot(node.Source),
-            SpawnCrateBoltPickups,
-            (node, hit, amount, mask) => PlayerLife.ApplySourceDamage(node, OBP.RAC2.Rac2Authority.Primary.BuildId,
+            Current: () => ReferenceEquals(_worldScenes?.Current?.Resources, resources),
+            SourceValid: () => Sources.Setup.Library.Get(ObpSourceGame.Rac2)?.Identity.BuildId == OBP.RAC2.Rac2Authority.Primary.BuildId,
+            Ordinary: () => OrdinaryPlayerSession,
+            Alive: () => PlayerLife.Alive,
+            HasNativePlayer: () => _playerNative is not null,
+            Actors: () => ActorHost,
+            Audio: node => _worldHost.PlayRepresentativeAudioOneShot(node.Source),
+            CrateReward: SpawnCrateBoltPickups,
+            PlayerDamage: (node, hit, amount, mask) => PlayerLife.ApplySourceDamage(node, OBP.RAC2.Rac2Authority.Primary.BuildId,
                 PlayerSessionNativeState.Rac2DamageAdapter, PlayerSessionNativeState.Rac2DamageDescriptor,
                 hit, amount, mask).Applied,
-            _args.CrateFocus, _args.CrateAutoStrike));
+            CrateFocus: _args.CrateFocus, CrateAutoStrike: _args.CrateAutoStrike));
 
     private Rac1WorldModule CreateRac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene) => new(world, scene, Rac1EffectRandom,
         new Rac1WorldResetPorts(

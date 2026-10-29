@@ -20,8 +20,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
     private PlayerHost? _player;
     private bool _configured;
     private bool _disposed;
-    private bool _sourceInvalidated;
-    private readonly bool _needsSource;
+    private readonly Rac2WorldLeaseClock _clock;
 
     internal Rac2WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene, GodotWorldResources resources,
         Rac2WorldPorts ports)
@@ -30,23 +29,11 @@ internal sealed partial class Rac2WorldModule : IDisposable
         _scene = scene;
         _resources = resources;
         _ports = ports;
-        _needsSource = world.Game == ObpSourceGame.Rac2 ||
-            scene.DynamicObjectNodes?.Any(node => node.Source.SourceGame == ObpSourceGame.Rac2) == true;
+        _clock = new(ports.Current, ports.SourceValid, world.Game == ObpSourceGame.Rac2 ||
+            scene.DynamicObjectNodes?.Any(node => node.Source.SourceGame == ObpSourceGame.Rac2) == true);
     }
 
-    internal bool Current
-    {
-        get
-        {
-            if (_disposed || _sourceInvalidated || !_ports.Current()) return false;
-            if (_needsSource && !_ports.SourceValid())
-            {
-                _sourceInvalidated = true;
-                return false;
-            }
-            return true;
-        }
-    }
+    internal bool Current => _clock.Current;
 
     internal IDictionary<int, Rac2Class2827HostileSession> Hostiles => _rac2Class2827Hostiles;
     internal IDictionary<int, Rac2OpeningMsr1HostSession> OpeningSessions => _rac2OpeningMsr1;
@@ -67,6 +54,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        _clock.Retire();
         if (_player is not null && GodotObject.IsInstanceValid(_player))
             _player.CrateStrikeRequested -= OnRac2PrimaryAttackRequested;
         _player = null;
@@ -74,7 +62,6 @@ internal sealed partial class Rac2WorldModule : IDisposable
         _rac2OpeningMsr1.Clear();
         _rac2OpeningLift = null;
         _rac2OpeningDoor = null;
-        _rac2NativeTickAccumulator = 0;
     }
 
     private readonly Rac2DamageTransportSession _rac2DamageTransport = new();
@@ -322,27 +309,15 @@ internal sealed partial class Rac2WorldModule : IDisposable
             return;
         }
 
-        _rac2NativeTickAccumulator += Math.Clamp(delta, 0d, 0.25d);
-        int ticks = Math.Min(12, (int)Math.Floor(_rac2NativeTickAccumulator / Rac2NativeTickSeconds));
-        if (ticks <= 0)
-        {
-            return;
-        }
+        _clock.Advance(delta, _ports.Ordinary, TickRac2OpeningLiftNativeTick,
+            TickRac2OpeningDoorNativeTick, TickRac2Hostiles);
+    }
 
-        _rac2NativeTickAccumulator -= ticks * Rac2NativeTickSeconds;
-        for (int tick = 0; tick < ticks; tick++)
-        {
-            TickRac2OpeningLiftNativeTick();
-            TickRac2OpeningDoorNativeTick();
-
-            if (_ports.Ordinary()) continue; // Registered source actor clock owns these updates.
-            foreach (var hostile in _rac2Class2827Hostiles.Values)
-            {
-                hostile.TickCooldown();
-            }
-
-            TickRac2OpeningMsr1NativeTick();
-        }
+    private void TickRac2Hostiles()
+    {
+        foreach (var hostile in _rac2Class2827Hostiles.Values)
+            hostile.TickCooldown();
+        TickRac2OpeningMsr1NativeTick();
     }
 
     internal string HudLine()

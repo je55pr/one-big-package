@@ -3746,9 +3746,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac2WorldModule(:RuntimeWorld,:GodotWorldResources):Rac2WorldModule:private",
       "Owner": "#373",
-      "Rationale": "Lease-scoped source-world factory selects the existing scene resource, authentic R&C2 build and narrowly typed presentation/player damage ports. Native actor state remains source-owned; no player provider is selected. #373 native opening/actor tests and mixed-source acceptance protect this composition.",
+      "Rationale": "Lease-scoped source-world factory selects the existing scene resource, authentic R&C2 build and narrowly typed presentation/player damage ports. Native actor state remains source-owned; no player provider is selected. #373 native opening/actor tests and mixed-source acceptance protect this composition. #373 follow-up labels the individual port callbacks to prevent silent boolean delegate order mistakes; regression and mixed-source native smoke verified.",
       "ExpiresWith": "#376",
-      "Hash": "0be976a82cc2009057a3a65e19de4164d0a0520c6c97215c561785cd37ee4923"
+      "Hash": "e9f3c8ca5745b83cfb400d81c514f7b79e2ecc5c1f9669bad2a8a4965aace1bd"
     }
   ],
   "RetiredMembers": [

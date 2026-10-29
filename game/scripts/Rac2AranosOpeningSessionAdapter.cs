@@ -7,7 +7,6 @@ namespace OBP.Game;
 
 internal sealed partial class Rac2WorldModule
 {
-    private const double Rac2NativeTickSeconds = 1d / Rac2Class2827ApproachSession.NativeTicksPerSecond;
     private const float Rac2OpeningMsr1WitnessActivationDistance = 10f;
     private const int Rac2OpeningMsr1SecondState3DelayTicks = 105;
     private const int Rac2OpeningMsr1State5Ticks = 24;
@@ -38,7 +37,6 @@ internal sealed partial class Rac2WorldModule
     private Rac2OpeningLiftHostSession? _rac2OpeningLift;
     private Rac2OpeningDoorHostSession? _rac2OpeningDoor;
     private Rac2RatchetNanotechSession _rac2RatchetNanotech = new();
-    private double _rac2NativeTickAccumulator;
     private void TickRac2OpeningLiftNativeTick()
     {
         if (!Current) return;

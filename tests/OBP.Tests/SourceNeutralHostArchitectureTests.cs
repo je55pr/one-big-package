@@ -119,11 +119,15 @@ public sealed class SourceNeutralHostArchitectureTests
     {
         var compilation = HostOwnershipAudit.Host.Value;
         var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.WorldEntry.cs");
-        string source = original.GetText().ToString().Replace("else SpawnPlayer(world);",
-            "else if (world.Game == ObpSourceGame.Rac1) SpawnPlayer(world);", StringComparison.Ordinal);
-        Assert.NotEqual(original.GetText().ToString(), source);
+        var invocation = original.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Single(call => call.Expression is IdentifierNameSyntax { Identifier.ValueText: "SpawnPlayer" });
+        var statement = Assert.IsType<ExpressionStatementSyntax>(invocation.Parent);
+        var mutation = SyntaxFactory.ParseStatement("if (world.Game == ObpSourceGame.Rac1) SpawnPlayer(world);")
+            .WithTriviaFrom(statement);
+        var changed = CSharpSyntaxTree.Create((CSharpSyntaxNode)original.GetRoot().ReplaceNode(statement, mutation),
+            (CSharpParseOptions)original.Options, original.FilePath);
         var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
-            CSharpSyntaxTree.ParseText(source, path: original.FilePath))), HostOwnershipAudit.Policy());
+            changed)), HostOwnershipAudit.Policy());
         Assert.Single(errors);
         Assert.Contains("ActivateWorld", errors[0]);
         Assert.Contains("unapproved world-origin", errors[0]);

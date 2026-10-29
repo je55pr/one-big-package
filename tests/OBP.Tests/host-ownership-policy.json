@@ -213,12 +213,12 @@
     "Key": "game/scripts/Rac2WorldModule.cs::Rac2WorldModule.Rac2WorldModule(RuntimeWorld,RuntimeWorldScene.Result,GodotWorldResources,Rac2WorldPorts)",
     "Kind": "adapter",
     "Reason": "Constructor qualifies authored R&C2 objects to own native opening context only. The player provider and inventory remain independent of world origin. #373 source-world lease tests protect this boundary.",
-    "Hash": "75347c29fe362c3f189680fe64edf737558f72260a979da5c701a0516715de2a"
+    "Hash": "4ea417c594f4ac8a53f86b400da08bb9f590ca6e0eb4bef865d7957d14de0133"
   },
   {
     "Key": "game/scripts/Rac2WorldModule.cs::Rac2WorldModule.Tick(double)",
     "Kind": "adapter",
     "Reason": "Native Aranos world tick filters only authored R&C2 world context and dispatches the pre-existing 60Hz lift/door, parity-only class-2827 phases. Ordinary actors use ActorWorldHost; no player service is selected. #373 native trace and actor regressions cover timing.",
-    "Hash": "e7af480d9ca7c5412106b84579f65dfdfcaca32e476375a187feda91836b7b16"
+    "Hash": "7540796c0807703895e5bbde1468b97d054ed4a73a18ef8b60da8916fedc56b5"
   }
 ]

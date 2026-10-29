@@ -70,12 +70,11 @@ public class HostCoordinatorArchitectureTests
         Assert.Contains("Rac2Gameplay?.Dispose()", resources, StringComparison.Ordinal);
         Assert.Contains("if (_player is { } player) resources.Rac2Gameplay?.Arm(player);", worldEntry, StringComparison.Ordinal);
         Assert.DoesNotContain("_worldScenes?.Current?.Resources.Rac2Gameplay?.Arm(player)", app, StringComparison.Ordinal);
-        Assert.Contains("if (_disposed || _sourceInvalidated || !_ports.Current()) return false;", core, StringComparison.Ordinal);
-        Assert.Contains("_sourceInvalidated = true;", core, StringComparison.Ordinal);
+        Assert.Contains("internal bool Current => _clock.Current;", core, StringComparison.Ordinal);
+        Assert.Contains("_clock.Retire();", core, StringComparison.Ordinal);
         Assert.Contains("_player.CrateStrikeRequested -= OnRac2PrimaryAttackRequested;", core, StringComparison.Ordinal);
-        Assert.Contains("if (_ports.Ordinary()) continue;", core, StringComparison.Ordinal);
-        Assert.Contains("TickRac2OpeningLiftNativeTick();", core, StringComparison.Ordinal);
-        Assert.Contains("TickRac2OpeningDoorNativeTick();", core, StringComparison.Ordinal);
+        Assert.Contains("_clock.Advance(delta, _ports.Ordinary, TickRac2OpeningLiftNativeTick,", core, StringComparison.Ordinal);
+        Assert.Contains("TickRac2OpeningDoorNativeTick, TickRac2Hostiles);", core, StringComparison.Ordinal);
         Assert.Contains("new Rac2Msr1ActorFactory(scenes, sources, Rac2Bindings())", actors, StringComparison.Ordinal);
         Assert.Contains("world.TickOpeningMsr1FromActor();", actors, StringComparison.Ordinal);
         Assert.Contains("if (!world.Current) return;", actors, StringComparison.Ordinal);
