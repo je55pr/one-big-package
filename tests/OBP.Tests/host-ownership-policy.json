@@ -8,8 +8,8 @@
   {
     "Key": "game/scripts/OBPGame.cs::OBPGame.UpdateWorldHud()",
     "Kind": "adapter",
-    "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected. #360/#356 integration reads lease-owned gameplay and the existing owned capture metadata projection; no player service is selected. Metadata wire tests and fresh native/shared replay cover this binding.",
-    "Hash": "548251fea9b98635ba6aaa087d6e79609dc3abed6ed48294f56836b0bd841522"
+    "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected. #360/#356 integration reads lease-owned gameplay and the existing owned capture metadata projection; no player service is selected. Metadata wire tests and fresh native/shared replay cover this binding. #373 reads the native R&C2 debug witness from the current world lease rather than root gameplay state. It remains a read-only world diagnostic, not a player service.",
+    "Hash": "a528dd77f19db1e0be246e0c066c5985ebb21ffeac4b2776821718079aab6b40"
   },
   {
     "Key": "game/scripts/ApplicationNavigationCoordinator.cs::ApplicationNavigationCoordinator.Choose(ObpDestination)",
@@ -28,18 +28,6 @@
     "Kind": "adapter",
     "Reason": "Novalis source water collision-face admission; environment semantics must remain source-qualified.",
     "Hash": "cab8f9e61e114d005f78f50e39c91672e2f7d3a1f868335648587447c55b91f2"
-  },
-  {
-    "Key": "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame.GetRac2GameplayHudLine()",
-    "Kind": "adapter",
-    "Reason": "Optional world debug overlay showing original GC actor/health probes; not the common PlayerHud projection.",
-    "Hash": "573bfaf9b9bf0f42bb030b3bbf648a2a5e889a0e3feb90551536103ab264cffe"
-  },
-  {
-    "Key": "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame.TickRac2Gameplay(double)",
-    "Kind": "adapter",
-    "Reason": "Original GC world lift/door context remains here; ordinary class-2827 cooldown/chase/attack ticks moved to the source-registered 60-Hz actor group. ActorRuntimeSetTests and TrilogyGameplaySmoke cover clock ownership and mixed contexts.",
-    "Hash": "79a3f08772f4c7673590ea187a33cfa099b666db233029dc58c6314198a8fe92"
   },
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.HideAuthoredWorldRatchetPresentation()",
@@ -214,5 +202,23 @@
     "Kind": "adapter",
     "Reason": "Original R&C1 missions/environment/pickups remain world-owned; ordinary enemy updates moved to the source-registered fixed actor clock. Explicit parity retains its source route; ActorRuntimeSetTests and TrilogyGameplaySmoke cover separate player and actor lifetimes. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected. #361 replaces the root enemy tick callback with the lease-owned host in the same explicit parity phase. Ordinary actors retain their registered update group; clock and reconciliation tests protect the unchanged ordering.",
     "Hash": "3fb7dc0afe526c5c33f09eab3654f5935e4c2d949c0d01de95518b19c7589df4"
+  },
+  {
+    "Key": "game/scripts/Rac2WorldModule.cs::Rac2WorldModule.HudLine()",
+    "Kind": "adapter",
+    "Reason": "Existing optional native R&C2 debug HUD displays source-world hostile phase and parity-only nanotech; not a player-global service. Source identity gates only authored world context; #373 structural and native encounter regressions protect it.",
+    "Hash": "2c8da8008a0c42ce0524e0c356df47aa384dd8eb9698ccb3559f7b5934d5adfe"
+  },
+  {
+    "Key": "game/scripts/Rac2WorldModule.cs::Rac2WorldModule.Rac2WorldModule(RuntimeWorld,RuntimeWorldScene.Result,GodotWorldResources,Rac2WorldPorts)",
+    "Kind": "adapter",
+    "Reason": "Constructor qualifies authored R&C2 objects to own native opening context only. The player provider and inventory remain independent of world origin. #373 source-world lease tests protect this boundary.",
+    "Hash": "75347c29fe362c3f189680fe64edf737558f72260a979da5c701a0516715de2a"
+  },
+  {
+    "Key": "game/scripts/Rac2WorldModule.cs::Rac2WorldModule.Tick(double)",
+    "Kind": "adapter",
+    "Reason": "Native Aranos world tick filters only authored R&C2 world context and dispatches the pre-existing 60Hz lift/door, parity-only class-2827 phases. Ordinary actors use ActorWorldHost; no player service is selected. #373 native trace and actor regressions cover timing.",
+    "Hash": "e7af480d9ca7c5412106b84579f65dfdfcaca32e476375a187feda91836b7b16"
   }
 ]

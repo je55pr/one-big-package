@@ -127,6 +127,7 @@ public partial class OBPGame
         _navigation.RetireMenuPages();
         Sources.RetireView();
         entry.Resources.Rac1Gameplay = CreateRac1WorldModule(entry.Plan.Prepared.World, entry.Resources.Scene);
+        entry.Resources.Rac2Gameplay = CreateRac2WorldModule(entry.Plan.Prepared.World, entry.Resources);
         ActivateWorld(entry.Plan.Prepared.World, entry.Resources, entry.NativeDestination, entry.Lab);
         entry.Resources.BindPlayer(_player);
     }
@@ -169,7 +170,7 @@ public partial class OBPGame
         BeginSourceWorldEntry(world);
         resources.Load(this, _worldRoot, world, _currentDestinationId!, WorldOptions(world));
         SetupOverlay(resources.Scene, world);
-        ConfigureRac2GameplayHost();
+        resources.Rac2Gameplay?.Configure();
         bool staticCamera = _args.ShotsPath is not null || _args.CaptureFrame is not null &&
             (_args.DirectLoad || _args.Destination is not null) && _args.TestScene != "player" &&
             !_args.AnimSolo && !_args.CrateFocus && !_args.CrateAutoStrike;
