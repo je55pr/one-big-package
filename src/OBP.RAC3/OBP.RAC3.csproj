@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="OBP.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../OBP.Core/OBP.Core.csproj" />
     <ProjectReference Include="../OBP.IO/OBP.IO.csproj" />
     <ProjectReference Include="../OBP.PS2/OBP.PS2.csproj" />

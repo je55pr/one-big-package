@@ -269,7 +269,7 @@ public static partial class Rac3WorldImport
         }
     }
 
-    private static void PlaceStatics(string kind, IReadOnlyList<Rac3Gameplay.MatrixInstance> instances, IReadOnlyDictionary<int, Rac3Assets.StaticClass> classes,
+    internal static void PlaceStatics(string kind, IReadOnlyList<Rac3Gameplay.MatrixInstance> instances, IReadOnlyDictionary<int, Rac3Assets.StaticClass> classes,
         int textureCount, List<RuntimeMesh> meshes, Action<double, double, double> grow)
     {
         var groups = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), (List<double> P, List<float> U, List<int> I)>();

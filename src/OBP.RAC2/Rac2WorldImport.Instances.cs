@@ -31,7 +31,7 @@ namespace OBP.RAC2;
 /// </para>
 public static partial class Rac2WorldImport
 {
-    private static void PlaceMatrixInstances(
+    internal static void PlaceMatrixInstances(
         string kind,
         IReadOnlyList<Rac2Instances.MatrixInstance> instances,
         Func<int, (double[] Positions, float[] Uvs, int[] Indices, int[] TriTexIds, RuntimeMaterialPresentation?[] TriPresentations)?> lookup,
