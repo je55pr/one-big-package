@@ -465,6 +465,45 @@ timestamps are expected to change between fresh builds/processes; these are
 excluded only from that comparison, never from ordinary replay admission.
 The rendered Oozla metadata sidecar is byte-identical to the baseline.
 
+The #357 replay-driver boundary completes the standalone extraction begun by
+#356: `PlaytestEndDriver` has its own script/UID and neither historical nested
+driver/report partial returns. `GodotPlaytestHost` exposes window size/focus,
+simulation readiness, input attachment, quit and an owned UI suspension. The
+driver receives copied capture facts plus focused report/diagnostic actions;
+it receives neither the root, a player node nor the diagnostic harness.
+
+Each input lease detaches on player tree exit, replacement, completion, failure
+and driver removal. A retained callback returns neutral input without consulting
+a retired scene or consuming the successor's tape. The driver lifetime spans
+intentional destination transitions and cancels its diagnostic tasks on failure
+or removal. Their existing run contexts still own input and temporary worlds.
+Admitted tape/bookmark writes remain in `HostOperationScope` until durable
+completion; retired drivers cannot publish their UI continuations. Driver
+termination closes its report view, canceling active child-process replays while
+retaining admitted report saves under their existing persistence owner. UI suspension
+restores the captured nodes, pause menu, focus, pointer and navigation state on
+resume or termination. Finalization is idempotent, including removal before host
+shutdown. Callback priorities, command/event order, scenario IDs and all existing
+report/bookmark/replay schemas remain unchanged.
+
+Against #353's merged result `42ebc9c` (final head `d440722`), the root remains **46 files, 457 methods,
+294 fields (177 mutable), 43 exposed members and 1,134 cross-file references**;
+the narrowed composition adds five lines, for **12,451 lines**. One existing
+composition fingerprint moves to #357, still expiring with #376. No origin,
+access or historical member permissions expand. Portable regressions cover
+retained callbacks and driver cancellation independently of host shutdown; the
+authorised reconciliation gate exercises the mixed-source route, profile restart,
+bookmark prefixes and fresh-process bug-report replays through the new adapter.
+
+Validation for #357 on that merged base: 3,260 portable Release tests pass with
+283 retail-dependent skips; 3,528 authorised NTSC-U tests pass with 15 optional
+oracle skips, using `DOTNET_PROCESSOR_COUNT=2`. All 17 reconciliation phases pass,
+including exact mixed-source replay, profile restart, bookmark prefixes and six
+fresh-process report replays. The focused ownership/input/cancellation/report
+suite passes all 105 checks. UID coverage, solution formatting and the game build
+with warnings as errors pass. Engine acceptance is headless; human visual/audible
+review is not claimed.
+
 The #351 equipment extraction retires `OBPGame.PlayerEquipment.cs` and its UID,
 including 14 historical declaration/member permissions. The root changes from
 56 files, 14,772 lines, 531 methods, 355 fields (223 mutable), 43 exposed members

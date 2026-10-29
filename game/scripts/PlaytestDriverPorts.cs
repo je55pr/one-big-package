@@ -1,15 +1,19 @@
-using Godot;
 using OBP.Fusion;
-using OBP.Game.Diagnostics;
 using OBP.Runtime.Diagnostics;
 
 namespace OBP.Game;
 
-internal sealed record PlaytestDriverPorts(Node Host, HostOperationScope Operations, Func<PlayerHost?> Player,
+internal sealed record PlaytestDriverPorts(GodotPlaytestHost Host, HostOperationScope Operations,
     Func<bool> OrdinaryPlayer, Func<bool> MovementLoading, Func<int?> BookmarkStep,
-    Func<BugReportUiCoordinator?> Reports, Func<PauseMenuUi?> PauseMenu, Func<string?> SourceBuild,
+    PlaytestReportActions Reports, Func<string?> SourceBuild,
     Func<PlaytestWeaponConfiguration?> Weapons, Func<(string Id, string Label)> Destination,
-    Func<MovementReproState> Bookmark, Action<string> MovementNotice, Func<CaptureDiagnosticHarness> Diagnostics);
+    Func<MovementReproState> Bookmark, Action<string> MovementNotice, PlaytestDiagnosticActions Diagnostics);
+
+internal sealed record PlaytestDiagnosticActions(Action<bool, CancellationToken> StartRecording,
+    Action<CancellationToken> StartReports, Action<CancellationToken> StartReconciliation,
+    Func<CancellationToken, Task> VerifyFinishedContinuation, Action<Exception> SaveFailed);
+
+internal sealed record PlaytestReportActions(Func<BugReportEntry?> ReplayReport, Action<BugReportEntry> OpenForm, Action OpenInbox, Action Close);
 
 internal static class GodotCaptureEffects
 {

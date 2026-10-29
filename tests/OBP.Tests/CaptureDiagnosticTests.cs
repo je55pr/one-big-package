@@ -224,6 +224,28 @@ public sealed class CaptureDiagnosticTests
     }
 
     [Fact]
+    public async Task DriverCancellationReleasesItsInputWithoutStoppingTheHostOrPublishingAResult()
+    {
+        var fixture = new Fixture { HoldFrames = true };
+        using var operations = new HostOperationScope();
+        using var driver = new CancellationTokenSource();
+        fixture.Harness(operations).Start("capture-fixture", context => context.Run.WaitAsync(DiagnosticFramePhase.Process),
+            "capture-failed", 7, true, lifetime: driver.Token);
+        Assert.Equal(1, operations.PendingCount);
+        driver.Cancel();
+        await fixture.Released.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(fixture.Disposed);
+        Assert.False(operations.Stopping);
+        Assert.Empty(fixture.Quits);
+        Assert.Empty(fixture.Failures);
+        bool nextOwnerRan = false;
+        operations.Start("next-owner", _ => { nextOwnerRan = true; return Task.CompletedTask; });
+        Assert.True(nextOwnerRan);
+        await operations.StopAsync();
+        Assert.Empty(operations.TakeFailures());
+    }
+
+    [Fact]
     public async Task HostCancellationReleasesInputWithoutClaimingAResult()
     {
         var fixture = new Fixture { HoldFrames = true };

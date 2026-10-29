@@ -6,10 +6,8 @@ namespace OBP.Game;
 internal sealed partial class PlaytestDriver
 {
     private bool _bugOverlayRequested, _bugRequestIsReport, _bugSuspended, _bugResumePending;
-    private bool _bugPreviousPause, _bugPauseVisible, _bugPreviousNavigationSuspended, _bugQuitPending;
-    private readonly List<(Node Node, ProcessModeEnum Mode)> _bugPausedNodes = [];
-    private Input.MouseModeEnum _bugPreviousMouse;
-    private Control? _bugReturnFocus;
+    private bool _bugQuitPending;
+    private IDisposable? _bugUiSuspension;
     private ulong _bugSuspendStart, _bugExcludedMilliseconds;
     private int _bugNoticeUntil;
     private string? _bugNotice;
@@ -57,32 +55,12 @@ internal sealed partial class PlaytestDriver
         }
         _bugSuspended = true;
         _bugSuspendStart = Time.GetTicksMsec();
-        _bugPreviousPause = GetTree().Paused;
-        _bugPreviousMouse = ApplicationPointer.MouseMode;
-        _bugReturnFocus = GetViewport().GuiGetFocusOwner();
-        _bugPausedNodes.Clear();
-        // Pause affects ordinary nodes, but source menus explicitly process
-        // Always. Freeze those too, so typing cannot navigate/equip behind us.
-        foreach (var node in Ports.Host.FindChildren("*", "", true, false))
-            if (node.ProcessMode is not (ProcessModeEnum.Inherit or ProcessModeEnum.Disabled))
-            {
-                _bugPausedNodes.Add((node, node.ProcessMode));
-                node.ProcessMode = ProcessModeEnum.Disabled;
-            }
-        _bugPreviousNavigationSuspended = ControllerBindings.MenuNavigationSuspended;
-        ControllerBindings.MenuNavigationSuspended = false;
-        if (Ports.PauseMenu() is { } pause)
-        {
-            _bugPauseVisible = pause.Visible;
-            pause.Visible = false;
-        }
-        GetTree().Paused = true;
-        ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
+        _bugUiSuspension = Ports.Host.SuspendUi();
         PlaytestClock.Active = false;
-        if (draft is not null) Ports.Reports()!.OpenForm(draft); else Ports.Reports()!.OpenInbox();
+        if (draft is not null) Ports.Reports.OpenForm(draft); else Ports.Reports.OpenInbox();
     }
 
-    public void ResumeAfterBugOverlay() => _bugResumePending = true;
+    public void ResumeAfterBugOverlay() { if (!_finished && !_finalized) _bugResumePending = true; }
 
     private bool ResumeBugCaptureAtBoundary(PlaytestStepKind kind)
     {
@@ -92,20 +70,8 @@ internal sealed partial class PlaytestDriver
         _bugExcludedMilliseconds += Time.GetTicksMsec() - _bugSuspendStart;
         // Form text and its accept/back buttons must not become held game
         // actions. The next real controls and events are recorded normally.
-        foreach (var action in InputMap.GetActions()) Input.ActionRelease(action);
-        foreach (var navigation in GetTree().Root.FindChildren("*", "", true, false).OfType<ControllerMenuNavigation>())
-            navigation.ResetRepeat();
-        foreach (var (node, mode) in _bugPausedNodes)
-            if (IsInstanceValid(node)) node.ProcessMode = mode;
-        _bugPausedNodes.Clear();
-        ControllerBindings.MenuNavigationSuspended = _bugPreviousNavigationSuspended;
-        if (Ports.PauseMenu() is { } pause)
-        {
-            pause.Visible = _bugPauseVisible;
-        }
-        if (MenuFocus.Available(_bugReturnFocus)) _bugReturnFocus!.GrabFocus();
-        GetTree().Paused = _bugPreviousPause;
-        ApplicationPointer.MouseMode = _bugPreviousMouse;
+        _bugUiSuspension?.Dispose();
+        _bugUiSuspension = null;
         _bugResumePending = _bugSuspended = false;
         PlaytestClock.RecordedMilliseconds = RecordingMilliseconds;
         PlaytestClock.Active = true;
@@ -136,6 +102,7 @@ internal sealed partial class PlaytestDriver
         if (!Session.Arguments.BugCapture || _writer is null || _finished) return;
         _finished = true;
         _step = null;
+        ReleaseSceneBindings();
         PlaytestClock.Active = false;
         _flush ??= _writer.FinishAsync(_recordingError is null ? "closed" : "error");
         await _flush;

@@ -20,8 +20,16 @@ internal static class GodotCaptureReplayStartup
                 if (camera is not null) CameraSettingsStore.Set(camera, persist: false);
                 // Last root sibling receives window input before descendant UI; callback priorities retain their original phases.
                 var installed = driver;
-                Callable.From(() => host.GetTree().Root.AddChild(installed)).CallDeferred();
+                Callable.From(() =>
+                {
+                    if (GodotObject.IsInstanceValid(installed) && !installed.Finished && GodotObject.IsInstanceValid(host) && host.IsInsideTree())
+                        host.GetTree().Root.AddChild(installed);
+                }).CallDeferred();
                 host.TreeExiting += installed.FinishOnExit;
+                installed.TreeExiting += () =>
+                {
+                    if (GodotObject.IsInstanceValid(host)) host.TreeExiting -= installed.FinishOnExit;
+                };
                 return installed;
             });
             return (true, args);
@@ -35,6 +43,7 @@ internal static class GodotCaptureReplayStartup
             catch (Exception reportError) { GD.PrintErr("[playtest] report failed: " + reportError.Message); }
             if (driver is not null)
             {
+                host.TreeExiting -= driver.FinishOnExit;
                 CameraSettingsStore.Set(driver.OriginalCameraOptions, persist: false);
                 driver.Free();
             }
