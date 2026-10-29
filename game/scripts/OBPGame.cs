@@ -281,7 +281,7 @@ public partial class OBPGame : Node3D
                 else _playerNative.EndWorld();
             },
             Wheel: () => { _lastQuickSelectTap = 0; _previousSelectedWeapon = null; },
-            Taxis: ResetRac1MetropolisTaxis, Water: () => _rac1NovalisWater = null,
+            Water: () => _rac1NovalisWater = null,
             Music: ResetRac1NovalisMusic, RedPlants: ResetRac1RedPlants, PulsingOrbs: ResetRac1PulsingOrbs,
             Explosives: ResetRac1ExplosiveCrates, Checkpoints: ResetRac1CheckpointTriggers,
             Missions: ResetRac1Missions, MetalDetector: ResetRac1MetalDetector, Wrench: ResetRac1WrenchHost,
@@ -293,9 +293,9 @@ public partial class OBPGame : Node3D
             ConfigureRac1ExplosiveCrates, ConfigureRac1CheckpointTriggers, ConfigureRac1Missions, ConfigureRac1MetalDetector,
             ConfigureRac1PlacedBolts, ConfigureRac1GoldBolts, ConfigureRac1RedPlants, ConfigureRac1PulsingOrbs,
             ConfigureRac1NovalisCranks, ConfigureRac1NovalisBreakables, ConfigureRac1NovalisMechanisms,
-            ConfigureRac1NovalisWater, ConfigureRac1NovalisMusic, ConfigureRac1MetropolisTaxis),
-        new Rac1WorldTickPorts(() => MovementReproduction.IsLoading, AbortRac1MetropolisTaxiRide,
-            TickRac1MetropolisTaxis, TickRac1NovalisMusic, TickRac1Swing, TickRac1RedPlants,
+            ConfigureRac1NovalisWater, ConfigureRac1NovalisMusic),
+        new Rac1WorldTickPorts(() => MovementReproduction.IsLoading,
+            TickRac1NovalisMusic, TickRac1Swing, TickRac1RedPlants,
             TickRac1PulsingOrbs, TickRac1ExplosiveCrates, TickRac1CheckpointTriggers, TickRac1MetalDetector,
             TickRac1Pickups, TickRac1GoldBolts, TickRac1Missions),
         new Rac1PlayerGameplayPorts(() => OrdinaryPlayerSession, () => _playerNative is not null, () => PlayerLife.Alive,
@@ -310,6 +310,12 @@ public partial class OBPGame : Node3D
         new Rac1GameplayHudPorts(_hudState, () => OrdinaryPlayerSession, () => _playerSession is not null,
             PlayerLife.PublishHud, FusionWeapons.Hud, () => _rac1Nanotech, () => _rac1Weapons, () => _rac1BoltWallet,
             () => _rac1AdditionalWeapons?.Cargo.Count ?? 0, () => _player, MetalDetectorHudText),
+        new Rac1TaxiHostPorts(
+            () => _player is { } player && IsInstanceValid(player) ? new Rac1TaxiPlayerController(player) : null,
+            () => _mode == Mode.World && !GetTree().Paused &&
+                !PauseMenuOpen && !ControllerSettingsOpen && !Rac1PlanetMapOpen &&
+                !QuickSelectOpen && _args.CaptureFrame is null,
+            () => _rac1Nanotech.Probe().IsDead),
         owner => CreateRac1EnemyHost(world, scene, owner));
 
     private Rac1EnemyHost CreateRac1EnemyHost(RuntimeWorld world, RuntimeWorldScene.Result scene, Rac1WorldModule owner) => new(
@@ -775,7 +781,7 @@ public partial class OBPGame : Node3D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (TryHandleRac1MetropolisTaxiInput(@event))
+        if ((_worldScenes?.Current?.Resources.Rac1Gameplay?.Taxis)?.TryHandleInput(@event) == true)
         {
             GetViewport().SetInputAsHandled();
             return;
@@ -1375,7 +1381,7 @@ public partial class OBPGame : Node3D
             (string.IsNullOrEmpty(crateDebug) ? "" : $"\n{crateDebug}") +
             (string.IsNullOrEmpty(rac2Gameplay) ? "" : $"\n{rac2Gameplay}") +
             (string.IsNullOrEmpty(rac1Gameplay) ? "" : $"\n{rac1Gameplay}") +
-            (GetRac1MetropolisTaxiHudLine() is { Length: > 0 } taxiHint ? $"\n{taxiHint}" : "") +
+            (((_worldScenes?.Current?.Resources.Rac1Gameplay?.Taxis)?.HudLine() ?? string.Empty) is { Length: > 0 } taxiHint ? $"\n{taxiHint}" : "") +
             (string.IsNullOrEmpty(rac3Gameplay) ? "" : $"\n{rac3Gameplay}");
     }
 
@@ -1980,10 +1986,16 @@ public partial class OBPGame : Node3D
         var movement = CreateMovementDiagnosticHarness(); var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
         var ui = CreateUiDiagnosticHarness();
         var lifetime = new GodotRac1WorldRouteLifetimeFixture(this,
-            () => new(worlds.ReadWorld(), _rac1NovalisMechanisms.Count, _rac1TaxiNodes.Count, _rac1TaxiCollisionBodies.Count,
-                _rac1Music?.Tracks.Count ?? 0, _rac1MusicDecoded.Count, _rac1MusicReader is not null, _rac1TaxiCameraWorldOwned,
-                _rac1FlyingTaxi is not null || _rac1TaxiPendingStop is not null || _rac1TaxiRiderFrame is not null, SharedProfilePath is not null),
-            () => _worldHost.Root, () => _rac1TaxiCollisionBodies.Values, () => _player?.Camera);
+            () =>
+            {
+                var taxi = (_worldScenes?.Current?.Resources.Rac1Gameplay?.Taxis)?.ReadSnapshot();
+                return new(worlds.ReadWorld(), _rac1NovalisMechanisms.Count, taxi?.Nodes ?? 0, taxi?.Hulls ?? 0,
+                    _rac1Music?.Tracks.Count ?? 0, _rac1MusicDecoded.Count, _rac1MusicReader is not null,
+                    taxi?.CameraWorldOwned ?? false,
+                    taxi is { Flying: true } || taxi?.PendingStop is not null || taxi is { RiderFrame: true },
+                    SharedProfilePath is not null);
+            },
+            () => _worldHost.Root, () => (_worldScenes?.Current?.Resources.Rac1Gameplay?.Taxis)?.CaptureHulls() ?? [], () => _player?.Camera);
         return new(movement.Ports,
             () => new GodotRac1NovalisRouteFixture(() => _rac1NovalisMechanisms, () => _player, worlds),
             () => new GodotRac1NovalisMusicFixture(worlds, () => new(worlds.ReadWorld(), _rac1Music is { } music
@@ -1997,23 +2009,8 @@ public partial class OBPGame : Node3D
 
     private IRac1TaxiDiagnosticFixture CreateRac1TaxiDiagnosticFixture() => new GodotRac1TaxiDiagnosticFixture(new()
     {
-        Session = () => _rac1MetropolisTaxis,
-        Nodes = () => _rac1TaxiNodes,
-        Hulls = () => _rac1TaxiCollisionBodies,
-        Hovers = () => _rac1TaxiHovers.Count,
+        Host = () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Taxis,
         Player = () => _player,
-        Pending = () => _rac1TaxiPendingStop,
-        HeroTarget = () => _rac1TaxiHeroTarget,
-        Flying = () => _rac1FlyingTaxi,
-        Rider = () => _rac1TaxiRiderFrame,
-        CameraOwned = () => _rac1TaxiCameraWorldOwned,
-        Hud = GetRac1MetropolisTaxiHudLine,
-        Input = TryHandleRac1MetropolisTaxiInput,
-        Abort = AbortRac1MetropolisTaxiRide,
-        Landing = TryResolveRac1TaxiLanding,
-        ToNative = ToTaxiPoint,
-        ToScene = FromTaxiPoint,
-        Basis = ToTaxiCabBasis,
     }, new GodotDiagnosticWorldObservations(WorldScenes));
 
     private ShotListCliService CreateShotListCliService() => new(_args, (game, path) => RememberCommandLineSource(game, path),
@@ -2196,7 +2193,7 @@ public partial class OBPGame : Node3D
             SetSelectorVisible: visible => _navigation.SetSelectorVisible(visible),
             SetPlayerAudioPaused: SetPlayerAudioPaused,
             TryMissionInteraction: TryHandleRac1MissionInteraction,
-            TryTaxiInteraction: TryHandleRac1MetropolisTaxiInput,
+            TryTaxiInteraction: input => (_worldScenes?.Current?.Resources.Rac1Gameplay?.Taxis)?.TryHandleInput(input) == true,
             Equipment: equipment));
     }
 

@@ -9,7 +9,7 @@ namespace OBP.Game;
 
 // Temporary bindings to the existing mechanic owners. These ports carry no root
 // reference and can be supplied by the independently extracted source modules.
-internal sealed record Rac1WorldResetPorts(Action Player, Action Wheel, Action Taxis, Action Water,
+internal sealed record Rac1WorldResetPorts(Action Player, Action Wheel, Action Water,
     Action Music, Action RedPlants, Action PulsingOrbs, Action Explosives, Action Checkpoints,
     Action Missions, Action MetalDetector, Action Wrench, Action Retry,
     Action Pickups, Action GoldBolts, Action Cranks, Action Breakables, Action Mechanisms,
@@ -22,11 +22,10 @@ internal sealed record Rac1WorldActorPorts(Action<RuntimeWorld> Pickups,
     Action<RuntimeWorld, RuntimeWorldScene.Result> PlacedBolts, Action<RuntimeWorld, RuntimeWorldScene.Result> GoldBolts,
     Action<RuntimeWorld, RuntimeWorldScene.Result> RedPlants, Action<RuntimeWorld, RuntimeWorldScene.Result> PulsingOrbs,
     Action<RuntimeWorld, RuntimeWorldScene.Result> Cranks, Action<RuntimeWorld, RuntimeWorldScene.Result> Breakables,
-    Action<RuntimeWorld, RuntimeWorldScene.Result> Mechanisms, Action<RuntimeWorld> Water, Action<RuntimeWorld> Music,
-    Action<RuntimeWorld, RuntimeWorldScene.Result> Taxis);
+    Action<RuntimeWorld, RuntimeWorldScene.Result> Mechanisms, Action<RuntimeWorld> Water, Action<RuntimeWorld> Music);
 
-internal sealed record Rac1WorldTickPorts(Func<bool> Suspended, Action AbortTaxi,
-    Action<double> Taxis, Action<double> Music, Action<double> Swing,
+internal sealed record Rac1WorldTickPorts(Func<bool> Suspended,
+    Action<double> Music, Action<double> Swing,
     Action<double> RedPlants, Action<double> PulsingOrbs, Action<double> Explosives,
     Action Checkpoints, Action<double> MetalDetector, Action<double> Pickups, Action GoldBolts, Action<double> Missions);
 

@@ -27,11 +27,12 @@ internal sealed class Rac1WorldModule : IDisposable
     internal Rac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene, Rac1PickupRandom random,
         Rac1WorldResetPorts reset, Rac1WorldActorPorts actors, Rac1WorldTickPorts ticks,
         Rac1PlayerGameplayPorts player, Rac1WorldContactPorts contacts, Rac1GameplayHudPorts hud,
-        Func<Rac1WorldModule, Rac1EnemyHost> enemies)
+        Rac1TaxiHostPorts taxis, Func<Rac1WorldModule, Rac1EnemyHost> enemies)
     {
         _world = world; _scene = scene; _reset = reset; _actors = actors; _ticks = ticks;
         _playerPorts = player; _contacts = contacts; _binding = new(player);
         Context = new(world.LevelId, random);
+        Taxis = new(taxis);
         Enemies = enemies(this);
         Hud = new(world, Context, Presentation, hud, () => _disposed);
     }
@@ -40,6 +41,7 @@ internal sealed class Rac1WorldModule : IDisposable
     internal Rac1WorldPresentation Presentation { get; } = new();
     internal Rac1GameplayHudPresenter Hud { get; }
     internal Rac1EnemyHost Enemies { get; }
+    internal Rac1MetropolisTaxiHost Taxis { get; }
 
     internal void Configure()
     {
@@ -64,10 +66,11 @@ internal sealed class Rac1WorldModule : IDisposable
 
     private void ResetBindings(bool retiring = false)
     {
+        // Release the taxi's captured player before its player/world bindings retire.
+        Taxis.Reset();
         _reset.Player();
         Context.EquipmentUsePressed = false;
         _reset.Wheel();
-        _reset.Taxis();
         _reset.Water();
         _reset.Music();
         _reset.RedPlants();
@@ -110,8 +113,8 @@ internal sealed class Rac1WorldModule : IDisposable
         if (_disposed || _ticks.Suspended() || _world.Game != ObpSourceGame.Rac1 ||
             _player is null || !GodotObject.IsInstanceValid(_player)) return;
         if (!_playerPorts.Persistent() && !_binding.TickParityLifecycle()) return;
-        if (!_playerPorts.Alive()) { _ticks.AbortTaxi(); return; }
-        _ticks.Taxis(delta);
+        if (!_playerPorts.Alive()) { Taxis.AbortRide(); return; }
+        Taxis.Tick(delta);
         _ticks.Music(delta);
         _ticks.Swing(delta);
         if (!_playerPorts.Ordinary()) Enemies.TickRac1Hostiles(delta);
@@ -137,6 +140,9 @@ internal sealed class Rac1WorldModule : IDisposable
                 _player.Rac1CrankInput = null;
                 _player.Rac1WaterSurfaceHeight = null;
             }
+            // A world swap may unbind the scene player before the ordinary reset.
+            // Return its controls/camera and release active taxi collision first.
+            Taxis.AbortRide();
             _binding.Dispose();
             ResetBindings(retiring: true);
             _reset.AdditionalWeapons();
@@ -148,6 +154,7 @@ internal sealed class Rac1WorldModule : IDisposable
             try { Enemies.Dispose(); }
             finally
             {
+                Taxis.Dispose();
                 Presentation.Dispose();
                 Context.BombGlove = null;
                 Context.BombFireRequested = false;
@@ -240,7 +247,7 @@ internal sealed class Rac1WorldModule : IDisposable
         }
 
         Enemies.ConfigureRac1Enemies(world, result);
-        _actors.Taxis(world, result);
+        Taxis.Configure(world, result);
         GD.Print($"[rac1-gameplay] ready: {Presentation.CrateNodes.Count} admitted retail crates, " +
                  $"{Presentation.HostileNodes.Count} recovered Veldin class-749 placements from " +
                  $"{authoredClass749} authored placements ({rejectedHostiles} rejected)");
