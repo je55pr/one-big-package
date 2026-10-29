@@ -110,6 +110,8 @@ public sealed class CommandLineArgsTests
 
         Assert.Equal(395, CommandLineArgs.Parse(["--shots", "shots.json",
             "--maktar-dispenser-preview", "395"]).MaktarDispenserPreview);
+        Assert.Equal(-1, CommandLineArgs.Parse(["--shots", "shots.json",
+            "--maktar-dispenser-preview", "-1"]).MaktarDispenserPreview);
         foreach (string[] args in new string[][]
         {
             ["--maktar-dispenser-preview", "394"],

@@ -16,15 +16,27 @@ public static partial class Rac2WorldImport
     /// arena import, script native gameplay, collision or spawn state.
     /// </summary>
     public static RuntimeWorld WithMaktarDispenserPreview(
-        IRandomAccessReader source, RuntimeWorld world, int instanceIndex, bool animate)
+        IRandomAccessReader source, RuntimeWorld world, int instanceIndex, bool animate,
+        bool housingOnly = false)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(world);
         if (world.Game != ObpSourceGame.Rac2 || world.LevelId != Rac2MaktarArenaPresentation.NativeLevel ||
             world.BuildId != Rac2Authority.Primary.BuildId)
             throw new InvalidDataException("Dispenser preview requires the R&C2 Maktar retail world.");
+        // All six source placements, but only the first can play its full
+        // extension. The remaining five show original fixed housing faces;
+        // an arena wave controller must eventually animate the actual
+        // moving assemblies individually. Never invent a shared motion.
+        if (instanceIndex == -1)
+        {
+            RuntimeWorld result = WithMaktarDispenserPreview(source, world, 394, animate);
+            for (int index = 395; index <= 399; index++)
+                result = WithMaktarDispenserPreview(source, result, index, animate: false, housingOnly: true);
+            return result;
+        }
         if (instanceIndex is < 394 or > 399)
-            throw new ArgumentOutOfRangeException(nameof(instanceIndex), "Maktar native dispenser indices are 394..399.");
+            throw new ArgumentOutOfRangeException(nameof(instanceIndex), "Maktar native dispenser indices are 394..399 (-1 for all).");
 
         var iso = Iso9660Filesystem.Open(source);
         var wad = iso.OpenFile("/G/LEVEL2.WAD") ?? throw new InvalidDataException("Maktar retail level is missing.");
@@ -45,12 +57,14 @@ public static partial class Rac2WorldImport
 
         var bytes = Rac2MobyClasses.ClassBytes(core, cls.OClass);
         var nativeRotation = (inst.Rotation.X, inst.Rotation.Y, inst.Rotation.Z);
-        var facing = Rac2MaktarDispenserMotion.InwardPreviewRotation(nativeRotation);
+        var facing = Rac2MaktarDispenserMotion.InwardPreviewRotation(
+            nativeRotation, inst.Position.X, inst.Position.Y);
         var native = Rac2Instances.MatrixFromPosRotScale(
             (inst.Position.X, inst.Position.Y, inst.Position.Z),
             facing, inst.Scale == 0 ? 1 : inst.Scale);
+        bool playMotion = animate && !housingOnly;
         var keys = new List<double[]>();
-        foreach (var key in animate ? sequence.Frames : sequence.Frames.Take(1))
+        foreach (var key in playMotion ? sequence.Frames : sequence.Frames.Take(1))
         {
             var positions = Ps2MobyNativePose.Pose(bytes, model, key);
             var transformed = new double[positions.Length];
@@ -67,7 +81,7 @@ public static partial class Rac2WorldImport
         // Source: 10 frames at 0.25 × 60 = 15 Hz. Smooth the diagnostics
         // only, not every animated Moby in the engine. Ping-pong also avoids
         // an unmotivated instant collapse of the extending arm at loop seam.
-        IReadOnlyList<double[]> frames = animate
+        IReadOnlyList<double[]> frames = playMotion
             ? Rac2MaktarDispenserMotion.SmoothExtendRetract(keys)
             : keys;
 
@@ -103,6 +117,13 @@ public static partial class Rac2WorldImport
         var groups = new Dictionary<(int Texture, RuntimeMaterialPresentation? Presentation), List<int>>();
         for (int face = 0; face < cls.TriangleTextureIds.Length; face++)
         {
+            // Authored static housing parts are bound to joints 3/4. Hide
+            // only the moving boom faces (joints 0/1) on inactive units.
+            // This is a diagnostic visibility approximation, not a native
+            // source-game rest-state solution.
+            if (housingOnly && Enumerable.Range(0, 3).Any(corner =>
+                model.VertexJoints[model.Indices[face * 3 + corner] * 3] is 0 or 1))
+                continue;
             var surface = (cls.TriangleTextureIds[face],
                 PresentationFor(model.Materials, model.TriangleMaterialStateIndices, null, face, classifyMobySurface: true));
             if (!groups.TryGetValue(surface, out var indices))
@@ -117,7 +138,7 @@ public static partial class Rac2WorldImport
             animated.Add(new RuntimeAnimatedMesh(
                 $"maktar-dispenser-{instanceIndex}-t{surface.Texture}", "moby", surface.Texture,
                 model.Uvs, indices.ToArray(), colours, frames,
-                animate ? (float)(System.Math.Clamp(sequence.Frames[0].Speed * 60, 6, 60) *
+                playMotion ? (float)(System.Math.Clamp(sequence.Frames[0].Speed * 60, 6, 60) *
                     Rac2MaktarDispenserMotion.SubframesPerKey) : 1,
                 MaterialPresentation: surface.Presentation, VertexColoursAreAuthored: false));
         return world with { AnimatedMeshes = animated };

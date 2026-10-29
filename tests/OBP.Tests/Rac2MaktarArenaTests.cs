@@ -67,11 +67,14 @@ public sealed class Rac2MaktarArenaTests
         {
             Assert.InRange(m.Position.Z, 503, 504);
             var facing = Rac2MaktarDispenserMotion.InwardPreviewRotation(
-                (m.Rotation.X, m.Rotation.Y, m.Rotation.Z));
+                (m.Rotation.X, m.Rotation.Y, m.Rotation.Z), m.Position.X, m.Position.Y);
+            var matrix = Rac2Instances.MatrixFromPosRotScale(
+                (m.Position.X, m.Position.Y, m.Position.Z), facing, 1);
+            var (tipX, tipY, _) = Rac2Instances.TransformPoint(matrix, 0, 1, 0);
             double dx = 500 - m.Position.X, dy = 601 - m.Position.Y;
-            double dot = (-Math.Sin(facing.Z) * dx + Math.Cos(facing.Z) * dy) /
+            double dot = ((tipX - m.Position.X) * dx + (tipY - m.Position.Y) * dy) /
                 Math.Sqrt(dx * dx + dy * dy);
-            Assert.InRange(dot, .99, 1.000001);
+            Assert.InRange(dot, .999999, 1.000001);
         });
         var core = Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0));
         var nativeClass = Rac2MobyClasses.Read(core, 2)[Rac2MaktarArenaPresentation.DispenserClass];
@@ -110,6 +113,17 @@ public sealed class Rac2MaktarArenaTests
         Assert.Same(world.Meshes, preview.Meshes);
         Assert.Same(world.CollisionMeshes, preview.CollisionMeshes);
         Assert.Equal(priorFrames, world.AnimatedMeshes?.Count ?? 0);
+        var all = Rac2WorldImport.WithMaktarDispenserPreview(reader, world, -1, animate: false);
+        var six = (all.AnimatedMeshes ?? []).Skip(priorFrames).ToArray();
+        for (int id = 394; id <= 399; id++)
+            Assert.Contains(six, surface => surface.Name.StartsWith($"maktar-dispenser-{id}-", StringComparison.Ordinal));
+        // One active full articulated model, plus five independent
+        // source-derived stationary housings (660 triangles each).
+        Assert.Equal(1188 + 5 * 660, six.Sum(surface => surface.TriangleCount));
+        Assert.All(six.Where(surface => !surface.Name.StartsWith("maktar-dispenser-394-", StringComparison.Ordinal)),
+            surface => Assert.Single(surface.Frames));
+        Assert.Equal(originalCollision, all.TotalCollisionTriangles);
+        Assert.Same(world.CollisionMeshes, all.CollisionMeshes);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             Rac2WorldImport.WithMaktarDispenserPreview(reader, world, 404, animate: false));
     }
@@ -117,8 +131,8 @@ public sealed class Rac2MaktarArenaTests
     [Fact]
     public void InwardPreviewYawFacesAllSixAuthoredDispenserPositionsTowardArenaCentre()
     {
-        // Native placement yaw makes the model's extending +Y axis point
-        // radially out; the visual-preview correction reverses only facing.
+        // Earlier tests assumed a negative-sine yaw convention and missed
+        // the error. Compare against the actual retail importer transform.
         foreach (var (x, y, yaw) in new[]
         {
             (514.02, 568.43, -2.740), (485.91, 568.45, 2.740),
@@ -126,12 +140,14 @@ public sealed class Rac2MaktarArenaTests
             (464.02, 601.79, 1.566), (535.97, 601.32, -1.576),
         })
         {
-            var transformed = Rac2MaktarDispenserMotion.InwardPreviewRotation((0, 0, yaw));
-            double fx = -Math.Sin(transformed.Z), fy = Math.Cos(transformed.Z);
+            var transformed = Rac2MaktarDispenserMotion.InwardPreviewRotation((0, 0, yaw), x, y);
             double dx = 500 - x, dy = 601 - y;
-            double dot = (fx * dx + fy * dy) / Math.Sqrt(dx * dx + dy * dy);
-            Assert.InRange(dot, .99, 1.000001);
-            Assert.Equal(yaw + Math.PI, transformed.Z, 8);
+            // Check the actual importer matrix, not a guessed yaw sign.
+            var matrix = Rac2Instances.MatrixFromPosRotScale((x, y, 503), transformed, 1);
+            var (tipX, tipY, _) = Rac2Instances.TransformPoint(matrix, 0, 1, 0);
+            double dot = ((tipX - x) * dx + (tipY - y) * dy) / Math.Sqrt(dx * dx + dy * dy);
+            Assert.InRange(dot, .999999, 1.000001);
+            Assert.Equal(Math.Atan2(dx, dy), transformed.Z, 8);
         }
     }
 

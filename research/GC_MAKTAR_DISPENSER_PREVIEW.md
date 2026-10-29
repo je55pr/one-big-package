@@ -91,6 +91,39 @@ view with exit code 0; regression tests check six inward radial angles,
 all ten original keys, intermediate samples, continuity at the loop
 seam and preserved native collision.
 
+## Second live-tester correction: actual forward axis and all six placements
+
+The test player confirmed that the interpolation was smooth, but the
+previous 180-degree rotation still aimed the dispenser incorrectly. The
+error was in our *direction test*, not in the authored model: GC's
+`MatrixFromPosRotScale` maps native local +Y to
+`(sin(yaw), cos(yaw))`, while our first regression check used
+`(-sin(yaw), cos(yaw))`. We now compute an explicit preview-facing yaw
+with `atan2(500 - instanceX, 601 - instanceY)`, and test the actual
+importer matrix against all six native placements, not a hand-derived
+yaw sign. This is an OBP preview calibration, not an asserted native
+actor-root animation.
+
+The debug preview also supports `--maktar-dispenser-preview -1`, which
+displays **all six** source-authored class-2581 placements. Only
+instance 394's full mesh is animated; the other five show the original
+housing faces bound to joints 3 and 4 (660 original triangles per
+housing). The moving boom (joint groups 0 and 1) is suppressed on
+inactive units to avoid six simultaneous arms blocking the arena.
+That filtered housing is a diagnostic stand-in for an unknown native
+idle state, not a replacement model or reconstructed gameplay logic.
+
+To test all six at once:
+
+```powershell
+./tools/play.ps1 -Planet 2 -MaktarArena -MaktarDispenser -MaktarDispenserAnimate
+```
+
+A specific native instance 394..399 can still be selected with
+`-MaktarDispenserInstance`, rendering its complete moving mesh alone.
+The original Maktar collision, authored transforms, level meshes and
+normal-play mode are unchanged.
+
 ## Status and next work
 
 The static class-2581 meshes **remain hidden in normal gameplay**.

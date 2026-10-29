@@ -18,6 +18,7 @@
   ./tools/play.ps1 -Rac2Iso "D:\isos\Going Commando.iso" -GcLevel 1
   ./tools/play.ps1 -SkipBuild
   ./tools/play.ps1 -Planet 2 -MaktarArena
+  ./tools/play.ps1 -Planet 2 -MaktarArena -MaktarDispenser -MaktarDispenserAnimate
   ./tools/play.ps1 -Planet 2 -MaktarArena -MaktarDispenser -MaktarDispenserInstance 394 -MaktarDispenserAnimate
 #>
 param(
@@ -26,7 +27,7 @@ param(
   [string]$Planet = '',
   [switch]$MaktarArena,
   [switch]$MaktarDispenser,
-  [ValidateRange(394,399)][int]$MaktarDispenserInstance = 394,
+  [ValidateScript({ $_ -eq -1 -or ($_ -ge 394 -and $_ -le 399) })][int]$MaktarDispenserInstance = -1,
   [switch]$MaktarDispenserAnimate,
   [string]$RenderingMethod = 'gl_compatibility',
   [switch]$SkipBuild

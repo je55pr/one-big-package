@@ -331,8 +331,8 @@ public sealed record CommandLineArgs
         if (result.ReplayForwardFrames.HasValue && result.LoadMovementState is null)
             throw new ArgumentException("--replay-forward requires --load-movement-state.");
         if (result.MaktarDispenserPreview is not null && ((!result.MaktarArenaStart && result.ShotsPath is null) ||
-            result.MaktarDispenserPreview is < 394 or > 399))
-            throw new ArgumentException("--maktar-dispenser-preview requires a Maktar player or shots diagnostic and a native instance 394..399.");
+            result.MaktarDispenserPreview is not (-1 or >= 394 and <= 399)))
+            throw new ArgumentException("--maktar-dispenser-preview requires a Maktar player or shots diagnostic and a native instance 394..399 (-1 for all six).");
         if (result.MaktarDispenserAnimate && result.MaktarDispenserPreview is null)
             throw new ArgumentException("--maktar-dispenser-animate requires --maktar-dispenser-preview.");
         if (result.MaktarArenaStart && (result.ShotsPath is not null || result.TestScene != "player" ||

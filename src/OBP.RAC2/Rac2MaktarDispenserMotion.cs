@@ -10,14 +10,23 @@ public static class Rac2MaktarDispenserMotion
     public const int SubframesPerKey = 6;
 
     /// <summary>
-    /// The six source yaw values all orient local +Y radially away from
-    /// arena centre (500, 601). The inactive preview displayed an arm into
-    /// the exterior wall. Face its extending axis into the combat floor for
-    /// the isolated visual study. This is NOT a recovered native actor state.
+    /// A posed class-2581 arm extends along native local +Y. The retail
+    /// instance matrix maps that to (sin(yaw), cos(yaw)), NOT
+    /// (-sin(yaw), cos(yaw)). Aim the diagnostic arm from its authored
+    /// placement at the centre of Maktar's round stage. This is a preview
+    /// facing calibration, not a recovered gameplay-state transform.
     /// </summary>
     public static (double X, double Y, double Z) InwardPreviewRotation(
-        (double X, double Y, double Z) nativeRotation) =>
-        (nativeRotation.X, nativeRotation.Y, nativeRotation.Z + Math.PI);
+        (double X, double Y, double Z) nativeRotation,
+        double nativeX, double nativeY)
+    {
+        const double centreX = 500;
+        const double centreY = 601;
+        double dx = centreX - nativeX, dy = centreY - nativeY;
+        if (!double.IsFinite(dx) || !double.IsFinite(dy) || dx * dx + dy * dy < 1)
+            throw new ArgumentException("Invalid Maktar dispenser position.");
+        return (nativeRotation.X, nativeRotation.Y, Math.Atan2(dx, dy));
+    }
 
     /// <summary>
     /// Smooth a native sequence of posed vertex arrays in either direction.
