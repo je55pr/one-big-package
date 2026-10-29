@@ -99,6 +99,27 @@ public sealed class CommandLineArgsTests
     }
 
     [Fact]
+    public void MaktarDispenserPreviewIsExplicitAndSourceScoped()
+    {
+        Assert.Null(CommandLineArgs.Parse([]).MaktarDispenserPreview);
+        var staged = CommandLineArgs.Parse(["--planet", "2", "--test-scene", "player",
+            "--maktar-arena-start", "--maktar-dispenser-preview", "394",
+            "--maktar-dispenser-animate"]);
+        Assert.Equal(394, staged.MaktarDispenserPreview);
+        Assert.True(staged.MaktarDispenserAnimate);
+
+        Assert.Equal(395, CommandLineArgs.Parse(["--shots", "shots.json",
+            "--maktar-dispenser-preview", "395"]).MaktarDispenserPreview);
+        foreach (string[] args in new string[][]
+        {
+            ["--maktar-dispenser-preview", "394"],
+            ["--maktar-dispenser-preview", "404", "--shots", "shots.json"],
+            ["--maktar-dispenser-animate"]
+        })
+            Assert.Throws<ArgumentException>(() => CommandLineArgs.Parse(args));
+    }
+
+    [Fact]
     public void KerwanTaxiSmokeIsOptIn()
     {
         Assert.False(CommandLineArgs.Parse([]).Rac1MetropolisTaxiSmoke);

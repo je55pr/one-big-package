@@ -40,6 +40,13 @@ public partial class OBPGame
             var source = new WorldSource(entry =>
             {
                 var world = load();
+                if (_args.MaktarDispenserPreview is { } previewIndex)
+                {
+                    if (sourcePath is null) throw new InvalidDataException("Dispenser preview requires an attached R&C2 disc.");
+                    using var previewSource = new FileRandomAccessReader(sourcePath);
+                    world = OBP.RAC2.Rac2WorldImport.WithMaktarDispenserPreview(
+                        previewSource, world, previewIndex, _args.MaktarDispenserAnimate);
+                }
                 var spawn = _args.MaktarArenaStart
                     ? OBP.RAC2.Rac2MaktarArenaStaging.CreateValidatedEntry(world)
                     : ValidateSourceEntry(world);

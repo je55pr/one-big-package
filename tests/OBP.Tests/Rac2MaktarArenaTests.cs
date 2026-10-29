@@ -72,6 +72,38 @@ public sealed class Rac2MaktarArenaTests
         Assert.All(nativeClass.Sequences, sequence => Assert.NotEmpty(sequence.Frames));
     }
 
+    [SkippableFact]
+    public void NativeDispenserPreviewUsesIndependentSourceFramesWithoutChangingTheWorld()
+    {
+        string? path = Environment.GetEnvironmentVariable("OBP_GC_ISO");
+        Skip.If(string.IsNullOrEmpty(path) || !File.Exists(path), "Authorised Going Commando ISO not attached");
+        using var reader = new FileRandomAccessReader(path!);
+        var world = Rac2WorldImport.Build(reader, 2);
+        var originalStatic = world.TotalRenderTriangles;
+        var originalCollision = world.TotalCollisionTriangles;
+        var priorFrames = world.AnimatedMeshes?.Count ?? 0;
+
+        var preview = Rac2WorldImport.WithMaktarDispenserPreview(reader, world, 394, animate: true);
+        var surfaces = (preview.AnimatedMeshes ?? []).Skip(priorFrames).ToArray();
+        Assert.NotEmpty(surfaces);
+        Assert.All(surfaces, surface =>
+        {
+            Assert.StartsWith("maktar-dispenser-394-", surface.Name);
+            Assert.Equal("moby", surface.AssetKind);
+            Assert.Equal(10, surface.Frames.Count);
+            Assert.Equal(surface.VertexCount * 2, surface.Uvs.Length);
+            Assert.All(surface.Frames, points => Assert.Equal(surface.Frames[0].Length, points.Length));
+        });
+        Assert.Equal(1188, surfaces.Sum(surface => surface.TriangleCount));
+        Assert.Equal(originalStatic, preview.TotalRenderTriangles);
+        Assert.Equal(originalCollision, preview.TotalCollisionTriangles);
+        Assert.Same(world.Meshes, preview.Meshes);
+        Assert.Same(world.CollisionMeshes, preview.CollisionMeshes);
+        Assert.Equal(priorFrames, world.AnimatedMeshes?.Count ?? 0);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac2WorldImport.WithMaktarDispenserPreview(reader, world, 404, animate: false));
+    }
+
     [Fact]
     public void WrongWorldAndMissingCollisionCannotUseArenaTestEntry()
     {

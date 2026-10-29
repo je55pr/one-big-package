@@ -18,12 +18,16 @@
   ./tools/play.ps1 -Rac2Iso "D:\isos\Going Commando.iso" -GcLevel 1
   ./tools/play.ps1 -SkipBuild
   ./tools/play.ps1 -Planet 2 -MaktarArena
+  ./tools/play.ps1 -Planet 2 -MaktarArena -MaktarDispenser -MaktarDispenserInstance 394 -MaktarDispenserAnimate
 #>
 param(
   [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
   [int]$GcLevel = 1,
   [string]$Planet = '',
   [switch]$MaktarArena,
+  [switch]$MaktarDispenser,
+  [ValidateRange(394,399)][int]$MaktarDispenserInstance = 394,
+  [switch]$MaktarDispenserAnimate,
   [string]$RenderingMethod = 'gl_compatibility',
   [switch]$SkipBuild
 )
@@ -67,6 +71,13 @@ if ($MaktarArena) {
   }
   $sceneArgs = @('--rac2-iso', $Rac2Iso, '--planet', '2',
     '--test-scene', 'player', '--maktar-arena-start')
+}
+if ($MaktarDispenser) {
+  if (-not $MaktarArena) { throw '-MaktarDispenser requires -MaktarArena.' }
+  $sceneArgs += @('--maktar-dispenser-preview', "$MaktarDispenserInstance")
+  if ($MaktarDispenserAnimate) { $sceneArgs += '--maktar-dispenser-animate' }
+} elseif ($MaktarDispenserAnimate) {
+  throw '-MaktarDispenserAnimate requires -MaktarDispenser.'
 }
 
 # --- pinned Godot ------------------------------------------------------------

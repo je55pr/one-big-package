@@ -1,0 +1,25 @@
+{
+  "world": "2",
+  "shots": [
+    {
+      "name": "dispenser-394-arena-side",
+      "camera": "orbit",
+      "focus": [514, 504, 561],
+      "distance": 30,
+      "azimuthDegrees": 0,
+      "elevationDegrees": 16,
+      "hideHud": true,
+      "settleFrames": 25
+    },
+    {
+      "name": "dispenser-394-exterior",
+      "camera": "orbit",
+      "focus": [514, 504, 561],
+      "distance": 23,
+      "azimuthDegrees": 182,
+      "elevationDegrees": 18,
+      "hideHud": true,
+      "settleFrames": 25
+    }
+  ]
+}

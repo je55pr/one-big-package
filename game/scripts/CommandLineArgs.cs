@@ -132,6 +132,9 @@ public sealed record CommandLineArgs
     public bool CrateAutoStrike { get; init; }
     /// <summary>Opt-in, source-validated Maktar combat-floor test entry. Not a campaign spawn.</summary>
     public bool MaktarArenaStart { get; init; }
+    /// <summary>Optional native class-2581 animated visual study (a single authored placement).</summary>
+    public int? MaktarDispenserPreview { get; init; }
+    public bool MaktarDispenserAnimate { get; init; }
     /// <summary>Explicit diagnostic display of missing native Moby models as pink cubes.</summary>
     public bool MobyMarkers { get; init; }
 
@@ -278,6 +281,8 @@ public sealed record CommandLineArgs
                 "--crate-focus" => result with { CrateFocus = true },
                 "--crate-auto-strike" => result with { CrateAutoStrike = true },
                 "--maktar-arena-start" => result with { MaktarArenaStart = true },
+                "--maktar-dispenser-preview" => result with { MaktarDispenserPreview = int.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture) },
+                "--maktar-dispenser-animate" => result with { MaktarDispenserAnimate = true },
                 "--moby-markers" => result with { MobyMarkers = true },
                 "--rac3-target-seed-audit" => result with { Rac3TargetSeedAudit = true },
                 "--rac1-veldin-play-smoke" => result with { Rac1VeldinPlaySmoke = true },
@@ -325,6 +330,11 @@ public sealed record CommandLineArgs
             throw new ArgumentException("--bug-capture cannot be combined with --record-playtest, --replay-playtest or --replay-bug-report.");
         if (result.ReplayForwardFrames.HasValue && result.LoadMovementState is null)
             throw new ArgumentException("--replay-forward requires --load-movement-state.");
+        if (result.MaktarDispenserPreview is not null && ((!result.MaktarArenaStart && result.ShotsPath is null) ||
+            result.MaktarDispenserPreview is < 394 or > 399))
+            throw new ArgumentException("--maktar-dispenser-preview requires a Maktar player or shots diagnostic and a native instance 394..399.");
+        if (result.MaktarDispenserAnimate && result.MaktarDispenserPreview is null)
+            throw new ArgumentException("--maktar-dispenser-animate requires --maktar-dispenser-preview.");
         if (result.MaktarArenaStart && (result.ShotsPath is not null || result.TestScene != "player" ||
             !result.TestSceneExplicit || result.Planet is not ("2" or "LEVEL2") &&
             result.Destination != "rac2:LEVEL2"))
