@@ -393,9 +393,13 @@ public sealed class CaptureDiagnosticTests
         public BugReporterWorldDiagnostic ReadWorld() => throw new InvalidOperationException("Form did not open.");
         public BugReporterArchiveDiagnostic ReadArchive() => throw new InvalidOperationException("Form did not open.");
         public void FocusDescription() => DescriptionFocused = true;
-        public void FocusButton(string label) => throw new InvalidOperationException("Form did not open.");
+        public void FocusButton(string label) => throw new InvalidOperationException($"Form did not open for button '{label}'.");
         public Vector2 ReportButtonCentre => throw new InvalidOperationException("Form did not open.");
-        public Task CaptureAsync(string name, DiagnosticRunContext run) => throw new InvalidOperationException("Form did not open.");
+        public Task CaptureAsync(string name, DiagnosticRunContext run)
+        {
+            run.CancellationToken.ThrowIfCancellationRequested();
+            throw new InvalidOperationException($"Form did not open for capture '{name}'.");
+        }
     }
 
     private sealed class Fixture : ICaptureRecorderDiagnosticFixture, ICaptureDiagnosticInput, ICaptureDiagnosticInputFactory,
