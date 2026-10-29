@@ -137,8 +137,13 @@ public static class Rac3Assets
             int jointCount = classBytes[0x08];
             var joints = GcUyaMoby.ReadJoints(classBytes, jointCount);
             var sequences = joints.Count > 0 ? GcUyaMoby.ReadSequences(classBytes, jointCount) : [];
+            // Admit rigid-jointed initial poses only for the verified Phoenix
+            // trophy classes. Other rigid classes still need per-class retail
+            // validation before changing their existing presentation.
             if (recoverCache && jointCount is > 0 and <= 112 &&
-                mesh.SkinningApplied && mesh.SkinStateFullyResolved &&
+                (mesh.SkinningApplied ||
+                 (oClass is >= 7501 and <= 7515 && Ps2MobyNativePose.HasRigidJointBinding(mesh, jointCount))) &&
+                mesh.SkinStateFullyResolved &&
                 sequences.FirstOrDefault(s => s.Index == 0) is { Frames.Count: > 0 } first &&
                 first.Frames[0].ExtraChannelsResolved)
             {

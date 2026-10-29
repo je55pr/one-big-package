@@ -109,7 +109,13 @@ public static partial class Rac3WorldImport
             if (!mobyClasses.Decoded.ContainsKey(oClass) && !mobyClasses.ZeroLocalCoreClasses.Contains(oClass))
                 throw new InvalidDataException($"UYA Moby placement references undeclared class {oClass}.");
         }
-        var mobyModels = BuildMobyModels(mobyClasses.Decoded, referencedMobyClasses);
+        // Trophy-room figures have rigid joints even though the native packets
+        // contain no blended skin weights. The room's miniature display pose
+        // also differs from the source's pickup rest orientation.
+        var visualClasses = tableIndex == Rac3PhoenixTrophyPresentation.TableIndex && nativeMobyPoseOverride
+            ? Rac3PhoenixTrophyPresentation.Apply(mobyClasses.Decoded)
+            : mobyClasses.Decoded;
+        var mobyModels = BuildMobyModels(visualClasses, referencedMobyClasses);
         var animatedMeshes = BuildAnimationPreview(tableIndex, gameplay.MobyInstances, mobyClasses.Decoded, out var animatedInstances);
         var dynamicObjects = gameplay.MobyInstances.Select(m =>
         {
