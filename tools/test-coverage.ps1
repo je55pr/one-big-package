@@ -24,6 +24,7 @@ Get-ChildItem Env: | Where-Object Name -like 'OBP_*' | ForEach-Object {
     $saved[$_.Name] = $_.Value
     [Environment]::SetEnvironmentVariable($_.Name, $null, 'Process')
 }
+Push-Location $repoRoot # global.json is selected from the working directory
 try {
     if (-not $NoBuild) {
         & dotnet build (Join-Path $repoRoot 'OneBigPackage.sln') -c $Configuration --nologo -warnaserror
@@ -58,4 +59,5 @@ catch {
 }
 finally {
     foreach ($name in $saved.Keys) { [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process') }
+    Pop-Location
 }

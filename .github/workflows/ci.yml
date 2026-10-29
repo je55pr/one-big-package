@@ -22,7 +22,15 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '8.0.x'
+          global-json-file: global.json
+          dotnet-version: '8.0.x' # Also install runtime 8 for net8.0 tools and tests
+      - name: Test SDK feature-band and bootstrap policy
+        run: bash tools/test-dotnet-toolchain.sh
+      - name: Test PowerShell toolchain policy
+        shell: pwsh
+        run: ./tools/test-dotnet-toolchain.ps1
+      - name: Verify pinned .NET SDK and C# language version
+        run: bash tools/check-toolchain.sh
       - run: dotnet restore OneBigPackage.sln
       - run: dotnet format OneBigPackage.sln --verify-no-changes --no-restore --verbosity minimal
       - run: dotnet build OneBigPackage.sln -c Release --no-restore --nologo -warnaserror
@@ -60,7 +68,10 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '8.0.x'
+          global-json-file: global.json
+          dotnet-version: '8.0.x' # Also install runtime 8 for net8.0 tools and tests
+      - name: Verify pinned .NET SDK and C# language version
+        run: bash tools/check-toolchain.sh
       - name: Install checksum-pinned Godot .NET
         run: bash tools/bootstrap-godot.sh
       - name: Build Godot C# host

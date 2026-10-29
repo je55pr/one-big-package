@@ -1,23 +1,21 @@
 #!/usr/bin/env bash
-# One-shot dev bootstrap for a fresh Linux checkout: check .NET, fetch the pinned
-# Godot, restore/build, generate the import cache.
-#   ./tools/bootstrap-dev.sh
-# then: ./tools/test.sh ; ./tools/capture.sh smoke
+# Bootstrap a fresh Linux checkout with the SDK from global.json and pinned Godot.
+# If the SDK is missing, run ./tools/bootstrap-dotnet.sh first.
 set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(dirname "$script_dir")"
-manifest="$script_dir/godot-toolchain.json"
+cd "$root"
+source "$script_dir/dotnet-toolchain.sh"
+required="$(obp_required_sdk "$root")"
 
-min_major="$(node -e "console.log(require('$manifest').dotnet.minimumSdkMajor)")"
-sdk="$(dotnet --version)"
-if [ "${sdk%%.*}" -lt "$min_major" ]; then
-  echo "Need .NET SDK ${min_major}.x or newer; found $sdk" >&2
-  echo "Install: https://dotnet.microsoft.com/download or ./tools/bootstrap-dotnet.sh" >&2
-  exit 1
+# Prefer only a complete, compatible local SDK/runtime over a working system SDK.
+if [ -x "$root/.tools/dotnet/dotnet" ] && obp_has_toolchain "$root/.tools/dotnet/dotnet" "$required"; then
+  export DOTNET_ROOT="$root/.tools/dotnet"
+  export PATH="$DOTNET_ROOT:$PATH"
 fi
-echo ".NET SDK $sdk OK"
 
-godot="$("$script_dir/bootstrap-godot.sh" linux_x86_64 | tail -1)"
+bash "$script_dir/check-toolchain.sh"
+godot="$(bash "$script_dir/bootstrap-godot.sh" linux_x86_64 | tail -1)"
 
 dotnet restore "$root/OneBigPackage.sln"
 dotnet build "$root/OneBigPackage.sln" -c Debug --nologo
