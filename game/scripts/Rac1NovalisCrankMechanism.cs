@@ -75,8 +75,26 @@ internal sealed class Rac1NovalisCrankMechanism(
     {
         var meshes = node.Root.GetChildren().OfType<MeshInstance3D>().ToArray();
         if (meshes.Length == 0) return;
-        Aabb bounds = meshes[0].GetAabb();
-        foreach (var mesh in meshes.Skip(1)) bounds = bounds.Merge(mesh.GetAabb());
+        // Mesh AABBs are mesh-local. Account for each child mesh's transform
+        // before placing a single enclosing box in the door root's space.
+        Aabb bounds = default;
+        bool hasCorner = false;
+        foreach (var mesh in meshes)
+        {
+            Aabb local = mesh.GetAabb();
+            for (int x = 0; x < 2; x++)
+            for (int y = 0; y < 2; y++)
+            for (int z = 0; z < 2; z++)
+            {
+                var corner = new Vector3(
+                    x == 0 ? local.Position.X : local.End.X,
+                    y == 0 ? local.Position.Y : local.End.Y,
+                    z == 0 ? local.Position.Z : local.End.Z);
+                Vector3 rootCorner = mesh.Transform * corner;
+                if (!hasCorner) { bounds = new Aabb(rootCorner, Vector3.Zero); hasCorner = true; }
+                else bounds = bounds.Expand(rootCorner);
+            }
+        }
         if (bounds.Size.LengthSquared() < .001f) return;
         var collider = new StaticBody3D { Name = "NovalisDoorHostCollider", CollisionLayer = 1, CollisionMask = 1 };
         collider.AddChild(new CollisionShape3D
