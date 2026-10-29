@@ -9,15 +9,16 @@ using OBP.RAC1.Gameplay;
 using OBP.RAC1.Level;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
+using OBP.Game.Diagnostics;
 
 namespace OBP.Game;
 
 internal sealed record Rac1ActorBindings(Rac1Class749HostileSession Hostiles,
-    IDictionary<int, RuntimeWorldScene.DynamicObjectNode> Nodes, IDictionary<int, Rac1HostedEnemy> Enemies,
+    IDictionary<int, RuntimeWorldScene.DynamicObjectNode> Nodes, Rac1EnemyRoster<Rac1HostedEnemy> Enemies,
     Func<RuntimeWorldScene.DynamicObjectNode, ActorObservation> Observe,
     Func<RuntimeWorldScene.DynamicObjectNode, WeaponDamageIntent, ActorHitResult> Damage,
     Action<WeaponTargetKey> ClearTransients, Action<int> ClearCaptures, Action<RuntimeWorld> EnsurePickupBank,
-    Action<ActorTickFacts> Tick);
+    Action<ActorTickFacts> Tick, Func<bool> Current);
 
 /// <summary>Godot binding of the recovered LEVEL0 class-749 target/home recipe.</summary>
 internal sealed class Rac1ToadActorFactory(ActorSceneFactory scenes, ActorSourceCache assets, Rac1ActorBindings native) : IActorFactory
@@ -30,20 +31,31 @@ internal sealed class Rac1ToadActorFactory(ActorSceneFactory scenes, ActorSource
 
     public HostedActor Create(ActorPlacement placement, RuntimeWorld library, ActorSourceVersion source)
     {
+        if (!native.Current()) throw new InvalidOperationException("The R&C1 actor factory's scene has retired.");
         var scene = scenes.Create(placement, library, source => Rac1Class749Hostile.ReadAuthored(source) is { Health: 1 });
         var node = scene.Node;
         bool registered = false;
+        bool tracked = false;
+        Rac1HostedEnemy? ownedEnemy = null;
         void Retire()
         {
-            try { native.ClearTransients(scene.Registration.Instance.Target); }
-            finally
-            {
-                if (native.Enemies.Remove(node.Source.InstanceIndex, out var enemy) &&
-                    enemy.Flame is { } flame && GodotObject.IsInstanceValid(flame)) flame.QueueFree();
-                native.Nodes.Remove(node.Source.InstanceIndex);
-                if (registered) native.Hostiles.Unregister(node.Source);
-                native.ClearCaptures(node.Source.InstanceIndex);
-            }
+            DiagnosticCleanup.Run("R&C1 placed toad retirement",
+                () => { if (ownedEnemy is not null && native.Current()) native.ClearTransients(scene.Registration.Instance.Target); },
+                () =>
+                {
+                    if (ownedEnemy is not null && native.Enemies.Remove(ownedEnemy, out var enemy))
+                    {
+                        enemy.Retired = true;
+                        if (enemy.Flame is { } flame && GodotObject.IsInstanceValid(flame) && !flame.IsQueuedForDeletion()) flame.QueueFree();
+                    }
+                },
+                () =>
+                {
+                    if (tracked && native.Nodes.TryGetValue(node.Source.InstanceIndex, out var current) && ReferenceEquals(current, node))
+                        native.Nodes.Remove(node.Source.InstanceIndex);
+                },
+                () => { if (registered) native.Hostiles.Unregister(node.Source); },
+                () => { if (ownedEnemy is not null && native.Current()) native.ClearCaptures(node.Source.InstanceIndex); });
         }
         try
         {
@@ -51,6 +63,7 @@ internal sealed class Rac1ToadActorFactory(ActorSceneFactory scenes, ActorSource
             var probe = native.Hostiles.Register(node.Source, node.State, new(-position.X, position.Y, position.Z));
             registered = true;
             native.Nodes.Add(node.Source.InstanceIndex, node);
+            tracked = true;
             var asset = assets.Asset(source, placement.LevelId, placement.NativeClassId, "rac1/moby-animation", () =>
             {
                 using var reader = new FileRandomAccessReader(source.Path);
@@ -66,6 +79,7 @@ internal sealed class Rac1ToadActorFactory(ActorSceneFactory scenes, ActorSource
             var enemy = new Rac1HostedEnemy(node, asset, body, new Rac1EnemyMotion(749, MathF.Atan2(effectForward.Y, effectForward.X)), probe.NativeSequence ?? 1);
             node.ConfigureAnimations(asset.Presentation); node.ApplyAnimationSample(enemy.Animation.Sample);
             native.Enemies.Add(node.Source.InstanceIndex, enemy);
+            ownedEnemy = enemy;
             // Only relocation/home is authored by OBP; steering, reactions and rewards remain source-owned.
             native.EnsurePickupBank(library);
             return new(scene.Registration, node, () => native.Observe(node), intent => native.Damage(node, intent),

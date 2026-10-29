@@ -26,17 +26,20 @@ internal sealed class Rac1WorldModule : IDisposable
 
     internal Rac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene, Rac1PickupRandom random,
         Rac1WorldResetPorts reset, Rac1WorldActorPorts actors, Rac1WorldTickPorts ticks,
-        Rac1PlayerGameplayPorts player, Rac1WorldContactPorts contacts, Rac1GameplayHudPorts hud)
+        Rac1PlayerGameplayPorts player, Rac1WorldContactPorts contacts, Rac1GameplayHudPorts hud,
+        Func<Rac1WorldModule, Rac1EnemyHost> enemies)
     {
         _world = world; _scene = scene; _reset = reset; _actors = actors; _ticks = ticks;
         _playerPorts = player; _contacts = contacts; _binding = new(player);
         Context = new(world.LevelId, random);
+        Enemies = enemies(this);
         Hud = new(world, Context, Presentation, hud, () => _disposed);
     }
 
     internal Rac1WorldContext Context { get; }
     internal Rac1WorldPresentation Presentation { get; } = new();
     internal Rac1GameplayHudPresenter Hud { get; }
+    internal Rac1EnemyHost Enemies { get; }
 
     internal void Configure()
     {
@@ -59,7 +62,7 @@ internal sealed class Rac1WorldModule : IDisposable
         _playerPorts.ConfigurePresentation(_world);
     }
 
-    private void ResetBindings()
+    private void ResetBindings(bool retiring = false)
     {
         _reset.Player();
         Context.EquipmentUsePressed = false;
@@ -75,7 +78,7 @@ internal sealed class Rac1WorldModule : IDisposable
         _reset.MetalDetector();
         _reset.Wrench();
         _reset.Retry();
-        _reset.Enemies();
+        if (retiring) Enemies.Dispose(); else Enemies.ResetRac1Enemies();
         _reset.Pickups();
         _reset.GoldBolts();
         _reset.Cranks();
@@ -111,7 +114,7 @@ internal sealed class Rac1WorldModule : IDisposable
         _ticks.Taxis(delta);
         _ticks.Music(delta);
         _ticks.Swing(delta);
-        if (!_playerPorts.Ordinary()) _ticks.Hostiles(delta);
+        if (!_playerPorts.Ordinary()) Enemies.TickRac1Hostiles(delta);
         _ticks.RedPlants(delta);
         _ticks.PulsingOrbs(delta);
         _ticks.Explosives(delta);
@@ -135,18 +138,22 @@ internal sealed class Rac1WorldModule : IDisposable
                 _player.Rac1WaterSurfaceHeight = null;
             }
             _binding.Dispose();
-            ResetBindings();
+            ResetBindings(retiring: true);
             _reset.AdditionalWeapons();
             _reset.BombPresentation();
         }
         finally
         {
             _player = null;
-            Presentation.Dispose();
-            Context.BombGlove = null;
-            Context.BombFireRequested = false;
-            Context.CombatStatus = "off";
-            _disposed = true;
+            try { Enemies.Dispose(); }
+            finally
+            {
+                Presentation.Dispose();
+                Context.BombGlove = null;
+                Context.BombFireRequested = false;
+                Context.CombatStatus = "off";
+                _disposed = true;
+            }
         }
     }
 
@@ -232,7 +239,7 @@ internal sealed class Rac1WorldModule : IDisposable
             }
         }
 
-        _actors.Enemies(world, result);
+        Enemies.ConfigureRac1Enemies(world, result);
         _actors.Taxis(world, result);
         GD.Print($"[rac1-gameplay] ready: {Presentation.CrateNodes.Count} admitted retail crates, " +
                  $"{Presentation.HostileNodes.Count} recovered Veldin class-749 placements from " +

@@ -31,14 +31,14 @@ public partial class OBPGame
     private MovementReproWorld CaptureMovementWorld() => new(
         Rac1World.Context.MobyRuntime.Instances
             .Where(instance => !instance.IsActive ||
-                _rac1Enemies.TryGetValue(instance.InstanceIndex, out var enemy) && enemy.RewardEmitted)
+                Rac1World.Enemies.Roster.TryGetValue(instance.InstanceIndex, out var enemy) && enemy.RewardEmitted)
             .OrderBy(instance => instance.InstanceIndex)
             .Select(instance => new MovementReproInactiveObject(instance.Key, instance.State.NativeState,
                 instance.State.IsTerminalized ||
-                _rac1Enemies.TryGetValue(instance.InstanceIndex, out var enemy) && enemy.RewardEmitted)).ToArray(),
+                Rac1World.Enemies.Roster.TryGetValue(instance.InstanceIndex, out var enemy) && enemy.RewardEmitted)).ToArray(),
         _rac1Weapons.CapturePersistentState(), _rac1Weapons.CurrentItemId, _rac1BoltWallet.Balance,
         _rac1AdditionalWeapons?.Cargo.ToArray(), _persistentPlayer.WeaponPreview is not null,
-        _rac1Chickens.Values.Where(chicken => IsRac1GameplayActive(chicken.Enemy.Node) && !chicken.Enemy.RewardEmitted)
+        _rac1Chickens.Values.Where(chicken => Rac1World.Enemies.IsRac1GameplayActive(chicken.Enemy.Node) && !chicken.Enemy.RewardEmitted)
             .Select(chicken => new Rac1MobyRuntimeKey(chicken.Enemy.Node.Source.NativeClassId, chicken.Enemy.Node.Source.InstanceIndex))
             .Concat(_rac1ChickenCargo).Distinct().ToArray())
     {
@@ -50,7 +50,7 @@ public partial class OBPGame
         _rac1AdditionalWeapons?.RestoreCargo(world.CapturedMobies ?? []);
         foreach (var key in world.MorphedMobies ?? [])
         {
-            if (!_rac1Enemies.TryGetValue(key.InstanceIndex, out var enemy) || enemy.Node.Source.NativeClassId != key.NativeClassId)
+            if (!Rac1World.Enemies.Roster.TryGetValue(key.InstanceIndex, out var enemy) || enemy.Node.Source.NativeClassId != key.NativeClassId)
                 throw new InvalidDataException("Saved Morph-o-Ray victim is unavailable in this level.");
             if (world.CapturedMobies?.Contains(key) == true) _rac1ChickenCargo.Add(key);
             else MorphArsenalEnemy(enemy.Node);
@@ -63,14 +63,14 @@ public partial class OBPGame
             Rac1World.Context.MobyRuntime.SetNativeState(instance, saved.NativeState);
             if (saved.Terminalized && !instance.State.IsTerminalized) Rac1World.Context.MobyRuntime.Terminalize(instance);
             var node = Rac1WorldPresentation.FindPresentedDynamic(_sceneResult!, instance.Source);
-            if (node is not null) SetRac1HostedPresence(node, RuntimeEntityPresence.Inactive);
+            if (node is not null) Rac1World.Enemies.SetRac1HostedPresence(node, RuntimeEntityPresence.Inactive);
             else Rac1World.Context.MobyRuntime.SetPresence(instance, RuntimeEntityPresence.Inactive);
-            if (_rac1Enemies.TryGetValue(instance.InstanceIndex, out var enemy))
+            if (Rac1World.Enemies.Roster.TryGetValue(instance.InstanceIndex, out var enemy))
             {
                 enemy.RewardEmitted = enemy.DeathPresented = saved.Terminalized;
                 enemy.Body.CollisionLayer = 0;
                 if (saved.Terminalized) enemy.Body.CollisionMask = 0;
-                SetRac1EnemyFlame(enemy, false);
+                Rac1World.Enemies.SetRac1EnemyFlame(enemy, false);
             }
             if (Rac1BoltCrate.IsCrateClass(instance.NativeClassId))
             {

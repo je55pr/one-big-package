@@ -101,7 +101,7 @@ public partial class OBPGame
                 if (EquipmentContact(shot.Position, next, .12f) is { } hit)
                 {
                     if (shot.Weapon == Rac1WeaponId.MineGlove && hit.Target is { } directVictim &&
-                        _rac1Enemies.ContainsKey(directVictim.Source.InstanceIndex))
+                        Rac1World.Enemies.Roster.ContainsKey(directVictim.Source.InstanceIndex))
                     { shot.Position = hit.Point; ExplodeEquipment(shot, 2, 3, Rac1WeaponProfiles.MineFlags, 74); continue; }
                     shot.Position = hit.Point + Vector3.Up * (((shot.Node as Rac1EquipmentView)?.FootOffset ?? .06f) * shot.Node.Scale.Y);
                     shot.GroundHeight = hit.Point.Y;
@@ -122,7 +122,7 @@ public partial class OBPGame
             {
                 // Grounded mine proximity/seek is an OBP query adapter. Native
                 // class74 animation and damage descriptors remain source-owned.
-                var enemy = Rac1EnemyNodes.Where(IsRac1WeaponAimTarget)
+                var enemy = Rac1World.Enemies.Targets.Where(IsRac1WeaponAimTarget)
                     .OrderBy(node => node.Root.GlobalPosition.DistanceSquaredTo(shot.Position)).FirstOrDefault();
                 if (enemy is not null && shot.Age > 20)
                 {
@@ -183,7 +183,7 @@ public partial class OBPGame
             foreach (var (victim, bounds) in EquipmentGeometry)
             {
                 var key = new Rac1MobyRuntimeKey(victim.Source.NativeClassId, victim.Source.InstanceIndex);
-                if (!IsRac1GameplayActive(victim) || flame.Victims.Contains(key) || _rac1FlameHitTicks.GetValueOrDefault(key) > _rac1WeaponWorldTick) continue;
+                if (!Rac1World.Enemies.IsRac1GameplayActive(victim) || flame.Victims.Contains(key) || _rac1FlameHitTicks.GetValueOrDefault(key) > _rac1WeaponWorldTick) continue;
                 if (!bounds.Grow(radius).HasPoint(point) || !BombHasLineOfSight(point, victim.Root.GlobalPosition + Vector3.Up * .4f)) continue;
                 if (ApplyRac1AdditionalDamage(victim, Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Pyrocitor, key,
                     Rac1WeaponProfiles.PyrocitorDamage, Rac1WeaponProfiles.PyrocitorFlags)))
@@ -234,7 +234,7 @@ public partial class OBPGame
         {
             if (!IsInstanceValid(bot.Body)) { _rac1DoomAgents.Remove(bot); continue; }
             var origin = bot.Body.GlobalPosition;
-            var target = Rac1EnemyNodes.Where(node => IsRac1WeaponAimTarget(node) && node.Root.GlobalPosition.DistanceSquaredTo(origin) <
+            var target = Rac1World.Enemies.Targets.Where(node => IsRac1WeaponAimTarget(node) && node.Root.GlobalPosition.DistanceSquaredTo(origin) <
                 Rac1WeaponReconstructionPolicy.DoomSearchRange * Rac1WeaponReconstructionPolicy.DoomSearchRange &&
                 BombHasLineOfSight(origin + Vector3.Up * .3f, node.Root.GlobalPosition + Vector3.Up * .3f))
                 .OrderBy(node => node.Root.GlobalPosition.DistanceSquaredTo(origin)).FirstOrDefault();

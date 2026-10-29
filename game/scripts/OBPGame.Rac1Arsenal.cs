@@ -89,7 +89,7 @@ public partial class OBPGame
         IEnumerable<int>? excluded = null)
     {
         var skip = excluded?.ToHashSet();
-        return Rac1EnemyNodes.Where(node => IsRac1WeaponAimTarget(node) && !_rac1Chickens.ContainsKey(node.Source.InstanceIndex) &&
+        return Rac1World.Enemies.Targets.Where(node => IsRac1WeaponAimTarget(node) && !_rac1Chickens.ContainsKey(node.Source.InstanceIndex) &&
                 skip?.Contains(node.Source.InstanceIndex) != true)
             .Where(node =>
             {
@@ -207,7 +207,7 @@ public partial class OBPGame
         foreach (var (node, bounds) in EquipmentGeometry.ToArray())
         {
             var closest = position.Clamp(bounds.Position, bounds.End);
-            if (!IsRac1GameplayActive(node) || position.DistanceTo(closest) > radius ||
+            if (!Rac1World.Enemies.IsRac1GameplayActive(node) || position.DistanceTo(closest) > radius ||
                 !BombHasLineOfSight(position + Vector3.Up * .1f, bounds.GetCenter())) continue;
             ApplyRac1AdditionalDamage(node, Rac1WeaponProfiles.DirectDamage(weapon,
                 new(node.Source.NativeClassId, node.Source.InstanceIndex), damage, flags));
@@ -307,11 +307,11 @@ public partial class OBPGame
         foreach (var pair in _rac1Chickens.ToArray())
         {
             var chicken = pair.Value;
-            if (!IsRac1GameplayActive(chicken.Enemy.Node) || chicken.Enemy.RewardEmitted)
+            if (!Rac1World.Enemies.IsRac1GameplayActive(chicken.Enemy.Node) || chicken.Enemy.RewardEmitted)
             { chicken.View.QueueFree(); _rac1Chickens.Remove(pair.Key); continue; }
             if (chicken.Enemy.NeedsGroundPlacement)
             {
-                if (!TryGroundRac1Enemy(chicken.Enemy, upwardReach: 1, downwardReach: 1)) continue;
+                if (!Rac1World.Enemies.TryGroundRac1Enemy(chicken.Enemy, upwardReach: 1, downwardReach: 1)) continue;
                 chicken.Enemy.NeedsGroundPlacement = false;
             }
             chicken.Age++; var body = chicken.Enemy.Body;
@@ -370,7 +370,7 @@ public partial class OBPGame
                 _sceneResult!.Root.AddChild(ring); ring.GlobalPosition = from + EquipmentForward * .5f;
                 _rac1WeaponMotes.Add(new(ring, EquipmentForward * .25f));
             }
-            foreach (var node in Rac1EnemyNodes.Where(IsRac1WeaponAimTarget))
+            foreach (var node in Rac1World.Enemies.Targets.Where(IsRac1WeaponAimTarget))
             {
                 var delta = node.Root.GlobalPosition - _player!.GlobalPosition;
                 if (delta.LengthSquared() < Rac1ArsenalRules.TaunterRange * Rac1ArsenalRules.TaunterRange &&
@@ -556,11 +556,11 @@ public partial class OBPGame
 
     private void MorphArsenalEnemy(RuntimeWorldScene.DynamicObjectNode target)
     {
-        if (_rac1Chickens.ContainsKey(target.Source.InstanceIndex) || !_rac1Enemies.TryGetValue(target.Source.InstanceIndex, out var enemy)) return;
+        if (_rac1Chickens.ContainsKey(target.Source.InstanceIndex) || !Rac1World.Enemies.Roster.TryGetValue(target.Source.InstanceIndex, out var enemy)) return;
         var view = CreateEquipmentWorldView(270); view.Reparent(target.Root, false); view.Position = Vector3.Up * view.FootOffset;
         view.Scale = Vector3.One / target.Root.Scale;
         foreach (var mesh in target.Root.GetChildren().OfType<MeshInstance3D>()) mesh.Visible = false;
-        SetRac1EnemyFlame(enemy, false); enemy.Reaction = null;
+        Rac1World.Enemies.SetRac1EnemyFlame(enemy, false); enemy.Reaction = null;
         var collider = enemy.Body.GetChild<CollisionShape3D>(0);
         var originalShape = collider.Shape; var originalPosition = collider.Position;
         collider.Shape = new CapsuleShape3D { Radius = .24f, Height = .65f }; collider.Position = Vector3.Up * .325f;

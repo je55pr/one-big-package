@@ -181,19 +181,21 @@ public sealed class SourceNeutralHostArchitectureTests
         Assert.Contains("approved source-world adapter changed", errors[0]);
     }
 
-    [Fact]
-    public void RegisteredActorVoiceBridgeCannotAcquirePlayerEquipmentSelection()
+    [Theory]
+    [InlineData("game/scripts/Rac1EnemyHost.cs", "TickNativeActors")]
+    [InlineData("game/scripts/Rac1EnemyHost.Queries.cs", "TryGetRac1Hostile")]
+    public void RegisteredActorVoiceBridgeCannotAcquirePlayerEquipmentSelection(string path, string method)
     {
-        var (compilation, tree) = InsertAdapterStatement("game/scripts/OBPGame.Rac1Enemies.cs", "TickRac1Hostiles",
-            "SelectPlayerEquipment(\"rac1/item/12\");");
+        var (compilation, tree) = InsertAdapterStatement(path, method,
+            "PlayerAvatarPresentationHost.Provider(OBP.Core.ObpSourceGame.Rac1);");
         var call = tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>()
-            .Single(invocation => invocation.Expression.ToString() == "SelectPlayerEquipment");
+            .Single(invocation => invocation.Expression.ToString() == "PlayerAvatarPresentationHost.Provider");
         var bound = Assert.IsAssignableFrom<IMethodSymbol>(compilation.GetSemanticModel(tree).GetSymbolInfo(call).Symbol);
-        Assert.Equal("OBP.Game.OBPGame", bound.ContainingType.ToDisplayString());
+        Assert.Equal("OBP.Game.PlayerAvatarPresentationHost", bound.ContainingType.ToDisplayString());
         var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation), HostOwnershipAudit.Policy());
         Assert.Single(errors);
-        Assert.Contains("TickRac1Hostiles", errors[0]);
-        Assert.Contains("approved source-world adapter changed", errors[0]);
+        Assert.Contains(method, errors[0]);
+        Assert.Contains("source-world adapter selects a player service", errors[0]);
     }
 
     [Fact]

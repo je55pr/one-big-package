@@ -1,5 +1,7 @@
 using OBP.Core;
 using Godot;
+using static Godot.GodotObject;
+using static OBP.Game.Rac1EnemyCoordinates;
 using OBP.Godot;
 using OBP.Godot.Player;
 using OBP.RAC1.Gameplay;
@@ -12,17 +14,17 @@ using OBP.Runtime.Presentation;
 
 namespace OBP.Game;
 
-public partial class OBPGame
+internal sealed partial class Rac1EnemyHost
 {
-    private bool TryGetRac1Hostile(
+    internal bool TryGetRac1Hostile(
         int instanceIndex,
         out RuntimeWorldScene.DynamicObjectNode? node,
         out Rac1Class749HostProbe? probe)
     {
-        if (_world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: Rac1Class749VeldinPopulation.LevelId } &&
-            Rac1World.Presentation.HostileNodes.TryGetValue(instanceIndex, out node))
+        if (Current && _world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: Rac1Class749VeldinPopulation.LevelId } &&
+            Presentation.HostileNodes.TryGetValue(instanceIndex, out node))
         {
-            probe = Rac1World.Context.Hostiles.Probe(node.Source);
+            probe = Context.Hostiles.Probe(node.Source);
             return true;
         }
 
@@ -31,30 +33,30 @@ public partial class OBPGame
         return false;
     }
 
-    private Rac1Class749HostProbe[] SnapshotRac1HostileProbes() =>
-        Rac1World.Presentation.HostileNodes.Values
+    internal Rac1Class749HostProbe[] SnapshotRac1HostileProbes() =>
+        !Current ? [] : Presentation.HostileNodes.Values
             .OrderBy(node => node.Source.InstanceIndex)
-            .Select(node => Rac1World.Context.Hostiles.Probe(node.Source))
+            .Select(node => Context.Hostiles.Probe(node.Source))
             .ToArray();
 
-    private bool IsRac1GameplayActive(RuntimeWorldScene.DynamicObjectNode node) =>
-        Rac1World.Context.MobyRuntime.Require(node.Source).IsActive;
+    internal bool IsRac1GameplayActive(RuntimeWorldScene.DynamicObjectNode node) =>
+        Current && Context.MobyRuntime.Require(node.Source).IsActive;
 
-    private static bool HasRac1HostContactGeometry(
+    internal static bool HasRac1HostContactGeometry(
         RuntimeWorldScene.DynamicObjectNode node) =>
         node.Root.GetChildren().Any(child => child is MeshInstance3D);
 
-    private void SetRac1HostedPresence(
+    internal void SetRac1HostedPresence(
         RuntimeWorldScene.DynamicObjectNode node,
         RuntimeEntityPresence presence)
     {
-        var runtime = Rac1World.Context.MobyRuntime.Require(node.Source);
-        Rac1World.Context.MobyRuntime.SetTransform(
+        if (!Current) return;
+        var runtime = Context.MobyRuntime.Require(node.Source);
+        Context.MobyRuntime.SetTransform(
             runtime,
             RuntimeWorldScene.ToRuntimeTransform(node.Root.Transform));
-        node.ApplyState(Rac1World.Context.MobyRuntime.SetPresence(runtime, presence));
-        if (_rac1CrateBodies.TryGetValue(node.Source.InstanceIndex, out var crateBody) && IsInstanceValid(crateBody))
-            crateBody.CollisionLayer = presence == RuntimeEntityPresence.Active ? 1u : 0;
+        node.ApplyState(Context.MobyRuntime.SetPresence(runtime, presence));
+        _ports.Combat.CratePresence(node.Source.InstanceIndex, presence);
         if (_rac1Enemies.TryGetValue(node.Source.InstanceIndex, out var enemy))
         {
             enemy.Body.CollisionLayer = presence == RuntimeEntityPresence.Active && !enemy.RewardEmitted ? 1u : 0;

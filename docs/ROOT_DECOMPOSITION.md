@@ -561,6 +561,58 @@ and isolation across repeated authored IDs; persistent-player and engine
 reconciliation checks cover continuity, original-world checkpoints, HUD and
 same-build replay. Source builds, native IDs and save/replay formats are unchanged.
 
+The #361 enemy-host extraction retires `OBPGame.Rac1Enemies.cs`,
+`OBPGame.Rac1Hostiles.cs`, `OBPGame.Rac1NovalisBirdbots.cs`,
+`OBPGame.Rac1NovalisPeckbots.cs` and `OBPGame.Rac1Seekers.cs`. Their UIDs move
+with the owned host/query and family scripts. Against merged #357 (`d7fb403`,
+final head `0c25712`), the root moves from **46 files / 12,451 lines / 457 methods /
+294 fields (177 mutable) / 1,134 references** to **41 files / 11,381 lines /
+424 methods / 281 fields (169 mutable) / 957 references**. The exposed surface
+remains 43 members. Fifty-four historical member/declaration permissions retire;
+one exact enemy-composition factory replaces them. Fourteen existing composition
+fingerprints now bind owned queries/commands. The encounter diagnostic factory
+expires with final composition #376; the frozen origin/access census does not
+expand.
+
+Each `Rac1WorldModule` owns one `Rac1EnemyHost`. Toad/class-749, class-1440,
+birdbot, peckbot and seeker adapters retain their existing source-native
+controllers and authored registration/damage admission. The family registry
+dispatches the same ascending instance order. `Rac1EnemyTickClock` preserves
+the 60-Hz accumulation, frame-counter phase, early defeat return and final
+birdbot-projectile phase. Native state, attack, reaction, damage/reward amounts
+and replay/factory identities remain source-owned and unchanged. The existing
+Godot capsule, sleep, flame and birdbot-projectile approximations retain their
+explicit provenance; the host frame counter is not claimed as the recovered
+retail global update phase.
+
+The contact roster admits only matching source-qualified R&C1 placements. A
+retired host rejects old nodes, callbacks and equal native IDs in a successor
+lease. Placed-actor bindings capture their exact owner rather than a root-wide
+dictionary; retired observations report retirement and late damage/ticks cannot
+dispatch into another world. Contact, flame, projectile and registration cleanup
+attempt every owned release even when one family fails. Actor-scene resources
+still own placed bodies, and the existing source-versioned actor cache owns
+imported animation data; original-world presentation remains with its scene.
+
+Frog/queen, Aridia and amoeboid behavior stays with the existing #362/#363/#368
+owners. Focused neighbor ports preserve their configure/reset/tick order without
+copying native algorithms into a shared base class. The temporary composition
+binds existing neighbor state resets and source context only; it supplies no root
+reference and grants no player-global capability. Ownership regressions cover
+source identity, retained contacts, failure isolation, clock/reset phases and
+rejection of player-provider selection in both migrated source adapters.
+
+Validation for #361: the final portable Release suite passes 3,273 tests with
+283 retail-dependent skips. The authorised NTSC-U suite passes 3,540 tests with
+15 optional oracle skips, using `DOTNET_PROCESSOR_COUNT=2`. All 17 reconciliation
+phases pass, including mixed-source reset/source continuity, exact recordings,
+profiles, bookmarks and fresh-process reports. Veldin enemies, Novalis
+peckbots/birdbots, Aridia and frog/queen engine checks pass; seeker worlds 9 and
+15 each pass fresh-process record/replay. Eleven final ownership/contact/clock
+checks cover failure isolation and retirement after replacement within one scene.
+UID coverage, solution formatting and the game build with warnings as errors
+pass. Engine acceptance is headless; human visual/audible review is not claimed.
+
 The #352 shared equipment extraction retires `OBPGame.FusionWeapons.cs` and moves
 its UID to `FusionWeaponHost.cs`. Against `dd97c87`, the root moves from **48 files,
 13,096 lines, 495 methods, 324 fields (201 mutable), 43 exposed members and

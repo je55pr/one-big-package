@@ -133,7 +133,7 @@ public partial class OBPGame
 
     private void ActivateRac1Amoeboid(Rac1AmoeboidFrame frame)
     {
-        if (!_rac1Enemies.TryGetValue(frame.InstanceIndex, out var enemy))
+        if (!Rac1World.Enemies.Roster.TryGetValue(frame.InstanceIndex, out var enemy))
             throw new InvalidOperationException("Split child lacks its original level Moby.");
         var node = enemy.Node;
         enemy.Body.GlobalPosition = FromEffectNative(frame.Position);
@@ -144,7 +144,7 @@ public partial class OBPGame
         enemy.Body.CollisionLayer = 1;
         enemy.Body.CollisionMask = 1;
         node.ApplyState(instance.EntityState);
-        SelectRac1EnemySequence(enemy, frame.Sequence, 5);
+        Rac1EnemyHost.SelectRac1EnemySequence(enemy, frame.Sequence, 5);
         enemy.Grounded = false;
         enemy.Reaction = frame.NativeState == Rac1AmoeboidFamilySession.KnockbackState
             ? new Rac1MobyReaction(Rac1AmoeboidKnockbackProfile.Read(
@@ -162,7 +162,7 @@ public partial class OBPGame
             before.NativeState is not Rac1AmoeboidFamilySession.KnockbackState)
             return;
         if (enemy.Reaction is not null)
-            StepRac1EnemyReaction(enemy);
+            Rac1World.Enemies.StepRac1EnemyReaction(enemy);
         var pos = ToEffectNative(node.Root.GlobalPosition);
         var target = ToEffectNative(ArsenalEnemyGoal(enemy, _player.GlobalPosition));
         Rac1GameplayEntityRef selectedTarget = Rac1GameplayEntityRef.Player;
@@ -210,15 +210,15 @@ public partial class OBPGame
         if (before.NativeState == Rac1AmoeboidFamilySession.KnockbackState &&
             next.NativeState == Rac1AmoeboidFamilySession.KnockbackRecoveryState)
             enemy.Reaction = null;
-        SelectRac1EnemySequence(enemy, next.Sequence, 10);
+        Rac1EnemyHost.SelectRac1EnemySequence(enemy, next.Sequence, 10);
         if (enemy.Reaction is null && next.Displacement.LengthSquared() > 0)
-            MoveRac1EnemyContact(enemy, FromEffectNative(next.Displacement));
+            Rac1World.Enemies.MoveRac1EnemyContact(enemy, FromEffectNative(next.Displacement));
         node.Root.Rotation = new(0, next.Yaw, 0);
         // Only a lunge originally admitted against Ratchet can touch his
         // Nanotech. The native class-623 receiver is still unimplemented.
         if (next.Attack && attackTarget == Rac1GameplayEntityRef.Player &&
             !ArsenalEnemyHitsDecoy(enemy))
-            ApplyRac1EnemyPlayerDamage(Rac1AmoeboidAttack.ToPlayer(next.ClassId, next.InstanceIndex));
+            Rac1World.Enemies.ApplyRac1EnemyPlayerDamage(Rac1AmoeboidAttack.ToPlayer(next.ClassId, next.InstanceIndex));
     }
 
     private bool ApplyRac1AmoeboidDamage(RuntimeWorldScene.DynamicObjectNode node,
@@ -226,7 +226,7 @@ public partial class OBPGame
     {
         if (_rac1Amoeboids is null || !Rac1World.Context.MobyRuntime.CanDispatchDamage(damage)) return false;
         var result = Rac1World.Context.MobyRuntime.DispatchDamage<Rac1AmoeboidDamageResult>(damage);
-        var parent = _rac1Enemies[node.Source.InstanceIndex];
+        var parent = Rac1World.Enemies.Roster[node.Source.InstanceIndex];
         parent.Body.CollisionLayer = 0;
         parent.Body.CollisionMask = 0;
         node.ApplyState(Rac1World.Context.MobyRuntime.Require(node.Source).EntityState);
