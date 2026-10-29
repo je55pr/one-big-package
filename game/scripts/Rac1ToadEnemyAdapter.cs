@@ -47,9 +47,9 @@ internal sealed class Rac1ToadEnemyAdapter(Rac1EnemyHost host) : IRac1EnemyAdapt
         else if (next.NativeState == Rac1Class749Hostile.LinkedObjectNativeState && !linkedTerminal)
             _host.MoveRac1Enemy(enemy, ToEffectNative(target), null);
         if (next.Attack is { } attack && !_host.Combat.HitsDecoy(enemy) && _host.EnemyMeleeTouchesPlayer(enemy))
-            _host.ApplyRac1EnemyPlayerDamage(Rac1DamageRuntime.FromClass749Attack(new(749, node.Source.InstanceIndex), attack));
+            _host.ApplyRac1EnemyPlayerDamage(Rac1DamageRuntime.FromClass749Attack(new(Rac1ClassIds.VeldinToad, node.Source.InstanceIndex), attack));
     }
-    public int ClassId => 749;
+    public int ClassId => Rac1ClassIds.VeldinToad;
     public Rac1EnemyDamageAdmission Damage(Rac1GameplayDamageEvent damage)
     {
         var result = _host.Context.MobyRuntime.DispatchDamage<Rac1Class749HostProbe>(damage);

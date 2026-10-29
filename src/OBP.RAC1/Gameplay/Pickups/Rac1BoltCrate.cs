@@ -12,13 +12,13 @@ namespace OBP.RAC1.Gameplay;
 /// </summary>
 public static class Rac1BoltCrate
 {
-    public static IReadOnlyList<int> CrateClasses { get; } = Array.AsReadOnly(new[] { 500, 501, 502, 511 });
+    public static IReadOnlyList<int> CrateClasses { get; } = Array.AsReadOnly(new[] { Rac1ClassIds.WoodenCrate, Rac1ClassIds.NanotechCrate, Rac1ClassIds.MetalCrate, Rac1ClassIds.AmmoCrate });
     public static bool IsCrateClass(int nativeClass) => CrateClasses.Contains(nativeClass);
-    public static bool EmitsBolts(int nativeClass) => nativeClass is 500 or 502;
+    public static bool EmitsBolts(int nativeClass) => nativeClass is Rac1ClassIds.WoodenCrate or Rac1ClassIds.MetalCrate;
     public static bool AdmitsDamage(int nativeClass, double damage, uint? flags) =>
         IsCrateClass(nativeClass) && ShouldBreak(damage) &&
-        (nativeClass != 502 || (flags.GetValueOrDefault() & 0x00020000) != 0);
-    public const int NativeClassId = 500;
+        (nativeClass != Rac1ClassIds.MetalCrate || (flags.GetValueOrDefault() & 0x00020000) != 0);
+    public const int NativeClassId = Rac1ClassIds.WoodenCrate;
     public const int ActiveNativeState = 1;
     public const int BreakTransitionNativeState = 3;
     public const int DisabledNativeState = 0xfd;

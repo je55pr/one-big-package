@@ -25,7 +25,7 @@ internal sealed class Rac1HostedEnemy(RuntimeWorldScene.DynamicObjectNode node, 
     public Rac1EnemyMotion? Motion { get; } = motion;
     public Rac1MobySequenceClock Animation { get; } = new(asset, sequence);
     public bool Grounded { get; set; } = true;
-    public bool NeedsGroundPlacement { get; set; } = node.Source.NativeClassId is 749 or Rac1AridiaEnemies.Sandshark;
+    public bool NeedsGroundPlacement { get; set; } = node.Source.NativeClassId is Rac1ClassIds.VeldinToad or Rac1AridiaEnemies.Sandshark;
     public bool Buried { get; set; } = node.Source.NativeClassId == Rac1AridiaEnemies.Sandshark;
     public int DeathTicks { get; set; }
     public int GroundPlacementAttempts { get; set; }

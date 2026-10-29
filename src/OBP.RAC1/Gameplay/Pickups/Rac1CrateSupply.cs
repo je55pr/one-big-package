@@ -9,7 +9,7 @@ namespace OBP.RAC1.Gameplay;
 /// </summary>
 public static class Rac1CrateSupply
 {
-    public const int NanotechCrateClass = 501;
+    public const int NanotechCrateClass = Rac1ClassIds.NanotechCrate;
     public const int NanotechCloudClass = 806;
     public const int NanotechPerCloud = 1;
     public const float NanotechAttractDistance = 10;
@@ -27,7 +27,7 @@ public static class Rac1CrateSupply
 
     public static int PreferredAmmoItem(RuntimeDynamicObject source)
     {
-        if (source.NativeClassId != 511)
+        if (source.NativeClassId != Rac1ClassIds.AmmoCrate)
             throw new ArgumentException("Expected an R&C1 ammunition crate.", nameof(source));
         byte[] pvar = Rac1BoltCrate.RequirePVar(source);
         int selector = pvar[0xcb];

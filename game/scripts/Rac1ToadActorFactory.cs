@@ -24,7 +24,7 @@ internal sealed record Rac1ActorBindings(Rac1Class749HostileSession Hostiles,
 internal sealed class Rac1ToadActorFactory(ActorSceneFactory scenes, ActorSourceCache assets, Rac1ActorBindings native) : IActorFactory
 {
     public bool SupportsDeterministicReplay => true;
-    public ActorAdapterDescriptor Descriptor { get; } = new(ObpSourceGame.Rac1, Rac1Authority.Primary.BuildId, 749,
+    public ActorAdapterDescriptor Descriptor { get; } = new(ObpSourceGame.Rac1, Rac1Authority.Primary.BuildId, Rac1ClassIds.VeldinToad,
         "rac1/class749/v1", "rac1/veldin-target-home/v1", 0, Rac1Class749Hostile.TargetSearchNativeState);
 
     public void RegisterUpdateGroups(ActorRuntimeSet actors) => actors.RegisterUpdateGroup("rac1/native-enemies", native.Tick);
@@ -76,7 +76,7 @@ internal sealed class Rac1ToadActorFactory(ActorSceneFactory scenes, ActorSource
             var body = scene.AddBody();
             var forward = (node.Root.ToGlobal(new Vector3(-1, 0, 0)) - node.Root.GlobalPosition).Normalized();
             var effectForward = new System.Numerics.Vector3(-forward.X, forward.Z, forward.Y);
-            var enemy = new Rac1HostedEnemy(node, asset, body, new Rac1EnemyMotion(749, MathF.Atan2(effectForward.Y, effectForward.X)), probe.NativeSequence ?? 1);
+            var enemy = new Rac1HostedEnemy(node, asset, body, new Rac1EnemyMotion(Rac1ClassIds.VeldinToad, MathF.Atan2(effectForward.Y, effectForward.X)), probe.NativeSequence ?? 1);
             node.ConfigureAnimations(asset.Presentation); node.ApplyAnimationSample(enemy.Animation.Sample);
             native.Enemies.Add(node.Source.InstanceIndex, enemy);
             ownedEnemy = enemy;

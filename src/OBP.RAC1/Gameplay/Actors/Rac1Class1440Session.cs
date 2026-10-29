@@ -14,7 +14,7 @@ namespace OBP.RAC1.Gameplay;
 /// </summary>
 public sealed class Rac1Class1440Session : IRac1MobyDamageConsumer, IRac1MobyClassController
 {
-    public const int ClassId = 1440;
+    public const int ClassId = Rac1ClassIds.VeldinFlameRobot;
     public const int PVarSize = 0x1e0;
     public const float AcquisitionDistance = 24;
     public const float ContactLength = 5;

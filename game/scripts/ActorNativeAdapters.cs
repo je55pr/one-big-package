@@ -52,7 +52,7 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
         var owner = ports.Rac1.Enemies() ?? throw new InvalidOperationException("R&C1 actors require an active world scene lease.");
         return new(owner.Context.Hostiles, owner.Presentation.HostileNodes, owner.Roster,
             node => ObserveRac1(node, owner), (node, intent) => ApplyRac1(node, intent, owner), clearTransients,
-            index => ports.Rac1.ClearCaptures(new(749, index)), world => EnsurePickupBank(world, owner),
+            index => ports.Rac1.ClearCaptures(new(Rac1ClassIds.VeldinToad, index)), world => EnsurePickupBank(world, owner),
             _ => { if (owner.Roster.Count > 0) owner.TickRac1Hostiles(1d / 60); }, () => owner.Current);
     }
 
@@ -93,14 +93,14 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
 
     private static ActorObservation ObserveRac1(RuntimeWorldScene.DynamicObjectNode node, Rac1EnemyHost owner)
     {
-        if (!owner.Current || !GodotObject.IsInstanceValid(node.Root) || node.Source.NativeClassId == 749 &&
+        if (!owner.Current || !GodotObject.IsInstanceValid(node.Root) || node.Source.NativeClassId == Rac1ClassIds.VeldinToad &&
             (!owner.Roster.TryGetValue(node.Source.InstanceIndex, out var registered) || !ReferenceEquals(registered.Node, node)))
             return new(System.Numerics.Vector3.Zero, false, true, null, 0, null);
         var native = owner.Context.MobyRuntime.Require(node.Source);
-        double? health = node.Source.NativeClassId == 749 ? owner.Context.Hostiles.Probe(node.Source).Health : null;
+        double? health = node.Source.NativeClassId == Rac1ClassIds.VeldinToad ? owner.Context.Hostiles.Probe(node.Source).Health : null;
         return new(new(node.Root.GlobalPosition.X, node.Root.GlobalPosition.Y, node.Root.GlobalPosition.Z), native.IsActive && !(health <= 0) &&
             (!owner.Roster.TryGetValue(node.Source.InstanceIndex, out var enemy) || !enemy.RewardEmitted), !native.IsActive,
-            health, native.State.NativeState, node.Source.NativeClassId == 749 ? owner.Context.Hostiles.Probe(node.Source).NativeSequence : null);
+            health, native.State.NativeState, node.Source.NativeClassId == Rac1ClassIds.VeldinToad ? owner.Context.Hostiles.Probe(node.Source).NativeSequence : null);
     }
 
     private static ActorObservation RetiredRac2() =>
@@ -112,7 +112,7 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
 
     private ActorHitResult ApplyRac1(RuntimeWorldScene.DynamicObjectNode node, WeaponDamageIntent intent, Rac1EnemyHost owner)
     {
-        if (!owner.Current || node.Source.NativeClassId == 749 &&
+        if (!owner.Current || node.Source.NativeClassId == Rac1ClassIds.VeldinToad &&
             (!owner.Roster.TryGetValue(node.Source.InstanceIndex, out var registered) || !ReferenceEquals(registered.Node, node)))
             return new(false, false, "The R&C1 enemy scene or actor has retired.");
         var translated = FusionDamagePolicy.Translate(intent);
