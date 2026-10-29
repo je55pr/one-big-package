@@ -982,7 +982,8 @@ public partial class OBPGame : Node3D
         {
             try { rac3Resources.Rac3Gameplay?.Dispose(); }
             finally { rac3Resources.Rac3Gameplay = null; }
-        }    }
+        }
+    }
 
     /// <summary>
     /// Attach the runtime inspection overlay to a freshly-built world and apply
@@ -1804,7 +1805,8 @@ public partial class OBPGame : Node3D
             () => _rac1PickupAssets, () => _equipmentPresentation.SelectedAssets,
             (assets, materials) => { _rac1PickupAssets = assets; _rac1PickupMaterials = materials; }, TickRac1Pickups),
         new(() => _worldScenes?.Current?.Resources.Rac2Gameplay),
-        new(() => _worldScenes?.Current?.Resources.Rac3Gameplay)), new(        () => _player!.GetWorld3D().DirectSpaceState, Rac1DamageableRayExclusions, BombHasLineOfSight,
+        new(() => _worldScenes?.Current?.Resources.Rac3Gameplay)), new(
+        () => _player!.GetWorld3D().DirectSpaceState, Rac1DamageableRayExclusions, BombHasLineOfSight,
         reason => Rac1World.Context.CombatStatus = reason, () => _player?.Rac1WrenchFrame.Generation,
         () => _playerAudio?.WrenchContact(false)));
 

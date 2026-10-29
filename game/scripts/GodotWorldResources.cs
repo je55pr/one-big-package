@@ -22,7 +22,8 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
     public WorldEntryRequest? EffectScope { get; set; }
     public Rac1WorldModule? Rac1Gameplay { get; set; }
     public Rac2WorldModule? Rac2Gameplay { get; set; }
-    public Rac3WorldModule? Rac3Gameplay { get; set; }    public IDisposable? FusionWeapons { get; set; }
+    public Rac3WorldModule? Rac3Gameplay { get; set; }
+    public IDisposable? FusionWeapons { get; set; }
     public IDisposable? PlayerLife { get; set; }
 
     private void DisposeSourceGameplay()
@@ -52,7 +53,8 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
                 try { DisposeSourceGameplay(); }
                 finally
                 {
-                    try { Rac2Gameplay?.Dispose(); }                    finally
+                    try { Rac2Gameplay?.Dispose(); }
+                    finally
                     {
                         Rac2Gameplay = null;
                         try { PlayerLife?.Dispose(); }

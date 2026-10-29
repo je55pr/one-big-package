@@ -18,7 +18,8 @@ internal sealed record Rac1NativeActorPorts(Func<Rac1EnemyHost?> Enemies,
     Action<Rac1PickupAssets.Catalogue, WorldMaterialFactory> AttachPickupBank,
     Action<double> TickPickups);
 internal sealed record Rac2NativeActorPorts(Func<Rac2WorldModule?> World);
-internal sealed record Rac3NativeActorPorts(Func<Rac3WorldModule?> World);internal sealed record ActorNativePorts(Rac1NativeActorPorts Rac1, Rac2NativeActorPorts Rac2, Rac3NativeActorPorts Rac3);
+internal sealed record Rac3NativeActorPorts(Func<Rac3WorldModule?> World);
+internal sealed record ActorNativePorts(Rac1NativeActorPorts Rac1, Rac2NativeActorPorts Rac2, Rac3NativeActorPorts Rac3);
 internal sealed record ActorNativeCounts(int Rac1Enemies, int Rac1Hostiles);
 
 /// <summary>Typed bridges into the existing source controllers. Native amounts, reaction gates and update clocks stay source-owned.</summary>
@@ -87,7 +88,8 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
         if (ports.Rac3.World() is { } rac3)
             foreach (var node in rac3.OriginalTargets)
                 register(node, () => rac3.Observe(node), intent => rac3.Apply(node, intent,
-                    () => disableBody(ActorWorldHost.Target(node))));    }
+                    () => disableBody(ActorWorldHost.Target(node))));
+    }
 
     private static ActorObservation ObserveRac1(RuntimeWorldScene.DynamicObjectNode node, Rac1EnemyHost owner)
     {
