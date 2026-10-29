@@ -1,4 +1,5 @@
 using Godot;
+using OBP.Core;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime.Gameplay;
@@ -211,6 +212,14 @@ public partial class OBPGame
     private void StepRac1NativeFlameContacts()
     {
         if (_equipmentPresentation.Explosions.Particles is not { } particles) return;
+        // Capture one geometry census per physics tick. R&C1 receivers keep their
+        // original damage envelope; other registered actors use the reconciled host.
+        var rac1Targets = _worldScenes?.Current?.Resources.Rac1Gameplay is not null ? EquipmentGeometry.ToArray() : [];
+        var nativeKeys = rac1Targets.Select(target => new WeaponTargetKey(ObpSourceGame.Rac1,
+            target.Node.Source.NativeClassId, target.Node.Source.InstanceIndex)).ToHashSet();
+        var actorTargets = OrdinaryPlayerSession && ActorHost.Active
+            ? ActorHost.Combat.ReadGeometry().Where(target => !nativeKeys.Contains(target.Key)).ToArray()
+            : [];
         foreach (var flame in _rac1NativeFlames.ToArray())
         {
             var p = flame.Motion;
@@ -218,20 +227,37 @@ public partial class OBPGame
             particles.FlameSecondary(p);
             Vector3 point = Rac1LootPresentation.FromEffectNative(p.Position);
             float radius = p.Size * .5f;
-            foreach (var (victim, bounds) in EquipmentGeometry)
+            foreach (var (victim, bounds) in rac1Targets)
             {
-                var key = new Rac1MobyRuntimeKey(victim.Source.NativeClassId, victim.Source.InstanceIndex);
-                if (!Rac1World.Enemies.IsRac1GameplayActive(victim) || flame.Victims.Contains(key) || _rac1FlameHitTicks.GetValueOrDefault(key) > _rac1WeaponWorldTick) continue;
+                var key = new WeaponTargetKey(ObpSourceGame.Rac1, victim.Source.NativeClassId, victim.Source.InstanceIndex);
+                if (!Rac1World.Enemies.IsRac1GameplayActive(victim) || flame.Victims.Contains(key) ||
+                    !_rac1FlameHitTicks.CanHit(key, _rac1WeaponWorldTick)) continue;
                 if (!bounds.Grow(radius).HasPoint(point) || !BombHasLineOfSight(point, victim.Root.GlobalPosition + Vector3.Up * .4f)) continue;
-                if (ApplyRac1AdditionalDamage(victim, Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Pyrocitor, key,
-                    Rac1WeaponProfiles.PyrocitorDamage, Rac1WeaponProfiles.PyrocitorFlags)))
+                if (ApplyRac1AdditionalDamage(victim, Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Pyrocitor,
+                    new(key.NativeClassId, key.InstanceIndex), Rac1WeaponProfiles.PyrocitorDamage, Rac1WeaponProfiles.PyrocitorFlags)))
                 {
-                    // Victim repetition remains the existing bounded damage
-                    // adapter; it is separate from the recovered particle life.
-                    flame.Victims.Add(key); _rac1FlameHitTicks[key] = _rac1WeaponWorldTick + Rac1WeaponReconstructionPolicy.FlameVictimRepeatTicks;
+                    flame.Victims.Add(key);
+                    _rac1FlameHitTicks.ConfirmHit(key, _rac1WeaponWorldTick);
+                }
+            }
+            foreach (var (key, _, bounds) in actorTargets)
+            {
+                if (flame.Victims.Contains(key) || !_rac1FlameHitTicks.CanHit(key, _rac1WeaponWorldTick) ||
+                    !bounds.Grow(radius).HasPoint(point) || !BombHasLineOfSight(point, bounds.GetCenter())) continue;
+                // Particle identity, not its recyclable pool slot, owns the shot.
+                // Native flag bits stay qualified to the R&C1 weapon; the target
+                // controller translates the admitted hit into its own semantics.
+                var intent = new WeaponDamageIntent(
+                    new(new(ObpSourceGame.Rac1, (int)Rac1WeaponId.Pyrocitor), p.Identity, 0),
+                    key, (float)Rac1WeaponProfiles.PyrocitorDamage, Rac1WeaponProfiles.PyrocitorFlags, "native-flame");
+                if (ActorHost.Combat.Apply(intent))
+                {
+                    flame.Victims.Add(key);
+                    _rac1FlameHitTicks.ConfirmHit(key, _rac1WeaponWorldTick);
                 }
             }
         }
+        _rac1FlameHitTicks.Prune(_rac1WeaponWorldTick);
     }
 
     private Vector3? EquipmentGround(Vector3 point, float up, float down)

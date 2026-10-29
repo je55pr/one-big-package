@@ -44,7 +44,7 @@ public partial class OBPGame
     private readonly List<HostedCapturedMoby> _rac1Captures = [];
     private readonly List<HostedWeaponParticle> _rac1WeaponMotes = [];
     private readonly List<HostedNativeFlame> _rac1NativeFlames = [];
-    private readonly Dictionary<Rac1MobyRuntimeKey, ulong> _rac1FlameHitTicks = [];
+    private readonly Rac1PyrocitorContactWindow _rac1FlameHitTicks = new();
     private readonly Dictionary<Rac1MobyRuntimeKey, Node3D> _rac1CargoModels = [];
     private readonly Dictionary<Rac1WeaponId, long> _rac1WeaponGenerations = [];
     private bool _rac1AdditionalFireRequested;
@@ -84,7 +84,7 @@ public partial class OBPGame
     }
     private sealed record HostedNativeFlame(Rac1ParticleSession.Particle Motion)
     {
-        public HashSet<Rac1MobyRuntimeKey> Victims { get; } = [];
+        public HashSet<WeaponTargetKey> Victims { get; } = [];
     }
 
     private void ResetRac1AdditionalWeapons()
@@ -185,6 +185,7 @@ public partial class OBPGame
     {
         if (MovementReproduction.IsLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is null || _player is null || _rac1AdditionalWeapons is null) return;
         bool held = PlayerLife.Alive && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active &&
+            !_player.Scripted && !_player.Rac1WaterHandItemHidden && !QuickSelectOpen &&
             _rac1AdditionalFireRequested && !_rac1DetectorEquipped;
         _rac1AdditionalFireRequested = false;
         _rac1ArsenalHeld = held;
@@ -195,7 +196,8 @@ public partial class OBPGame
         }
         if (_rac1EquipmentUseTicks > 0) { _rac1EquipmentUseTicks--; _rac1EquipmentUseAge++; }
         var shot = _rac1AdditionalWeapons.Step(held, AdmitRac1ArsenalUse());
-        bool pyro = held && _rac1Weapons.Equipped == Rac1WeaponId.Pyrocitor && (_rac1Weapons.GetAmmo(16) > 0 || shot is not null);
+        bool pyro = held && _rac1HeldItem.Hand.IsHolding(new(ObpSourceGame.Rac1, (int)Rac1WeaponId.Pyrocitor)) &&
+            _rac1Weapons.Equipped == Rac1WeaponId.Pyrocitor && (_rac1Weapons.GetAmmo(16) > 0 || shot is not null);
         if (pyro != _rac1PyroEmitting)
         {
             _rac1PyroEmitting = pyro;

@@ -7,7 +7,7 @@ namespace OBP.Game;
 /// <summary>
 /// Deliberate OBP adapter, never native cross-game behavior. Original damage
 /// amounts pass through; foreign flag bits do not masquerade as R&C1 flags.
-/// Only ordinary Veldin crates, toads and robots are admitted in this demo.
+/// Only admitted R&C1 crates, toads and robots receive translated envelopes.
 /// R&C1 controllers still own immunity, health, reactions and rewards.
 /// </summary>
 public static class FusionDamagePolicy
@@ -23,8 +23,22 @@ public static class FusionDamagePolicy
     public static Rac1GameplayDamageEvent? Translate(WeaponDamageIntent intent)
     {
         if (!Admits(intent.Target) || !float.IsFinite(intent.SourceDamage) || intent.SourceDamage <= 0 ||
-            intent.Target.NativeClassId == Rac1ClassIds.VeldinToad && intent.SourceDamage < 1 ||
-            intent.Shot.Weapon != FusionWeaponSession.Lancer && intent.Shot.Weapon != FusionWeaponSession.ShockCannon)
+            intent.Target.NativeClassId == Rac1ClassIds.VeldinToad && intent.SourceDamage < 1)
+            return null;
+        // R&C1 actors hosted in Fusion Lab still use R&C1 class-176 damage,
+        // rather than laundering their own weapon through the foreign adapter.
+        // Constrain the bridge to the genuine recovered flame envelope.
+        if (intent.Shot.Weapon.SourceGame == ObpSourceGame.Rac1)
+        {
+            if (intent.Shot.Weapon.NativeItemId != (int)Rac1WeaponId.Pyrocitor ||
+                intent.Kind != "native-flame" ||
+                intent.SourceDamage != (float)Rac1WeaponProfiles.PyrocitorDamage ||
+                intent.SourceFlags != Rac1WeaponProfiles.PyrocitorFlags) return null;
+            return Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Pyrocitor,
+                new(intent.Target.NativeClassId, intent.Target.InstanceIndex),
+                Rac1WeaponProfiles.PyrocitorDamage, Rac1WeaponProfiles.PyrocitorFlags);
+        }
+        if (intent.Shot.Weapon != FusionWeaponSession.Lancer && intent.Shot.Weapon != FusionWeaponSession.ShockCannon)
             return null;
         // The source is a logical player action in this target-game envelope.
         // The separately retained neutral intent carries its real weapon/key;

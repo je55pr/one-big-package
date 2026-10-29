@@ -206,8 +206,12 @@ public partial class OBPGame
             _rac1BombOcclusionFrame = Engine.GetPhysicsFrames();
             _rac1BombOcclusionPlayer = player.GetRid();
             _rac1BombOcclusionExclusions = [player.GetRid()];
-            foreach (var body in Rac1World.Loot.CrateBodies.Values.Concat<CollisionObject3D>(Rac1World.Enemies.Roster.Values.Select(enemy => enemy.Body)))
-                if (IsInstanceValid(body)) _rac1BombOcclusionExclusions.Add(body.GetRid());
+            // The selected player can bring native R&C1 equipment to GC/UYA
+            // worlds, where no R&C1 gameplay lease is available.
+            if (_worldScenes?.Current?.Resources.Rac1Gameplay is { } rac1)
+                foreach (var body in rac1.Loot.CrateBodies.Values.Concat<CollisionObject3D>(
+                    rac1.Enemies.Roster.Values.Select(enemy => enemy.Body)))
+                    if (IsInstanceValid(body)) _rac1BombOcclusionExclusions.Add(body.GetRid());
             ActorHost.AddRayExclusions(_rac1BombOcclusionExclusions);
         }
         return _rac1BombOcclusionExclusions;
