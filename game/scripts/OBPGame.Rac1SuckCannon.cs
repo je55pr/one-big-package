@@ -65,6 +65,16 @@ public partial class OBPGame
         }
     }
 
+    // Called both by world retirement and by movement-state restoration.
+    // A prior capture may still own a visual while the new save has no cargo.
+    private void RetireRac1CapturedCargoPresentation()
+    {
+        foreach (var node in _rac1Captures.Select(capture => capture.Visual).Concat(_rac1CargoModels.Values).Distinct())
+            if (IsInstanceValid(node)) node.QueueFree();
+        _rac1Captures.Clear();
+        _rac1CargoModels.Clear();
+    }
+
     private Node3D CloneEquipmentCargo(RuntimeWorldScene.DynamicObjectNode source)
     {
         var key = new Rac1MobyRuntimeKey(source.Source.NativeClassId, source.Source.InstanceIndex);

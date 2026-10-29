@@ -54,7 +54,7 @@ public partial class OBPGame
 
     private void StepRac1NovalisMechanisms()
     {
-        if (_rac1NovalisMechanisms.Count == 0 || _movementStateLoading || _player is null ||
+        if (_rac1NovalisMechanisms.Count == 0 || MovementReproduction.IsLoading || _player is null ||
             _captureReplay?.Recorder is { WaitingForEntry: true }) return;
         NVector3 player = new(-_player.GlobalPosition.X, _player.GlobalPosition.Z, _player.GlobalPosition.Y);
         Vector3 sceneCamera = _player.Camera.GlobalPosition;
