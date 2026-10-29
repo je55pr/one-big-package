@@ -1570,8 +1570,8 @@ public partial class OBPGame : Node3D
                     stagedPresent ? GodotMovementPlayer.Copy(staged!.Position) : System.Numerics.Vector3.Zero,
                     glovePresent && stagedPresent && staged!.Position.IsEqualApprox(glove!.BombLocal));
             },
-            () => new(_rac1BombFragments.Count, _rac1BombBursts.Count, _rac1Particles?.Count ?? 0, _rac1BombImpactCount,
-                _rac1Particles is { } particles ? [.. particles.Live.Select(particle => particle.Type)] : []),
+            () => new(_equipmentPresentation.Explosions.FragmentCount, _equipmentPresentation.Explosions.BurstCount, _equipmentPresentation.Explosions.Particles?.Count ?? 0, _rac1BombImpactCount,
+                [.. _equipmentPresentation.Explosions.ParticleTypes]),
             () =>
             {
                 var shot = Rac1World.Presentation.Projectiles.Single();
@@ -1593,12 +1593,12 @@ public partial class OBPGame : Node3D
 
     private GodotRac1AdditionalWeaponDiagnosticFixture CreateRac1AdditionalWeaponDiagnosticFixture(IDiagnosticWorldObservations worlds) => new(new(
         () => new(_persistentPlayer.WeaponPreview is not null, _rac1Campaign.Session.Weapons.Owns(Rac1WeaponId.Blaster), _rac1AdditionalWeapons?.Cargo.Count ?? 0,
-            _rac1EquipmentUseTicks, _rac1WeaponShotsFired, _rac1PyroEmitting, _rac1WeaponLoop, _hudState.Current.CurrentWeapon,
+            _rac1EquipmentUseTicks, _rac1WeaponShotsFired, _rac1PyroEmitting, _equipmentPresentation.WeaponAudio.Loop, _hudState.Current.CurrentWeapon,
             GodotMovementPlayer.Copy(EquipmentForward), _player?.Rac1RemoteControlActive == true, _rac1MissileCamera is not null,
-            _rac1MissileCamera?.Current == true, _player?.Camera.Current == true, _rac1ParticleView?.RenderedCount ?? 0, _rac1ParticleView?.DrawCalls ?? 0),
+            _rac1MissileCamera?.Current == true, _player?.Camera.Current == true, _equipmentPresentation.Explosions.RenderedCount, _equipmentPresentation.Explosions.DrawCalls),
         weapon => _rac1EquipmentViews.GetValueOrDefault(weapon), weapon => EquipmentMuzzle(weapon), item => _rac1Weapons.GetAmmo(item),
         (nativeClass, sound) => _rac1PickupAssets?.Sounds?.TryGetValue((nativeClass, sound), out var voice) == true && voice.Clip.InterleavedPcm16.Any(sample => sample != 0),
-        () => [.. _rac1WeaponSoundTrace.Select(cue => new Rac1WeaponAudioDiagnostic(ObpSourceGame.Rac1, cue.Tick, cue.Class, cue.Sound, cue.Loop))],
+        () => [.. _equipmentPresentation.WeaponAudio.Events.Select(cue => new Rac1WeaponAudioDiagnostic(ObpSourceGame.Rac1, cue.Tick, cue.Class, cue.Sound, cue.Loop))],
         () => [.. _rac1EquipmentShots.Select(shot => new GodotWeaponDiagnosticWitness<Rac1EquipmentShotDiagnostic>(new(worlds), () => new(
             new(ObpSourceGame.Rac1, (int)shot.Weapon), shot.Id, GodotMovementPlayer.Copy(shot.Position), shot.Grounded, GodotWeaponModelFacts.Read(shot.Node))))],
         () => [.. _rac1DoomAgents.Select(agent => new GodotWeaponDiagnosticWitness<Rac1DoomAgentDiagnostic>(new(worlds), () => new(
@@ -1852,8 +1852,8 @@ public partial class OBPGame : Node3D
         Scene = () => _sceneResult!.Root,
         Read = () => new(OrdinaryPlayerSession, _playerNative is not null, _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is not null, _playerAudio?.Ready == true,
             _rac1HeldItem.Hand.WrenchHeld, _avatarPresentation.Clock?.Tick ?? 0, FusionWeapons.Session?.ShotsFired ?? 0, _pauseMenu?.UniversalEnabled == true,
-            _pauseMenu?.RetailEnabled == true, _rac1PyroEmitting, _rac1Particles?.Live.Any(particle => particle.Type == 12) == true,
-            _rac1ParticleView?.RenderedCount ?? 0, _playerNative?.Life.Capture().Current ?? 0, GodotMovementPlayer.Copy(_player?.GlobalPosition ?? Vector3.Zero),
+            _pauseMenu?.RetailEnabled == true, _rac1PyroEmitting, _equipmentPresentation.Explosions.Particles?.Live.Any(particle => particle.Type == 12) == true,
+            _equipmentPresentation.Explosions.RenderedCount, _playerNative?.Life.Capture().Current ?? 0, GodotMovementPlayer.Copy(_player?.GlobalPosition ?? Vector3.Zero),
             _player?.Rac1CurrentYaw ?? 0, FusionWeapons.AcceptedHits, FusionWeapons.Projectiles.Count, FusionWeapons.AudioPlayerCount),
         ResetAudio = () => _playerAudio?.ResetDiagnosticRandom(1440),
         Audio = () => [.. (_playerAudio?.ReadSelected() ?? []).Select(cue => new TrilogyAudioDiagnostic(SourceIdentityWire.FormatSource(cue.Source), cue.Build, cue.Level, cue.Class, cue.Sound, cue.LevelSound, cue.Loop, cue.NativeTick))],
@@ -1954,7 +1954,7 @@ public partial class OBPGame : Node3D
             () => _worldScenes?.Current?.Resources.Rac2Gameplay?.ParityNanotech ?? 0,
             () => _hudState.Current.Health, () => [.. (_worldScenes?.Current?.Resources.Rac2Gameplay?.OpeningHostileNodes() ?? [])], PlayerLife.Respawn));
         var audio = new GodotPlayerAudioFixture(this, new(() => _player,
-            () => new(_playerAudio?.Ready == true, _world?.LevelId, _playerAudio?.PackSound, _playerAudio?.ThrownWrenchSound, _rac1WeaponLoop is not null,
+            () => new(_playerAudio?.Ready == true, _world?.LevelId, _playerAudio?.PackSound, _playerAudio?.ThrownWrenchSound, _equipmentPresentation.WeaponAudio.Loop is not null,
                 _rac1WrenchThrow.Active, Rac1World.Context.BoltCrates.DestroyedCrateCount, _rac1Nanotech.Probe().Nanotech, _rac1Nanotech.Probe().IsDead),
             () => _playerAudio?.ReadVoices() ?? [],
             ClearMovementSmokeInput, SetAnalogueSmokeInput, SetRac1SmokeConditionedInput, TryHandleInteractiveBack,

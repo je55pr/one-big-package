@@ -2220,8 +2220,8 @@
         "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3AdmittedClass5821:int:private",
         "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3AuthoredClass500:int:private",
         "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3AuthoredClass5821:int:private",
-        "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3Class500Nodes:List < RuntimeWorldScene . DynamicObjectNode >:private,readonly",
-        "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3Class5821AuditSources:List < Rac3Class5821AuditSource >:private,readonly",
+        "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3Class500Nodes:List \u003c RuntimeWorldScene . DynamicObjectNode \u003e:private,readonly",
+        "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3Class5821AuditSources:List \u003c Rac3Class5821AuditSource \u003e:private,readonly",
         "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3DamageTransport:Rac3DamageTransportSession:private",
         "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3DestroyedClass500:int:private",
         "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3GameplayContext:Rac3WorldGameplayContext ?:private",
@@ -2782,14 +2782,14 @@
       "Owner": "#338",
       "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376. #354 binds the owned native player audio presenter and its copied observations. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #373 preserves this exact lease-scoped R&C2 owner binding, validated by the focused R&C2 world ownership and original actor regressions.",
       "ExpiresWith": "#376",
-      "Hash": "96802b9993f3a084cca19430598c60d9a8c6021e5b4c40a5ea3101ec47e02056"
+      "Hash": "4a5ead45cf866f2afb608434ccb3b168f05082d07faa0737d266e76c4281e12d"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AdditionalWeaponDiagnosticFixture(:IDiagnosticWorldObservations):GodotRac1AdditionalWeaponDiagnosticFixture:private",
       "Owner": "#341",
       "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added.",
       "ExpiresWith": "#367",
-      "Hash": "72a08d7698ab04462e4be7d34919bac08de36f17494f21feaa469fcb4372e611"
+      "Hash": "4f74905dbbd236dbf4ecac4b349b403fe19f61db25481436638241d020ab4c0d"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AridiaDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1AridiaDiagnosticFixture:private",
@@ -2894,7 +2894,7 @@
       "Owner": "#344",
       "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376. #354 binds the owned native player audio presenter and its copied observations. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
       "ExpiresWith": "#376",
-      "Hash": "7af4719188b6a374ebe69c66a88619f921257af895e404c3a0864dd77af85973"
+      "Hash": "12bb0f05c5c3624bb6b4a737260518f94dc7130af0d89440106123740239da2e"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateUiDiagnosticHarness():UiDiagnosticHarness:private",
@@ -2908,7 +2908,7 @@
       "Owner": "#341",
       "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged.",
       "ExpiresWith": "#367",
-      "Hash": "d55a4bee881d8f1f99b42422645676eaa78b649d13fbfce14e908798da65b15c"
+      "Hash": "f851727bc3111fcaf55432f59953d8df9adf3c1f596c9f900887803524630719"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:DecorateFusionLab(:FusionLabDefinition,:bool):void:private",
@@ -3415,13 +3415,6 @@
       "Hash": "f066fa120be074e32846b992f08b41e0889b1b7bed1a0ca6dee6fb3c0cc76025"
     },
     {
-      "Key": "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::method:SetPlayerAudioPaused(:bool):void:private",
-      "Owner": "#354",
-      "Rationale": "Delegates pause state to the player presenter and existing native weapon/fusion audio owners without advancing or resetting native cue cursors. Retire this pause composition binding with #376. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
-      "ExpiresWith": "#376",
-      "Hash": "bbc3a3a061905c4c2d238047167ae94612c235dcb2a3cc97abb4a1dd1b04682e"
-    },
-    {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:AttachPlayerAvatarVisual(:PlayerHost):void:private",
       "Owner": "#350",
       "Rationale": "The host now owns state and presentation; this pre-existing root member forwards world/lifetime integration until the final thin-root composition. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
@@ -3833,6 +3826,90 @@
       "Rationale": "R&C1 Suck Cannon presentation owns retirement of captured cargo visuals when resetting a world or applying a saved movement state; no additional world controller is introduced.",
       "ExpiresWith": "#376",
       "Hash": "8516f95c9b088d999aa4687fcd215046a02a4dc43658fc84651cadac1e1d818f"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1Weapons.cs::OBPGame::method:RecordRac1WeaponSound(:int,:int,:bool):void:private",
+      "Owner": "#369",
+      "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
+      "ExpiresWith": "#376",
+      "Hash": "aaad358c82e72f031506db0b241e382ae645b08889437b09a55ccd13a37d2a06"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1Weapons.cs::OBPGame::method:ResetRac1WeaponAudio(:bool):void:private",
+      "Owner": "#369",
+      "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
+      "ExpiresWith": "#376",
+      "Hash": "f8481dd62205ba561ddc30d32b727fec67e28ee196c63ff57f402467b6e8c351"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1Weapons.cs::OBPGame::method:SetPlayerAudioPaused(:bool):void:private",
+      "Owner": "#369",
+      "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
+      "ExpiresWith": "#376",
+      "Hash": "c79d25248a834ba745f6ce7dff5c6bcb4904d10c8c772b0e399cc01cea105a2f"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1Weapons.cs::OBPGame::method:StepRac1WeaponAudio():void:private",
+      "Owner": "#369",
+      "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
+      "ExpiresWith": "#376",
+      "Hash": "3269b2fa5ba8ddaefd3819490a99767457fee47c5bfd73ba0c74ba9537eec0de"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame::method:EnsureRac1Particles():Rac1ParticleSession ?:private",
+      "Owner": "#369",
+      "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
+      "ExpiresWith": "#376",
+      "Hash": "07bf4f4983252f69ba931d5ebed9a76c0688a22f15f1f5d3273492e196459470"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame::method:GetRac1ParticleMesh(:int):QuadMesh:private",
+      "Owner": "#369",
+      "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
+      "ExpiresWith": "#376",
+      "Hash": "38b1f17065ce5a9652ccb9ae95ecdef12247ff4c8120a5a413e391bf71a021c1"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame::method:Rac1EffectCamera(:Vector3):Vector3:private",
+      "Owner": "#369",
+      "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
+      "ExpiresWith": "#376",
+      "Hash": "6e7b0b932a6d407102608835009a966fc9d8710f4ee755b662f28fefb041e81c"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame::method:ResetRac1BombPresentation():void:private",
+      "Owner": "#369",
+      "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
+      "ExpiresWith": "#376",
+      "Hash": "c1bf71e6d548f61ea2f03ad2349d8998adc8eef5cf07d005bfa525608ec4454d"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame::method:SpawnRac1BombExplosion(:Vector3,:bool,:Vector3 ?,:Vector3 ?):void:private",
+      "Owner": "#369",
+      "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
+      "ExpiresWith": "#376",
+      "Hash": "3c380bb73f6438070517924bb9632cfdf2750594fd0b2b2db6ee4be1cab64e87"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame::method:SpawnRac1ExplosionBursts(:Vector3,:IReadOnlyList < Rac1BombExplosion . Burst >):void:private",
+      "Owner": "#369",
+      "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
+      "ExpiresWith": "#376",
+      "Hash": "6adb4af6fda1ba4801a65b7f6105f09c38c5520200a6614f1d9c71f227e9b673"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame::method:SpawnRac1WeaponExplosion(:Rac1WeaponId,:Vector3):void:private",
+      "Owner": "#369",
+      "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
+      "ExpiresWith": "#376",
+      "Hash": "83b8d22a47a8a205a809914d3dbf9cffa25998886717171cc50b624d1025b518"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame::method:StepRac1BombEffectsPhysics():void:private",
+      "Owner": "#369",
+      "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
+      "ExpiresWith": "#376",
+      "Hash": "d638b7ec0a23e517e6f2c9705b193c54821e322cae4f5a55c9c4610cf3d92c35"
     }
   ],
   "RetiredMembers": [
@@ -4839,8 +4916,8 @@
     "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3AdmittedClass5821:int:private",
     "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3AuthoredClass500:int:private",
     "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3AuthoredClass5821:int:private",
-    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3Class500Nodes:List \u003c RuntimeWorldScene . DynamicObjectNode \u003e:private,readonly",
-    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3Class5821AuditSources:List \u003c Rac3Class5821AuditSource \u003e:private,readonly",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3Class500Nodes:List < RuntimeWorldScene . DynamicObjectNode >:private,readonly",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3Class5821AuditSources:List < Rac3Class5821AuditSource >:private,readonly",
     "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3DamageTransport:Rac3DamageTransportSession:private",
     "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3DestroyedClass500:int:private",
     "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3GameplayContext:Rac3WorldGameplayContext ?:private",
@@ -4926,7 +5003,31 @@
     "game/scripts/OBPGame.Rac1AridiaScripted.cs::OBPGame::field:_rac1AridiaController604:Rac1AridiaClass604Session:private",
     "game/scripts/OBPGame.Rac1AridiaScripted.cs::OBPGame::field:_rac1AridiaSandmouse:Rac1AridiaSandmouseSession:private",
     "game/scripts/OBPGame.Rac1AridiaScripted.cs::OBPGame::method:ConfigureRac1AridiaScriptActors(:RuntimeWorld,:RuntimeWorldScene . Result,:IReadOnlyList < Rac1Instances . MobyInstance >):void:private",
-    "game/scripts/OBPGame.Rac1AridiaScripted.cs::OBPGame::method:ResetRac1AridiaScriptActors():void:private"
+    "game/scripts/OBPGame.Rac1AridiaScripted.cs::OBPGame::method:ResetRac1AridiaScriptActors():void:private",
+    "game/scripts/OBPGame.Rac1BombEffects.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Rac1BombEffects.cs::OBPGame::field:_rac1BombBursts:List < ( Node3D Node , Rac1BombExplosion . Burst Motion , List < StandardMaterial3D > Materials ) >:private,readonly",
+    "game/scripts/OBPGame.Rac1BombEffects.cs::OBPGame::field:_rac1BombFragments:List < ( Node3D Node , Rac1BombExplosion . Fragment Motion ) >:private,readonly",
+    "game/scripts/OBPGame.Rac1BombEffects.cs::OBPGame::field:_rac1BombParticleMeshes:Dictionary < int , QuadMesh >:private,readonly",
+    "game/scripts/OBPGame.Rac1BombEffects.cs::OBPGame::field:_rac1ParticleView:Rac1ParticleView ?:private",
+    "game/scripts/OBPGame.Rac1BombEffects.cs::OBPGame::field:_rac1Particles:Rac1ParticleSession ?:private",
+    "game/scripts/OBPGame.Rac1BombEffects.cs::OBPGame::method:EnsureRac1Particles():Rac1ParticleSession ?:private",
+    "game/scripts/OBPGame.Rac1BombEffects.cs::OBPGame::method:GetRac1ParticleMesh(:int):QuadMesh:private",
+    "game/scripts/OBPGame.Rac1BombEffects.cs::OBPGame::method:ResetRac1BombPresentation():void:private",
+    "game/scripts/OBPGame.Rac1BombEffects.cs::OBPGame::method:SpawnRac1BombExplosion(:Vector3,:bool,:Vector3 ?,:Vector3 ?):void:private",
+    "game/scripts/OBPGame.Rac1BombEffects.cs::OBPGame::method:SpawnRac1ExplosionBursts(:Vector3,:IReadOnlyList < Rac1BombExplosion . Burst >):void:private",
+    "game/scripts/OBPGame.Rac1BombEffects.cs::OBPGame::method:SpawnRac1ExplosionFragments(:IReadOnlyList < Rac1BombExplosion . Fragment >):void:private",
+    "game/scripts/OBPGame.Rac1BombEffects.cs::OBPGame::method:SpawnRac1WeaponExplosion(:Rac1WeaponId,:Vector3):void:private",
+    "game/scripts/OBPGame.Rac1BombEffects.cs::OBPGame::method:StepRac1BombEffectsPhysics():void:private",
+    "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::field:_rac1TaunterAudio:RuntimeAudioHost:private,readonly",
+    "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::field:_rac1TaunterSoundStep:int:private",
+    "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::field:_rac1TaunterSoundTicks:int:private",
+    "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::field:_rac1WeaponLoop:( int Class , int Sound ) ?:private",
+    "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::field:_rac1WeaponLoopAudio:RuntimeAudioHost:private,readonly",
+    "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::field:_rac1WeaponSoundTrace:List < ( ulong Tick , int Class , int Sound , bool Loop ) >:private,readonly",
+    "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::method:RecordRac1WeaponSound(:int,:int,:bool):void:private",
+    "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::method:ResetRac1WeaponAudio(:bool):void:private",
+    "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::method:StepRac1WeaponAudio():void:private"
   ],
   "RetiredAccess": [
     "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()"
