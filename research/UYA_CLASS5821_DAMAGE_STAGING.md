@@ -71,14 +71,21 @@ particle observations also enter
 - Hit candidates are source-qualified registered **non-R&C1** actors, not
   arbitrary same-numbered UYA classes. The existing inflated particle
   envelope and host line-of-sight must both admit the target.
-- The original R&C1 weapon's source, use-generation, particle-creation
-  sequence, damage amount and flags travel as a **foreign weapon intent**.
+- The original R&C1 weapon identity, native particle position, damage amount
+  and flags travel as a **foreign weapon intent**. The host contact service
+  assigns a monotonically increasing OBP receipt sequence per actual native
+  particle, including across R&C1 equipment resets. This avoids duplicate
+  shot identities without manufacturing extra projectiles.
   Native UYA class 5821 still decides lifetime subtraction through its
   own explicit victim-mask/record-kind adapter, never through R&C1 flag
   reinterpretation.
-- Each native flame carries its own source-qualified successful-target
-  receipts; the world-scoped actor registry additionally rejects duplicate
-  shot/contact receipts. This path does **not** synthesize a new fireball,
+- A source-neutral receipt session carries source-qualified target identities,
+  deduplicates accepted hits from each particle, and enforces the original R&C1
+  **12-tick per-victim repeat window** for foreign hits too. It resets per-world
+  particle/victim state without rewinding shot identity. The contact service
+  reads all foreign actor AABBs once per tick, verifies each victim is still
+  alive after earlier hits, and releases retired particle entries. The actor
+  registry also rejects duplicate shot/contact receipts. This path does **not** synthesize a new fireball,
   AI state, native kill animation or rewards. Original R&C1 contacts remain
   handled by the unchanged game-specific code.
 - The host captures accepted cross-source damage facts for diagnostic
@@ -87,7 +94,9 @@ particle observations also enter
   eight-actor Pyrocitor combat are **not** established by these changes.
 
 `ActorContactGeometryTests` pin the shared particle-radius / bounding-box
-envelope and non-finite rejection; the synthetic eight-victim test validates
+envelope and non-finite rejection. `CrossSourceFlameReceiptsTests` pin source-
+qualified independent victims, 12-tick throttling, per-particle deduplication,
+reference identity, reset-safe monotonic shots and retirement. The synthetic eight-victim test validates
 the target's independent native consumer, **not** a filmed ordinary encounter.
 
 ## Portable regression and remaining blockers

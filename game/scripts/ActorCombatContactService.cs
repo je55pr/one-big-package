@@ -64,40 +64,44 @@ internal sealed class ActorCombatContactService(ActorWorldHost world, ActorConta
         return result.Applied;
     }
 
+    // The receipt policy is engine-neutral and independently regression-tested.
+    // Source equipment resets do not roll back its unique shot counter.
+    private readonly CrossSourceFlameReceipts _flameReceipts = new(
+        new(ObpSourceGame.Rac1, (int)Rac1WeaponId.Pyrocitor),
+        Rac1WeaponReconstructionPolicy.FlameVictimRepeatTicks);
+
+    internal void ResetFlameContacts() => _flameReceipts.Reset();
+
+    internal void ForgetFlame(Rac1ParticleSession.Particle particle) =>
+        _flameReceipts.Forget(particle);
+
     /// <summary>
-    /// OBP cross-source contact bridge for an already-emitted native R&C1 flame
-    /// particle. Does not advance particles, decide native victim consequences,
-    /// or replace the original R&C1 contact path. Each particle has an independent
-    /// source-qualified receipt set; source-owned actor adapters decide damage.
+    /// OBP cross-source query for an already-emitted original R&C1 Pyrocitor
+    /// particle. The native particle lives/advances elsewhere. Geometry is a
+    /// once-per-tick snapshot; victims are checked live again before each hit.
     /// </summary>
     internal IReadOnlyList<WeaponDamageIntent> ResolveFlame(
-        SourceWeaponKey weapon, long generation, long particleSequence,
+        Rac1ParticleSession.Particle particle, ulong worldTick,
         Vector3 position, float radius, float damage, uint nativeFlags,
-        ISet<WeaponTargetKey> particleVictims)
+        IReadOnlyList<(WeaponTargetKey Key, RuntimeWorldScene.DynamicObjectNode Node, Aabb Bounds)> geometry)
     {
-        ArgumentNullException.ThrowIfNull(particleVictims);
-        if (!world.Active || weapon.SourceGame != ObpSourceGame.Rac1 ||
-            weapon.NativeItemId != (int)Rac1WeaponId.Pyrocitor ||
-            generation < 0 || particleSequence < 0 ||
-            !position.IsFinite() || !float.IsFinite(radius) || radius <= 0f ||
+        if (!world.Active || !position.IsFinite() || !float.IsFinite(radius) || radius <= 0f ||
             !float.IsFinite(damage) || damage <= 0f)
             return Array.Empty<WeaponDamageIntent>();
 
         var accepted = new List<WeaponDamageIntent>();
-        foreach (var (key, node, bounds) in ReadGeometry())
+        foreach (var (key, node, bounds) in geometry)
         {
-            // R&C1 retail victim contacts are still handled by its native
-            // weapon-world path. This explicit OBP route only spans sources.
-            if (key.SourceGame == ObpSourceGame.Rac1 || particleVictims.Contains(key) ||
+            if (key.SourceGame == ObpSourceGame.Rac1 ||
                 !ActorContactGeometry.FlamePointIntersects(bounds, position, radius) ||
-                !ports.LineOfSight(position, node.Root.GlobalPosition + Vector3.Up * .4f))
+                !views().Any(actor => actor.Registration.Instance.Target == key && actor.Observe().Alive) ||
+                !ports.LineOfSight(position, node.Root.GlobalPosition + Vector3.Up * .4f) ||
+                !_flameReceipts.CanHit(particle, key, checked((long)worldTick), out var shot))
                 continue;
 
-            var intent = new WeaponDamageIntent(
-                new(weapon, generation, particleSequence), key,
-                damage, nativeFlags, "native-flame");
+            var intent = new WeaponDamageIntent(shot, key, damage, nativeFlags, "native-flame");
             if (!Apply(intent)) continue;
-            particleVictims.Add(key);
+            _flameReceipts.Accept(particle, key, checked((long)worldTick));
             accepted.Add(intent);
         }
         return accepted;

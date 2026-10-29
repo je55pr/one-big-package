@@ -29,6 +29,7 @@ public sealed class Rac3TyhrranoidVisualRetailTests
         };
 
         int total = 0;
+        int[]? referenceTopology = null;
         foreach (var (table, count) in population)
         {
             var level = Rac3LevelCore.Open(reader, table);
@@ -39,7 +40,7 @@ public sealed class Rac3TyhrranoidVisualRetailTests
 
             int textureCount = Rac3Assets.ReadTextures(
                 level.Core, Rac3Assets.TextureTable.Moby).Count;
-            var models = Rac3Assets.ReadMobyClasses(level.Core, textureCount);
+            var models = Rac3Assets.ReadMobyClasses(level.Core, textureCount, nativePoseOverride: true);
             Assert.True(models.Decoded.TryGetValue(5821, out var visual));
             Assert.NotNull(visual);
             Assert.Equal(1203, visual!.Mesh.Indices.Length / 3);
@@ -48,6 +49,8 @@ public sealed class Rac3TyhrranoidVisualRetailTests
             Assert.True(visual.Mesh.SkinningApplied);
             Assert.True(visual.Mesh.NativeInitialPoseApplied);
             Assert.Equal(OneEyePositionSha256, PositionHash(visual.Mesh.Positions));
+            if (referenceTopology is null) referenceTopology = visual.Mesh.Indices.ToArray();
+            else Assert.Equal(referenceTopology, visual.Mesh.Indices);
         }
 
         Assert.Equal(471, total);
@@ -65,7 +68,7 @@ public sealed class Rac3TyhrranoidVisualRetailTests
 
         int textureCount = Rac3Assets.ReadTextures(
             level.Core, Rac3Assets.TextureTable.Moby).Count;
-        var models = Rac3Assets.ReadMobyClasses(level.Core, textureCount);
+        var models = Rac3Assets.ReadMobyClasses(level.Core, textureCount, nativePoseOverride: true);
         Assert.True(models.Decoded.TryGetValue(5860, out var twoEye));
         Assert.NotNull(twoEye);
         Assert.Equal(1300, twoEye!.Mesh.Indices.Length / 3);
@@ -82,7 +85,7 @@ public sealed class Rac3TyhrranoidVisualRetailTests
         var level = Rac3LevelCore.Open(reader, 1);
         int textureCount = Rac3Assets.ReadTextures(
             level.Core, Rac3Assets.TextureTable.Moby).Count;
-        var cls = Rac3Assets.ReadMobyClasses(level.Core, textureCount).Decoded[5821];
+        var cls = Rac3Assets.ReadMobyClasses(level.Core, textureCount, nativePoseOverride: true).Decoded[5821];
 
         Assert.NotNull(cls.NativePoseSource);
         Assert.Equal(13, cls.Sequences.Count);

@@ -87,10 +87,12 @@ public partial class OBPGame
             // fourth update is kept for the travelling damage-volume queries.
             if ((_rac1WeaponWorldTick & 3) == 0 && created.Count > 2)
             {
-                if (_rac1NativeFlames.Count == 15) _rac1NativeFlames.RemoveAt(0);
-                _rac1NativeFlames.Add(new(created[2],
-                    _rac1WeaponGenerations.GetValueOrDefault(Rac1WeaponId.Pyrocitor),
-                    checked((long)_rac1WeaponWorldTick)));
+                if (_rac1NativeFlames.Count == 15)
+                {
+                    _actorHost?.Combat.ForgetFlame(_rac1NativeFlames[0].Motion);
+                    _rac1NativeFlames.RemoveAt(0);
+                }
+                _rac1NativeFlames.Add(new(created[2]));
             }
         }
         StepRac1WeaponMotes();
@@ -214,10 +216,20 @@ public partial class OBPGame
     private void StepRac1NativeFlameContacts()
     {
         if (_equipmentPresentation.Explosions.Particles is not { } particles) return;
+        // A single actor geometry read for the entire native flame tick; a
+        // stale hit cannot land because ResolveFlame rechecks live victims.
+        var foreign = OrdinaryPlayerSession
+            ? ActorHost.Combat.ReadGeometry().Where(target => target.Key.SourceGame != ObpSourceGame.Rac1).ToArray()
+            : [];
         foreach (var flame in _rac1NativeFlames.ToArray())
         {
             var p = flame.Motion;
-            if (!particles.IsLive(p) || p.Remaining < 2) { _rac1NativeFlames.Remove(flame); continue; }
+            if (!particles.IsLive(p) || p.Remaining < 2)
+            {
+                _actorHost?.Combat.ForgetFlame(p);
+                _rac1NativeFlames.Remove(flame);
+                continue;
+            }
             particles.FlameSecondary(p);
             Vector3 point = FromEffectNative(p.Position);
             float radius = p.Size * .5f;
@@ -226,10 +238,9 @@ public partial class OBPGame
                 // Same native R&C1 travelling flame particle, explicitly admitted
                 // to foreign source-owned actor receivers. No second projectile AI.
                 foreach (var intent in ActorHost.Combat.ResolveFlame(
-                    new(ObpSourceGame.Rac1, (int)Rac1WeaponId.Pyrocitor),
-                    flame.ShotGeneration, flame.ParticleSequence, point, radius,
+                    p, _rac1WeaponWorldTick, point, radius,
                     (float)Rac1WeaponProfiles.PyrocitorDamage, Rac1WeaponProfiles.PyrocitorFlags,
-                    flame.CrossSourceVictims))
+                    foreign))
                     CaptureReplay.RecordGameplayFact("damage", new { Intent = intent, Accepted = true });
             }
             foreach (var (victim, bounds) in EquipmentGeometry)

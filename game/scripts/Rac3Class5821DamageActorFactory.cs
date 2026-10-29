@@ -34,7 +34,6 @@ internal sealed class Rac3Class5821DamageActorFactory(ActorSceneFactory scenes) 
             source.Build != Rac3Authority.Primary.BuildId ||
             placement.Source.Game != source.Game ||
             placement.Source.Build != source.Build ||
-            library.Game != source.Game ||
             library.BuildId != source.Build)
             throw new InvalidDataException("UYA class-5821 actor source/build changed before construction.");
 

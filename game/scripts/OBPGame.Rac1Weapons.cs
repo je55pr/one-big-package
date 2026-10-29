@@ -82,16 +82,15 @@ public partial class OBPGame
     {
         public int Age;
     }
-    private sealed record HostedNativeFlame(Rac1ParticleSession.Particle Motion, long ShotGeneration, long ParticleSequence)
+    private sealed record HostedNativeFlame(Rac1ParticleSession.Particle Motion)
     {
         public HashSet<Rac1MobyRuntimeKey> Victims { get; } = [];
-        // Foreign actor identities are source-qualified; never reuse RAC1 native keys.
-        public HashSet<WeaponTargetKey> CrossSourceVictims { get; } = [];
     }
 
     private void ResetRac1AdditionalWeapons()
     {
         ResetRac1WeaponAudio();
+        _actorHost?.Combat.ResetFlameContacts();
         ResetRac1Arsenal();
         foreach (var node in _rac1EquipmentShots.Select(shot => shot.Node).Concat(_rac1DoomAgents.Select(agent => agent.Body))
             .Concat(_rac1WeaponMotes.Select(mote => mote.Node)))
