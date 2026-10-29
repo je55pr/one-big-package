@@ -61,6 +61,36 @@ Godot's existing `--shots` service, adding
 `--maktar-dispenser-preview 394`. Frame captures and images are
 local QA evidence, not committed retail textures.
 
+## Live-tester facing and smoothness correction
+
+The first interactive test revealed two specific errors in the initial
+visual diagnostic. The extension played in visible 15-Hz steps, and the
+barrel pointed into the outer arena wall.
+
+All six retail placement Z rotations point the model's local **+Y**
+extension axis radially **away** from arena centre (500,601); their
+forward-axis dot product with the inward radial vector is approximately
+-1.0. The source does not tell us which runtime articulated-state
+rotation would be applied by the dispenser gameplay actor. The **preview**
+now adds 180° around the native Z/up axis at the instance root, facing
+the extending model toward the arena. This does not rewrite the authored
+transforms or assert the real game's initial state.
+
+The decoded regular sequence-0 has 10 keys at 0.25 × 60 = **15 keys/sec**.
+The diagnostic previous-frame-only renderer would jump between those keys
+and snap immediately back to the start. To make motion inspectable, the
+preview now interpolates **six positional samples per key interval** and
+plays an extend-then-retract ping-pong cycle, 108 display samples at
+90 samples/sec. This is **vertex-space interpolation of source poses**,
+not recovered native quaternion blending or event timing, and is limited
+to the opt-in diagnostic. Ordinary source model animation is unchanged.
+The authored six placements and arena collision remain untouched.
+
+Godot 4.7.2 Mono renders the corrected side-on angle and live-player
+view with exit code 0; regression tests check six inward radial angles,
+all ten original keys, intermediate samples, continuity at the loop
+seam and preserved native collision.
+
 ## Status and next work
 
 The static class-2581 meshes **remain hidden in normal gameplay**.

@@ -44,10 +44,12 @@ public static partial class Rac2WorldImport
             throw new InvalidDataException("Maktar dispenser lacks a validated retail rigid-joint sequence.");
 
         var bytes = Rac2MobyClasses.ClassBytes(core, cls.OClass);
+        var nativeRotation = (inst.Rotation.X, inst.Rotation.Y, inst.Rotation.Z);
+        var facing = Rac2MaktarDispenserMotion.InwardPreviewRotation(nativeRotation);
         var native = Rac2Instances.MatrixFromPosRotScale(
             (inst.Position.X, inst.Position.Y, inst.Position.Z),
-            (inst.Rotation.X, inst.Rotation.Y, inst.Rotation.Z), inst.Scale == 0 ? 1 : inst.Scale);
-        var frames = new List<double[]>();
+            facing, inst.Scale == 0 ? 1 : inst.Scale);
+        var keys = new List<double[]>();
         foreach (var key in animate ? sequence.Frames : sequence.Frames.Take(1))
         {
             var positions = Ps2MobyNativePose.Pose(bytes, model, key);
@@ -60,8 +62,14 @@ public static partial class Rac2WorldImport
                 transformed[i + 1] = R2(z);
                 transformed[i + 2] = R2(y);
             }
-            frames.Add(transformed);
+            keys.Add(transformed);
         }
+        // Source: 10 frames at 0.25 × 60 = 15 Hz. Smooth the diagnostics
+        // only, not every animated Moby in the engine. Ping-pong also avoids
+        // an unmotivated instant collapse of the extending arm at loop seam.
+        IReadOnlyList<double[]> frames = animate
+            ? Rac2MaktarDispenserMotion.SmoothExtendRetract(keys)
+            : keys;
 
         // The authored instance's ambient alone is very dim (~.1). Its
         // assigned retail directional light (index 6) illuminates the native
@@ -109,7 +117,8 @@ public static partial class Rac2WorldImport
             animated.Add(new RuntimeAnimatedMesh(
                 $"maktar-dispenser-{instanceIndex}-t{surface.Texture}", "moby", surface.Texture,
                 model.Uvs, indices.ToArray(), colours, frames,
-                animate ? (float)System.Math.Clamp(sequence.Frames[0].Speed * 60, 6, 60) : 1,
+                animate ? (float)(System.Math.Clamp(sequence.Frames[0].Speed * 60, 6, 60) *
+                    Rac2MaktarDispenserMotion.SubframesPerKey) : 1,
                 MaterialPresentation: surface.Presentation, VertexColoursAreAuthored: false));
         return world with { AnimatedMeshes = animated };
     }

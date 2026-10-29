@@ -63,7 +63,16 @@ public sealed class Rac2MaktarArenaTests
         var gameplay = Rac2Instances.Read(Rac2LevelWad.RequireLump(wad, header, 2));
         var instances = gameplay.MobyInstances.Where(m => m.OClass == Rac2MaktarArenaPresentation.DispenserClass).ToArray();
         Assert.Equal(6, instances.Length);
-        Assert.All(instances, m => Assert.InRange(m.Position.Z, 503, 504));
+        Assert.All(instances, m =>
+        {
+            Assert.InRange(m.Position.Z, 503, 504);
+            var facing = Rac2MaktarDispenserMotion.InwardPreviewRotation(
+                (m.Rotation.X, m.Rotation.Y, m.Rotation.Z));
+            double dx = 500 - m.Position.X, dy = 601 - m.Position.Y;
+            double dot = (-Math.Sin(facing.Z) * dx + Math.Cos(facing.Z) * dy) /
+                Math.Sqrt(dx * dx + dy * dy);
+            Assert.InRange(dot, .99, 1.000001);
+        });
         var core = Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0));
         var nativeClass = Rac2MobyClasses.Read(core, 2)[Rac2MaktarArenaPresentation.DispenserClass];
         Assert.Equal(5, nativeClass.Joints.Count);
@@ -90,7 +99,8 @@ public sealed class Rac2MaktarArenaTests
         {
             Assert.StartsWith("maktar-dispenser-394-", surface.Name);
             Assert.Equal("moby", surface.AssetKind);
-            Assert.Equal(10, surface.Frames.Count);
+            Assert.Equal(108, surface.Frames.Count);
+            Assert.Equal(90f, surface.FramesPerSecond);
             Assert.Equal(surface.VertexCount * 2, surface.Uvs.Length);
             Assert.All(surface.Frames, points => Assert.Equal(surface.Frames[0].Length, points.Length));
         });
@@ -102,6 +112,48 @@ public sealed class Rac2MaktarArenaTests
         Assert.Equal(priorFrames, world.AnimatedMeshes?.Count ?? 0);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             Rac2WorldImport.WithMaktarDispenserPreview(reader, world, 404, animate: false));
+    }
+
+    [Fact]
+    public void InwardPreviewYawFacesAllSixAuthoredDispenserPositionsTowardArenaCentre()
+    {
+        // Native placement yaw makes the model's extending +Y axis point
+        // radially out; the visual-preview correction reverses only facing.
+        foreach (var (x, y, yaw) in new[]
+        {
+            (514.02, 568.43, -2.740), (485.91, 568.45, 2.740),
+            (514.09, 634.66, -.401), (485.97, 634.69, .402),
+            (464.02, 601.79, 1.566), (535.97, 601.32, -1.576),
+        })
+        {
+            var transformed = Rac2MaktarDispenserMotion.InwardPreviewRotation((0, 0, yaw));
+            double fx = -Math.Sin(transformed.Z), fy = Math.Cos(transformed.Z);
+            double dx = 500 - x, dy = 601 - y;
+            double dot = (fx * dx + fy * dy) / Math.Sqrt(dx * dx + dy * dy);
+            Assert.InRange(dot, .99, 1.000001);
+            Assert.Equal(yaw + Math.PI, transformed.Z, 8);
+        }
+    }
+
+    [Fact]
+    public void SmoothedPreviewKeepsAllOriginalKeysAndHasContinuousSeams()
+    {
+        var keys = new double[][]
+        {
+            [0, 1, 2],
+            [12, 13, 14],
+            [24, 25, 26],
+        };
+        var preview = Rac2MaktarDispenserMotion.SmoothExtendRetract(keys, 6);
+        Assert.Equal(24, preview.Count);
+        Assert.Equal(keys[0], preview[0]);
+        Assert.Equal(keys[1], preview[6]);
+        Assert.Equal(keys[2], preview[12]);
+        Assert.Equal(keys[1], preview[18]);
+        Assert.Equal(new double[] { 2, 3, 4 }, preview[1]);
+        Assert.Equal(new double[] { 2, 3, 4 }, preview[^1]);
+        Assert.Throws<InvalidDataException>(() =>
+            Rac2MaktarDispenserMotion.SmoothExtendRetract([[0, 0, 0], [double.NaN, 0, 0]]));
     }
 
     [Fact]
