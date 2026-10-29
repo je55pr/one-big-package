@@ -208,7 +208,13 @@ public static partial class Rac2WorldImport
             dynamicClasses,
             out var dynamicInstances);
         var nonStaticMobyInstances = animatedInstances.Concat(dynamicInstances).ToHashSet();
-        PlaceMobyInstances(gameplay.MobyInstances, mobyClasses, gameplay.DirLights, gameplay.PointLights, meshes, nonStaticMobyInstances);
+        // Unhosted Maktar dispenser arms are not safe to bake into the
+        // permanent static geometry. Keep their retail placements in the
+        // gameplay source; a future arena actor will own their animation.
+        var staticMobies = gameplay.MobyInstances
+            .Where(instance => Rac2MaktarArenaPresentation.AdmitStaticMoby(level, instance.OClass))
+            .ToArray();
+        PlaceMobyInstances(staticMobies, mobyClasses, gameplay.DirLights, gameplay.PointLights, meshes, nonStaticMobyInstances);
 
         // --- moby markers ---
         AddMobyMarkers(gameplay.MobyInstances, mobyClasses, meshes, minX, minY, minZ, maxX, maxY, maxZ);

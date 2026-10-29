@@ -3501,9 +3501,9 @@
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:WorldOptions(:RuntimeWorld):WorldHost . Options:private",
       "Owner": "#347",
-      "Rationale": "Existing world host presentation options moved beside world preparation; no new world loading policy or alternative lifetime. #298 excludes non-retail debug Moby markers only for screenshot runs. Native Maktar floor and default player entry remain source-owned and unchanged.",
+      "Rationale": "Existing world host presentation options moved beside world preparation; no new world loading policy or alternative lifetime. #298 excludes non-retail debug Moby markers only for screenshot runs. Native Maktar floor and default player entry remain source-owned and unchanged. #298 live-test feedback moved unresolved-Moby cubes behind an opt-in debugging flag. Source-backed arena tests and normal player capture protect the read-only view option.",
       "ExpiresWith": "#376",
-      "Hash": "4a5c435f0014f0bdbfd6a00c210bfb8e7c1e60647dabb81777710376689501ea"
+      "Hash": "1f85e372d520b4a10d7609bd13a2cc32a4e19fe8502195798ab3cbb0288236da"
     },
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::property:SelectedPlayerConfiguration:PlayerSessionConfiguration:get/:private",

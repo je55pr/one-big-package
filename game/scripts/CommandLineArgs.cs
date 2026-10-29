@@ -132,6 +132,8 @@ public sealed record CommandLineArgs
     public bool CrateAutoStrike { get; init; }
     /// <summary>Opt-in, source-validated Maktar combat-floor test entry. Not a campaign spawn.</summary>
     public bool MaktarArenaStart { get; init; }
+    /// <summary>Explicit diagnostic display of missing native Moby models as pink cubes.</summary>
+    public bool MobyMarkers { get; init; }
 
     /// <summary>Run the ordinary-input-only R&amp;C1 Veldin playability smoke and quit.</summary>
     public bool Rac1VeldinPlaySmoke { get; init; }
@@ -276,6 +278,7 @@ public sealed record CommandLineArgs
                 "--crate-focus" => result with { CrateFocus = true },
                 "--crate-auto-strike" => result with { CrateAutoStrike = true },
                 "--maktar-arena-start" => result with { MaktarArenaStart = true },
+                "--moby-markers" => result with { MobyMarkers = true },
                 "--rac3-target-seed-audit" => result with { Rac3TargetSeedAudit = true },
                 "--rac1-veldin-play-smoke" => result with { Rac1VeldinPlaySmoke = true },
                 "--rac1-movement-contact-smoke" => result with { Rac1MovementContactSmoke = true },

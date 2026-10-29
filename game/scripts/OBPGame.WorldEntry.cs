@@ -256,9 +256,10 @@ public partial class OBPGame
             && !_args.CrateFocus && !_args.CrateAutoStrike;
         return new WorldHost.Options
         {
-            // Screenshot runs are production-looking source captures; the
-            // debug pink Moby proxy cubes are not native arena scenery.
-            IncludeMobyMarkers = _args.ShotsPath is null &&
+            // Pink placeholders are diagnostics for unresolved native
+            // models, not retail scenery. Never show them in normal play or
+            // capture unless explicitly requested for a debug world.
+            IncludeMobyMarkers = _args.MobyMarkers && _args.ShotsPath is null &&
                 !(_args.CaptureFrame is not null && !framedCapture),
             IncludeSky = !_args.AnimSolo,
             IncludeCollision = true,

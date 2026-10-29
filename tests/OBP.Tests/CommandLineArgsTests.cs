@@ -91,6 +91,14 @@ public sealed class CommandLineArgsTests
     }
 
     [Fact]
+    public void MissingMobyModelMarkersAreExplicitDiagnosticsNotDefaultScenery()
+    {
+        Assert.False(CommandLineArgs.Parse([]).MobyMarkers);
+        Assert.False(CommandLineArgs.Parse(["--planet", "2", "--test-scene", "player"]).MobyMarkers);
+        Assert.True(CommandLineArgs.Parse(["--planet", "2", "--moby-markers"]).MobyMarkers);
+    }
+
+    [Fact]
     public void KerwanTaxiSmokeIsOptIn()
     {
         Assert.False(CommandLineArgs.Parse([]).Rac1MetropolisTaxiSmoke);
