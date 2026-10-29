@@ -138,6 +138,21 @@ public sealed class CaptureDiagnosticTests
         Assert.Empty(fixture.Protocol);
     }
 
+    [Fact]
+    public async Task BugReportFormStillUsesFiveSecondUiDeadlineAfterWorldEntry()
+    {
+        var fixture = new Fixture { MillisecondsPerFrame = 1000 };
+        var reports = new UnopenedReportFixture();
+        using var run = new DiagnosticRunContext(fixture, CancellationToken.None, 200);
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            new BugReporterScenario(fixture.Context(run), fixture, reports).RunAsync());
+        Assert.Equal("F8 did not open the report form.", error.Message);
+        // 128 frames to press F8, then only five further process frames to fail.
+        Assert.Equal(133UL, fixture.Process);
+        Assert.Contains(fixture.Protocol, item => item.Contains("key F8 True Physical", StringComparison.Ordinal));
+        Assert.False(reports.DescriptionFocused);
+    }
+
     [Theory]
     [InlineData(false, true, false, false)]
     [InlineData(true, false, false, false)]
@@ -369,6 +384,18 @@ public sealed class CaptureDiagnosticTests
         Assert.Contains(failure.InnerExceptions, error => error.Message == "original fixture failure");
         Assert.Contains(failure.InnerExceptions, error => error.Message == "fixture cleanup failure");
         Assert.Equal(new[] { ("capture-failed", 2) }, fixture.Quits);
+    }
+
+    private sealed class UnopenedReportFixture : IBugReporterDiagnosticFixture
+    {
+        public bool DescriptionFocused { get; private set; }
+        public BugReporterUiDiagnostic ReadUi() => new(false, false, false, false, "", null, null, "");
+        public BugReporterWorldDiagnostic ReadWorld() => throw new InvalidOperationException("Form did not open.");
+        public BugReporterArchiveDiagnostic ReadArchive() => throw new InvalidOperationException("Form did not open.");
+        public void FocusDescription() => DescriptionFocused = true;
+        public void FocusButton(string label) => throw new InvalidOperationException("Form did not open.");
+        public Vector2 ReportButtonCentre => throw new InvalidOperationException("Form did not open.");
+        public Task CaptureAsync(string name, DiagnosticRunContext run) => throw new InvalidOperationException("Form did not open.");
     }
 
     private sealed class Fixture : ICaptureRecorderDiagnosticFixture, ICaptureDiagnosticInput, ICaptureDiagnosticInputFactory,
