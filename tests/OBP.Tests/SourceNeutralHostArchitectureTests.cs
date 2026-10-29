@@ -32,7 +32,8 @@ public sealed class SourceNeutralHostArchitectureTests
         var audioCalls = factory.DescendantNodes().OfType<InvocationExpressionSyntax>()
             .Select(call => model.GetSymbolInfo(call).Symbol).OfType<IMethodSymbol>()
             .Where(symbol => symbol.ContainingType.Name == "Rac1PlayerAudioPresenter").ToArray();
-        Assert.Equal("Play", Assert.Single(audioCalls).Name);
+        Assert.Single(audioCalls, symbol => symbol.Name == "Play");
+        Assert.All(audioCalls, symbol => Assert.Contains(symbol.Name, new[] { "Play", "RetireWorld" }));
         var usage = Assert.Single(HostOwnershipAudit.Scan(compilation), usage => usage.Key.EndsWith(
             "::Rac1WorldModule.BindSourcePlayerContacts(PlayerHost)", StringComparison.Ordinal));
         Assert.False(usage.PlayerSelection);
