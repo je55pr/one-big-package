@@ -87,7 +87,9 @@ public sealed class PlayerSkeletalSampler
     {
         if (!float.IsFinite(weight) || weight is < 0 or > 1 || !float.IsFinite(sample.Fraction) || sample.Fraction is < 0 or > 1 ||
             (uint)sample.Frame >= clip.Frames.Count || (uint)sample.NextFrame >= clip.Frames.Count)
-            throw new ArgumentException("Invalid skeletal layer sample.");
+            throw new ArgumentException($"Invalid skeletal layer sample: source={clip.SourceGame}, sequence={clip.SequenceId}, " +
+                $"frames={clip.Frames.Count}, frame={sample.Frame}, next={sample.NextFrame}, " +
+                $"fraction={sample.Fraction:R}, weight={weight:R}.");
         var a = clip.Frames[sample.Frame].Joints; var b = clip.Frames[sample.NextFrame].Joints;
         if (a.Count != clip.JointIndices.Count || b.Count != a.Count || clip.JointIndices.Distinct().Count() != a.Count)
             throw new InvalidDataException("Skeletal channel map does not match its frames.");

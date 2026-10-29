@@ -63,6 +63,41 @@ public sealed record PlayerAvatarAnimationClip(
     }
 
     /// <summary>
+    /// Return the frame pair and finite interpolation for a source-timed clip.
+    /// FrameIndexAt deliberately tolerates time very near a frame boundary; the
+    /// fraction must use the same boundary and wrap decisions to avoid tiny
+    /// negative fractions reaching the skeletal sampler.
+    /// </summary>
+    public PlayerSkeletalSample SampleAt(double elapsedSeconds, bool loop)
+    {
+        if (!double.IsFinite(elapsedSeconds) || elapsedSeconds < 0)
+            throw new ArgumentOutOfRangeException(nameof(elapsedSeconds));
+        if (FrameCount == 0 || FrameDurationsSeconds.Count != FrameCount ||
+            FrameDurationsSeconds.Any(duration => !double.IsFinite(duration) || duration <= 0) ||
+            !double.IsFinite(DurationSeconds))
+            throw new InvalidDataException($"Animation clip '{Id}' has invalid frame timing.");
+
+        double total = DurationSeconds;
+        double phase = elapsedSeconds;
+        if (loop)
+        {
+            phase %= total;
+            if (total - phase <= Math.Max(1d, Math.Abs(total)) * 1e-12) phase = 0;
+        }
+        else phase = Math.Min(phase, Math.BitDecrement(total));
+
+        int frame = FrameIndexAt(phase, loop);
+        double start = FrameDurationsSeconds.Take(frame).Sum();
+        double frameDuration = FrameDurationsSeconds[frame];
+        double fraction = (phase - start) / frameDuration;
+        double roundoff = Math.Max(1d, Math.Abs(start)) * 1e-12 / frameDuration;
+        if (!double.IsFinite(fraction) || fraction < -roundoff || fraction > 1 + roundoff)
+            throw new InvalidDataException($"Animation clip '{Id}' has inconsistent frame interpolation at {phase:R}s (frame {frame}).");
+        return new(frame, loop ? (frame + 1) % FrameCount : Math.Min(frame + 1, FrameCount - 1),
+            (float)Math.Clamp(fraction, 0, 1));
+    }
+
+    /// <summary>
     /// Select a frame at elapsed clip time. Looping is presentation policy rather
     /// than native clip data, so callers choose whether to wrap or hold the end.
     /// </summary>

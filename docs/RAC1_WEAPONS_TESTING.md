@@ -110,6 +110,9 @@ Run `./tools/rac1-weapons-smoke.ps1` for the synthetic integration fixture. Add
 The wrapper uses an unfocusable offscreen window and does not replace saved window
 placement. It checks skins/sockets, ammo/HUD, flame contact, mine proximity/blast,
 bot seeking, capture/release, a cargo save/load roundtrip and every added weapon's
-main function. It is not a matched retail gameplay replay. See
+main function. The wrapper checks the complete Godot stdout/stderr log for engine
+errors and the explicit completion marker, not just the process exit code; run
+`./tools/rac1-weapons-smoke.ps1 -SelfTest` to verify the log gate without a source ISO.
+It is not a matched retail gameplay replay. See
 [arsenal evidence and remaining approximations](../research/RAC1_ARSENAL.md) and
 [the earlier five-weapon pass](../research/RAC1_ADDITIONAL_WEAPONS.md).

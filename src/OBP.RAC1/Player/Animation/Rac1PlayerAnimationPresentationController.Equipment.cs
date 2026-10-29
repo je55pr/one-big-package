@@ -42,12 +42,9 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         }
         var descriptor = Rac1PlayerAvatarProvider.AnimationDescriptor(sourceSequence.Value);
         var clip = _avatar.AnimationClips.Single(clip => clip.Id == descriptor.Id);
-        double phase = loop ? (phaseSeconds ?? _clockSeconds) % clip.DurationSeconds :
-            Math.Clamp(phaseSeconds ?? _clockSeconds, 0, clip.DurationSeconds - 1e-9);
-        int frame = clip.FrameIndexAt(phase, loop);
-        double start = clip.FrameDurationsSeconds.Take(frame).Sum();
-        float fraction = (float)((phase - start) / clip.FrameDurationsSeconds[frame]);
-        int next = loop ? (frame + 1) % clip.FrameCount : Math.Min(frame + 1, clip.FrameCount - 1);
+        var sample = clip.SampleAt(phaseSeconds ?? _clockSeconds, loop);
+        int frame = sample.Frame, next = sample.NextFrame;
+        float fraction = sample.Fraction;
         var a = clip.LocalFrames[frame]; var b = clip.LocalFrames[next];
         var baseline = Current.SampledPose?.LocalPositions ?? CurrentClip.LocalFrames[
             CurrentClip.FrameIndexAt(Current.ElapsedAt(_clockSeconds), Current.Loop)];
@@ -93,11 +90,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     {
         foreach (var sample in new[] { TraversalSample, CrouchSample, OrdinaryStopSample, OrdinaryStandingSample, OrdinaryLocomotionSample })
             if (sample is { } current && current.Sequence == _currentSequenceId) return current;
-        var clip = CurrentClip;
-        double elapsed = Current.ElapsedAt(_clockSeconds);
-        double phase = Current.Loop ? elapsed % clip.DurationSeconds : Math.Min(elapsed, clip.DurationSeconds - 1e-9);
-        int frame = clip.FrameIndexAt(phase, Current.Loop);
-        float fraction = (float)((phase - clip.FrameDurationsSeconds.Take(frame).Sum()) / clip.FrameDurationsSeconds[frame]);
-        return new(_currentSequenceId, frame, Current.Loop ? (frame + 1) % clip.FrameCount : Math.Min(frame + 1, clip.FrameCount - 1), fraction, false);
+        var sampled = CurrentClip.SampleAt(Current.ElapsedAt(_clockSeconds), Current.Loop);
+        return new(_currentSequenceId, sampled.Frame, sampled.NextFrame, sampled.Fraction, false);
     }
 }
