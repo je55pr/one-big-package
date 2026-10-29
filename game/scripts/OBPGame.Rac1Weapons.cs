@@ -82,9 +82,11 @@ public partial class OBPGame
     {
         public int Age;
     }
-    private sealed record HostedNativeFlame(Rac1ParticleSession.Particle Motion)
+    private sealed record HostedNativeFlame(Rac1ParticleSession.Particle Motion, long ShotGeneration, long ParticleSequence)
     {
         public HashSet<Rac1MobyRuntimeKey> Victims { get; } = [];
+        // Foreign actor identities are source-qualified; never reuse RAC1 native keys.
+        public HashSet<WeaponTargetKey> CrossSourceVictims { get; } = [];
     }
 
     private void ResetRac1AdditionalWeapons()

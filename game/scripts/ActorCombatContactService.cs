@@ -64,6 +64,45 @@ internal sealed class ActorCombatContactService(ActorWorldHost world, ActorConta
         return result.Applied;
     }
 
+    /// <summary>
+    /// OBP cross-source contact bridge for an already-emitted native R&C1 flame
+    /// particle. Does not advance particles, decide native victim consequences,
+    /// or replace the original R&C1 contact path. Each particle has an independent
+    /// source-qualified receipt set; source-owned actor adapters decide damage.
+    /// </summary>
+    internal IReadOnlyList<WeaponDamageIntent> ResolveFlame(
+        SourceWeaponKey weapon, long generation, long particleSequence,
+        Vector3 position, float radius, float damage, uint nativeFlags,
+        ISet<WeaponTargetKey> particleVictims)
+    {
+        ArgumentNullException.ThrowIfNull(particleVictims);
+        if (!world.Active || weapon.SourceGame != ObpSourceGame.Rac1 ||
+            weapon.NativeItemId != (int)Rac1WeaponId.Pyrocitor ||
+            generation < 0 || particleSequence < 0 ||
+            !position.IsFinite() || !float.IsFinite(radius) || radius <= 0f ||
+            !float.IsFinite(damage) || damage <= 0f)
+            return Array.Empty<WeaponDamageIntent>();
+
+        var accepted = new List<WeaponDamageIntent>();
+        foreach (var (key, node, bounds) in ReadGeometry())
+        {
+            // R&C1 retail victim contacts are still handled by its native
+            // weapon-world path. This explicit OBP route only spans sources.
+            if (key.SourceGame == ObpSourceGame.Rac1 || particleVictims.Contains(key) ||
+                !ActorContactGeometry.FlamePointIntersects(bounds, position, radius) ||
+                !ports.LineOfSight(position, node.Root.GlobalPosition + Vector3.Up * .4f))
+                continue;
+
+            var intent = new WeaponDamageIntent(
+                new(weapon, generation, particleSequence), key,
+                damage, nativeFlags, "native-flame");
+            if (!Apply(intent)) continue;
+            particleVictims.Add(key);
+            accepted.Add(intent);
+        }
+        return accepted;
+    }
+
     internal void ResolveBlast(SourceWeaponKey weapon, long generation, long sequence,
         Vector3 origin, float radius, float damage, uint flags)
     {

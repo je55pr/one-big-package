@@ -5,6 +5,15 @@ namespace OBP.Game;
 /// <summary>Existing OBP contact geometry; these are scene queries, not recovered native collision formulas.</summary>
 internal static class ActorContactGeometry
 {
+    /// <summary>
+    /// OBP host contact for an already-moving native flame particle.
+    /// Uses the existing original-world inflated-AABB envelope, not an
+    /// invented UYA victim collision radius.
+    /// </summary>
+    internal static bool FlamePointIntersects(Aabb bounds, Vector3 point, float radius) =>
+        float.IsFinite(radius) && radius > 0f && point.IsFinite() &&
+        bounds.Grow(radius).HasPoint(point);
+
     internal static bool SegmentBoxFraction(Vector3 a, Vector3 b, Aabb bounds, out float fraction)
     {
         float near = 0, far = 1; Vector3 direction = b - a;

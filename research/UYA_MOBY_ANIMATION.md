@@ -114,9 +114,11 @@ pose evaluator. The largest observed sphere ratio was 1.0688. Veldin's actual
 class-5821 mesh is the one-eyed Tyhrranoid, and eight authored UYA tables
 share exactly the same decoded class geometry. See
 `UYA_CLASS5821_DAMAGE_STAGING.md` and the local retail regression tests.
-These observations lift the **geometric blocker only**; native action/state
-selection, attack/locomotion controller, hit/death animation choices and
-ordinary-game rendered fidelity remain unverified. No arbitrary clip is
+These observations lift the **geometric blocker only**. Existing TABLE1
+executable evidence additionally proves the conditional state-8 to state-10
+attack action/sequence byte **12**, now confirmed to have 20 poseable frames.
+The complete native action-state progression, locomotion controller,
+hit/death choices and ordinary-game rendered fidelity remain unverified. No arbitrary clip is
 promoted as a recovered retail action.
 
 ## Production admission

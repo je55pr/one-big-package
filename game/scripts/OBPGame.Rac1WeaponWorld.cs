@@ -1,4 +1,5 @@
 using Godot;
+using OBP.Core;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime.Gameplay;
@@ -87,7 +88,9 @@ public partial class OBPGame
             if ((_rac1WeaponWorldTick & 3) == 0 && created.Count > 2)
             {
                 if (_rac1NativeFlames.Count == 15) _rac1NativeFlames.RemoveAt(0);
-                _rac1NativeFlames.Add(new(created[2]));
+                _rac1NativeFlames.Add(new(created[2],
+                    _rac1WeaponGenerations.GetValueOrDefault(Rac1WeaponId.Pyrocitor),
+                    checked((long)_rac1WeaponWorldTick)));
             }
         }
         StepRac1WeaponMotes();
@@ -218,6 +221,17 @@ public partial class OBPGame
             particles.FlameSecondary(p);
             Vector3 point = FromEffectNative(p.Position);
             float radius = p.Size * .5f;
+            if (OrdinaryPlayerSession)
+            {
+                // Same native R&C1 travelling flame particle, explicitly admitted
+                // to foreign source-owned actor receivers. No second projectile AI.
+                foreach (var intent in ActorHost.Combat.ResolveFlame(
+                    new(ObpSourceGame.Rac1, (int)Rac1WeaponId.Pyrocitor),
+                    flame.ShotGeneration, flame.ParticleSequence, point, radius,
+                    (float)Rac1WeaponProfiles.PyrocitorDamage, Rac1WeaponProfiles.PyrocitorFlags,
+                    flame.CrossSourceVictims))
+                    CaptureReplay.RecordGameplayFact("damage", new { Intent = intent, Accepted = true });
+            }
             foreach (var (victim, bounds) in EquipmentGeometry)
             {
                 var key = new Rac1MobyRuntimeKey(victim.Source.NativeClassId, victim.Source.InstanceIndex);

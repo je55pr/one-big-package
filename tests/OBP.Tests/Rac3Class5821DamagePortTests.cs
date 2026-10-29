@@ -42,7 +42,7 @@ public sealed class Rac3Class5821DamagePortTests
     }
 
     [Fact]
-    public void EightReceiversAreIndependentAndResetFromUnchangedRetailAuthoredPayloads()
+    public void EightReceiversAreIndependentAndResetFromUnchangedFixturePayloads()
     {
         RuntimeDynamicObject[] originals = Enumerable.Range(430, 8).Select(i => Source(i)).ToArray();
         using (var actors = Encounter(originals))

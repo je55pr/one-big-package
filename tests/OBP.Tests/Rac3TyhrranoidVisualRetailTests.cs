@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using OBP.IO;
 using OBP.PS2.Geometry;
+using OBP.RAC3.Gameplay;
 using OBP.RAC3.Level;
 
 namespace OBP.Tests;
@@ -85,6 +86,11 @@ public sealed class Rac3TyhrranoidVisualRetailTests
 
         Assert.NotNull(cls.NativePoseSource);
         Assert.Equal(13, cls.Sequences.Count);
+        // The already recovered TABLE1 state-8 -> state-10 branch selects
+        // action/sequence byte 12; the rest of the action controller is unknown.
+        Assert.Equal(12, Rac3Class5821Actor.NativeState10SelectedAction);
+        Assert.Equal(20, cls.Sequences.Single(s =>
+            s.Index == Rac3Class5821Actor.NativeState10SelectedAction).Frames.Count);
         int frames = 0;
         foreach (var sequence in cls.Sequences)
         {

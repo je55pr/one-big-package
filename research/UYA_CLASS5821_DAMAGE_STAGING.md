@@ -38,8 +38,13 @@ frames** of TABLE1 class 5821 using `Ps2MobyNativePose.Pose`. All frames
 resolve their extra channels; all frame vertices fit within the existing
 `Rac3WorldImport.Animation` **1.10× approximate retail sphere** threshold.
 The greatest observed ratio is 1.0688 (sequence 7). This is an OBP
-**geometric eligibility** check, not a retail animation-state selector,
-authentic action-rate mapping, or ordinary-play validation. The
+**geometric eligibility** check, not complete retail state-to-clip timing
+or ordinary-play validation. One conditional native mapping **is** recovered:
+TABLE1 state 8 can enter attack state 10 and select action/sequence **12**;
+that retail clip contains **20 fully poseable frames**, while the native
+state-10 damage emitter is separately gated on action progress and byte
+`Moby+0x42 == 12`. The preceding entry into state 8, continuous action clock,
+state-10 exit and every other animation selection remain unsupported. The
 `Rac3TyhrranoidVisualRetailTests` pin this observation.
 
 This establishes the **one-eyed geometry's class identity** across the
@@ -55,10 +60,40 @@ the four-eyed or Mecha class IDs, or source-native swarm spawn behavior.
 
 This is a **damage-testing admission recipe**, not a normal one-eyed enemy or finished encounter. To request it through a version-1 placement use `sourceGame=Rac3`, `build=rac3-ntscu-original`, `levelId=1`, `nativeClassId=5821`, `adapterId=rac3/class5821-damage-only/v1`, `nativeContextId=uya/table1-class5821-damage-only/v1`, `initialNativeState=0` and an authored source instance/rigid transform. All other classes/contexts are rejected. This recipe belongs to OBP, not retail. Do not enable it for the Trial by Fire promotion until native animation, attack and movement progression are established.
 
+## Live R&C1 Pyrocitor-to-source-qualified actor contact bridge
+
+The original R&C1 `StepRac1NativeFlameContacts` still uses the existing
+`Rac1ParticleSession.Pyrocitor` particles and identical original-world
+victim path. During **ordinary OBP sessions only**, those same moving native
+particle observations also enter
+`ActorCombatContactService.ResolveFlame`:
+
+- Hit candidates are source-qualified registered **non-R&C1** actors, not
+  arbitrary same-numbered UYA classes. The existing inflated particle
+  envelope and host line-of-sight must both admit the target.
+- The original R&C1 weapon's source, use-generation, particle-creation
+  sequence, damage amount and flags travel as a **foreign weapon intent**.
+  Native UYA class 5821 still decides lifetime subtraction through its
+  own explicit victim-mask/record-kind adapter, never through R&C1 flag
+  reinterpretation.
+- Each native flame carries its own source-qualified successful-target
+  receipts; the world-scoped actor registry additionally rejects duplicate
+  shot/contact receipts. This path does **not** synthesize a new fireball,
+  AI state, native kill animation or rewards. Original R&C1 contacts remain
+  handled by the unchanged game-specific code.
+- The host captures accepted cross-source damage facts for diagnostic
+  recording. The class-5821 factory still does not claim
+  `SupportsDeterministicReplay`; complete fresh-process replay and rendered
+  eight-actor Pyrocitor combat are **not** established by these changes.
+
+`ActorContactGeometryTests` pin the shared particle-radius / bounding-box
+envelope and non-finite rejection; the synthetic eight-victim test validates
+the target's independent native consumer, **not** a filmed ordinary encounter.
+
 ## Portable regression and remaining blockers
 
 `Rac3Class5821DamagePortTests` builds eight isolated UYA runtime instances with source-qualified Pyrocitor damage intents, asserts native lifetime clamp, one-hit receipt deduplication, no cross-instance damage, unmodified authored PVars, fresh replay and explicit wrong-target/context rejection. This validates a **staging harness**, not an eight-enemy retail melee.
 
-The full #297 acceptance remains blocked by: verifying the intended palette/material/skin variants and recovering sound and safe skeletal clips; native target acquisition/loco/turning/state tick and contact timing; real attack/player consequence; native reaction/death/rewards; live crowd and obstacle motion; source-backed original-UYA rendered gameplay; admitted Maktar/Fusion rendered replay. Related #299 scene/camera work stays out of this scope.
+The full #297 acceptance remains blocked by: verifying intended palette/material/skin variants and recovering sounds, source-native clip selection and animated presentation; native target acquisition/loco/turning/state tick and contact timing; real attack/player consequence; native reaction/death/rewards; live crowd and obstacle motion; source-backed original-UYA rendered gameplay; admitted Maktar/Fusion rendered replay. Related #299 scene/camera work stays out of this scope.
 
 No retail bytes, asset copies, executable payloads, captures, or local ISO paths are committed.

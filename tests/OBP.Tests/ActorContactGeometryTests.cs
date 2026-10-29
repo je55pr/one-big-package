@@ -20,6 +20,18 @@ public sealed class ActorContactGeometryTests
     }
 
     [Fact]
+    public void NativePyrocitorParticlesUseTheOriginalInflatedBoxEnvelopeWithoutInventedReach()
+    {
+        var sourceBox = new Aabb(new(2, 0, 0), Vector3.One);
+        Assert.False(ActorContactGeometry.FlamePointIntersects(sourceBox, new(1.6f, .5f, .5f), .3f));
+        Assert.True(ActorContactGeometry.FlamePointIntersects(sourceBox, new(1.8f, .5f, .5f), .3f));
+        Assert.False(ActorContactGeometry.FlamePointIntersects(sourceBox, new(5, .5f, .5f), .3f));
+        Assert.False(ActorContactGeometry.FlamePointIntersects(sourceBox, new(2.5f, .5f, .5f), 0f));
+        Assert.False(ActorContactGeometry.FlamePointIntersects(sourceBox, new(2.5f, .5f, .5f), float.NaN));
+        Assert.False(ActorContactGeometry.FlamePointIntersects(sourceBox, new(float.NaN, .5f, .5f), .3f));
+    }
+
+    [Fact]
     public void WrenchAndQueryKeepTheirDistinctExistingSmallDeltaTolerances()
     {
         var from = new Vector3(-.00000025f, .5f, .5f); var to = new Vector3(.00000025f, .5f, .5f);
