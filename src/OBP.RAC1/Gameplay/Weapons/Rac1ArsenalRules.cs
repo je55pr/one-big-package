@@ -36,9 +36,15 @@ public static class Rac1ArsenalRules
     public const float DoomCanisterGrowth = .05f;
     public const float RynoRocketScale = .25f; // 0x2ccf70..2ccf9c constructor.
 
-    /// <summary>Item table+0x28, selected while moving rather than the full idle hold at+0x24.</summary>
+    /// <summary>
+    /// Item table+0x28 while moving, except the Pyrocitor: its native moving
+    /// slot is absent, so OBP reuses the recovered +0x24 hold on the arm layer.
+    /// Without this bounded presentation fallback, running drops both hands
+    /// back to the ordinary run and sends the attached flame muzzle wandering.
+    /// </summary>
     public static int MovingBodySequence(Rac1WeaponId weapon) => weapon switch
     {
+        Rac1WeaponId.Pyrocitor => Rac1WeaponProfiles.Get(Rac1WeaponId.Pyrocitor).BodySequence,
         Rac1WeaponId.Blaster or Rac1WeaponId.MorphORay => 57,
         Rac1WeaponId.Devastator => 73,
         _ => -1,

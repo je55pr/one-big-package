@@ -33,6 +33,12 @@ game or a matching native class number alone is never proof of target identity.
   world geometry obstruction uses a ray rather than native primitive collision.
 - Fifteen tracked native-style flame records but not the full flame PVar/flags
   algorithm or complete native pool bookkeeping.
+- Moving Pyrocitor pose: the retail item row has no separate moving upper-body
+  sequence, and the previous host implementation fell back to an ordinary
+  running pose while the flame muzzle remained attached to the moving hand.
+  OBP now layers the recovered sequence 51 over the arm joints while the legs
+  continue their locomotion clip. This is a **host visual fallback**, not a
+  claim that retail uses sequence 51 as its native moving selector.
 - Host 60 Hz sound start/stop and fade/pause behavior; complete retail audio
   transitions and player-body animation interruption still need comparison.
 - No claimed exact side-by-side flame density, camera-response, type-25 ember

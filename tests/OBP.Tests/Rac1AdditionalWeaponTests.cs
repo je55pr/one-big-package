@@ -174,6 +174,33 @@ public sealed class Rac1AdditionalWeaponTests
     }
 
     [SkippableFact]
+    public void RunningPyrocitorHoldsItsUpperBodyWithoutOverwritingLocomotionLegs()
+    {
+        string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(path), "OBP_RAC1_ISO not set");
+        var avatar = Rac1PlayerAvatarProvider.Instance.Load(path!, "ratchet");
+        var controller = Assert.IsType<Rac1PlayerAnimationPresentationController>(Rac1PlayerAvatarProvider.Instance.CreateAnimationController(avatar));
+        int sequence = Rac1ArsenalRules.MovingBodySequence(Rac1WeaponId.Pyrocitor);
+        Assert.Equal(51, sequence);
+        for (int tick = 0; tick < 10; tick++)
+        {
+            controller.StepOrdinaryAnimation(OBP.Runtime.Player.PlayerAnimationState.Run, tick / 60d,
+                new(true, true, .1f, InputMagnitude: 1));
+            var moving = controller.Current.SampledPose!.LocalPositions;
+            var phase = controller.OrdinaryLocomotionSample;
+            var held = controller.ApplyEquipmentPose(sequence, tick / 60d, loop: true, fullBody: false).SampledPose!.LocalPositions;
+            var feet = Enumerable.Range(0, avatar.VertexCount)
+                .Where(vertex => avatar.LocalAnimationFrames[0][vertex * 3 + 2] < .12).ToArray();
+            Assert.NotEmpty(feet);
+            foreach (int vertex in feet)
+                for (int axis = 0; axis < 3; axis++) Assert.Equal(moving[vertex * 3 + axis], held[vertex * 3 + axis], 10);
+            Assert.Equal(phase, controller.OrdinaryLocomotionSample);
+            Assert.NotNull(controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(0)));
+            if (tick == 9) Assert.False(moving.SequenceEqual(held));
+        }
+    }
+
+    [SkippableFact]
     public void RetailSkinsTexturesAndAnimatedChildrenHaveNoProceduralStandIns()
     {
         string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");

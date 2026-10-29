@@ -61,6 +61,16 @@ public sealed class Rac1ArsenalTests
     }
 
     [Fact]
+    public void MovingPyrocitorKeepsTheRecoveredHoldLayerWithoutChangingOtherWeaponSlots()
+    {
+        Assert.Equal(Rac1WeaponProfiles.Get(Rac1WeaponId.Pyrocitor).BodySequence,
+            Rac1ArsenalRules.MovingBodySequence(Rac1WeaponId.Pyrocitor));
+        Assert.Equal(57, Rac1ArsenalRules.MovingBodySequence(Rac1WeaponId.Blaster));
+        Assert.Equal(73, Rac1ArsenalRules.MovingBodySequence(Rac1WeaponId.Devastator));
+        Assert.Equal(-1, Rac1ArsenalRules.MovingBodySequence(Rac1WeaponId.SuckCannon));
+    }
+
+    [Fact]
     public void FlameAmmoUsesGlobalFramePhaseAcrossWeaponSwitches()
     {
         var inventory = Inventory(Rac1WeaponId.Pyrocitor); var session = new Rac1AdditionalWeaponSession(inventory);
