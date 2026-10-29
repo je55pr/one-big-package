@@ -181,7 +181,7 @@ public sealed class Rac1AdditionalWeaponTests
         var avatar = Rac1PlayerAvatarProvider.Instance.Load(path!, "ratchet");
         var controller = Assert.IsType<Rac1PlayerAnimationPresentationController>(Rac1PlayerAvatarProvider.Instance.CreateAnimationController(avatar));
         int sequence = Rac1ArsenalRules.MovingBodySequence(Rac1WeaponId.Pyrocitor);
-        Assert.Equal(51, sequence);
+        Assert.Equal(57, sequence);
         for (int tick = 0; tick < 10; tick++)
         {
             controller.StepOrdinaryAnimation(OBP.Runtime.Player.PlayerAnimationState.Run, tick / 60d,

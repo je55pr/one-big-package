@@ -61,10 +61,10 @@ public sealed class Rac1ArsenalTests
     }
 
     [Fact]
-    public void MovingPyrocitorKeepsTheRecoveredHoldLayerWithoutChangingOtherWeaponSlots()
+    public void MovingPyrocitorUsesForwardFireArmLayerWithoutChangingOtherWeaponSlots()
     {
-        Assert.Equal(Rac1WeaponProfiles.Get(Rac1WeaponId.Pyrocitor).BodySequence,
-            Rac1ArsenalRules.MovingBodySequence(Rac1WeaponId.Pyrocitor));
+        Assert.Equal(51, Rac1WeaponProfiles.Get(Rac1WeaponId.Pyrocitor).BodySequence);
+        Assert.Equal(57, Rac1ArsenalRules.MovingBodySequence(Rac1WeaponId.Pyrocitor));
         Assert.Equal(57, Rac1ArsenalRules.MovingBodySequence(Rac1WeaponId.Blaster));
         Assert.Equal(73, Rac1ArsenalRules.MovingBodySequence(Rac1WeaponId.Devastator));
         Assert.Equal(-1, Rac1ArsenalRules.MovingBodySequence(Rac1WeaponId.SuckCannon));

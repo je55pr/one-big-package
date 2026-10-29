@@ -37,14 +37,14 @@ public static class Rac1ArsenalRules
     public const float RynoRocketScale = .25f; // 0x2ccf70..2ccf9c constructor.
 
     /// <summary>
-    /// Item table+0x28 while moving, except the Pyrocitor: its native moving
-    /// slot is absent, so OBP reuses the recovered +0x24 hold on the arm layer.
-    /// Without this bounded presentation fallback, running drops both hands
-    /// back to the ordinary run and sends the attached flame muzzle wandering.
+    /// Item table+0x28 while moving. The Pyrocitor has no moving clip; using
+    /// its stationary hold51 over running arms lifts the weapon high and left.
+    /// Temporarily use the recovered mobile firearm clip57 on the arm layer to
+    /// keep the muzzle aimed forward, pending an in-engine retail comparison.
     /// </summary>
     public static int MovingBodySequence(Rac1WeaponId weapon) => weapon switch
     {
-        Rac1WeaponId.Pyrocitor => Rac1WeaponProfiles.Get(Rac1WeaponId.Pyrocitor).BodySequence,
+        Rac1WeaponId.Pyrocitor => 57, // visual fallback: recovered Blaster moving firearm layer, not retail Pyrocitor
         Rac1WeaponId.Blaster or Rac1WeaponId.MorphORay => 57,
         Rac1WeaponId.Devastator => 73,
         _ => -1,
