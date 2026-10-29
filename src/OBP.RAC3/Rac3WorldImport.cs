@@ -32,7 +32,8 @@ public static partial class Rac3WorldImport
 
     public static RuntimeWorld Build(IRandomAccessReader disc, int tableIndex) => BuildObserved(disc, tableIndex).World;
 
-    public static ImportResult BuildObserved(IRandomAccessReader disc, int tableIndex)
+    public static ImportResult BuildObserved(
+        IRandomAccessReader disc, int tableIndex, bool? nativeMobyPoseOverride = null)
     {
         var opened = Rac3LevelCore.Open(disc, tableIndex);
         var core = opened.Core;
@@ -90,7 +91,7 @@ public static partial class Rac3WorldImport
             AddSkyMeshes(sky, meshes, ambientAnimations, minX, minY, minZ, maxX, maxY, maxZ, fallbackSkyColour);
         }
 
-        var mobyClasses = Rac3Assets.ReadMobyClasses(core, texByKind["moby"].Count);
+        var mobyClasses = Rac3Assets.ReadMobyClasses(core, texByKind["moby"].Count, nativeMobyPoseOverride);
         var referencedMobyClasses = gameplay.MobyInstances.Select(m => m.OClass).ToHashSet();
         foreach (int oClass in referencedMobyClasses)
         {

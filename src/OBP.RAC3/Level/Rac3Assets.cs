@@ -40,8 +40,15 @@ public static class Rac3Assets
             new RcLevelTextureTable.Range(r.Count, r.Offset), new RcLevelTextureTable.Options(1024, Strict: true));
     }
 
-    public static MobyClassSet ReadMobyClasses(Rac3LevelCore.Core core, int textureCount)
+    // Retain a diagnostic escape hatch while the native first-frame UYA pose
+    // is being compared with retail presentation across multiple planets.
+    public static bool NativeMobyPoseEnabled =>
+        Environment.GetEnvironmentVariable("OBP_RAC3_LEGACY_MOBY") != "1";
+
+    public static MobyClassSet ReadMobyClasses(
+        Rac3LevelCore.Core core, int textureCount, bool? nativePoseOverride = null)
     {
+        bool nativePose = nativePoseOverride ?? NativeMobyPoseEnabled;
         var table = core.Header.MobyClasses;
         if (table.Count < 0 || table.Offset < 0 ||
             (long)table.Offset + (long)table.Count * GcUyaMoby.ClassEntrySize > core.Index.Length)
@@ -71,7 +78,32 @@ public static class Rac3Assets
             if (end <= assetOffset)
                 throw new InvalidDataException($"UYA Moby class {oClass} has no bounded asset extent.");
             byte[] classBytes = core.Assets.AsSpan(assetOffset, end - assetOffset).ToArray();
-            var mesh = GcUyaMoby.ReadClass(classBytes);
+            // The same persistent VU1 vertex slots and pipelined strip epilogue
+            // found in GC also occur in UYA. Only the compatible packet format
+            // can opt in; unsupported class packets retain the legacy reader.
+            bool recoverCache = nativePose && classBytes[0x0b] == 0;
+            GcUyaMoby.Mesh mesh;
+            try
+            {
+                mesh = GcUyaMoby.ReadClass(classBytes, recoverCache);
+            }
+            catch (InvalidDataException) when (recoverCache)
+            {
+                recoverCache = false;
+                mesh = GcUyaMoby.ReadClass(classBytes);
+            }
+            if (recoverCache && mesh.Skinned && !mesh.SkinningApplied)
+            {
+                // Some UYA packet variants decode but cannot bind their
+                // recovered vertices (retail table 11/class 7158). Never drop
+                // an actor that the existing skinning path could present.
+                var legacy = GcUyaMoby.ReadClass(classBytes);
+                if (!legacy.Skinned || legacy.SkinningApplied)
+                {
+                    mesh = legacy;
+                    recoverCache = false;
+                }
+            }
             if (mesh.Positions.Any(v => !double.IsFinite(v)))
                 throw new InvalidDataException($"UYA Moby class {oClass} contains non-finite geometry.");
             if (mesh.TriangleMaterialSlots.Length != mesh.Indices.Length / 3)
@@ -97,6 +129,31 @@ public static class Rac3Assets
             int jointCount = classBytes[0x08];
             var joints = GcUyaMoby.ReadJoints(classBytes, jointCount);
             var sequences = joints.Count > 0 ? GcUyaMoby.ReadSequences(classBytes, jointCount) : [];
+            if (recoverCache && jointCount is > 0 and <= 112 &&
+                mesh.SkinningApplied && mesh.SkinStateFullyResolved &&
+                sequences.FirstOrDefault(s => s.Index == 0) is { Frames.Count: > 0 } first &&
+                first.Frames[0].ExtraChannelsResolved)
+            {
+                try
+                {
+                    // An ordinary native actor starts from the source's first
+                    // regular key. Legacy bind-only skinning can place limbs
+                    // far outside the authored model before animation starts.
+                    var posed = Ps2MobyNativePose.Pose(classBytes, mesh, first.Frames[0]);
+                    var normals = Ps2MobyNativePose.PoseNormals(classBytes, mesh, first.Frames[0], posed);
+                    mesh = mesh with
+                    {
+                        Positions = posed,
+                        Normals = normals,
+                        NativeInitialPoseApplied = true,
+                    };
+                }
+                catch (InvalidDataException)
+                {
+                    // Unsupported native channel or skeleton: keep the
+                    // recovered packet topology without inventing a pose.
+                }
+            }
             decoded.Add(oClass, new MobyVisualClass(oClass, mesh, mapped, joints, sequences));
         }
 
