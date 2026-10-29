@@ -23,7 +23,7 @@ public static class RcFoliageCutoutPolicy
     /// Opt only the proven (source class, texture) pair into depth-writing
     /// cutout. Other shrub surfaces keep their source blend and mesh grouping.
     /// </summary>
-    public static RuntimeMaterialPresentation? WithLayeredCutout(
+    public static RuntimeMaterialPresentation? WithFoliageCutout(
         int sourceClassId,
         int textureId,
         RuntimeMaterialPresentation? presentation,
@@ -46,6 +46,67 @@ public static class RcFoliageCutoutPolicy
             PreferPerPlacementFoliageDepth = true,
             PreferFoliageCutout = true,
         };
+    }
+
+    // Small, sparse textured card clumps (grass, weeds and wheat) do not
+    // meet the interleaved-layer test above. In retail data their mostly
+    // transparent card textures can still sort behind soil when blended.
+    // Select by the source's class geometry, native blend equation and
+    // decoded alpha, never by game, planet, object ID or texture index.
+    private const int MaximumSparseCardFaces = 32;
+    private const double MinimumSparseCardCutout = 0.65;
+    // Retail Marcadia wheat includes sparse opaque tip texels (as few as 0.2%).
+    // Requiring at least some prevents entirely soft/low-alpha textures from
+    // becoming invisible when a 0.5 alpha-scissor discards every visible pixel.
+    private const double MinimumSparseCardOpaque = 0.001;
+
+    public static HashSet<int> FindFoliageCutoutTextures(
+        double[] positions,
+        int[] indices,
+        int[] triangleTextureIds,
+        int[] triangleMaterialStateIndices,
+        bool?[] triangleAlphaBlendEnabled,
+        IReadOnlyList<RcMaterialState> materials,
+        IReadOnlyDictionary<int, AlphaProfile> alpha)
+    {
+        var selected = FindLayeredCutoutTextures(
+            positions, indices, triangleTextureIds, triangleMaterialStateIndices,
+            triangleAlphaBlendEnabled, materials, alpha);
+
+        int faceCount = triangleTextureIds.Length;
+
+        // Sparse-card eligibility is per texture group. A class may contain
+        // many unrelated faces without making one small foliage texture dense.
+        // All faces sharing a texture must use a supported native blend;
+        // never turn just one face of a fixed-alpha/additive surface into a
+        // different compositing mode through texture-wide grouping.
+        foreach (var textureFaces in Enumerable.Range(0, faceCount)
+                     .GroupBy(face => triangleTextureIds[face]))
+        {
+            if (textureFaces.Count() > MaximumSparseCardFaces ||
+                !alpha.TryGetValue(textureFaces.Key, out var profile) ||
+                profile.CutoutFraction < MinimumSparseCardCutout ||
+                profile.OpaqueFraction < MinimumSparseCardOpaque ||
+                profile.TranslucentFraction > MaximumTranslucentFraction)
+                continue;
+
+            bool supported = textureFaces.All(face =>
+            {
+                if (triangleAlphaBlendEnabled[face] is not true)
+                    return false;
+
+                int index = triangleMaterialStateIndices[face];
+                if ((uint)index >= (uint)materials.Count)
+                    return false;
+
+                var equation = Ps2MaterialPresentation.From(materials[index], true).BlendEquation;
+                return equation is not (RuntimeBlendEquation.FixedAlpha or
+                    RuntimeBlendEquation.AdditiveSourceAlpha or RuntimeBlendEquation.AdditiveFixedAlpha);
+            });
+            if (supported)
+                selected.Add(textureFaces.Key);
+        }
+        return selected;
     }
 
     private readonly record struct SourceVertex(long X, long Y, long Z);

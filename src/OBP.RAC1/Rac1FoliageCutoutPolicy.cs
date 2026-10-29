@@ -10,7 +10,7 @@ internal static class Rac1FoliageCutoutPolicy
     internal static HashSet<int> FindLayeredCutoutTextures(
         Rac1StaticClasses.ShrubClass shrub,
         IReadOnlyDictionary<int, AlphaProfile> alpha) =>
-        RcFoliageCutoutPolicy.FindLayeredCutoutTextures(
+        RcFoliageCutoutPolicy.FindFoliageCutoutTextures(
             shrub.Mesh.Positions,
             shrub.Mesh.Indices,
             shrub.TriangleTextureIds,

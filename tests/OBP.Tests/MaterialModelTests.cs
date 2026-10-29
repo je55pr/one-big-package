@@ -98,6 +98,40 @@ public class MaterialModelTests
         Assert.False(MaterialModel.RequiresFoliageAlphaSorting("moby", canopy, nativeBlend));
     }
 
+    [Fact]
+    public void FullyOpaqueShrubSurfacesWriteDepthWithoutChangingBlendColour()
+    {
+        // Marcadia's planter soil is a native alpha-enabled shrub with fully
+        // opaque texels, but it does not meet the layered-canopy heuristic.
+        var solid = AlphaProfile.FullyOpaque;
+        var cutout = new AlphaProfile(0.1, 0.9, 0, true);
+        var translucent = new AlphaProfile(0.7, 0, 0.3, true);
+        var nativeBlend = new RuntimeMaterialPresentation(AlphaBlendEnabled: true);
+
+        Assert.True(MaterialModel.UsesOpaqueShrubDepth("shrub", solid, nativeBlend));
+        Assert.True(MaterialModel.UsesOpaqueShrubDepth("shrub", solid,
+            nativeBlend with { BlendEquation = RuntimeBlendEquation.SourceAlpha }));
+        Assert.True(MaterialModel.UsesOpaqueShrubDepth("shrub", solid,
+            nativeBlend with { PreferPerPlacementFoliageDepth = true }));
+        Assert.False(MaterialModel.UsesOpaqueShrubDepth("shrub", cutout, nativeBlend));
+        Assert.False(MaterialModel.UsesOpaqueShrubDepth("shrub", translucent, nativeBlend));
+        Assert.False(MaterialModel.UsesOpaqueShrubDepth("shrub", solid, null));
+        Assert.False(MaterialModel.UsesOpaqueShrubDepth("shrub", solid,
+            nativeBlend with { AlphaBlendEnabled = false }));
+        Assert.False(MaterialModel.UsesOpaqueShrubDepth("tie", solid, nativeBlend));
+        Assert.False(MaterialModel.UsesOpaqueShrubDepth("moby", solid, nativeBlend));
+        foreach (var equation in new[]
+        {
+            RuntimeBlendEquation.FixedAlpha,
+            RuntimeBlendEquation.AdditiveSourceAlpha,
+            RuntimeBlendEquation.AdditiveFixedAlpha,
+        })
+        {
+            Assert.False(MaterialModel.UsesOpaqueShrubDepth("shrub", solid,
+                nativeBlend with { BlendEquation = equation }));
+        }
+    }
+
     [Theory]
     [InlineData("moby", false, false, false)] // R&C1 Veldin / UYA Florana phantom surfaces
     [InlineData("moby", true, false, true)]   // real decoded textures

@@ -1,3 +1,4 @@
+using OBP.PS2.Presentation;
 using OBP.RAC1;
 using OBP.RAC1.Level;
 using OBP.Runtime.Presentation;
@@ -47,10 +48,19 @@ public sealed class Rac1VeldinRedPlantPresentationTests
             Assert.True(mesh.MaterialPresentation?.PreferPerPlacementFoliageDepth);
         }
 
-        // This change is limited to the observed class. Other Veldin shrub
-        // materials keep their original sorting/alpha semantics.
-        Assert.DoesNotContain(world.Meshes, m => m.AssetKind == "shrub" &&
-            m.TextureId is not (3 or 4) &&
-            m.MaterialPresentation?.PreferFoliageCutout == true);
+        // The earlier layered-card fix selected only class 466. The shared
+        // sparse-card rule now admits additional Veldin grass and other small
+        // cutout surfaces, but only when their own class supplies qualifying
+        // native blend and alpha evidence.
+        var alpha = world.Textures.Where(t => t.AssetKind == "shrub")
+            .ToDictionary(t => t.TextureId, t => AlphaProfile.Analyse(t.Rgba));
+        var admittedTextures = classes.Values.SelectMany(shrub =>
+            RcFoliageCutoutPolicy.FindFoliageCutoutTextures(
+                shrub.Mesh.Positions, shrub.Mesh.Indices, shrub.TriangleTextureIds,
+                shrub.Mesh.TriangleMaterialStateIndices, shrub.Mesh.TriangleAlphaBlendEnabled,
+                shrub.Mesh.Materials, alpha)).ToHashSet();
+        Assert.All(world.Meshes.Where(m => m.AssetKind == "shrub" &&
+            m.MaterialPresentation?.PreferFoliageCutout == true),
+            m => Assert.Contains(m.TextureId, admittedTextures));
     }
 }
