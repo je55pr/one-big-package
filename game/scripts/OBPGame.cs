@@ -258,14 +258,13 @@ public partial class OBPGame : Node3D
                     _rac1QueenAnimation = null; _rac1QueenNode = null;
                     _rac1QueenLinkedGate = null; _rac1QueenGateNative = null;
                     _rac1QueenLinkedNodes.Clear(); _rac1QueenLinkedBaseRotations.Clear();
-                }, () => _rac1AridiaEnemies = new(), ResetRac1AridiaScriptActors, ResetRac1ConstructorbotStartups, ResetRac1Amoeboids,
+                }, () => _rac1AridiaEnemies = new(), ResetRac1AridiaScriptActors, ResetRac1ConstructorbotStartups,
                 () => _rac1AridiaEnemies, volumes => _rac1AridiaClipVolumes = volumes, _rac1ConstructorbotStartups, _rac1ConstructorbotNativeWaypoints,
                 ConfigureRac1AridiaScriptActors, ConfigureRac1Frogs, ConfigureRac1FrogQueen, ConfigureRac1FrogWaves, ConfigureRac1FrogCarriers,
-                ConfigureRac1Amoeboids, () => _rac1Frogs, () => _rac1Amoeboids,
-                TickRac1AmoeboidGates, TickRac1FrogShuttleSwitch, TickRac1FrogWaves, () => TickRac1QueenFlight(), TickRac1QueenRecovery, TickRac1QueenLinkedChildren,
-                id => _rac1FrogCarrierChildren.ContainsKey(id), TickRac1FrogCarrier, TickRac1AridiaEnemy, TickRac1Frog, TickRac1Amoeboid,
-                HideBuriedRac1AridiaEnemy, RestoreRac1AridiaEnemyVisibility, InitializeRac1AmoeboidPresentation,
-                ApplyRac1AridiaWeaponDamage, ApplyRac1AmoeboidDamage)));
+                () => _rac1Frogs, TickRac1FrogShuttleSwitch, TickRac1FrogWaves, () => TickRac1QueenFlight(), TickRac1QueenRecovery, TickRac1QueenLinkedChildren,
+                id => _rac1FrogCarrierChildren.ContainsKey(id), TickRac1FrogCarrier, TickRac1AridiaEnemy, TickRac1Frog,
+                HideBuriedRac1AridiaEnemy, RestoreRac1AridiaEnemyVisibility,
+                ApplyRac1AridiaWeaponDamage)));
 
     private void RefreshRac1HudState(params HudFeedbackDraft[] feedback)
     {
