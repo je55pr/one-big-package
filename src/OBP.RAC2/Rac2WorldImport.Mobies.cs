@@ -159,7 +159,8 @@ public static partial class Rac2WorldImport
                     Colors: colours,
                     Frames: frames,
                     FramesPerSecond: fps,
-                    MaterialPresentation: surface.Presentation));
+                    MaterialPresentation: surface.Presentation,
+                    VertexColoursAreAuthored: false));
             }
 
             animatedInstances.Add(inst.Index);
@@ -295,7 +296,7 @@ public static partial class Rac2WorldImport
                 .ThenBy(kv => kv.Key.Presentation?.ToString(), StringComparer.Ordinal)
                 .Select(kv => new RuntimeObjectMesh(
                     "moby", kv.Key.TextureId, localPositions, meshData.Uvs, kv.Value.ToArray(), colours,
-                    kv.Key.Presentation))
+                    kv.Key.Presentation, VertexColoursAreAuthored: false))
                 .ToArray();
 
             var payloads = new List<RuntimeOpaquePayload>
@@ -558,7 +559,8 @@ public static partial class Rac2WorldImport
         {
             meshes.Add(new RuntimeMesh(
                 "moby", surface.TextureId, g.P.ToArray(), g.U.ToArray(), g.I.ToArray(), g.C.ToArray(),
-                MaterialPresentation: surface.Presentation));
+                MaterialPresentation: surface.Presentation,
+                VertexColoursAreAuthored: false));
         }
     }
 

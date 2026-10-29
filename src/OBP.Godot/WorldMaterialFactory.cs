@@ -85,9 +85,9 @@ public sealed class WorldMaterialFactory
         _alpha.TryGetValue((assetKind, textureId), out var p) ? p : null;
 
     /// <summary>Whether an instanced surface has a supported visible material.</summary>
-    public bool CanPresentInstancedSurface(string assetKind, int textureId, bool hasVertexColour) =>
-        MaterialModel.CanPresentInstancedSurface(assetKind,
-            TextureFor(assetKind, textureId) is not null, hasVertexColour);
+    public bool CanPresentSurface(string assetKind, int textureId, bool hasUsableUvs, bool hasAuthoredVertexColour) =>
+        MaterialModel.CanPresentSurface(assetKind,
+            hasUsableUvs && TextureFor(assetKind, textureId) is not null, hasAuthoredVertexColour);
 
     /// <summary>
     /// Material for a welded static <see cref="RuntimeMesh"/>. Textured only when

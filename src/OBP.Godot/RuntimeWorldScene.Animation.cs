@@ -84,7 +84,9 @@ public static partial class RuntimeWorldScene
                 frames[f] = dst;
             }
 
-            bool canPresent = mats.CanPresentInstancedSurface(am.AssetKind, am.TextureId, hasCol);
+            bool canPresent = mats.CanPresentSurface(
+                am.AssetKind, am.TextureId, am.Uvs.Length == vc * 2,
+                hasCol && am.VertexColoursAreAuthored);
             var animMesh = new ArrayMesh();
             var mi = new MeshInstance3D
             {

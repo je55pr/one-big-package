@@ -325,7 +325,8 @@ public static partial class RuntimeWorldScene
                     // Preserve the render node's index in the source surface list
                     // (animation uses that index), but do not present untextured
                     // Mobies as opaque fallback geometry.
-                    bool canPresent = mats.CanPresentInstancedSurface(m.AssetKind, m.TextureId, hasColor);
+                    bool canPresent = mats.CanPresentSurface(
+                        m.AssetKind, m.TextureId, hasUv, hasColor && m.VertexColoursAreAuthored);
                     var mesh = new ArrayMesh();
                     mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
                     var childMesh = new MeshInstance3D

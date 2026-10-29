@@ -27,7 +27,7 @@ public sealed class Rac3FloranaMateriallessMobyTests
         {
             Assert.Equal(-1, mesh.TextureId);
             Assert.Null(mesh.Colors);
-            Assert.False(MaterialModel.CanPresentInstancedSurface(mesh.AssetKind,
+            Assert.False(MaterialModel.CanPresentSurface(mesh.AssetKind,
                 world.Textures.Any(t => t.AssetKind == mesh.AssetKind && t.TextureId == mesh.TextureId),
                 mesh.Colors is { Length: > 0 }));
         });
@@ -35,8 +35,14 @@ public sealed class Rac3FloranaMateriallessMobyTests
         // Preserve every authored actor; do not remove unrelated textured
         // world surfaces just to hide this unsupported presentation.
         Assert.Equal(680, objects.Count);
-        Assert.Contains(objects.SelectMany(o => o.Meshes), m => m.AssetKind == "moby" &&
-            m.TextureId >= 0 && MaterialModel.CanPresentInstancedSurface(m.AssetKind, true, false));
+        Assert.Contains(objects.SelectMany(o => o.Meshes), mesh =>
+        {
+            bool hasDecodedTexture = world.Textures.Any(t =>
+                t.AssetKind == mesh.AssetKind && t.TextureId == mesh.TextureId &&
+                t.Width > 0 && t.Height > 0 && t.Rgba.Length == t.Width * t.Height * 4);
+            return mesh.AssetKind == "moby" && hasDecodedTexture &&
+                MaterialModel.CanPresentSurface(mesh.AssetKind, hasDecodedTexture, false);
+        });
         Assert.Contains(world.Meshes, m => m.AssetKind == "tie" && m.TriangleCount > 0);
     }
 }

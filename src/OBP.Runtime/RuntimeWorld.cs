@@ -64,12 +64,15 @@ public sealed record RuntimeWorld(
 /// must not infer that permission merely from a missing decoded texture.
 /// <see cref="RuntimeMesh.PresentationGroup"/> optionally keeps several material
 /// meshes under one independently animated native presentation node.
+/// <c>VertexColoursAreAuthored</c> distinguishes genuine source appearance
+/// from importer-calculated lighting that cannot authorise materialless Mobies.
 /// </summary>
 public sealed record RuntimeMesh(
     string AssetKind, int TextureId, double[] Positions, float[] Uvs, int[] Indices,
     float[]? Colors = null, bool RenderWithoutTexture = false,
     RuntimeMaterialPresentation? MaterialPresentation = null,
-    string? PresentationGroup = null)
+    string? PresentationGroup = null,
+    bool VertexColoursAreAuthored = true)
 {
     public int TriangleCount => Indices.Length / 3;
 }
@@ -84,7 +87,8 @@ public sealed record RuntimeTexture(string AssetKind, int TextureId, int Width, 
 /// XYZ vertex positions (OBP Y-up world space), already posed and instance-placed;
 /// <see cref="Uvs"/> / <see cref="Indices"/> / <see cref="Colors"/> are shared
 /// across frames. <see cref="TextureKey"/> resolves against
-/// <see cref="RuntimeWorld.Textures"/>.
+/// <see cref="RuntimeWorld.Textures"/>. <c>VertexColoursAreAuthored</c>
+/// distinguishes source colour from computed lighting for materialless surfaces.
 /// </summary>
 public sealed record RuntimeAnimatedMesh(
     string Name,
@@ -96,7 +100,8 @@ public sealed record RuntimeAnimatedMesh(
     IReadOnlyList<double[]> Frames,
     float FramesPerSecond,
     RuntimeSkeleton? Skeleton = null,
-    RuntimeMaterialPresentation? MaterialPresentation = null)
+    RuntimeMaterialPresentation? MaterialPresentation = null,
+    bool VertexColoursAreAuthored = true)
 {
     public int VertexCount => Frames.Count > 0 ? Frames[0].Length / 3 : 0;
 
@@ -133,6 +138,8 @@ public sealed record RuntimeObjectTransform(double[] Matrix);
 /// Positions are OBP Y-up local coordinates; the object's transform places them
 /// into the world. This intentionally stays separate from the welded world mesh
 /// soup so one native instance can later change state, animate or disappear.
+/// <c>VertexColoursAreAuthored</c> excludes computed lighting as independent
+/// evidence for presenting a materialless Moby surface.
 /// </summary>
 public sealed record RuntimeObjectMesh(
     string AssetKind,
@@ -141,7 +148,8 @@ public sealed record RuntimeObjectMesh(
     float[] Uvs,
     int[] Indices,
     float[]? Colors = null,
-    RuntimeMaterialPresentation? MaterialPresentation = null)
+    RuntimeMaterialPresentation? MaterialPresentation = null,
+    bool VertexColoursAreAuthored = true)
 {
     public int TriangleCount => Indices.Length / 3;
 }

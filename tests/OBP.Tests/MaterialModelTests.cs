@@ -109,7 +109,7 @@ public class MaterialModelTests
     public void InstancedMobyWithoutAnAppearanceDoesNotInventOpaqueTint(
         string kind, bool texture, bool colour, bool expected)
     {
-        Assert.Equal(expected, MaterialModel.CanPresentInstancedSurface(kind, texture, colour));
+        Assert.Equal(expected, MaterialModel.CanPresentSurface(kind, texture, colour));
     }
 
     [Fact]

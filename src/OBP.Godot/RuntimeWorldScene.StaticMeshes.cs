@@ -155,14 +155,22 @@ public static partial class RuntimeWorldScene
             var mesh = new ArrayMesh();
             mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
 
-            var mat = mats.StaticMesh(m.AssetKind, m.TextureId, hasUv, hasColor, isSky, m.RenderWithoutTexture, m.TriangleCount, m.MaterialPresentation);
+            // Static R&C2 Mobies also need the materialless guard. Lighting-
+            // generated colours remain available for textured surfaces, but are
+            // not proof that an untextured surface has an authored appearance.
+            bool canPresent = mats.CanPresentSurface(
+                m.AssetKind, m.TextureId, hasUv, hasColor && m.VertexColoursAreAuthored);
 
             var mi = new MeshInstance3D
             {
                 Name = $"{m.AssetKind}_{m.TextureId}",
                 Position = pivot,
                 Mesh = mesh,
-                MaterialOverride = mat,
+                Visible = canPresent,
+                MaterialOverride = canPresent
+                    ? mats.StaticMesh(m.AssetKind, m.TextureId, hasUv, hasColor, isSky,
+                        m.RenderWithoutTexture, m.TriangleCount, m.MaterialPresentation)
+                    : null,
                 CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
             };
 
@@ -185,10 +193,12 @@ public static partial class RuntimeWorldScene
                 skyMeshes++;
             }
             parent.AddChild(mi);
-            ambientBindings.Add(new(mi, m.AssetKind, m.TextureId, m.PresentationGroup));
-
-            meshInstances++;
-            triangles += m.TriangleCount;
+            if (canPresent)
+            {
+                ambientBindings.Add(new(mi, m.AssetKind, m.TextureId, m.PresentationGroup));
+                meshInstances++;
+                triangles += m.TriangleCount;
+            }
         }
 
         if (skyMeshes > 0)

@@ -121,7 +121,7 @@ public static class MaterialModel
     /// Keep the source geometry and actor identity for future native recovery.
     /// Other asset kinds retain their existing presentation fallbacks.
     /// </summary>
-    public static bool CanPresentInstancedSurface(string assetKind, bool hasDecodedTexture, bool hasVertexColour) =>
+    public static bool CanPresentSurface(string assetKind, bool hasDecodedTexture, bool hasVertexColour) =>
         assetKind != "moby" || hasDecodedTexture || hasVertexColour;
 
     /// <summary>
