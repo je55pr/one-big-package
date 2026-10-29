@@ -106,7 +106,8 @@ internal sealed partial class Rac1EnemyHost
             enemy.Body.GlobalPosition += FromEffectNative(motion);
             enemy.Node.Root.GlobalPosition = enemy.Body.GlobalPosition;
         }
-        else MoveRac1EnemyContact(enemy, FromEffectNative(motion));
+        else MoveRac1EnemyContact(enemy, Rac1EnemyContactMotion.PrepareOrdinary(
+            enemy.Node.Source.NativeClassId, enemy.Grounded, enemy.Reaction is not null, FromEffectNative(motion)));
     }
 
     internal void StepRac1EnemyReaction(Rac1HostedEnemy enemy)
@@ -120,12 +121,6 @@ internal sealed partial class Rac1EnemyHost
     internal void MoveRac1EnemyContact(Rac1HostedEnemy enemy, Vector3 remaining)
     {
         if (!Owns(enemy)) return;
-        // Ordinary grounded gravity is handled by the support sweep below.
-        // Including that small downward component in wall slides makes the
-        // second contact depend on whether Godot happens to report the floor.
-        // Preserve vertical motion for airborne actors and hit reactions.
-        if (enemy.Grounded && enemy.Reaction is null && remaining.Y < 0)
-            remaining.Y = 0;
         for (int slide = 0; slide < 3 && remaining.LengthSquared() > 1e-9f; slide++)
         {
             var collision = enemy.Body.MoveAndCollide(remaining);

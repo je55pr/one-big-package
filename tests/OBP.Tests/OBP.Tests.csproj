@@ -33,6 +33,8 @@
     <Compile Include="../../game/scripts/ReplayInputLease.cs" Link="Game/ReplayInputLease.cs" />
     <Compile Include="../../game/scripts/Rac1EnemyRoster.cs" Link="Game/Rac1EnemyRoster.cs" />
     <Compile Include="../../game/scripts/Rac1EnemyTickClock.cs" Link="Game/Rac1EnemyTickClock.cs" />
+    <Compile Include="../../game/scripts/Rac1EnemyContactMotion.cs" Link="Game/Rac1EnemyContactMotion.cs" />
+    <Compile Include="../../game/diagnostics/EffectReplayScript.cs" Link="Diagnostics/EffectReplayScript.cs" />
     <Compile Include="../../game/scripts/Rac2WorldLeaseClock.cs" Link="Game/Rac2WorldLeaseClock.cs" />
     <Compile Include="../../game/scripts/CaptureCheckpointSnapshot.cs" Link="Game/CaptureCheckpointSnapshot.cs" />
     <Compile Include="../../game/scripts/CaptureFrameSnapshot.cs" Link="Game/CaptureFrameSnapshot.cs" />

@@ -164,10 +164,10 @@ wall (step 359 in a 180-frame recording). Instrumenting the native motion input
 and host contacts showed matching first wall normals and steering, but an
 additional upward floor contact on the *second* slide in only one process.
 That changed the residual X travel even though effect clocks/counts/RNG agreed.
-For grounded ordinary movement, the host now resolves downward support in its
-existing support sweep rather than including gravity in the wall slide; airborne
-and reaction vertical motion continue unchanged. The short tape remains the
-default, and full effect expiry/reset/unload is still exercised by the separate
+For grounded class-749 ordinary movement, the host now resolves downward support
+in its existing support sweep rather than including gravity in the wall slide;
+airborne, reaction and all other enemy-family vertical motion remain unchanged.
+The short tape remains the default, and full effect expiry/reset/unload is still exercised by the separate
 rendered scenario.
 
 Godot presentation remains bounded: full native depth-bucket sorting,

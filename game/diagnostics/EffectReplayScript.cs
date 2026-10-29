@@ -6,11 +6,10 @@ namespace OBP.Game.Diagnostics;
 internal static class EffectReplayScript
 {
     // Normal effects smoke stays bounded; the longer contact replay is opt-in.
-    private static readonly int StopFrame = ReadStopFrame();
+    private static readonly int StopFrame = ParseStopFrame(Environment.GetEnvironmentVariable("OBP_EFFECT_REPLAY_STOP_FRAME"));
 
-    private static int ReadStopFrame()
+    internal static int ParseStopFrame(string? value)
     {
-        string? value = Environment.GetEnvironmentVariable("OBP_EFFECT_REPLAY_STOP_FRAME");
         if (string.IsNullOrEmpty(value)) return 65;
         if (int.TryParse(value, out int frame) && frame is >= 65 and <= 600) return frame;
         throw new InvalidOperationException("OBP_EFFECT_REPLAY_STOP_FRAME must be between 65 and 600.");
