@@ -13,6 +13,21 @@ namespace OBP.Tests;
 
 public sealed class Rac3RatchetSeedScenarioTests
 {
+    [Theory]
+    [InlineData("--reconciliation-smoke", null)]
+    [InlineData("--source-setup-check", null)]
+    [InlineData("--ordinary-ui-smoke", "fresh")]
+    [InlineData("--effects-smoke", null)]
+    public void ExplicitAuditRemainsDiagnosticWhenOrdinarySmokeFlagIsPresent(string ordinaryFlag, string? value)
+    {
+        string[] ordinaryArguments = value is null ? [ordinaryFlag] : [ordinaryFlag, value];
+        string[] arguments = ["--rac3-target-seed-audit", .. ordinaryArguments, "--destination", "rac3:TABLE1"];
+        CommandLineArgs parsed = CommandLineArgs.Parse(arguments);
+        Assert.True(SourceSetupPolicy.IsDiagnostic(parsed, arguments, []));
+        Assert.Equal(SourceAccessMode.ExplicitDiagnostic, SourceSetupPolicy.Resolve(parsed, arguments, []));
+        Assert.False(SourceSetupPolicy.IsDiagnostic(CommandLineArgs.Parse(ordinaryArguments), ordinaryArguments, []));
+    }
+
     [Fact]
     public async Task AdmissionRequiresExplicitRac3ScenarioAndSamplesAfter45PhysicsFrames()
     {
