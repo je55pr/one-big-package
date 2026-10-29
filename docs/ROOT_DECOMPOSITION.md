@@ -567,6 +567,46 @@ exactly. UID coverage, solution format verification and the game build with
 warnings as errors pass. Engine acceptance is headless; human visual/audible
 review is not claimed.
 
+The #353 player damage/lifecycle extraction builds on merged #352 (`4670f2a`) and retires
+`OBPGame.PlayerHealth.cs`, preserving its UID on `GodotPlayerLifecycleHost.cs`.
+The root changes from **47 files / 12,548 lines / 462 methods / 297 fields
+(179 mutable) / 1,168 references** to **46 files / 12,446 lines / 457 methods /
+294 fields (177 mutable) / 1,134 references**, retaining 43 exposed members.
+One composition reference replaces the four damage-world/service-clock fields.
+Eleven historical permissions and the old HUD composition bridge retire; three
+exact owner/factory bindings expire with final composition #376. The frozen
+origin and player/world ownership ledgers remain unchanged.
+
+`PlayerLifecycleBridge` borrows the existing persistent native health/session
+services. Its disposable damage-world lease owns source-qualified registrations,
+actor liveness guards and retirement. `GodotWorldResources` owns that lease's
+Godot binding, which disconnects the player-service callback and retires ordinary
+retry UI. Captured tick/retry callbacks reject a replacement world/player, and
+delayed disposal cannot end a newer lease. Retiring a scene does not heal or
+replace the player. The service clock remains with the lifecycle owner across
+world visits. Typed sample/hurt/death/respawn events drive copied health, HUD,
+audio and retry presentation through focused ports; source producers still use
+the existing PlayerAttackIntent/admission policy.
+
+Ordinary respawn delegates to the existing staged world-entry/camera path and
+restores the previous session on a rejected or throwing stage. Native parity
+checkpoint/death decisions remain with the source campaign and native nanotech
+controllers behind the existing R&C1 lifecycle adapter; the shared bridge does
+not infer or invoke recovered parity restarts. The ordinary retry panel has its
+own owner, while diagnostics retain a copied observation of either retry view.
+Application exit retires subscriptions even when another cleanup step throws.
+
+Validation for #353: 3,253 source-free Release tests pass with 283 retail-dependent
+skips; 3,521 authorized NTSC-U tests pass with 15 optional oracle skips, using
+`DOTNET_PROCESSOR_COUNT=2`. All 17 reconciliation phases pass, covering native
+entry, mixed-source continuity, profiles, recordings, bookmarks and fresh-process
+report replays. The focused lifecycle smoke passes repeated world visits, source
+loss/recovery, health retention, rejected staging, canceled entry and drained
+callbacks. Seven bridge cases and three ownership regressions cover stale
+producer/lease rejection, mixed-source intake, death notification, respawn
+rollback and retained ammunition/wallet. UID coverage, solution formatting and
+the game build with warnings as errors pass. Engine validation is headless.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

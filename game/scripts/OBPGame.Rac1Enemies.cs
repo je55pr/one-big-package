@@ -561,7 +561,7 @@ public partial class OBPGame
 
     private void ApplyRac1EnemyPlayerDamage(Rac1GameplayDamageEvent damage)
     {
-        if (!PlayerAlive) return;
+        if (!PlayerLife.Alive) return;
         var before = _rac1Nanotech.Probe();
         Rac1World.Context.DamageTransport.Publish(damage);
         if (_playerNative is not null)
@@ -573,7 +573,7 @@ public partial class OBPGame
                 .FirstOrDefault(node => node.Source.SourceGame == ObpSourceGame.Rac1 &&
                 node.Source.NativeClassId == damage.Source.NativeClassId && node.Source.InstanceIndex == damage.Source.RuntimeId);
             if (attacker is null) { GD.PushWarning("Player damage source has no registered native actor."); return; }
-            ApplyPlayerSourceDamage(attacker, OBP.RAC1.Rac1Authority.Primary.BuildId,
+            PlayerLife.ApplySourceDamage(attacker, OBP.RAC1.Rac1Authority.Primary.BuildId,
                 PlayerSessionNativeState.Rac1DamageAdapter, PlayerSessionNativeState.Rac1DamageDescriptor,
                 _rac1AridiaNativeFrameCounter, checked((int)damage.NativeDamage), damage.NativeDamageFlags ?? 0);
             return;

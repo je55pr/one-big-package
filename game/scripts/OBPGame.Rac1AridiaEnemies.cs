@@ -948,7 +948,7 @@ public partial class OBPGame
         Rac1World.Context.DamageTransport.Publish(damage);
         if (_playerNative is not null)
         {
-            ApplyPlayerSourceDamage(source, OBP.RAC1.Rac1Authority.Primary.BuildId,
+            PlayerLife.ApplySourceDamage(source, OBP.RAC1.Rac1Authority.Primary.BuildId,
                 PlayerSessionNativeState.AridiaDamageAdapter, PlayerSessionNativeState.AridiaDamageDescriptor,
                 _rac1AridiaNativeFrameCounter, 1, 0);
             return;

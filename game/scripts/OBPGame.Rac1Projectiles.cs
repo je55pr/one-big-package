@@ -20,7 +20,7 @@ public partial class OBPGame
 
     private void StepRac1BombWeaponPhysics()
     {
-        if (_equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is null || Rac1World.Context.BombGlove is null || _player is null || !PlayerAlive) return;
+        if (_equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is null || Rac1World.Context.BombGlove is null || _player is null || !PlayerLife.Alive) return;
         bool fire = Rac1World.Context.BombFireRequested && !_rac1DetectorEquipped &&
             !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active;
         Rac1World.Context.BombFireRequested = false;
@@ -44,7 +44,7 @@ public partial class OBPGame
         Rac1PlayerAnimationPresentationController controller, Rac1LocomotionAnimationInput input)
     {
         if (!_rac1BombThrowActive) return input;
-        if (!PlayerAlive || _player?.Rac1WrenchFrame.Active == true || input.Traversal is not null)
+        if (!PlayerLife.Alive || _player?.Rac1WrenchFrame.Active == true || input.Traversal is not null)
         {
             _rac1BombThrowActive = false;
             return input;

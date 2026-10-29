@@ -29,7 +29,7 @@ public partial class OBPGame
     {
         if (_player is null || !_avatarPresentation.TryWrenchContactPose(out var wrenchPose))
             return;
-        if (!PlayerAlive)
+        if (!PlayerLife.Alive)
         {
             ResetRac1WrenchHost();
             return;

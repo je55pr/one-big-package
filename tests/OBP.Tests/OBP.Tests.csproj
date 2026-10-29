@@ -156,6 +156,7 @@
     <Compile Include="../../game/scripts/Rac1FusionCampaignIsolation.cs" Link="Game/Rac1FusionCampaignIsolation.cs" />
     <Compile Include="../../game/scripts/PlayerSessionNativeState.cs" Link="Game/PlayerSessionNativeState.cs" />
     <Compile Include="../../game/scripts/PlayerSessionHost.cs" Link="Game/PlayerSessionHost.cs" />
+    <Compile Include="../../game/scripts/PlayerLifecycleBridge.cs" Link="Game/PlayerLifecycleBridge.cs" />
     <Compile Include="../../game/scripts/ProfileCoordinator.cs" Link="Game/ProfileCoordinator.cs" />
     <Compile Include="../../game/scripts/PlayerEquipmentRegistrations.cs" Link="Game/PlayerEquipmentRegistrations.cs" />
     <Compile Include="../../game/scripts/PlayerEquipmentFacade.cs" Link="Game/PlayerEquipmentFacade.cs" />
