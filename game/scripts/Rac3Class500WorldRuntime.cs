@@ -62,9 +62,9 @@ internal sealed class Rac3Class500WorldRuntime : IDisposable
         !_disposed && _admitted.Contains(source) && _native.Require(source).IsActive;
 
     /// <summary>
-    /// Dispatch through the original native consumer. The parity-only direct
-    /// action publishes a transport event before checking admission, whereas
-    /// the shared weapon actor adapter historically did not publish one.
+    /// Dispatch through the original native consumer. After confirming this
+    /// world still owns an active target, the parity-only direct action publishes
+    /// a transport event before damage dispatch. Shared weapon hits do not publish.
     /// </summary>
     internal bool TryBreak(RuntimeDynamicObject source, double damageHp, uint damageFlags,
         bool publish, [NotNullWhen(true)] out Rac3Class500BreakResult? result, out long sequence)

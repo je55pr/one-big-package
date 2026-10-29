@@ -51,7 +51,7 @@ public sealed class Rac3RatchetSeedScenarioTests
         Assert.Equal(1, samples);
         Assert.Contains("primary=3/5", report, StringComparison.Ordinal);
         Assert.Contains("unknown=1/0", report, StringComparison.Ordinal);
-        Assert.Contains("queries=10", report, StringComparison.Ordinal);
+        Assert.Contains("selector-slots=10", report, StringComparison.Ordinal);
     }
 
     [SkippableFact]
@@ -68,7 +68,10 @@ public sealed class Rac3RatchetSeedScenarioTests
         Assert.Equal(count, world.DynamicObjects?.Count);
         Assert.True(first.Admitted > 0);
         Assert.True(first.Authored >= first.Admitted);
-        Assert.Equal(first.Admitted * 2, first.Queries);
+        Assert.InRange(first.PrimaryUnknown, 0, first.Admitted);
+        Assert.InRange(first.SecondaryUnknown, 0, first.Admitted);
+        Assert.InRange(first.PrimarySeeded, 0, first.Admitted);
+        Assert.InRange(first.SecondarySeeded, 0, first.Admitted);
     }
 
     private sealed class Sources : IDiagnosticSources

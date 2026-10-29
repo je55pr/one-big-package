@@ -9,7 +9,7 @@ namespace OBP.Game.Diagnostics;
 internal sealed record Rac3RatchetSeedSnapshot(int Authored, int Admitted, int PrimarySeeded,
     int SecondarySeeded, int PrimaryUnknown, int SecondaryUnknown)
 {
-    public int Queries => checked(Admitted * 2);
+    public int SelectorSlots => checked(Admitted * 2);
 }
 
 /// <summary>
@@ -113,7 +113,7 @@ internal sealed class Rac3RatchetSeedScenario(
             $"primary={result.PrimarySeeded}/{result.Admitted}, " +
             $"secondary={result.SecondarySeeded}/{result.Admitted}, " +
             $"unknown={result.PrimaryUnknown}/{result.SecondaryUnknown}; " +
-            $"authored={result.Authored}, queries={result.Queries}; " +
+            $"authored={result.Authored}, selector-slots={result.SelectorSlots}; " +
             "live subtype +0x95 not host-owned");
     }
 }
