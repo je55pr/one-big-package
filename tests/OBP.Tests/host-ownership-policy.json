@@ -9,7 +9,7 @@
     "Key": "game/scripts/OBPGame.cs::OBPGame.UpdateWorldHud()",
     "Kind": "adapter",
     "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected. #360/#356 integration reads lease-owned gameplay and the existing owned capture metadata projection; no player service is selected. Metadata wire tests and fresh native/shared replay cover this binding. #374 reads optional R&C3 HUD facts from the active world lease; ordinary player HUD remains independently owned. #373 reads the native R&C2 debug witness from the current world lease rather than root gameplay state. It remains a read-only world diagnostic, not a player service. #371 preserves source-world admission and lease ownership while routing taxi actor lifecycle and read-only taxi HUD observations through Rac1MetropolisTaxiHost. No player-service selection is introduced.",
-    "Hash": "30a1e44ad051cc3140a8389323dfad7d146a3f4f3abaccd14082404867c6c23c"
+    "Hash": "2090d29b78e15b7a58df1f6c3f513236b3789f70617059886df0993e72fbbb26"
   },
   {
     "Key": "game/scripts/ApplicationNavigationCoordinator.cs::ApplicationNavigationCoordinator.Choose(ObpDestination)",
