@@ -478,7 +478,7 @@ internal sealed class Rac1MetropolisTaxiHost : IDisposable
     }
 
     internal ImmutableArray<StaticBody3D> CaptureHulls() =>
-        [.. _cabs.Values.Where(cab => cab.Valid).Select(cab => cab.Hull)];
+        [.. _cabs.Values.Where(cab => cab.HullValid).Select(cab => cab.Hull)];
 
     internal Rac1TaxiHostSnapshot ReadSnapshot()
     {
@@ -496,13 +496,15 @@ internal sealed class Rac1MetropolisTaxiHost : IDisposable
                 expected = new((float)target.X, (float)target.Y, (float)target.Z);
             }
         }
-        return new(_cabs.Count, _cabs.Count, _cabs.Values.Count(cab => cab.HasHover),
+        // Report hulls independently: a scene can retire the collider before its cab root.
+        return new(_cabs.Count, _cabs.Values.Count(cab => cab.HullValid),
+            _cabs.Values.Count(cab => cab.HasHover),
             _session is not null, _session?.IsRiding == true, _session?.IsReturning == true,
             _pendingStop?.InstanceIndex, _heroTarget?.NativeState,
             _activeCab is not null, _riderFrame is not null, _cameraWorldOwned,
             expected, orthonormal,
             passenger is { Valid: true } && _session?.FindBoardable(ToTaxiPoint(passenger.Position)) is not null,
-            [.. _cabs.Values.Select(cab => new Rac1TaxiCabSnapshot(
+            [.. _cabs.Values.Where(cab => cab.HullValid).Select(cab => new Rac1TaxiCabSnapshot(
                 cab.Stop.NativeClassId, cab.Stop.InstanceIndex,
                 new(cab.Position.X, cab.Position.Y, cab.Position.Z),
                 new(-cab.Root.GlobalTransform.Basis.X.X, -cab.Root.GlobalTransform.Basis.X.Y, -cab.Root.GlobalTransform.Basis.X.Z),

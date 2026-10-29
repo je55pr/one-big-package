@@ -2850,7 +2850,7 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1TaxiDiagnosticFixture():IRac1TaxiDiagnosticFixture:private",
       "Owner": "#343",
-      "Rationale": "Invocation-only Novalis music/mechanism, taxi and lease-retirement fixture composition. Source-native sessions, source attachment paths, scene nodes and collision/audio resources stay behind scoped adapters; assertions and test control flow are standalone. #371 routes Metropolis taxi world ownership, passenger and hull presentation through the lease-owned taxi host; native session rules and diagnostic compatibility remain separately observed.",
+      "Rationale": "Invocation-only Novalis music/mechanism, taxi and lease-retirement fixture composition. Source-native sessions, source attachment paths, scene nodes and collision/audio resources stay behind scoped adapters; assertions and test control flow are standalone. #371 routes Metropolis taxi world ownership, passenger and hull presentation through the lease-owned taxi host; native session rules and diagnostic compatibility remain separately observed. The remaining root diagnostic fixture composition is deferred to final root composition cleanup in #376.",
       "ExpiresWith": "#376",
       "Hash": "e382b001673ae756f63ffd121d04a905f3751be5761e8b368114f046a00fb46b"
     },

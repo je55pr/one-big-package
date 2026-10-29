@@ -77,8 +77,9 @@ internal sealed class GodotRac1TaxiDiagnosticFixture(GodotRac1TaxiDiagnosticBind
     public Rac1TaxiCabDiagnostic ReadCab(ActorInstanceKey actor)
     {
         var stop = Resolve(actor);
-        var cab = Host.ReadSnapshot().Cabs.Single(c =>
-            c.InstanceIndex == stop.InstanceIndex && c.NativeClassId == stop.NativeClassId);
+        var cab = Host.ReadSnapshot().Cabs.SingleOrDefault(c =>
+            c.InstanceIndex == stop.InstanceIndex && c.NativeClassId == stop.NativeClassId)
+            ?? throw new DiagnosticUnavailableException("The requested taxi cab has retired from the scene.");
         return new(cab.Position, cab.Nose, cab.Phase, cab.CollisionLayer);
     }
 

@@ -34,6 +34,7 @@ internal sealed class Rac1HostedTaxiCab : IDisposable
     internal bool HasHover => _hover is not null;
     internal Vector3 Position => Node.Root.GlobalPosition;
     internal bool Valid => !_disposed && GodotObject.IsInstanceValid(Node.Root);
+    internal bool HullValid => Valid && GodotObject.IsInstanceValid(Hull) && !Hull.IsQueuedForDeletion();
     internal uint CollisionLayer { get => Hull.CollisionLayer; set => Hull.CollisionLayer = value; }
 
     internal static Rac1HostedTaxiCab? TryMount(Rac1MetropolisTaxiStop stop,

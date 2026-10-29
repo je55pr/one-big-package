@@ -3,6 +3,10 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace OBP.Tests;
 
+/// <summary>
+/// Source-level ownership guards; actual boarding, abort, camera, and world-retirement
+/// behavior is exercised by the retail-backed Rac1MetropolisTaxiScenario.
+/// </summary>
 public sealed class Rac1TaxiHostOwnershipTests
 {
     private static string Source(string file) => File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", file));
@@ -45,6 +49,21 @@ public sealed class Rac1TaxiHostOwnershipTests
         Assert.Contains(host.DescendantNodes().OfType<FieldDeclarationSyntax>(),
             field => field.Declaration.Type.ToString().Contains("IRac1TaxiPassengerController", StringComparison.Ordinal));
         Assert.Contains("Rac1HostedTaxiCab", Source("Rac1MetropolisTaxiHost.cs"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SnapshotCountsOnlyLiveCollisionHullsAndHandlesRetiredCabs()
+    {
+        var cab = Source("Rac1HostedTaxiCab.cs");
+        var host = Source("Rac1MetropolisTaxiHost.cs");
+        var diagnostics = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics",
+            "GodotRac1TaxiDiagnosticFixture.cs"));
+
+        Assert.Contains("GodotObject.IsInstanceValid(Hull) && !Hull.IsQueuedForDeletion()", cab, StringComparison.Ordinal);
+        Assert.Contains("_cabs.Values.Count(cab => cab.HullValid)", host, StringComparison.Ordinal);
+        Assert.Contains("_cabs.Values.Where(cab => cab.HullValid).Select", host, StringComparison.Ordinal);
+        Assert.Contains("SingleOrDefault", diagnostics, StringComparison.Ordinal);
+        Assert.Contains("throw new DiagnosticUnavailableException", diagnostics, StringComparison.Ordinal);
     }
 
     [Fact]
