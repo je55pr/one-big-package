@@ -32,7 +32,7 @@ public partial class OBPGame
 
     private void StepRac1AdditionalWeaponWorld()
     {
-        if (_movementStateLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is null || _player is null) return;
+        if (MovementReproduction.IsLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is null || _player is null) return;
         _rac1WeaponWorldTick++;
         StepRac1ArsenalWorld();
         if (_rac1PyroEmitting && EnsureRac1Particles() is { } particles)

@@ -61,13 +61,13 @@ public partial class OBPGame
         if (OrdinaryPlayerSession)
         {
             var entry = ReadPlayerEquipment().Single(entry => entry.Definition.Id == "rac1/item/27");
-            ReportMovementState(entry.Reason ?? "The common Metal Detector action is unavailable.");
+            MovementReproduction.Report(entry.Reason ?? "The common Metal Detector action is unavailable.");
             return true;
         }
         if (_rac1MetalDetector is null) return false;
         if (!_rac1Weapons.OwnsNativeItem(Rac1MetalDetectorSession.NativeGadgetItem))
         {
-            ReportMovementState("Metal Detector not owned (native inventory item 27).");
+            MovementReproduction.Report("Metal Detector not owned (native inventory item 27).");
             return true;
         }
         _rac1DetectorEquipped = !_rac1DetectorEquipped;

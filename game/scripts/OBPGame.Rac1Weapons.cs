@@ -91,13 +91,13 @@ public partial class OBPGame
 
     private void SetRac1WeaponPreview(bool disable)
     {
-        if (FusionWeapons.TestActive) { ReportMovementState("Leave the fusion test before changing the R&C1 arsenal preview."); return; }
+        if (FusionWeapons.TestActive) { MovementReproduction.Report("Leave the fusion test before changing the R&C1 arsenal preview."); return; }
         _playerNative?.SetEquipmentPreview(!disable);
         if (disable)
         {
             _persistentPlayer.WeaponPreview = null;
             Rac1World.Context.BombGlove = new(_rac1Weapons); ResetRac1AdditionalWeapons();
-            ReportMovementState("Weapon preview disabled; campaign equipment restored.");
+            MovementReproduction.Report("Weapon preview disabled; campaign equipment restored.");
         }
         else
         {
@@ -113,7 +113,7 @@ public partial class OBPGame
             {
                 Rac1World.Context.BombGlove = new(_rac1Weapons); ResetRac1AdditionalWeapons();
             }
-            ReportMovementState("Full arsenal preview: hold Triangle to select, Circle to use. Refill or restore campaign equipment from Pause → Testing Equipment.");
+            MovementReproduction.Report("Full arsenal preview: hold Triangle to select, Circle to use. Refill or restore campaign equipment from Pause → Testing Equipment.");
         }
         _rac1AdditionalWeaponsInventory = _rac1Weapons;
         FusionWeapons.SynchronizeNativeSelection();
@@ -160,7 +160,7 @@ public partial class OBPGame
 
     private void StepRac1AdditionalWeapons()
     {
-        if (_movementStateLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is null || _player is null || _rac1AdditionalWeapons is null) return;
+        if (MovementReproduction.IsLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is null || _player is null || _rac1AdditionalWeapons is null) return;
         bool held = PlayerLife.Alive && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active &&
             _rac1AdditionalFireRequested && !_rac1DetectorEquipped;
         _rac1AdditionalFireRequested = false;

@@ -112,6 +112,37 @@ public sealed class CrossWorldReplayTests : IDisposable
     }
 
     [Fact]
+    public void BookmarkResolverAcceptsMatchingSiblingAndRejectsTamperingWithoutChangingSave()
+    {
+        Directory.CreateDirectory(_directory);
+        string prefix = Path.Combine(_directory, "prefix.run.jsonl.gz");
+        string bookmark = Path.Combine(_directory, "state.json");
+        File.WriteAllText(prefix, "test-owned prefix bytes");
+        var state = MovementReproStateTests.Sample() with
+        {
+            Version = 3,
+            Destination = "rac2:LEVEL1",
+            Profile = Header("rac2:LEVEL1").PlayerProfile,
+            Replay = new(Path.GetFileName(prefix),
+                Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(prefix))), 0),
+        };
+        MovementReproStateFile.Save(bookmark, state);
+        byte[] original = File.ReadAllBytes(bookmark);
+        Assert.Equal(Path.GetFullPath(prefix), ReplayBookmarkResolver.Resolve(bookmark, state));
+        Assert.Equal(original, File.ReadAllBytes(bookmark));
+
+        File.WriteAllText(prefix, "modified prefix bytes");
+        Assert.Throws<InvalidDataException>(() => ReplayBookmarkResolver.Resolve(bookmark, state));
+        File.Delete(prefix);
+        Assert.Throws<FileNotFoundException>(() => ReplayBookmarkResolver.Resolve(bookmark, state));
+        Assert.Throws<InvalidDataException>(() => ReplayBookmarkResolver.Resolve(bookmark, state with
+        {
+            Replay = state.Replay with { FileName = "../escaped.run.jsonl.gz" }
+        }));
+        Assert.Equal(original, File.ReadAllBytes(bookmark));
+    }
+
+    [Fact]
     public void LegacyNativeHeaderRetainsItsOriginalEmptyUniversalFields()
     {
         var legacy = Header("rac1:LEVEL0") with { Version = 1, Sources = [], Adapters = [], PlayerProfile = null };

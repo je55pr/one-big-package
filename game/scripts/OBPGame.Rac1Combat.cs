@@ -52,7 +52,7 @@ public partial class OBPGame
         if (_playerNative is not null)
         {
             var entry = ReadPlayerEquipment().SingleOrDefault(entry => entry.Definition.Item == new SourceWeaponKey(ObpSourceGame.Rac1, (int)weapon));
-            if (entry?.Selectable != true) { ReportMovementState(entry?.Reason ?? "No admitted weapon registration."); return; }
+            if (entry?.Selectable != true) { MovementReproduction.Report(entry?.Reason ?? "No admitted weapon registration."); return; }
         }
         if (FusionWeapons.TestActive)
         {
@@ -78,7 +78,7 @@ public partial class OBPGame
             _persistentPlayer.Equipment.RefreshAvailability();
             GD.Print($"[rac1-gameplay] {Rac1World.Context.CombatStatus}");
         }
-        else ReportMovementState("Enable weapon preview from Pause → Testing Equipment (or press 0), then hold Triangle to select.");
+        else MovementReproduction.Report("Enable weapon preview from Pause → Testing Equipment (or press 0), then hold Triangle to select.");
     }
 
     private void OnRac1WeaponCycleRequested(int direction)
