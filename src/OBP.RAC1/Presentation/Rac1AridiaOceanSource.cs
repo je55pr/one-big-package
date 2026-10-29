@@ -33,9 +33,9 @@ public static class Rac1AridiaOceanSource
         public int CellRows => GridRows / 7;
     }
 
-    /// <summary>Native VIF V4-8 packet for one 7-by-7 cell: 124 packed RGBA slots.
-    /// These are original source bytes, not decoded Godot vertex colours.</summary>
-    public sealed record CellPacket(int CellIndex, byte[] PackedColours);
+    /// <summary>Native VIF V4-8 packet for one 7-by-7 cell: 124 packed 4-byte values.
+    /// These are source bytes, not decoded Godot vertex attributes.</summary>
+    public sealed record CellPacket(int CellIndex, byte[] PackedValues);
 
     public static IReadOnlyList<Surface> Read(IRandomAccessReader disc, Rac1DiscIndex.NativeLevel level)
     {

@@ -87,8 +87,8 @@ public sealed class Rac1LiquidSourceRecordsTests
         var cellPackets = records.SelectMany(record =>
             Rac1AridiaOceanSource.ReadCellPackets(overlay, record)).ToArray();
         Assert.Equal(231, cellPackets.Length); // 120+24+36+30+18+2+1 native cells
-        Assert.All(cellPackets, packet => Assert.Equal(0x7c * 4, packet.PackedColours.Length));
-        Assert.Contains(cellPackets, packet => packet.PackedColours.Any(value => value != 0));
+        Assert.All(cellPackets, packet => Assert.Equal(0x7c * 4, packet.PackedValues.Length));
+        Assert.Contains(cellPackets, packet => packet.PackedValues.Any(value => value != 0));
 
         var core = Rac1LevelCore.Open(disc, level);
         var frames = Rac1FxTextures.Read(core, Enumerable.Range(
