@@ -35,7 +35,8 @@ public sealed class Rac3WorldTests
         string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
-        var result = Rac3WorldImport.BuildObserved(reader, table);
+        // Keep the committed retail census as the pre-recovery comparison baseline.
+        var result = Rac3WorldImport.BuildObserved(reader, table, nativeMobyPoseOverride: false);
         var world = result.World;
         Assert.Equal((WorldContentIdentity)ObpSourceGame.Rac3, world.Game);
         Assert.Equal(Rac3Authority.Primary.BuildId, world.BuildId);
@@ -163,7 +164,8 @@ public sealed class Rac3WorldTests
         string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
-        RuntimeWorld world = Rac3WorldImport.Build(reader, 1);
+        // Assert the historical animation reference separately from recovered geometry.
+        RuntimeWorld world = Rac3WorldImport.BuildObserved(reader, 1, nativeMobyPoseOverride: false).World;
         var animated = world.AnimatedMeshes;
         Assert.NotNull(animated);
         Assert.Equal(45, animated!.Count);
@@ -285,7 +287,8 @@ public sealed class Rac3WorldTests
         foreach (JsonElement row in rows.EnumerateArray())
         {
             int table = row.GetProperty("tableIndex").GetInt32();
-            var result = Rac3WorldImport.BuildObserved(reader, table);
+            // Keep the committed retail census as the pre-recovery comparison baseline.
+            var result = Rac3WorldImport.BuildObserved(reader, table, nativeMobyPoseOverride: false);
             var world = result.World;
             Assert.Equal(row.GetProperty("worldMeshCount").GetInt32(), world.Meshes.Count);
             Assert.Equal(row.GetProperty("worldRenderTriangles").GetInt32(), world.TotalRenderTriangles);
