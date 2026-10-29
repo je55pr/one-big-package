@@ -5,32 +5,32 @@ using OBP.Runtime;
 
 namespace OBP.Game;
 
-public partial class OBPGame
+internal sealed partial class Rac1LootPresentation
 {
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1PlacedBoltNodes = [];
     private readonly List<(Rac1PlacedBoltSession.Registration Registration, RuntimeWorldScene.DynamicObjectNode Node)> _rac1PendingPlacedBolts = [];
     private ulong _rac1PlacedBoltProbeAfter;
 
-    private void ResetRac1PlacedBoltPresentation()
+    internal void ResetRac1PlacedBoltPresentation()
     {
         // The original world owns these roots. Free only dynamically emitted
         // effects in the ordinary pickup teardown, not authored objects twice.
         foreach (int id in _rac1PlacedBoltNodes.Keys)
         {
-            Rac1World.Presentation.PickupNodes.Remove(id);
+            _presentation.PickupNodes.Remove(id);
             _rac1PickupMotion.Remove(id);
         }
         _rac1PlacedBoltNodes.Clear();
         _rac1PendingPlacedBolts.Clear();
     }
 
-    private void ConfigureRac1PlacedBolts(RuntimeWorld world, RuntimeWorldScene.Result result)
+    internal void ConfigureRac1PlacedBolts(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
         foreach (var source in (world.DynamicObjects ?? []).Where(source => Rac1PlacedBolt.IsBoltClass(source.NativeClassId)))
         {
             var node = Rac1WorldPresentation.FindPresentedDynamic(result, source)
                 ?? throw new InvalidDataException("R&C1 authored bolt is missing its retail presentation.");
-            var registration = Rac1World.Context.PlacedBolts.Register(source, node.State);
+            var registration = _context.PlacedBolts.Register(source, node.State);
             if (!registration.Instance.IsActive)
             {
                 node.ApplyState(registration.Instance.EntityState);
@@ -45,7 +45,7 @@ public partial class OBPGame
         GD.Print($"[rac1-pickups] registered {_rac1PendingPlacedBolts.Count} authored world bolts");
     }
 
-    private void InitializeRac1PlacedBolts()
+    internal void InitializeRac1PlacedBolts()
     {
         if (_player is null || Engine.GetPhysicsFrames() < _rac1PlacedBoltProbeAfter) return;
         foreach (var pending in _rac1PendingPlacedBolts)
@@ -66,22 +66,22 @@ public partial class OBPGame
             node.GlobalPosition = FromEffectNative(motion.Position);
             node.Quaternion = FromEffectOrientation(motion.Orientation);
             node.Scale = Vector3.One * motion.VisualScale;
-            Rac1World.Presentation.PickupNodes.Add(id, node);
+            _presentation.PickupNodes.Add(id, node);
             _rac1PickupMotion.Add(id, motion);
         }
         _rac1PendingPlacedBolts.Clear();
     }
 
-    private int CollectRac1HostedBolt(int pickupId, Node3D node)
+    internal int CollectRac1HostedBolt(int pickupId, Node3D node)
     {
-        if (Rac1World.Context.PlacedBolts.TryCollect(pickupId, out var placed))
+        if (_context.PlacedBolts.TryCollect(pickupId, out var placed))
         {
             _rac1PlacedBoltNodes[pickupId].ApplyState(placed!.EntityState);
             _rac1PlacedBoltNodes.Remove(pickupId);
             return placed.Value;
         }
-        int value = Rac1World.Context.BoltCrates.OwnsPickup(pickupId)
-            ? Rac1World.Context.BoltCrates.CollectPickup(pickupId) : Rac1World.Context.BoltPickups.Collect(pickupId);
+        int value = _context.BoltCrates.OwnsPickup(pickupId)
+            ? _context.BoltCrates.CollectPickup(pickupId) : _context.BoltPickups.Collect(pickupId);
         node.QueueFree();
         return value;
     }

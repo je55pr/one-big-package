@@ -23,16 +23,18 @@ internal sealed partial class Rac2WorldModule : IDisposable
     private readonly Rac2WorldLeaseClock _clock;
 
     internal Rac2WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene, GodotWorldResources resources,
-        Rac2WorldPorts ports)
+        Rac2WorldPorts ports, Rac2CrateBoltPorts boltPorts)
     {
         _world = world;
         _scene = scene;
         _resources = resources;
         _ports = ports;
+        CrateBolts = new(world, scene, resources, boltPorts);
         _clock = new(ports.Current, ports.SourceValid, world.Game == ObpSourceGame.Rac2 ||
             scene.DynamicObjectNodes?.Any(node => node.Source.SourceGame == ObpSourceGame.Rac2) == true);
     }
 
+    internal Rac2CrateBoltPresentation CrateBolts { get; }
     internal bool Current => _clock.Current;
 
     internal IDictionary<int, Rac2Class2827HostileSession> Hostiles => _rac2Class2827Hostiles;
@@ -55,6 +57,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
         if (_disposed) return;
         _disposed = true;
         _clock.Retire();
+        CrateBolts.Dispose();
         if (_player is not null && GodotObject.IsInstanceValid(_player))
             _player.CrateStrikeRequested -= OnRac2PrimaryAttackRequested;
         _player = null;

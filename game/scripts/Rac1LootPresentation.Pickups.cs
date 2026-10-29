@@ -9,7 +9,7 @@ using NVector3 = System.Numerics.Vector3;
 
 namespace OBP.Game;
 
-public partial class OBPGame
+internal sealed partial class Rac1LootPresentation
 {
     private Rac1PickupAssets.Catalogue? _rac1PickupAssets;
     private WorldMaterialFactory? _rac1PickupMaterials;
@@ -18,19 +18,16 @@ public partial class OBPGame
     private readonly Dictionary<int, StaticBody3D> _rac1CrateBodies = [];
     private readonly Dictionary<int, (Node3D Node, Rac1CrateFallSession Motion, float FootOffset)> _rac1FallingCrates = [];
     private readonly Dictionary<int, List<(ArrayMesh Mesh, Material Material)>> _rac1EffectMeshes = [];
-    private Rac1PickupRandom? _rac1EffectRandom;
-    private Rac1PickupRandom Rac1EffectRandom => _rac1EffectRandom ??=
-        Rac1PickupRandom.FromSeed(unchecked((uint)(_args.FixedSeed ?? System.Environment.TickCount)));
     private double _rac1PickupTickAccumulator;
     private int _rac1BoltSoundDelay;
     private int _rac1PickupSoundCount;
 
-    private void ResetRac1PickupPresentation()
+    internal void ResetRac1PickupPresentation()
     {
-        _playerAudio?.RetireWorld();
+        _ports.RetirePlayerAudio();
         ResetRac1PlacedBoltPresentation();
         ResetRac1CrateSupply();
-        foreach (var node in Rac1World.Presentation.PickupNodes.Values.Concat(_rac1Debris.Select(piece => piece.Node)))
+        foreach (var node in _presentation.PickupNodes.Values.Concat(_rac1Debris.Select(piece => piece.Node)))
             if (IsInstanceValid(node)) node.QueueFree();
         _rac1PickupMotion.Clear();
         _rac1Debris.Clear();
@@ -45,17 +42,17 @@ public partial class OBPGame
         _rac1PickupMaterials = null;
     }
 
-    private void ConfigureRac1PickupPresentation(RuntimeWorld world)
+    internal void ConfigureRac1PickupPresentation(RuntimeWorld world)
     {
-        var source = Sources.Setup.Library.Get(OBP.Core.ObpSourceGame.Rac1);
-        if (source is null) throw new InvalidOperationException("R&C1 pickup presentation requires the active source.");
+        var sourcePath = _ports.SourcePath();
+        if (sourcePath is null) throw new InvalidOperationException("R&C1 pickup presentation requires the active source.");
         _rac1PickupAssets = world.LevelId == 0 && _equipmentPresentation.SelectedAssets is not null
-            ? _equipmentPresentation.SelectedAssets : Rac1PickupAssets.Load(source.Path, world.LevelId);
+            ? _equipmentPresentation.SelectedAssets : Rac1PickupAssets.Load(sourcePath, world.LevelId);
         _rac1PickupMaterials = new WorldMaterialFactory(world with { Textures = _rac1PickupAssets.Textures });
         GD.Print($"[rac1-pickups] loaded {_rac1PickupAssets.Models.Count} retail bolt/debris models");
     }
 
-    private Node3D CreateRac1EffectNode(int nativeClass, string name, bool playerEquipment = false)
+    internal Node3D CreateRac1EffectNode(int nativeClass, string name, bool playerEquipment = false)
     {
         var assets = playerEquipment ? _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) : _rac1PickupAssets;
         var materials = playerEquipment ? _equipmentPresentation.EffectMaterials : _rac1PickupMaterials;
@@ -94,7 +91,7 @@ public partial class OBPGame
         return node;
     }
 
-    private void SpawnRac1BoltPickups(Vector3 origin, IReadOnlyList<Rac1BoltPickup> pickups)
+    internal void SpawnRac1BoltPickups(Vector3 origin, IReadOnlyList<Rac1BoltPickup> pickups)
     {
         foreach (var pickup in pickups)
         {
@@ -102,12 +99,12 @@ public partial class OBPGame
             var node = CreateRac1EffectNode(pickup.NativeClassId, $"rac1_retail_bolt_{pickup.PickupId}_class{pickup.NativeClassId}");
             node.GlobalPosition = FromEffectNative(motion.Position);
             node.Scale = Vector3.One * motion.VisualScale;
-            Rac1World.Presentation.PickupNodes.Add(pickup.PickupId, node);
+            _presentation.PickupNodes.Add(pickup.PickupId, node);
             _rac1PickupMotion.Add(pickup.PickupId, motion);
         }
     }
 
-    private void SpawnRac1CrateDebris(RuntimeWorldScene.DynamicObjectNode crate)
+    internal void SpawnRac1CrateDebris(RuntimeWorldScene.DynamicObjectNode crate)
     {
         NVector3 origin = ToEffectNative(crate.Root.GlobalPosition);
         NVector3 Axis(NVector3 local) => ToEffectNative(crate.Root.ToGlobal(FromEffectNative(local))) - origin;
@@ -126,7 +123,7 @@ public partial class OBPGame
         }
     }
 
-    private void TickRac1Pickups(double delta)
+    internal void TickRac1Pickups(double delta)
     {
         if (_player is null || _sceneResult is null) return;
         InitializeRac1PlacedBolts();
@@ -143,20 +140,20 @@ public partial class OBPGame
             foreach (var pair in _rac1PickupMotion.ToArray())
             {
                 var motion = pair.Value;
-                var node = Rac1World.Presentation.PickupNodes[pair.Key];
+                var node = _presentation.PickupNodes[pair.Key];
                 if (!IsInstanceValid(node))
                 {
-                    if (!Rac1World.Context.BoltCrates.DiscardPickup(pair.Key)) Rac1World.Context.BoltPickups.Discard(pair.Key);
+                    if (!_context.BoltCrates.DiscardPickup(pair.Key)) _context.BoltPickups.Discard(pair.Key);
                     _rac1PickupMotion.Remove(pair.Key);
-                    Rac1World.Presentation.PickupNodes.Remove(pair.Key);
+                    _presentation.PickupNodes.Remove(pair.Key);
                     continue;
                 }
-                bool wrenchContact = _rac1WrenchThrow.Active &&
+                bool wrenchContact = _ports.WrenchActive() &&
                     node.GlobalPosition.DistanceTo(WrenchWorldPosition()) < Rac1WrenchThrowSession.BoltCollectionRadius;
                 var contact = motion.NeedsWorldContact ? ProbeRac1EffectContact(motion.Position,
                     motion.Position + motion.Velocity - new NVector3(0, 0, Rac1BoltMotionSession.Gravity / 3600), motion.CollisionRadius) : null;
                 int previousState = motion.NativeState;
-                var attraction = Rac1BoltMotionSession.AttractionProfile(Rac1World.Context.NativePlayerState20A4, _rac1Weapons.OwnsNativeItem(34));
+                var attraction = Rac1BoltMotionSession.AttractionProfile(_context.NativePlayerState20A4, _rac1Weapons.OwnsNativeItem(34));
                 motion.Step(root, socket, contact, attractEnabled: !_rac1Nanotech.Probe().IsDead,
                     thrownWrenchContact: wrenchContact,
                     attractPlanarRadius: attraction.PlanarRadius, attractHeight: attraction.Height);
@@ -172,7 +169,7 @@ public partial class OBPGame
                 _rac1BoltWallet.Credit(value);
                 collectedValue += value;
                 _rac1PickupMotion.Remove(pair.Key);
-                Rac1World.Presentation.PickupNodes.Remove(pair.Key);
+                _presentation.PickupNodes.Remove(pair.Key);
             }
             TickRac1CrateSupply(root, socket);
             for (int i = _rac1Debris.Count - 1; i >= 0; i--)
@@ -194,17 +191,17 @@ public partial class OBPGame
         if (collectedValue > 0)
         {
             PersistRac1CampaignState("bolt collection");
-            Rac1World.Context.CombatStatus = $"collected +{collectedValue} bolts";
-            RefreshRac1HudState(Rac1HudProjection.CollectedBoltFeedback(collectedValue));
+            _context.CombatStatus = $"collected +{collectedValue} bolts";
+            _ports.BoltFeedback(collectedValue);
         }
     }
 
-    private void PlayRac1PickupSound(int nativeClass, int localSound, Vector3 position)
+    internal void PlayRac1PickupSound(int nativeClass, int localSound, Vector3 position)
     {
         if (_rac1PickupAssets?.Sounds is not { } sounds || !sounds.TryGetValue((nativeClass, localSound), out var sound)) return;
         var clip = sound.SelectPitch(Rac1EffectRandom);
         if (clip.FrameCount == 0) return; // A native probability program deliberately selected silence.
-        if (!_worldHost.PlayEffect(new RuntimeAudioPlaybackIntent(clip, RuntimeAudioCategory.SoundEffect,
+        if (!_ports.PlayEffect(new RuntimeAudioPlaybackIntent(clip, RuntimeAudioCategory.SoundEffect,
             gain: sound.Gain, position: new RuntimeAudioPosition(-position.X, position.Y, position.Z)))) return;
         _rac1PickupSoundCount++;
         RecordRac1WeaponSound(nativeClass, localSound);
@@ -223,7 +220,7 @@ public partial class OBPGame
         return new(ToEffectNative(position.AsVector3() + n * radius), ToEffectNative(n));
     }
 
-    private void AddRac1CrateCollider(RuntimeWorldScene.DynamicObjectNode node)
+    internal void AddRac1CrateCollider(RuntimeWorldScene.DynamicObjectNode node)
     {
         var meshes = node.Root.GetChildren().OfType<MeshInstance3D>().ToArray();
         if (meshes.Length == 0) return;
@@ -237,7 +234,7 @@ public partial class OBPGame
             (node.Root, new(node.Root.GlobalPosition.Y + bounds.Position.Y), bounds.Position.Y));
     }
 
-    private void DisableRac1CrateCollider(int instance)
+    internal void DisableRac1CrateCollider(int instance)
     {
         _rac1FallingCrates.Remove(instance);
         if (!_rac1CrateBodies.Remove(instance, out var body) || !IsInstanceValid(body)) return;
@@ -245,7 +242,7 @@ public partial class OBPGame
         body.QueueFree();
     }
 
-    private void TickRac1CrateSupport()
+    internal void TickRac1CrateSupport()
     {
         if (_player is null) return;
         foreach (var entry in _rac1FallingCrates.OrderBy(entry => entry.Value.Motion.Height))
@@ -265,7 +262,7 @@ public partial class OBPGame
         }
     }
 
-    private static NVector3 ToEffectNative(Vector3 point) => new(-point.X, point.Z, point.Y);
-    private static Vector3 FromEffectNative(NVector3 point) => new(-point.X, point.Z, point.Y);
-    private static Quaternion FromEffectOrientation(System.Numerics.Quaternion rotation) => new(-rotation.X, rotation.Z, rotation.Y, rotation.W);
+    internal static NVector3 ToEffectNative(Vector3 point) => new(-point.X, point.Z, point.Y);
+    internal static Vector3 FromEffectNative(NVector3 point) => new(-point.X, point.Z, point.Y);
+    internal static Quaternion FromEffectOrientation(System.Numerics.Quaternion rotation) => new(-rotation.X, rotation.Z, rotation.Y, rotation.W);
 }

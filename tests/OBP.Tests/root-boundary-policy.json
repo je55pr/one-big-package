@@ -2586,7 +2586,7 @@
       "Owner": "#359",
       "Rationale": "Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings. #354 routes accepted cross-source wrench feedback to the player audio presenter. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Reads source availability or equipment order through the persistent PlayerEquipmentFacade. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #374 binds the original R&C3 actor bridge to a lease-owned module instead of global runtime fields; existing native damage and player-global selection remain unchanged. #373 preserves this exact lease-scoped R&C2 owner binding, validated by the focused R&C2 world ownership and original actor regressions.",
       "ExpiresWith": "#376",
-      "Hash": "c3b4a57de824a7a2cd4fc3f361b328fc94877d7d3f881bd11d07b88f2b4d076d"
+      "Hash": "025d8de9ea3364ed1d7a4c103fc50f22f9368abd826d94db0ffa13aeba348729"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ResetPlacedActor(:string):EquipmentChangeResult:public",
@@ -2768,7 +2768,7 @@
       "Owner": "#344",
       "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged.",
       "ExpiresWith": "#358",
-      "Hash": "a5863c5bbe1b69f604a677046e51205943b14819ec1d57d17243df15651b6428"
+      "Hash": "eaf620caf92ed56d6e33881068a9c2dce49d897d0cd9f65f1ce8ead300156e89"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePauseMenuPresentation():PauseMenuUi:private",
@@ -2782,14 +2782,14 @@
       "Owner": "#338",
       "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376. #354 binds the owned native player audio presenter and its copied observations. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #373 preserves this exact lease-scoped R&C2 owner binding, validated by the focused R&C2 world ownership and original actor regressions.",
       "ExpiresWith": "#376",
-      "Hash": "4a5ead45cf866f2afb608434ccb3b168f05082d07faa0737d266e76c4281e12d"
+      "Hash": "6bce0b56070365627df73d3cd6ea6394ce158d677e26f895a446782817484dc0"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AdditionalWeaponDiagnosticFixture(:IDiagnosticWorldObservations):GodotRac1AdditionalWeaponDiagnosticFixture:private",
       "Owner": "#341",
       "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added.",
       "ExpiresWith": "#367",
-      "Hash": "4f74905dbbd236dbf4ecac4b349b403fe19f61db25481436638241d020ab4c0d"
+      "Hash": "03b9812b3c51e217eb48569fe85be9d0745487b57112d40108357c8aafb8d95f"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AridiaDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1AridiaDiagnosticFixture:private",
@@ -2824,21 +2824,21 @@
       "Owner": "#361",
       "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #361. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. The enemy state/health/contact bridge is retired; this remaining factory binds focused source-owner observations and expires with final composition.",
       "ExpiresWith": "#376",
-      "Hash": "6baf46b9a51369fb86561da8e334ee56c2373f98bcf22050a24cf90c02ac40e1"
+      "Hash": "7e9cde02ef0cc5344ed4d6bf77eab72f6344b0f34bd1e52f87f2888114bc48b9"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1FrogDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1FrogDiagnosticFixture:private",
       "Owner": "#340",
       "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #362. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #362 moves all native frog/Queen/carrier state, contact, source timing and visual/camera leases into Rac1FrogEncounter; only guarded diagnostic composition and narrow camera/effect callbacks remain at the root. Native Frog/Queen checks and source-neutral player-selection rejection tests protect this intermediate boundary; #376 retires the remaining composition glue.",
       "ExpiresWith": "#376",
-      "Hash": "728b31692364c6736ad294946a9748cc2ce208db6717052ec837b5346b3d66c3"
+      "Hash": "ef63ceedd5ecd23a0161c11b616ae761ed8e679083be4460487fb6796eae09a3"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1LootDiagnosticHarness():Rac1LootDiagnosticHarness:private",
       "Owner": "#342",
       "Rationale": "Invocation-only campaign/checkpoint/mission or crate/pickup diagnostic fixture composition. Immutable source-qualified observations and explicit fixture actions retain native sessions, actors and save paths inside their owners. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged.",
       "ExpiresWith": "#369",
-      "Hash": "608ca930488e1fe619345a61c382ddd134b9642ce30bde676e3f17412a205346"
+      "Hash": "094448ab1d5531ed29e8b1f6a24a2fb26bb2d7e81eb0171406b591013b6839f7"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1QueenDiagnosticBindings():GodotRac1QueenDiagnosticBindings:private",
@@ -2887,14 +2887,14 @@
       "Owner": "#344",
       "Rationale": "Composition-only adapter for owned actor snapshots, cache and retirement witnesses, and controlled construction/invalidation trials. Focused encounter reset and shared-asset teardown callbacks remain until final root composition #376. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
       "ExpiresWith": "#376",
-      "Hash": "d96dc9b3f49853cce9324473f213af9c9f0778f1c38e949130a2c3dd91d41fca"
+      "Hash": "ca95801203f67604a452d5762a162f950256aa6c825fe81f06177db883d83d67"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateTrilogyPlayerDiagnosticFixture():ITrilogyPlayerDiagnosticFixture:private",
       "Owner": "#344",
       "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376. #354 binds the owned native player audio presenter and its copied observations. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
       "ExpiresWith": "#376",
-      "Hash": "12bb0f05c5c3624bb6b4a737260518f94dc7130af0d89440106123740239da2e"
+      "Hash": "236b854708b8c098dafe2486a4163a55c8699a6243832e81f0a04d1572787f15"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateUiDiagnosticHarness():UiDiagnosticHarness:private",
@@ -2908,7 +2908,7 @@
       "Owner": "#341",
       "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged.",
       "ExpiresWith": "#367",
-      "Hash": "f851727bc3111fcaf55432f59953d8df9adf3c1f596c9f900887803524630719"
+      "Hash": "2d0b7a0d8f8d53948a1e6836a20a92cf9c21afca9f5df5b670dec722d9c125ae"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:DecorateFusionLab(:FusionLabDefinition,:bool):void:private",
@@ -3419,7 +3419,7 @@
       "Owner": "#350",
       "Rationale": "The host now owns state and presentation; this pre-existing root member forwards world/lifetime integration until the final thin-root composition. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
       "ExpiresWith": "#376",
-      "Hash": "112e58fccc7f1c30546408f39326f17a024123fee0a0c8e377548a617ca5f660"
+      "Hash": "b2e37932815925f67b9b4f61be6e6064162b19c081175a61f6b88e7a976d0a35"
     },
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:ClearPlayerAvatarView():void:private",
@@ -3545,7 +3545,7 @@
       "Owner": "#356",
       "Rationale": "Exact capture/replay composition: copied world/player/native facts, focused command actions and independent optional verification lifetime. No recording, checkpoint, native algorithm or diagnostic policy is implemented in the root. Final host composition removes this binding. #360/#356 integration binds recording observations to the existing lease/persistent owners; callback and native policy ownership are retained. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged.",
       "ExpiresWith": "#376",
-      "Hash": "d38aae6af24a1822844282b1dbef0c7b14bd01bf95608db75ab96943b97da0ce"
+      "Hash": "23d6a35878aab26b0d9120086de7595d2dcf6fbe680b1c6912ad0c89d4b6523c"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlaytestDriverPorts():PlaytestDriverPorts:private",
@@ -3629,7 +3629,7 @@
       "Owner": "#360",
       "Rationale": "Temporary composition binding to the lease-owned R&C1 module or existing persistent player owner. No collection or native gameplay policy lives in the root; Rac1WorldContextTests and world/player lifecycle reconciliation cover isolation. Reconciled #351 equipment delegations with #360 lease-owned R&C1 state; only existing owner ports are wired, with no added state or native formulas. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #371 routes Metropolis taxi world ownership, passenger and hull presentation through the lease-owned taxi host; native session rules and diagnostic compatibility remain separately observed.",
       "ExpiresWith": "#376",
-      "Hash": "e4159ad4b227edb9191091e6385fd9f4642f86e890fa6b38d7b01a2a469b6abe"
+      "Hash": "3dacab1252426736baa566068e2557f7aa06c55fe6e72b27a59f61f630adfcd2"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RefreshRac1HudState(params:HudFeedbackDraft [  ]):void:private",
@@ -3692,7 +3692,7 @@
       "Owner": "#352",
       "Rationale": "Composes copied player/source observations and focused native equipment, collision, replay and renderer actions; existing native controllers retain rules and source authority. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged.",
       "ExpiresWith": "#376",
-      "Hash": "a1825a473e9d92a9042ee50380edb5418226df87c768cac33bf72081c4aa4e0f"
+      "Hash": "6bdedb959a45f8a378014cb2eaeddc8666e3c8109c7816740aff0792ef722221"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ToNumerics(:Vector3):System . Numerics . Vector3:private,static",
@@ -3734,14 +3734,14 @@
       "Owner": "#361",
       "Rationale": "Exact scene enemy composition: source path/random, current player contact facts, existing combat/reward presentation and bounded frog/Aridia neighbor callbacks. #364 moves amoeboid gates, contacts and family state into the world-scoped enemy adapter; existing native family and replay regressions guard its semantics. The world module owns the host and contacts; native controllers remain source-owned. Existing neighbor reset/state bindings expire as #362/#363/#368 migrate those owners; final composition removes this factory. No root reference or native algorithm escapes to the host. #362 moves all native frog/Queen/carrier state, contact, source timing and visual/camera leases into Rac1FrogEncounter; only guarded diagnostic composition and narrow camera/effect callbacks remain at the root. Native Frog/Queen checks and source-neutral player-selection rejection tests protect this intermediate boundary; #376 retires the remaining composition glue. #363 routes source-authored Aridia setup, script actors, 60Hz ticks, collision contacts, damage and retirement through Rac1EnemyHost.Aridia instead of reciprocal root delegates; only source-specific player damage descriptor binding remains in typed player ports.",
       "ExpiresWith": "#376",
-      "Hash": "783768858dcc4f6005a7363d00fe391747cd40e13ceb3acd568b599cea926d85"
+      "Hash": "388c2aaecbfa8ee1f5acf56da90fcb5de845f0f32124810329b0edaff444a070"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac2WorldModule(:RuntimeWorld,:GodotWorldResources):Rac2WorldModule:private",
       "Owner": "#373",
       "Rationale": "Lease-scoped source-world factory selects the existing scene resource, authentic R&C2 build and narrowly typed presentation/player damage ports. Native actor state remains source-owned; no player provider is selected. #373 native opening/actor tests and mixed-source acceptance protect this composition. #373 follow-up labels the individual port callbacks to prevent silent boolean delegate order mistakes; regression and mixed-source native smoke verified.",
       "ExpiresWith": "#376",
-      "Hash": "e9f3c8ca5745b83cfb400d81c514f7b79e2ecc5c1f9669bad2a8a4965aace1bd"
+      "Hash": "99b11e41813764e1cfb2f100a420dca967b0bae1761514bc7b825cc03e364bae"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::field:_movementNotices:GodotMovementStateNotice ?:private",
@@ -3811,7 +3811,7 @@
       "Owner": "#358",
       "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
       "ExpiresWith": "#376",
-      "Hash": "8f69c712a276d76ebbafdd05fef3f13e94435420b2e7c18a6ce83a6300a3e292"
+      "Hash": "2580382d004a3d429465ae241d58b737515db61e366e4b6a606f959b3865a5e0"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:ReplayBookmarkNavigation:GodotReplayBookmarkNavigation:get/:private",
@@ -3853,7 +3853,7 @@
       "Owner": "#369",
       "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
       "ExpiresWith": "#376",
-      "Hash": "3269b2fa5ba8ddaefd3819490a99767457fee47c5bfd73ba0c74ba9537eec0de"
+      "Hash": "29943b5a8bc6d18c342261d8ad16264c22dd8ab57806736dc808745f5e5d1575"
     },
     {
       "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame::method:EnsureRac1Particles():Rac1ParticleSession ?:private",
@@ -3888,21 +3888,21 @@
       "Owner": "#369",
       "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
       "ExpiresWith": "#376",
-      "Hash": "3c380bb73f6438070517924bb9632cfdf2750594fd0b2b2db6ee4be1cab64e87"
+      "Hash": "81346a79ffb66e619ebe63dda9f7929d4db3f7e2e204e0e1306432698a5cc5e6"
     },
     {
       "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame::method:SpawnRac1ExplosionBursts(:Vector3,:IReadOnlyList < Rac1BombExplosion . Burst >):void:private",
       "Owner": "#369",
       "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
       "ExpiresWith": "#376",
-      "Hash": "6adb4af6fda1ba4801a65b7f6105f09c38c5520200a6614f1d9c71f227e9b673"
+      "Hash": "b7919694e3d894e86b0996bc4ab072c256e93ed58aca8b8b5f34799afca5d539"
     },
     {
       "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame::method:SpawnRac1WeaponExplosion(:Rac1WeaponId,:Vector3):void:private",
       "Owner": "#369",
       "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
       "ExpiresWith": "#376",
-      "Hash": "83b8d22a47a8a205a809914d3dbf9cffa25998886717171cc50b624d1025b518"
+      "Hash": "d9f09eeb3d74296ed79be9f5654101c40fa7c2b7e6315530e5b011d47f5d4d6f"
     },
     {
       "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame::method:StepRac1BombEffectsPhysics():void:private",
@@ -5027,7 +5027,67 @@
     "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::field:_rac1WeaponSoundTrace:List < ( ulong Tick , int Class , int Sound , bool Loop ) >:private,readonly",
     "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::method:RecordRac1WeaponSound(:int,:int,:bool):void:private",
     "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::method:ResetRac1WeaponAudio(:bool):void:private",
-    "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::method:StepRac1WeaponAudio():void:private"
+    "game/scripts/OBPGame.Rac1WeaponAudio.cs::OBPGame::method:StepRac1WeaponAudio():void:private",
+    "game/scripts/OBPGame.CrateBolts.cs::OBPGame+PlayerBoltReceipt::declaration:ClassDeclaration:private,sealed:::( ActorInstanceKey actor )",
+    "game/scripts/OBPGame.CrateBolts.cs::OBPGame+PlayerBoltReceipt::field:Collected:bool:public",
+    "game/scripts/OBPGame.CrateBolts.cs::OBPGame+PlayerBoltReceipt::property:Actor:ActorInstanceKey:get/:public",
+    "game/scripts/OBPGame.CrateBolts.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.CrateBolts.cs::OBPGame::field:_playerEmittedRewardIndex:int:private",
+    "game/scripts/OBPGame.CrateBolts.cs::OBPGame::method:OnCrateBoltPickupEntered(:Node3D,:Area3D,:Rac2BoltPickup,:PlayerBoltReceipt ?):void:private",
+    "game/scripts/OBPGame.CrateBolts.cs::OBPGame::method:SpawnCrateBoltPickups(:Vector3,:Rac2Class500Payout):void:private",
+    "game/scripts/OBPGame.Rac1CrateSupply.cs::OBPGame+Rac1HostedNanotechCloud::declaration:ClassDeclaration:private,sealed:::( Node3D node , Rac1NanotechCloudSession motion )",
+    "game/scripts/OBPGame.Rac1CrateSupply.cs::OBPGame+Rac1HostedNanotechCloud::property:Age:float:get/,set/:public",
+    "game/scripts/OBPGame.Rac1CrateSupply.cs::OBPGame+Rac1HostedNanotechCloud::property:Motion:Rac1NanotechCloudSession:get/:public",
+    "game/scripts/OBPGame.Rac1CrateSupply.cs::OBPGame+Rac1HostedNanotechCloud::property:Node:Node3D:get/:public",
+    "game/scripts/OBPGame.Rac1CrateSupply.cs::OBPGame+Rac1HostedNanotechCloud::property:Travel:float:get/,set/:public",
+    "game/scripts/OBPGame.Rac1CrateSupply.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Rac1CrateSupply.cs::OBPGame::field:_rac1AmmoPickups:List \u003c ( Node3D Node , Rac1AmmoPickupSession Motion ) \u003e:private,readonly",
+    "game/scripts/OBPGame.Rac1CrateSupply.cs::OBPGame::field:_rac1NanotechClouds:List \u003c Rac1HostedNanotechCloud \u003e:private,readonly",
+    "game/scripts/OBPGame.Rac1CrateSupply.cs::OBPGame::method:ResetRac1CrateSupply():void:private",
+    "game/scripts/OBPGame.Rac1CrateSupply.cs::OBPGame::method:SpawnRac1CrateSupply(:RuntimeWorldScene . DynamicObjectNode,:Vector3):void:private",
+    "game/scripts/OBPGame.Rac1CrateSupply.cs::OBPGame::method:TickRac1CrateSupply(:NVector3,:NVector3):void:private",
+    "game/scripts/OBPGame.Rac1GoldBolts.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Rac1GoldBolts.cs::OBPGame::field:Rac1GoldBoltHostPickupRadius:float:const,private",
+    "game/scripts/OBPGame.Rac1GoldBolts.cs::OBPGame::field:_rac1GoldBoltNodes:Dictionary \u003c int , RuntimeWorldScene . DynamicObjectNode \u003e:private,readonly",
+    "game/scripts/OBPGame.Rac1GoldBolts.cs::OBPGame::field:_rac1GoldBolts:Rac1GoldBoltSession:private",
+    "game/scripts/OBPGame.Rac1GoldBolts.cs::OBPGame::method:ConfigureRac1GoldBolts(:RuntimeWorld,:RuntimeWorldScene . Result):void:private",
+    "game/scripts/OBPGame.Rac1GoldBolts.cs::OBPGame::method:ResetRac1GoldBolts():void:private",
+    "game/scripts/OBPGame.Rac1GoldBolts.cs::OBPGame::method:TickRac1GoldBolts():void:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::field:_rac1BoltSoundDelay:int:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::field:_rac1CrateBodies:Dictionary \u003c int , StaticBody3D \u003e:private,readonly",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::field:_rac1Debris:List \u003c ( Node3D Node , Rac1CrateDebris Motion ) \u003e:private,readonly",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::field:_rac1EffectMeshes:Dictionary \u003c int , List \u003c ( ArrayMesh Mesh , Material Material ) \u003e \u003e:private,readonly",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::field:_rac1EffectRandom:Rac1PickupRandom ?:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::field:_rac1FallingCrates:Dictionary \u003c int , ( Node3D Node , Rac1CrateFallSession Motion , float FootOffset ) \u003e:private,readonly",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::field:_rac1PickupAssets:Rac1PickupAssets . Catalogue ?:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::field:_rac1PickupMaterials:WorldMaterialFactory ?:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::field:_rac1PickupMotion:Dictionary \u003c int , Rac1BoltMotionSession \u003e:private,readonly",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::field:_rac1PickupSoundCount:int:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::field:_rac1PickupTickAccumulator:double:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::method:AddRac1CrateCollider(:RuntimeWorldScene . DynamicObjectNode):void:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::method:ConfigureRac1PickupPresentation(:RuntimeWorld):void:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::method:CreateRac1EffectNode(:int,:string,:bool):Node3D:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::method:DisableRac1CrateCollider(:int):void:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::method:FromEffectNative(:NVector3):Vector3:private,static",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::method:FromEffectOrientation(:System . Numerics . Quaternion):Quaternion:private,static",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::method:PlayRac1PickupSound(:int,:int,:Vector3):void:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::method:ProbeRac1EffectContact(:NVector3,:NVector3,:float):Rac1PickupContact ?:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::method:ResetRac1PickupPresentation():void:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::method:SpawnRac1BoltPickups(:Vector3,:IReadOnlyList \u003c Rac1BoltPickup \u003e):void:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::method:SpawnRac1CrateDebris(:RuntimeWorldScene . DynamicObjectNode):void:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::method:TickRac1CrateSupport():void:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::method:TickRac1Pickups(:double):void:private",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::method:ToEffectNative(:Vector3):NVector3:private,static",
+    "game/scripts/OBPGame.Rac1Pickups.cs::OBPGame::property:Rac1EffectRandom:Rac1PickupRandom:get/:private",
+    "game/scripts/OBPGame.Rac1PlacedBolts.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Rac1PlacedBolts.cs::OBPGame::field:_rac1PendingPlacedBolts:List \u003c ( Rac1PlacedBoltSession . Registration Registration , RuntimeWorldScene . DynamicObjectNode Node ) \u003e:private,readonly",
+    "game/scripts/OBPGame.Rac1PlacedBolts.cs::OBPGame::field:_rac1PlacedBoltNodes:Dictionary \u003c int , RuntimeWorldScene . DynamicObjectNode \u003e:private,readonly",
+    "game/scripts/OBPGame.Rac1PlacedBolts.cs::OBPGame::field:_rac1PlacedBoltProbeAfter:ulong:private",
+    "game/scripts/OBPGame.Rac1PlacedBolts.cs::OBPGame::method:CollectRac1HostedBolt(:int,:Node3D):int:private",
+    "game/scripts/OBPGame.Rac1PlacedBolts.cs::OBPGame::method:ConfigureRac1PlacedBolts(:RuntimeWorld,:RuntimeWorldScene . Result):void:private",
+    "game/scripts/OBPGame.Rac1PlacedBolts.cs::OBPGame::method:InitializeRac1PlacedBolts():void:private",
+    "game/scripts/OBPGame.Rac1PlacedBolts.cs::OBPGame::method:ResetRac1PlacedBoltPresentation():void:private"
   ],
   "RetiredAccess": [
     "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()"

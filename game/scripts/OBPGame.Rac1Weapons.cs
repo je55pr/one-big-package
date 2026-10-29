@@ -24,7 +24,7 @@ public partial class OBPGame
             _rac1Weapons.Equipped, _rac1EquipmentUseTicks, _rac1PyroEmitting,
             _rac1AdditionalWeapons?.Vacuuming == true, _rac1ArsenalHeld, _rac1Weapons.GetAmmo(19) > 0,
             _rac1WeaponWorldTick, _args.Rac1WeaponsSmoke), _player, _playerAudio?.Random,
-            _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets)?.Sounds);
+            _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets)?.Sounds);
 
     private void SetPlayerAudioPaused(bool paused)
     {
@@ -183,7 +183,7 @@ public partial class OBPGame
 
     private void StepRac1AdditionalWeapons()
     {
-        if (MovementReproduction.IsLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is null || _player is null || _rac1AdditionalWeapons is null) return;
+        if (MovementReproduction.IsLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is null || _player is null || _rac1AdditionalWeapons is null) return;
         bool held = PlayerLife.Alive && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active &&
             _rac1AdditionalFireRequested && !_rac1DetectorEquipped;
         _rac1AdditionalFireRequested = false;
@@ -259,7 +259,7 @@ public partial class OBPGame
                     view.Play(_rac1AdditionalWeapons?.Cargo.Count > 0 ? 6 : 1);
             }
             foreach (int sound in view.Step(controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(profile.HandSemantic))))
-                if (_equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets)?.Sounds?.TryGetValue((profile.ModelClass, sound), out var voice) != true || voice?.Loop != true)
+                if (_equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets)?.Sounds?.TryGetValue((profile.ModelClass, sound), out var voice) != true || voice?.Loop != true)
                     FusionWeapons.PlayNativeSound(profile.ModelClass, sound, _player!.GlobalPosition);
             if (_rac1StagedEquipment.TryGetValue(profile.Item, out var staged))
             {
@@ -383,8 +383,8 @@ public partial class OBPGame
         node.GlobalPosition = origin;
         _rac1EquipmentShots.Add(new(shot.Weapon, shot.Generation, node, origin, (end - origin).Normalized() * Rac1WeaponProfiles.BlasterSpeed)
         {
-            Motion = new(ToEffectNative(origin), ToEffectNative((end - origin).Normalized()), 40, Rac1WeaponProfiles.BlasterCarrierTicks),
-            AimPoint = ToEffectNative(EquipmentAim(origin, Rac1WeaponReconstructionPolicy.BlasterAimRange, .96f)),
+            Motion = new(Rac1LootPresentation.ToEffectNative(origin), Rac1LootPresentation.ToEffectNative((end - origin).Normalized()), 40, Rac1WeaponProfiles.BlasterCarrierTicks),
+            AimPoint = Rac1LootPresentation.ToEffectNative(EquipmentAim(origin, Rac1WeaponReconstructionPolicy.BlasterAimRange, .96f)),
         });
         SpawnEquipmentFlash(origin, 27, EquipmentColor(Rac1WeaponProfiles.BlasterMuzzleColor), .35f, 4);
     }
@@ -393,21 +393,21 @@ public partial class OBPGame
     {
         FusionWeapons.PlayNativeSound(0, 26, _player!.GlobalPosition); // hero_sound_start(0x1a,0), shared glove throw.
         float yaw = (float)_player!.Rac1CurrentYaw;
-        NVector3 body = ToEffectNative(_player.GlobalPosition) + new NVector3(0, 0, (float)-(_avatarPresentation.Avatar?.BaseHeight ?? -.7));
+        NVector3 body = Rac1LootPresentation.ToEffectNative(_player.GlobalPosition) + new NVector3(0, 0, (float)-(_avatarPresentation.Avatar?.BaseHeight ?? -.7));
         var origin = Rac1BombProjectileSession.LaunchOrigin(body, yaw);
-        var target = ToEffectNative(EquipmentAim(FromEffectNative(origin), 8.5f, .94f));
+        var target = Rac1LootPresentation.ToEffectNative(EquipmentAim(Rac1LootPresentation.FromEffectNative(origin), 8.5f, .94f));
         var velocity = Rac1BombProjectileSession.LaunchVelocity(origin, target, yaw);
         // Shared glove-origin family is recovered; this flight adapter currently
         // uses the recovered Bomb arc pending the complete class74/230 integrator.
         int nativeClass = shot.Weapon == Rac1WeaponId.MineGlove ? 74 : 230;
         var view = CreateEquipmentWorldView(nativeClass);
-        view.Play(0); view.GlobalPosition = FromEffectNative(origin);
+        view.Play(0); view.GlobalPosition = Rac1LootPresentation.FromEffectNative(origin);
         if (nativeClass == 230) view.Scale = Vector3.One * Rac1ArsenalRules.DoomCanisterHeldScale;
         var flying = new HostedEquipmentShot(shot.Weapon, shot.Generation, view, view.GlobalPosition,
             new(-velocity.X, velocity.Z, velocity.Y))
         { Canister = nativeClass == 230 ? new() : null };
         _rac1EquipmentShots.Add(flying);
-        var start = FromEffectNative(new(body.X, body.Y, origin.Z));
+        var start = Rac1LootPresentation.FromEffectNative(new(body.X, body.Y, origin.Z));
         if (EquipmentContact(start, view.GlobalPosition, .12f) is { } obstruction)
         { flying.Position = obstruction.Point; flying.GroundHeight = obstruction.Point.Y; flying.Grounded = true; flying.Step = Vector3.Zero; }
         if (nativeClass == 74)

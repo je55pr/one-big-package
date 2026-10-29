@@ -24,7 +24,7 @@ internal sealed class Rac1WorldModule : IDisposable
     private bool _configured;
     private bool _disposed;
 
-    internal Rac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene, Rac1PickupRandom random,
+    internal Rac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene, Rac1PickupRandom random, Rac1LootPorts loot,
         Rac1WorldResetPorts reset, Rac1WorldActorPorts actors, Rac1WorldTickPorts ticks,
         Rac1PlayerGameplayPorts player, Rac1WorldContactPorts contacts, Rac1GameplayHudPorts hud,
         Rac1TaxiHostPorts taxis, Func<Rac1WorldModule, Rac1EnemyHost> enemies)
@@ -32,11 +32,13 @@ internal sealed class Rac1WorldModule : IDisposable
         _world = world; _scene = scene; _reset = reset; _actors = actors; _ticks = ticks;
         _playerPorts = player; _contacts = contacts; _binding = new(player);
         Context = new(world.LevelId, random);
+        Loot = new(scene, Context, Presentation, loot);
         Taxis = new(taxis);
         Enemies = enemies(this);
         Hud = new(world, Context, Presentation, hud, () => _disposed);
     }
 
+    internal Rac1LootPresentation Loot { get; }
     internal Rac1WorldContext Context { get; }
     internal Rac1WorldPresentation Presentation { get; } = new();
     internal Rac1GameplayHudPresenter Hud { get; }
@@ -155,7 +157,8 @@ internal sealed class Rac1WorldModule : IDisposable
             finally
             {
                 Taxis.Dispose();
-                Presentation.Dispose();
+                try { Loot.Dispose(); }
+                finally { Presentation.Dispose(); }
                 Context.BombGlove = null;
                 Context.BombFireRequested = false;
                 Context.CombatStatus = "off";

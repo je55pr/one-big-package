@@ -98,7 +98,7 @@ public partial class OBPGame
             // The retail target updater uses the Metal Detector's +0x10
             // tool-socket position. The player-body probe is an explicit
             // host adapter until the gadget's original socket is imported.
-            NVector3 nativePlayer = ToEffectNative(_player.GlobalPosition);
+            NVector3 nativePlayer = Rac1LootPresentation.ToEffectNative(_player.GlobalPosition);
             _rac1DetectorNearest = _rac1MetalDetector.FindNearest(nativePlayer);
             if (_rac1MetalDetector.TryExtract(_rac1DetectorNearest, held, _rac1DetectorHeldTicks)
                 is not { } extracted) continue;
@@ -107,7 +107,7 @@ public partial class OBPGame
             // Source emits 5-value bolt fragments via class-0x13 machinery
             // before they can be collected. Use the existing physical-bolt
             // host rather than immediately crediting the wallet.
-            SpawnRac1BoltPickups(_player.GlobalPosition + Vector3.Up * .5f,
+            Rac1World.Loot.SpawnRac1BoltPickups(_player.GlobalPosition + Vector3.Up * .5f,
                 Enumerable.Range(0, extracted.FiveBoltBursts)
                     .SelectMany(_ => Rac1World.Context.BoltPickups.Emit(Rac1MetalDetectorSession.BoltsPerBurst)).ToArray());
             Rac1World.Context.CombatStatus =
@@ -128,7 +128,7 @@ public partial class OBPGame
 
         // Host-only directional substitute until the original handheld
         // detector mesh, pointer bone and native needle limits are hosted.
-        Vector3 target = FromEffectNative(nearest.NativePosition);
+        Vector3 target = Rac1LootPresentation.FromEffectNative(nearest.NativePosition);
         Vector3 to = target - _player.GlobalPosition;
         to.Y = 0;
         Vector3 forward = EquipmentForward;

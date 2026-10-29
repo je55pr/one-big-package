@@ -119,12 +119,12 @@ public partial class OBPGame
             double progress = _rac1NovalisCranks.Turn(crankId, Rac1CrankHostProgressPerTick * magnitude);
             if (starting)
             {
-                PlayRac1PickupSound(Rac1NovalisCrankDoorSession.CrankClass, 0, closest.Root.GlobalPosition);
+                Rac1World.Loot.PlayRac1PickupSound(Rac1NovalisCrankDoorSession.CrankClass, 0, closest.Root.GlobalPosition);
                 // Native door-half update starts its moving sound as soon as the
                 // crank's PVar progress changes, and uses sound 1 at an endpoint.
                 var movingDoor = _rac1NovalisCranks.Doors.FirstOrDefault(item => item.CrankInstanceIndex == crankId);
                 if (movingDoor != default)
-                    PlayRac1PickupSound(Rac1NovalisCrankDoorSession.DoorClass, 0,
+                    Rac1World.Loot.PlayRac1PickupSound(Rac1NovalisCrankDoorSession.DoorClass, 0,
                         _rac1NovalisDoorNodes[movingDoor.InstanceIndex].Root.GlobalPosition);
             }
             foreach (var door in _rac1NovalisCranks.Doors.Where(door => door.CrankInstanceIndex == crankId))
@@ -149,7 +149,7 @@ public partial class OBPGame
                 {
                     OnRac1NovalisCrankMusic(crankId);
                     var door = _rac1NovalisCranks.Doors.First(item => item.CrankInstanceIndex == crankId);
-                    PlayRac1PickupSound(Rac1NovalisCrankDoorSession.DoorClass, 1,
+                    Rac1World.Loot.PlayRac1PickupSound(Rac1NovalisCrankDoorSession.DoorClass, 1,
                         _rac1NovalisDoorNodes[door.InstanceIndex].Root.GlobalPosition);
                 }
                 Rac1World.Context.CombatStatus = $"Novalis crank {crankId} opened its paired doors";

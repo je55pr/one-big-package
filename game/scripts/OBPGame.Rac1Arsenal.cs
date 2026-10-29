@@ -136,7 +136,7 @@ public partial class OBPGame
         int cls = weapon switch { Rac1WeaponId.VisibombGun => 172, Rac1WeaponId.Ryno => 457, _ => 153 };
         var view = CreateEquipmentWorldView(cls); view.Play(0); view.GlobalPosition = origin;
         if (weapon == Rac1WeaponId.Ryno) view.Scale = Vector3.One * Rac1ArsenalRules.RynoRocketScale;
-        var motion = new Rac1ArsenalProjectile(ToEffectNative(origin), ToEffectNative(direction),
+        var motion = new Rac1ArsenalProjectile(Rac1LootPresentation.ToEffectNative(origin), Rac1LootPresentation.ToEffectNative(direction),
             weapon switch { Rac1WeaponId.VisibombGun => Rac1ArsenalHostPolicy.VisibombSpeed, Rac1WeaponId.Ryno => Rac1ArsenalRules.RynoInitialSpeed, _ => Rac1ArsenalRules.RocketSpeed },
             weapon switch { Rac1WeaponId.VisibombGun => Rac1ArsenalRules.VisibombLifetime, Rac1WeaponId.Ryno => Rac1ArsenalRules.RynoRocketLifetime, _ => Rac1ArsenalRules.RocketLifetime });
         _rac1ArsenalMissiles.Add(new(weapon, ++_rac1ArsenalId, view, motion, target));
@@ -157,22 +157,22 @@ public partial class OBPGame
         }
         foreach (var missile in _rac1ArsenalMissiles.ToArray())
         {
-            var from = FromEffectNative(missile.Motion.Position);
+            var from = Rac1LootPresentation.FromEffectNative(missile.Motion.Position);
             bool guided = missile.Weapon == Rac1WeaponId.VisibombGun;
             NVector3? target = missile.Target is { } victim && IsRac1WeaponAimTarget(victim)
-                ? ToEffectNative(victim.Root.GlobalPosition + Vector3.Up * .5f) : null;
+                ? Rac1LootPresentation.ToEffectNative(victim.Root.GlobalPosition + Vector3.Up * .5f) : null;
             if (guided)
             {
                 var steering = _player.Rac1RemoteSteering;
-                var direction = FromEffectNative(missile.Motion.Direction);
+                var direction = Rac1LootPresentation.FromEffectNative(missile.Motion.Direction);
                 var right = direction.Cross(Vector3.Up).Normalized();
                 var desired = (direction + right * steering.X * .15f - Vector3.Up * steering.Y * .15f).Normalized();
-                target = ToEffectNative(from + desired * 30);
+                target = Rac1LootPresentation.ToEffectNative(from + desired * 30);
             }
             bool ended = missile.Motion.Step(target, guided ? Rac1ArsenalHostPolicy.GuidedTurnRate : 3.5f,
                 guided ? 0 : 30, guided ? Rac1ArsenalHostPolicy.VisibombSpeed :
                     missile.Weapon == Rac1WeaponId.Ryno ? Rac1ArsenalRules.RynoMaximumSpeed : Rac1ArsenalRules.RocketMaximumSpeed);
-            var to = FromEffectNative(missile.Motion.Position);
+            var to = Rac1LootPresentation.FromEffectNative(missile.Motion.Position);
             var hit = EquipmentContact(from, to, .15f);
             if (hit is not null || ended || guided && (_player.Rac1RemoteDetonate ||
                 _rac1Weapons.Equipped != Rac1WeaponId.VisibombGun || !PlayerLife.Alive))
@@ -186,12 +186,12 @@ public partial class OBPGame
                 if (guided) EndRac1GuidedCamera();
                 continue;
             }
-            missile.View.GlobalPosition = to; OrientArsenalView(missile.View, FromEffectNative(missile.Motion.Direction));
+            missile.View.GlobalPosition = to; OrientArsenalView(missile.View, Rac1LootPresentation.FromEffectNative(missile.Motion.Direction));
             missile.View.Step();
             if (_rac1WeaponWorldTick % 3 == 0) SpawnEquipmentFlash(from, 25, new(.7f, .65f, .6f, .45f), .3f, 18);
             if (guided && _rac1MissileCamera is not null)
             {
-                var forward = FromEffectNative(missile.Motion.Direction);
+                var forward = Rac1LootPresentation.FromEffectNative(missile.Motion.Direction);
                 _rac1MissileCamera.GlobalPosition = to - forward * .7f + Vector3.Up * .15f;
                 _rac1MissileCamera.LookAt(to + forward * 4);
             }
@@ -318,7 +318,7 @@ public partial class OBPGame
                 chicken.Enemy.NeedsGroundPlacement = false;
             }
             chicken.Age++; var body = chicken.Enemy.Body;
-            if (chicken.Age % 90 == 1) chicken.Direction = EquipmentForward.Rotated(Vector3.Up, Rac1EffectRandom.Signed(0, MathF.PI));
+            if (chicken.Age % 90 == 1) chicken.Direction = EquipmentForward.Rotated(Vector3.Up, _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(0, MathF.PI));
             bool supported = EquipmentGround(body.GlobalPosition + chicken.Direction * .5f, .4f, .8f) is not null;
             body.Velocity = (supported ? chicken.Direction : Vector3.Zero) * .8f + Vector3.Down * 2;
             body.MoveAndSlide(); chicken.Enemy.Node.Root.GlobalPosition = body.GlobalPosition;
@@ -466,7 +466,7 @@ public partial class OBPGame
         mesh.SurfaceBegin(Mesh.PrimitiveType.Triangles);
         var points = new List<Vector3> { from };
         for (int part = 1; part < 10; part++) points.Add(from.Lerp(to, part / 10f) + new Vector3(
-            Rac1EffectRandom.Signed(0, .13f), Rac1EffectRandom.Signed(0, .13f), Rac1EffectRandom.Signed(0, .13f)));
+            _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(0, .13f), _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(0, .13f), _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(0, .13f)));
         points.Add(to);
         for (int part = 0; part + 1 < points.Count; part++)
             foreach (var p in new[] { points[part] - side, points[part] + side, points[part + 1] + side,
@@ -478,7 +478,7 @@ public partial class OBPGame
     private void DrawRac1TeslaRibbons(int index, Vector3 from, Vector3 to, Rac1EffectAssets effects)
     {
         _rac1TeslaEffectRandom ??= Rac1PickupRandom.FromSeed(unchecked((uint)(_args.FixedSeed ?? System.Environment.TickCount)));
-        var ribbons = _rac1TeslaPresentation.ProjectTargetLine(ToEffectNative(from), ToEffectNative(to), _rac1TeslaEffectRandom);
+        var ribbons = _rac1TeslaPresentation.ProjectTargetLine(Rac1LootPresentation.ToEffectNative(from), Rac1LootPresentation.ToEffectNative(to), _rac1TeslaEffectRandom);
         Vector3 eye = GetViewport().GetCamera3D()?.GlobalPosition ?? from + Vector3.Up * 5;
         for (int layer = 0; layer < ribbons.Count; layer++)
         {
@@ -512,7 +512,7 @@ public partial class OBPGame
             var positions = new List<double>(); var uvs = new List<float>(); var colors = new List<float>();
             uint rgba = ribbon.Color;
             var tint = new Color((rgba & 255) / 128f, (rgba >> 8 & 255) / 128f, (rgba >> 16 & 255) / 128f, (rgba >> 24) / 128f);
-            var points = ribbon.Points.Select(FromEffectNative).ToArray();
+            var points = ribbon.Points.Select(Rac1LootPresentation.FromEffectNative).ToArray();
             var left = new Vector3[points.Length]; var right = new Vector3[points.Length];
             for (int i = 0; i < points.Length; i++)
             {

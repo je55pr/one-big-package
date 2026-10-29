@@ -67,7 +67,7 @@ public partial class OBPGame
     }
 
     private Rac1MissionPlayerFacts Rac1MissionPlayer(bool interact = false) => new(
-        ToEffectNative(_player!.GlobalPosition), _player.Rac1CurrentYaw, _rac1Nanotech.Probe().Nanotech,
+        Rac1LootPresentation.ToEffectNative(_player!.GlobalPosition), _player.Rac1CurrentYaw, _rac1Nanotech.Probe().Nanotech,
         InteractPressed: interact,
         GameplayInhibited: !_player.Rac1GameplayAllowsOrdinaryMovement || _player.DevelopmentControls.FlyEnabled ||
             _player.Rac1RemoteControlActive || QuickSelectOpen);

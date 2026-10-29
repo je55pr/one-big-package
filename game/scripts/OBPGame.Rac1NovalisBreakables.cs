@@ -41,7 +41,7 @@ public partial class OBPGame
         // Class-specific fragments and bolt payouts require native consequence
         // recovery. Do not silently award arbitrary currency here.
         node.ApplyState(node.State.WithPresence(OBP.Runtime.Gameplay.RuntimeEntityPresence.Inactive));
-        PlayRac1PickupSound(node.Source.NativeClassId, 0, node.Root.GlobalPosition);
+        Rac1World.Loot.PlayRac1PickupSound(node.Source.NativeClassId, 0, node.Root.GlobalPosition);
         if (node.Source.NativeClassId == Rac1NovalisBreakableSession.MushroomClass && _player is not null)
         {
             // Retail plant_bolts_drop_l1 only enables its 4..7-value drop
@@ -50,10 +50,10 @@ public partial class OBPGame
             float distance = new Vector2(hero.X - plant.X, hero.Z - plant.Z).Length();
             if (Rac1NovalisBreakableSession.PlantBoltRewardAdmitted(distance))
             {
-                int value = Rac1EffectRandom.Inclusive(
+                int value = _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Inclusive(
                     Rac1NovalisBreakableSession.PlantBoltMinimum,
                     Rac1NovalisBreakableSession.PlantBoltMaximum);
-                SpawnRac1BoltPickups(plant, Rac1World.Context.BoltPickups.Emit(value));
+                Rac1World.Loot.SpawnRac1BoltPickups(plant, Rac1World.Context.BoltPickups.Emit(value));
             }
         }
         GD.Print($"[rac1-novalis] {node.Source.NativeClassId} instance {node.Source.InstanceIndex} " +

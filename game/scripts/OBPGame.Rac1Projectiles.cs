@@ -20,7 +20,7 @@ public partial class OBPGame
 
     private void StepRac1BombWeaponPhysics()
     {
-        if (_equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is null || Rac1World.Context.BombGlove is null || _player is null || !PlayerLife.Alive) return;
+        if (_equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is null || Rac1World.Context.BombGlove is null || _player is null || !PlayerLife.Alive) return;
         bool fire = Rac1World.Context.BombFireRequested && !_rac1DetectorEquipped &&
             !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active;
         Rac1World.Context.BombFireRequested = false;
@@ -68,7 +68,7 @@ public partial class OBPGame
         if (_sceneResult is null || _player is null) return;
         float yaw = (float)_player.Rac1CurrentYaw;
         // Host feet-to-native body-origin mapping, shared with avatar alignment.
-        NVector3 body = ToEffectNative(_player.GlobalPosition) + new NVector3(0, 0, (float)-(_avatarPresentation.Avatar?.BaseHeight ?? -.7));
+        NVector3 body = Rac1LootPresentation.ToEffectNative(_player.GlobalPosition) + new NVector3(0, 0, (float)-(_avatarPresentation.Avatar?.BaseHeight ?? -.7));
         NVector3 origin = Rac1BombProjectileSession.LaunchOrigin(body, yaw);
         NVector3 forward = new(MathF.Cos(yaw), MathF.Sin(yaw), 0);
         NVector3 target = origin + forward * 8.5f;
@@ -77,28 +77,28 @@ public partial class OBPGame
         // reticle/target-history selector and strafe aiming remain separate work.
         var candidates = Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes)
             .Where(node => IsInstanceValid(node.Root) && Rac1World.Enemies.IsRac1GameplayActive(node) && Rac1EnemyHost.HasRac1HostContactGeometry(node))
-            .Select(node => (Node: node, Point: ToEffectNative(node.Root.GlobalPosition + Vector3.Up * .5f)));
+            .Select(node => (Node: node, Point: Rac1LootPresentation.ToEffectNative(node.Root.GlobalPosition + Vector3.Up * .5f)));
         if (ActorHost.Active)
-            candidates = ActorHost.Combat.ReadGeometry().Select(target => (target.Node, ToEffectNative(target.Bounds.GetCenter())));
+            candidates = ActorHost.Combat.ReadGeometry().Select(target => (target.Node, Rac1LootPresentation.ToEffectNative(target.Bounds.GetCenter())));
         var aim = candidates
             .Select(candidate => (candidate.Node, candidate.Point, Offset: candidate.Point - origin))
             .Where(candidate => candidate.Offset.LengthSquared() is > .25f and < 225f &&
                 NVector3.Dot(NVector3.Normalize(candidate.Offset), forward) > .94f &&
-                BombHasLineOfSight(FromEffectNative(origin), FromEffectNative(candidate.Point)))
+                BombHasLineOfSight(Rac1LootPresentation.FromEffectNative(origin), Rac1LootPresentation.FromEffectNative(candidate.Point)))
             .OrderBy(candidate => Rac1World.Enemies.Roster.ContainsKey(candidate.Node.Source.InstanceIndex) ? 0 : 1)
             .ThenBy(candidate => candidate.Offset.LengthSquared()).FirstOrDefault();
         if (aim.Node is not null) target = aim.Point;
         var motion = new Rac1BombProjectileSession(origin, Rac1BombProjectileSession.LaunchVelocity(origin, target, yaw),
-            new(Rac1EffectRandom.Angle(), Rac1EffectRandom.Angle(), Rac1EffectRandom.Angle()));
+            new(_persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Angle(), _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Angle(), _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Angle()));
         var node = FusionWeapons.CreateNativeEffect(121, $"Rac1RetailBomb_{shot.Projectile.ProjectileId}_Class121");
-        node.GlobalPosition = FromEffectNative(origin);
+        node.GlobalPosition = Rac1LootPresentation.FromEffectNative(origin);
         SetBombOrientation(node, motion.Rotation);
         var hosted = new Rac1HostedProjectile(node, motion, _rac1BombThrowGeneration);
         Rac1World.Presentation.Projectiles.Add(shot.Projectile.ProjectileId, hosted);
         // 2ad350..2ad390 checks the body-to-launch segment at launch height.
         // A clear muzzle endpoint alone would let a bomb spawn beyond a thin wall.
-        var clearanceStart = FromEffectNative(new(body.X, body.Y, origin.Z));
-        if (ProbeBombWorldContact(clearanceStart, FromEffectNative(origin)) is { } obstruction)
+        var clearanceStart = Rac1LootPresentation.FromEffectNative(new(body.X, body.Y, origin.Z));
+        if (ProbeBombWorldContact(clearanceStart, Rac1LootPresentation.FromEffectNative(origin)) is { } obstruction)
             ImpactRac1Bomb(hosted, obstruction);
     }
 
@@ -112,8 +112,8 @@ public partial class OBPGame
             if (!IsInstanceValid(projectile.Node)) { RetireBomb(pair.Key, projectile); continue; }
             if (motion.Flying)
             {
-                Vector3 from = FromEffectNative(motion.Position);
-                Vector3 to = FromEffectNative(motion.AdvanceFlight());
+                Vector3 from = Rac1LootPresentation.FromEffectNative(motion.Position);
+                Vector3 to = Rac1LootPresentation.FromEffectNative(motion.AdvanceFlight());
                 Vector3? contact = ProbeBombWorldContact(from, to);
                 float closest = contact is { } hit ? from.DistanceTo(hit) : float.PositiveInfinity;
                 foreach (var target in Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes))
@@ -166,13 +166,13 @@ public partial class OBPGame
     private void ImpactRac1Bomb(Rac1HostedProjectile projectile, Vector3 position)
     {
         if (!projectile.Motion.Flying) return;
-        projectile.Motion.Impact(ToEffectNative(position));
+        projectile.Motion.Impact(Rac1LootPresentation.ToEffectNative(position));
         projectile.Node.Visible = false;
         _rac1BombImpactCount++;
         // The sweep above supplies contact admission; resolve a terrain normal
         // once at impact for the native reflected spray. Enemy-body contact
         // and an expired flight retain the upward fallback.
-        Vector3 velocity = FromEffectNative(projectile.Motion.Velocity);
+        Vector3 velocity = Rac1LootPresentation.FromEffectNative(projectile.Motion.Velocity);
         Vector3 direction = velocity.LengthSquared() > .000001f ? velocity.Normalized() : Vector3.Down;
         var ray = PhysicsRayQueryParameters3D.Create(position - direction * .4f, position + direction * .4f);
         ray.Exclude = Rac1DamageableRayExclusions();
@@ -206,7 +206,7 @@ public partial class OBPGame
             _rac1BombOcclusionFrame = Engine.GetPhysicsFrames();
             _rac1BombOcclusionPlayer = player.GetRid();
             _rac1BombOcclusionExclusions = [player.GetRid()];
-            foreach (var body in _rac1CrateBodies.Values.Concat<CollisionObject3D>(Rac1World.Enemies.Roster.Values.Select(enemy => enemy.Body)))
+            foreach (var body in Rac1World.Loot.CrateBodies.Values.Concat<CollisionObject3D>(Rac1World.Enemies.Roster.Values.Select(enemy => enemy.Body)))
                 if (IsInstanceValid(body)) _rac1BombOcclusionExclusions.Add(body.GetRid());
             ActorHost.AddRayExclusions(_rac1BombOcclusionExclusions);
         }
@@ -215,7 +215,7 @@ public partial class OBPGame
 
     private void ResolveRac1BombBlast(long id, Rac1BombProjectileSession motion, long generation)
     {
-        Vector3 origin = FromEffectNative(motion.Position);
+        Vector3 origin = Rac1LootPresentation.FromEffectNative(motion.Position);
         ResolveRac1NovalisBombBreakables(origin, motion.BlastRadius);
         var facts = Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes)
             .Where(node => IsInstanceValid(node.Root) && Rac1World.Enemies.IsRac1GameplayActive(node) && Rac1EnemyHost.HasRac1HostContactGeometry(node))
@@ -256,6 +256,6 @@ public partial class OBPGame
     }
 
     private static void SetBombOrientation(Node3D node, NVector3 angles) =>
-        node.Quaternion = FromEffectOrientation(System.Numerics.Quaternion.CreateFromYawPitchRoll(angles.Y, angles.X, angles.Z));
+        node.Quaternion = Rac1LootPresentation.FromEffectOrientation(System.Numerics.Quaternion.CreateFromYawPitchRoll(angles.Y, angles.X, angles.Z));
 
 }

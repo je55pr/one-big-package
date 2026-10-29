@@ -66,7 +66,7 @@ public partial class OBPGame
             NVector3 position = mechanism.Position;
             Vector3 target = new(-position.X, position.Z, position.Y);
             if (node.Root.GlobalPosition != target) node.Root.GlobalPosition = target;
-            if (mechanism.Sound is int sound) PlayRac1PickupSound(mechanism.NativeClassId, sound, node.Root.GlobalPosition);
+            if (mechanism.Sound is int sound) Rac1World.Loot.PlayRac1PickupSound(mechanism.NativeClassId, sound, node.Root.GlobalPosition);
         }
     }
 }

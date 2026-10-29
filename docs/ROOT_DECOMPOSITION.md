@@ -835,3 +835,45 @@ work does not alter the source-native effect generators or the dedicated
 effects project (#280/#282-#285). Source-free and authorized native validation
 should distinguish engine assertions from an optional human visual/audio
 review. The latter remains a separate acceptance gate.
+
+## #365 R&C1 loot and cross-game crate reward presentation
+
+Five legacy root fragments were retired: `OBPGame.Rac1Pickups.cs`,
+`OBPGame.Rac1CrateSupply.cs`, `OBPGame.Rac1PlacedBolts.cs`,
+`OBPGame.Rac1GoldBolts.cs`, and `OBPGame.CrateBolts.cs`.
+Despite the last fragment's old name, its physical class-500 bolts are
+**R&C2**, so they are deliberately *not* processed by the R&C1 host.
+
+`Rac1WorldModule.Loot` is the R&C1 world-lease-owned
+`Rac1LootPresentation`. Its files hold retail pickup model/material caches,
+the 60 Hz motion/attraction tick and sound throttle, authored placed-bolt
+registration and delayed physics initialization, gold-bolt placement and
+collectible visibility, crate colliders/falling motion, debris, and the
+nanotech/ammo presentations. `Rac1WorldContext` retains the native crate,
+bolt and placed-bolt sessions. `Rac1LootPorts` forward only explicit player
+state, weapon/health checks, sound, source lookup, HUD feedback and campaign
+persistence; R&C1's native payout/collection calculations and diagnostic data
+remain unchanged. The shared effect RNG retains its across-world lifetime
+in `PlayerSessionHost` and its replay-reset entrypoint.
+
+`Rac2WorldModule.CrateBolts` owns the separate
+`Rac2CrateBoltPresentation`. Native `Rac2FreshBoltSession` continues to
+determine which class-500 pickup IDs and denominations may be collected.
+`Rac2CrateBoltPorts` register and credit the *original* actor identity,
+generation, pickup ID and build identifier through the persistent player-life
+authority. The placeholder orb presentation is still explicitly provisional,
+and a stale or disposed world lease can no longer accept pickup callbacks.
+No gold-bolt, wallet, ammo, health or crate-reward formula moved into the
+application root.
+
+On world retirement, the R&C1 presenter clears transient nodes, collectors,
+colliders, cached meshes, sound/tick state and authored-node references; it
+does not free the original authored world roots. R&C2's presenter disables
+and queues its owned pickup areas, and its native reward session ends with the
+same scene lease. The world modules retire these presenters before the scene
+root is unloaded. These owners are *not* a new cross-game reward service.
+
+Root boundary policy records the exact removed members as retirements and
+updates only the affected composition hashes; the frozen origin ledger is
+intact. The existing host coordinator architecture assertion now checks the
+new presentation owner instead of expecting a root partial.
