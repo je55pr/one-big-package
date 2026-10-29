@@ -828,17 +828,21 @@ OBP uses the **.NET 10 LTS SDK 10.0.403** (or a newer servicing patch in the sam
 On Windows, run from the repository root:
 
 ```powershell
-# Only needed if dotnet --version reports that the required SDK is missing:
-./tools/bootstrap-dotnet.ps1  # SDK 10 + .NET 8 runtime in .tools/dotnet
-./tools/bootstrap-dev.ps1     # automatically uses the local SDK if installed
-./tools/check-toolchain.ps1   # prints and verifies SDK + C# versions
+# Run if a compatible .NET 10 SDK or the .NET 8 runtime is missing:
+./tools/bootstrap-dotnet.ps1  # installs both in .tools/dotnet
+./tools/bootstrap-dev.ps1     # first-time project setup; uses a compatible local SDK
+./tools/check-toolchain.ps1   # checks SDK, C# and .NET 8 runtime
 ./tools/play.ps1
+
+# In a new PowerShell session, for direct dotnet commands using a local install:
+$env:DOTNET_ROOT = (Resolve-Path .tools/dotnet).Path
+$env:PATH = "$env:DOTNET_ROOT;$env:PATH"
 ```
 
 On Linux:
 
 ```bash
-# Skip the first three lines if a compatible SDK is already on PATH:
+# Skip these three lines only if the pinned SDK and .NET 8 runtime are both present:
 bash tools/bootstrap-dotnet.sh
 export DOTNET_ROOT="$PWD/.tools/dotnet"
 export PATH="$DOTNET_ROOT:$PATH"
@@ -847,7 +851,7 @@ bash tools/check-toolchain.sh
 bash tools/test.sh Release
 ```
 
-For normal CLI use, work **from the repository root** so `global.json` is discovered (the build/test wrappers select it even when invoked from elsewhere). After a project-local install in a new shell, add `.tools/dotnet` to that shell's `PATH` as above. To diagnose a mismatch, run `dotnet --list-sdks`, `dotnet --version` and the platform's `tools/check-toolchain` script; on failure, install SDK 10.0.403 from the [.NET 10 download page](https://dotnet.microsoft.com/download/dotnet/10.0) or use the local bootstrap script. No global configuration or package upgrades are necessary.
+For normal CLI use, work **from the repository root** so `global.json` is discovered (the build/test wrappers select it even when invoked from elsewhere). After a project-local install in a new shell, add `.tools/dotnet` to that shell's `PATH` using the Windows or Bash commands above. To diagnose a mismatch, run `dotnet --list-sdks`, `dotnet --version` and the platform's `tools/check-toolchain` script; on failure, install SDK 10.0.403 from the [.NET 10 download page](https://dotnet.microsoft.com/download/dotnet/10.0) or use the local bootstrap script. No global configuration or package upgrades are necessary.
 
 The bootstrap script downloads the project's pinned Godot .NET version, builds the project and syncs Godot C# script identity sidecars. First launch configures all three games; subsequent launches resume your saved game or open the title and World Select. Setup returns only when the configured game files need repair.
 

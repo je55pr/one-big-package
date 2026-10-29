@@ -24,6 +24,11 @@ jobs:
         with:
           global-json-file: global.json
           dotnet-version: '8.0.x' # Also install runtime 8 for net8.0 tools and tests
+      - name: Test SDK feature-band and bootstrap policy
+        run: bash tools/test-dotnet-toolchain.sh
+      - name: Test PowerShell toolchain policy
+        shell: pwsh
+        run: ./tools/test-dotnet-toolchain.ps1
       - name: Verify pinned .NET SDK and C# language version
         run: bash tools/check-toolchain.sh
       - run: dotnet restore OneBigPackage.sln

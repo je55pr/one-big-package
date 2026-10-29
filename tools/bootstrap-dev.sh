@@ -5,9 +5,11 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(dirname "$script_dir")"
 cd "$root"
+source "$script_dir/dotnet-toolchain.sh"
+required="$(obp_required_sdk "$root")"
 
-# Prefer a bootstrapped project-local SDK over an unrelated system SDK.
-if [ -x "$root/.tools/dotnet/dotnet" ] && "$root/.tools/dotnet/dotnet" --version >/dev/null 2>&1; then
+# Prefer only a complete, compatible local SDK/runtime over a working system SDK.
+if [ -x "$root/.tools/dotnet/dotnet" ] && obp_has_toolchain "$root/.tools/dotnet/dotnet" "$required"; then
   export DOTNET_ROOT="$root/.tools/dotnet"
   export PATH="$DOTNET_ROOT:$PATH"
 fi

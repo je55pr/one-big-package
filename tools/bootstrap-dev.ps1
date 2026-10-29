@@ -6,14 +6,15 @@
 #>
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'dotnet-toolchain.ps1')
+$requiredSdk = (Get-Content (Join-Path $root 'global.json') -Raw | ConvertFrom-Json).sdk.version
 
-# Prefer an SDK bootstrapped locally, without modifying machine PATH.
+# Prefer a complete project-local SDK/runtime without modifying machine PATH.
 $localDotnet = Join-Path $root '.tools/dotnet'
 if (Test-Path (Join-Path $localDotnet 'dotnet.exe')) {
   Push-Location $root
   try {
-    $localVersion = & (Join-Path $localDotnet 'dotnet.exe') --version 2>&1
-    $useLocal = $LASTEXITCODE -eq 0
+    $useLocal = Test-ObpDotnet (Join-Path $localDotnet 'dotnet.exe') $requiredSdk
   }
   catch { $useLocal = $false }
   finally { Pop-Location }
