@@ -83,8 +83,10 @@ public sealed class TrilogyFoliagePresentationTests
             Assert.Contains(world.Meshes, m =>
                 m.AssetKind == "shrub" && m.TextureId == wheatTexture &&
                 m.MaterialPresentation is
-                { AlphaBlendEnabled: true, PreferFoliageCutout: true,
-                    PreferPerPlacementFoliageDepth: true });
+                {
+                    AlphaBlendEnabled: true, PreferFoliageCutout: true,
+                    PreferPerPlacementFoliageDepth: true
+                });
     }
 
     [SkippableFact]
