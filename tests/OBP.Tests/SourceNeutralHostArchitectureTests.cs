@@ -184,7 +184,7 @@ public sealed class SourceNeutralHostArchitectureTests
     [Theory]
     [InlineData("game/scripts/Rac1EnemyHost.cs", "TickNativeActors")]
     [InlineData("game/scripts/Rac1EnemyHost.Queries.cs", "TryGetRac1Hostile")]
-    public void RegisteredActorVoiceBridgeCannotAcquirePlayerEquipmentSelection(string path, string method)
+    public void EnemyHostAdaptersCannotAcquirePlayerProviderSelection(string path, string method)
     {
         var (compilation, tree) = InsertAdapterStatement(path, method,
             "PlayerAvatarPresentationHost.Provider(OBP.Core.ObpSourceGame.Rac1);");

@@ -39,8 +39,28 @@ internal sealed partial class Rac1EnemyHost
             .Select(node => Context.Hostiles.Probe(node.Source))
             .ToArray();
 
+    // Native IDs may be reused. Check both the scene subtree and the exact
+    // roster node before admitting an old callback to the current runtime.
+    private bool OwnsNode(RuntimeWorldScene.DynamicObjectNode node)
+    {
+        if (!Current || node.Source.SourceGame != ObpSourceGame.Rac1 ||
+            !IsInstanceValid(_sceneResult.Root) || !IsInstanceValid(node.Root) ||
+            node.Root.IsQueuedForDeletion() || !_sceneResult.Root.IsAncestorOf(node.Root)) return false;
+        if (Roster.TryGetValue(node.Source.InstanceIndex, out var enemy))
+            return !enemy.Retired && ReferenceEquals(enemy.Node, node);
+        return !Roster.PreviouslyOwned(node.Source.InstanceIndex);
+    }
+
+    private bool TryOwnedRuntime(RuntimeWorldScene.DynamicObjectNode node, out Rac1MobyRuntimeInstance? instance)
+    {
+        instance = null;
+        return OwnsNode(node) &&
+            Context.MobyRuntime.TryGet(new(node.Source.NativeClassId, node.Source.InstanceIndex), out instance) &&
+            instance is not null && instance.EntityState.Identity.Matches(node.Source);
+    }
+
     internal bool IsRac1GameplayActive(RuntimeWorldScene.DynamicObjectNode node) =>
-        Current && Context.MobyRuntime.Require(node.Source).IsActive;
+        TryOwnedRuntime(node, out var runtime) && runtime!.IsActive;
 
     internal static bool HasRac1HostContactGeometry(
         RuntimeWorldScene.DynamicObjectNode node) =>
@@ -50,12 +70,11 @@ internal sealed partial class Rac1EnemyHost
         RuntimeWorldScene.DynamicObjectNode node,
         RuntimeEntityPresence presence)
     {
-        if (!Current) return;
-        var runtime = Context.MobyRuntime.Require(node.Source);
+        if (!TryOwnedRuntime(node, out var runtime)) return;
         Context.MobyRuntime.SetTransform(
-            runtime,
+            runtime!,
             RuntimeWorldScene.ToRuntimeTransform(node.Root.Transform));
-        node.ApplyState(Context.MobyRuntime.SetPresence(runtime, presence));
+        node.ApplyState(Context.MobyRuntime.SetPresence(runtime!, presence));
         _ports.Combat.CratePresence(node.Source.InstanceIndex, presence);
         if (_rac1Enemies.TryGetValue(node.Source.InstanceIndex, out var enemy))
         {

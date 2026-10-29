@@ -73,6 +73,22 @@ public sealed class Rac1EnemyRosterTests
     }
 
     [Fact]
+    public void RemovedInstanceRemainsKnownUntilItsSceneLeaseRetires()
+    {
+        using var roster = Create(_ => { });
+        var first = new Contact(ObpSourceGame.Rac1, 7);
+        Assert.False(roster.PreviouslyOwned(7));
+        roster.Add(7, first);
+        Assert.True(roster.Remove(first, out _));
+        Assert.True(roster.PreviouslyOwned(7));
+        Assert.False(roster.ContainsKey(7));
+        var replacement = new Contact(ObpSourceGame.Rac1, 7);
+        roster.Add(7, replacement);
+        Assert.False(roster.Contains(first));
+        Assert.True(roster.Contains(replacement));
+    }
+
+    [Fact]
     public void RemovingAnAuthoredActorDoesNotRetireOtherContacts()
     {
         int retired = 0;
