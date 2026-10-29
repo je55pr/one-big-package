@@ -130,6 +130,8 @@ public sealed record CommandLineArgs
 
     /// <summary>Debug harness: feed one qualifying native break event to the focused/first class-500 crate.</summary>
     public bool CrateAutoStrike { get; init; }
+    /// <summary>Opt-in, source-validated Maktar combat-floor test entry. Not a campaign spawn.</summary>
+    public bool MaktarArenaStart { get; init; }
 
     /// <summary>Run the ordinary-input-only R&amp;C1 Veldin playability smoke and quit.</summary>
     public bool Rac1VeldinPlaySmoke { get; init; }
@@ -273,6 +275,7 @@ public sealed record CommandLineArgs
                 "--anim-solo" => result with { AnimSolo = true },
                 "--crate-focus" => result with { CrateFocus = true },
                 "--crate-auto-strike" => result with { CrateAutoStrike = true },
+                "--maktar-arena-start" => result with { MaktarArenaStart = true },
                 "--rac3-target-seed-audit" => result with { Rac3TargetSeedAudit = true },
                 "--rac1-veldin-play-smoke" => result with { Rac1VeldinPlaySmoke = true },
                 "--rac1-movement-contact-smoke" => result with { Rac1MovementContactSmoke = true },
@@ -319,6 +322,10 @@ public sealed record CommandLineArgs
             throw new ArgumentException("--bug-capture cannot be combined with --record-playtest, --replay-playtest or --replay-bug-report.");
         if (result.ReplayForwardFrames.HasValue && result.LoadMovementState is null)
             throw new ArgumentException("--replay-forward requires --load-movement-state.");
+        if (result.MaktarArenaStart && (result.ShotsPath is not null || result.TestScene != "player" ||
+            !result.TestSceneExplicit || result.Planet is not ("2" or "LEVEL2") &&
+            result.Destination != "rac2:LEVEL2"))
+            throw new ArgumentException("--maktar-arena-start requires --test-scene player and Maktar LEVEL2.");
         if (result.PlaytestRequested && (result.LoadMovementState is not null || result.CaptureFrame.HasValue ||
             result.ShotsPath is not null || result.ReplayForwardFrames.HasValue || result.StressSwitch is not null))
             throw new ArgumentException("--record-playtest/--replay-playtest require ordinary entry without --load-movement-state, --capture-frame, --shots, --replay-forward or --stress-switch.");

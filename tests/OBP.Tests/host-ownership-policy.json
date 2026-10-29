@@ -26,8 +26,8 @@
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.WorldOptions(RuntimeWorld)",
     "Kind": "adapter",
-    "Reason": "Novalis source water collision-face admission; environment semantics must remain source-qualified. #370 keeps authored level contact, presentation and music admission in its scoped world lease; the root has only typed bindings, and the separately disposed adapters do not select any player service.",
-    "Hash": "7a0b36d5cac95c99a5faa5e3b6eebe316b054fd2ddead0ecc530f57eddf48682"
+    "Reason": "Novalis source water collision-face admission; environment semantics must remain source-qualified. #370 keeps authored level contact, presentation and music admission in its scoped world lease; the root has only typed bindings, and the separately disposed adapters do not select any player service. #298 keeps source-backed arena floors unchanged and hides debug Moby proxy cubes in diagnostic shots only. Retail LEVEL2 collision tests and captured 16:9 views verify the boundary.",
+    "Hash": "4a5c435f0014f0bdbfd6a00c210bfb8e7c1e60647dabb81777710376689501ea"
   },
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.HideAuthoredWorldRatchetPresentation()",

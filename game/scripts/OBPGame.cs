@@ -2058,7 +2058,8 @@ public partial class OBPGame : Node3D
 
     private ShotListCliService CreateShotListCliService() => new(_args, (game, path) => RememberCommandLineSource(game, path),
         new GodotShotListCaptureFixture(this, _camera, camera => _activeCamera = camera, OpenDestinationFromBootstrap,
-            () => _mode == Mode.World ? _world : null, FrameShowcaseCamera, ApplyOverlaySpec, UpdateWorldHud, CapturePresentation.Metadata),
+            () => _mode == Mode.World ? _world : null, FrameShowcaseCamera, ApplyOverlaySpec, UpdateWorldHud,
+            visible => { if (_playerHud is not null) _playerHud.CaptureSuppressed = !visible; }, CapturePresentation.Metadata),
         (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.Print(message), message => GD.PrintErr(message));
 
     private StressSwitchCliService CreateStressSwitchCliService() => new(

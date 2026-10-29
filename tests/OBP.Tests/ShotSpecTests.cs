@@ -67,4 +67,34 @@ public class ShotSpecTests
     {
         Assert.Throws<JsonException>(() => ShotList.Parse(json));
     }
+
+    [Theory]
+    [InlineData("""{"shots":[{"name":"x","camera":"orbit","distance":20}]}""")]
+    [InlineData("""{"shots":[{"name":"x","camera":"orbit","focus":[1,2],"distance":20}]}""")]
+    [InlineData("""{"shots":[{"name":"x","camera":"orbit","focus":[1,2,3],"distance":0}]}""")]
+    [InlineData("""{"shots":[{"name":"x","camera":"showcase","focus":[1,2,3],"distance":20}]}""")]
+    [InlineData("""{"shots":[{"name":"x","camera":"orbit","focus":[1,2,3],"distance":20,"elevationDegrees":90}]}""")]
+    public void FocusedOrbit_RejectsInvalidCaptureParameters(string json)
+    {
+        Assert.Throws<JsonException>(() => ShotList.Parse(json));
+    }
+
+    [Fact]
+    public void FocusedOrbit_RoundTripsSourceIndependentCoordinates()
+    {
+        var shot = ShotList.Parse("""
+            { "world": "maktar", "shots": [
+                { "name": "arena", "camera": "orbit", "focus": [500, 500, 600],
+                  "distance": 68, "azimuthDegrees": 30, "elevationDegrees": 24, "hideHud": true }
+            ] }
+            """).Shots.Single();
+
+        Assert.Equal(ShotCamera.Orbit, shot.Camera);
+        Assert.Equal(new[] { 500d, 500d, 600d }, shot.Focus);
+        Assert.Equal(68, shot.Distance);
+        Assert.True(shot.HideHud);
+        var roundTrip = ShotList.Parse(new ShotList("maktar", [shot]).ToJson()).Shots.Single();
+        Assert.Equal(shot.Focus, roundTrip.Focus);
+        Assert.Equal(shot.Distance, roundTrip.Distance);
+    }
 }

@@ -7,7 +7,7 @@ namespace OBP.Game.Diagnostics;
 
 internal sealed class GodotShotListCaptureFixture(Node owner, Camera3D camera, Action<Camera3D> activate,
     Action<string> open, Func<RuntimeWorld?> world, Action<RuntimeWorld> showcase, Action<string?> overlay,
-    Action updateHud, Func<IDictionary<string, object?>> metadata) : IShotListCaptureFixture
+    Action updateHud, Action<bool> setHudVisible, Func<IDictionary<string, object?>> metadata) : IShotListCaptureFixture
 {
     public bool OpenWorld(string destinationId)
     {
@@ -33,7 +33,24 @@ internal sealed class GodotShotListCaptureFixture(Node owner, Camera3D camera, A
                 camera.Far = span * 20f + 2000f;
                 break;
             case ShotCamera.Orbit:
-                RuntimeWorldScene.FrameCamera(camera, current.Bounds, (float)shot.AzimuthDegrees, (float)shot.ElevationDegrees);
+                if (shot.Focus is { Length: 3 } focus && shot.Distance is { } distance)
+                {
+                    // Opt-in capture-only camera, independent of the planet's
+                    // bounds and of the ordinary player's camera controller.
+                    var target = RuntimeWorldScene.ToScene(focus[0], focus[1], focus[2]);
+                    float azimuth = Mathf.DegToRad((float)shot.AzimuthDegrees);
+                    float elevation = Mathf.DegToRad((float)shot.ElevationDegrees);
+                    float planar = Mathf.Cos(elevation);
+                    var offset = new Vector3(Mathf.Sin(azimuth) * planar,
+                        Mathf.Sin(elevation), Mathf.Cos(azimuth) * planar) * (float)distance;
+                    camera.Position = target + offset;
+                    camera.Far = Mathf.Max(camera.Far, (float)distance + 2000f);
+                    camera.LookAt(target, Vector3.Up);
+                }
+                else
+                {
+                    RuntimeWorldScene.FrameCamera(camera, current.Bounds, (float)shot.AzimuthDegrees, (float)shot.ElevationDegrees);
+                }
                 break;
             default:
                 showcase(current);
@@ -41,6 +58,7 @@ internal sealed class GodotShotListCaptureFixture(Node owner, Camera3D camera, A
         }
         overlay(shot.Overlay);
         updateHud();
+        setHudVisible(!shot.HideHud);
     }
     public IDictionary<string, object?> ReadMetadata() => metadata();
     public async Task<bool> CaptureAsync(string output, int settleFrames, Func<IDictionary<string, object?>> metadata, CancellationToken token) =>

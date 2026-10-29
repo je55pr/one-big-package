@@ -40,7 +40,9 @@ public partial class OBPGame
             var source = new WorldSource(entry =>
             {
                 var world = load();
-                var spawn = ValidateSourceEntry(world);
+                var spawn = _args.MaktarArenaStart
+                    ? OBP.RAC2.Rac2MaktarArenaStaging.CreateValidatedEntry(world)
+                    : ValidateSourceEntry(world);
                 return new(world, spawn, []); // Mixed native actor adapters are registered by #256.
             });
             var plan = _worldEntries.Prepare(request, source, PlayerAvatarPresentationHost.Registry);
@@ -254,7 +256,10 @@ public partial class OBPGame
             && !_args.CrateFocus && !_args.CrateAutoStrike;
         return new WorldHost.Options
         {
-            IncludeMobyMarkers = !(_args.CaptureFrame is not null && !framedCapture),
+            // Screenshot runs are production-looking source captures; the
+            // debug pink Moby proxy cubes are not native arena scenery.
+            IncludeMobyMarkers = _args.ShotsPath is null &&
+                !(_args.CaptureFrame is not null && !framedCapture),
             IncludeSky = !_args.AnimSolo,
             IncludeCollision = true,
             AdmitCollisionFace = world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 1 }

@@ -37,7 +37,13 @@ public sealed class ShotListCliService(CommandLineArgs args, Action<ObpSourceGam
         }
         else
         {
-            int level = token is null ? args.Rac2Level : Rac2PlanetCatalogue.Resolve(token) ?? args.Rac2Level;
+            int? requestedLevel = token is null ? args.Rac2Level : Rac2PlanetCatalogue.Resolve(token);
+            if (requestedLevel is not { } level || Rac2PlanetCatalogue.Find(level) is null)
+            {
+                error($"[shots] unrecognised GC world '{token ?? args.Rac2Level.ToString()}'; use a catalogued planet name or LEVEL number");
+                quit("shots-unknown-gc-world", 2);
+                return;
+            }
             if (args.Rac2Iso is null)
             {
                 error("[shots] a GC planet token needs --rac2-iso");
@@ -72,6 +78,9 @@ public sealed class ShotListCliService(CommandLineArgs args, Action<ObpSourceGam
                     ["camera"] = shot.Camera.ToString(),
                     ["overlay"] = shot.Overlay,
                     ["settleFrames"] = shot.SettleFrames,
+                    ["focus"] = shot.Focus,
+                    ["distance"] = shot.Distance,
+                    ["hideHud"] = shot.HideHud,
                 };
                 return metadata;
             }, cancellationToken);

@@ -28,7 +28,7 @@ public partial class CliToolEngineSmoke : Node3D
             try
             {
                 var fixture = new GodotShotListCaptureFixture(this, camera, _ => { }, _ => { }, () => world,
-                    _ => { }, _ => { }, () => { }, () =>
+                    _ => { }, _ => { }, () => { }, _ => { }, () =>
                     {
                         Require(drawnFrame == Engine.GetProcessFrames(), "metadata was sampled before this frame's post-draw signal");
                         reads++;

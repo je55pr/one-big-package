@@ -72,6 +72,25 @@ public sealed class CommandLineArgsTests
     }
 
     [Fact]
+    public void MaktarArenaStagingIsExplicitAndCannotAffectOrdinaryWorldEntry()
+    {
+        Assert.False(CommandLineArgs.Parse([]).MaktarArenaStart);
+        Assert.False(CommandLineArgs.Parse(["--planet", "2"]).MaktarArenaStart);
+        Assert.True(CommandLineArgs.Parse([
+            "--test-scene", "player", "--planet", "2", "--maktar-arena-start"]).MaktarArenaStart);
+        Assert.True(CommandLineArgs.Parse([
+            "--destination", "rac2:LEVEL2", "--test-scene", "player", "--maktar-arena-start"]).MaktarArenaStart);
+        foreach (var args in new[]
+        {
+            new[] { "--planet", "2", "--maktar-arena-start" },
+            ["--planet", "1", "--test-scene", "player", "--maktar-arena-start"],
+            ["--planet", "2", "--test-scene", "smoke", "--maktar-arena-start"],
+            ["--planet", "2", "--test-scene", "player", "--maktar-arena-start", "--shots", "shots.json"]
+        })
+            Assert.Throws<ArgumentException>(() => CommandLineArgs.Parse(args));
+    }
+
+    [Fact]
     public void KerwanTaxiSmokeIsOptIn()
     {
         Assert.False(CommandLineArgs.Parse([]).Rac1MetropolisTaxiSmoke);

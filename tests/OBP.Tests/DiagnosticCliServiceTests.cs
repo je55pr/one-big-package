@@ -39,6 +39,32 @@ public sealed class DiagnosticCliServiceTests
     }
 
     [Fact]
+    public async Task UnknownMaktarShorthandFailsClosedInsteadOfCapturingOozla()
+    {
+        using var list = new ShotFile(new("maktar", [new("arena")]));
+        var fixture = new Shots(); var exits = new List<(string, int)>();
+        await Service(new CommandLineArgs { Rac2Iso = "source2" }, fixture, exits)
+            .RunShotsAsync(list.Path, default);
+        Assert.Null(fixture.Destination);
+        Assert.Equal(("shots-unknown-gc-world", 2), Assert.Single(exits));
+    }
+
+    [Fact]
+    public async Task MaktarNativeLevelTwoShotSelectsCorrectProvider()
+    {
+        using var list = new ShotFile(new("2", [new("arena", ShotCamera.Orbit, null, 1,
+            Focus: [500, 500, 600], Distance: 31, HideHud: true)]));
+        var fixture = new Shots(); var exits = new List<(string, int)>();
+        await Service(new CommandLineArgs { Rac2Iso = "source2" }, fixture, exits)
+            .RunShotsAsync(list.Path, default);
+        Assert.Equal("rac2:LEVEL2", fixture.Destination);
+        var shot = Assert.IsType<Dictionary<string, object?>>(Assert.Single(fixture.Metadata)["shot"]);
+        Assert.Equal(true, shot["hideHud"]);
+        Assert.Equal(31d, shot["distance"]);
+        Assert.Equal(("shots-complete", 0), Assert.Single(exits));
+    }
+
+    [Fact]
     public async Task BadListAndMissingSourceRetainUsageExitWithoutOpeningAWorld()
     {
         var fixture = new Shots(); var exits = new List<(string, int)>();

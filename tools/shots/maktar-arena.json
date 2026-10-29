@@ -1,0 +1,25 @@
+{
+  "world": "2",
+  "shots": [
+    {
+      "name": "arena-establishing",
+      "camera": "orbit",
+      "focus": [500, 500, 600],
+      "distance": 34,
+      "azimuthDegrees": 85,
+      "elevationDegrees": 13,
+      "hideHud": true,
+      "settleFrames": 12
+    },
+    {
+      "name": "arena-across-floor",
+      "camera": "orbit",
+      "focus": [500, 500, 600],
+      "distance": 38,
+      "azimuthDegrees": 280,
+      "elevationDegrees": 16,
+      "hideHud": true,
+      "settleFrames": 12
+    }
+  ]
+}

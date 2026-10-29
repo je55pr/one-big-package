@@ -17,11 +17,13 @@
   ./tools/play.ps1
   ./tools/play.ps1 -Rac2Iso "D:\isos\Going Commando.iso" -GcLevel 1
   ./tools/play.ps1 -SkipBuild
+  ./tools/play.ps1 -Planet 2 -MaktarArena
 #>
 param(
   [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
   [int]$GcLevel = 1,
   [string]$Planet = '',
+  [switch]$MaktarArena,
   [string]$RenderingMethod = 'gl_compatibility',
   [switch]$SkipBuild
 )
@@ -53,6 +55,18 @@ if ($Rac2Iso) {
 } else {
   Write-Warning "No Going Commando ISO found (set OBP_GC_ISO or pass -Rac2Iso). Launching Game Sources."
   $sceneArgs = @('--test-scene', 'picker')
+}
+
+# An explicit debug entry uses actual Maktar floor collision and the regular
+# shared player controller. It never grants normal campaign arena access.
+if ($MaktarArena) {
+  if (-not $Rac2Iso) { throw '-MaktarArena requires an authorised R&C2 source.' }
+  if ($Planet -and $Planet -notin @('2', 'LEVEL2')) { throw '-MaktarArena is only available on LEVEL2.' }
+  if (-not $Planet -and $PSBoundParameters.ContainsKey('GcLevel') -and $GcLevel -ne 2) {
+    throw '-MaktarArena is only available on LEVEL2.'
+  }
+  $sceneArgs = @('--rac2-iso', $Rac2Iso, '--planet', '2',
+    '--test-scene', 'player', '--maktar-arena-start')
 }
 
 # --- pinned Godot ------------------------------------------------------------

@@ -2864,9 +2864,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateShotListCliService():ShotListCliService:private",
       "Owner": "#356",
-      "Rationale": "Focused final-composition binding only: snapshot reads and existing scenario/camera/navigation actions; the capture owner now retains the harness and presentation metadata. Remove this factory with final root wiring #376.",
+      "Rationale": "Focused final-composition binding only: snapshot reads and existing scenario/camera/navigation actions; the capture owner now retains the harness and presentation metadata. Remove this factory with final root wiring #376. #298 passes an opt-in capture-only visibility callback to the existing HUD renderer, without adding state to OBPGame. Native capture and CLI tests confirm the opt-in boundary.",
       "ExpiresWith": "#376",
-      "Hash": "b60e55a573112c05e21a5c16b497cf3bb51ecc898eaa62e83c7db05002eb2b67"
+      "Hash": "2a29ed7f857af5df0a94c6a7be5670ffaa4159c0328383b8377021e0d3c52a8b"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateSourceSetup():SourceSetupController:private",
@@ -3501,9 +3501,9 @@
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:WorldOptions(:RuntimeWorld):WorldHost . Options:private",
       "Owner": "#347",
-      "Rationale": "Existing world host presentation options moved beside world preparation; no new world loading policy or alternative lifetime.",
+      "Rationale": "Existing world host presentation options moved beside world preparation; no new world loading policy or alternative lifetime. #298 excludes non-retail debug Moby markers only for screenshot runs. Native Maktar floor and default player entry remain source-owned and unchanged.",
       "ExpiresWith": "#376",
-      "Hash": "7a0b36d5cac95c99a5faa5e3b6eebe316b054fd2ddead0ecc530f57eddf48682"
+      "Hash": "4a5c435f0014f0bdbfd6a00c210bfb8e7c1e60647dabb81777710376689501ea"
     },
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::property:SelectedPlayerConfiguration:PlayerSessionConfiguration:get/:private",

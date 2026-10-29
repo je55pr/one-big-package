@@ -10,6 +10,9 @@ namespace OBP.Game;
 public partial class PlayerHud : Control
 {
     public bool DebugOutputEnabled { get; set; }
+    // Screenshot-only suppression. Ordinary HUD updates must not re-show a
+    // hidden capture overlay on their next process frame.
+    public bool CaptureSuppressed { get; set; }
     private PanelContainer _healthPanel = null!;
     private PanelContainer _boltsPanel = null!;
     private PanelContainer _weaponPanel = null!;
@@ -389,11 +392,11 @@ public partial class PlayerHud : Control
 
     private void UpdateVisibility()
     {
-        Visible = _airPanel.Visible || _healthPanel.Visible ||
+        Visible = !CaptureSuppressed && (_airPanel.Visible || _healthPanel.Visible ||
                   _boltsPanel.Visible ||
                   _weaponPanel.Visible ||
                   _promptPanel.Visible ||
-                  _retailHelpDesk.Visible;
+                  _retailHelpDesk.Visible);
     }
 
     private static string SignedDelta(int delta) =>
