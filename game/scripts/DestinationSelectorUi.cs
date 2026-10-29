@@ -164,7 +164,7 @@ public partial class DestinationSelectorUi : CanvasLayer
         }
 
         foreach (var destination in provider.Catalogue.Destinations
-                     .Where(destination => DebugOutputEnabled || destination.Kind != ObpDestinationKind.Unresolved)
+                     .Where(destination => DestinationSelectorVisibility.IsVisible(destination, provider, DebugOutputEnabled))
                      .OrderBy(d => SortKind(d.Kind)))
         {
             bool current = destination.DestinationId == currentDestinationId;
@@ -194,7 +194,7 @@ public partial class DestinationSelectorUi : CanvasLayer
             if (!button.Disabled && _firstDestinationButton is null) _firstDestinationButton = button;
             if (!button.Disabled && current) _currentDestinationButton = button;
         }
-        if (!DebugOutputEnabled && provider.Catalogue.Destinations.Any(destination => destination.Kind == ObpDestinationKind.Unresolved))
+        if (!DebugOutputEnabled && provider.Catalogue.Destinations.Any(destination => !DestinationSelectorVisibility.IsVisible(destination, provider, false)))
             content.AddChild(Status("Additional destinations are not yet implemented."));
     }
 
