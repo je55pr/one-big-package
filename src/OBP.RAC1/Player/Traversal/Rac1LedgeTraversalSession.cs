@@ -47,6 +47,10 @@ public sealed class Rac1LedgeTraversalSession
     public const double LateralHeadingTolerance = 0.7853981852531433f;
     public const double MaximumShimmyCornerAngle = 0.5235987901687622f;
     public const double AwayHeadingThreshold = 2.356194496154785f;
+    // Preserve the original integration's ledge regrab and jump-buffer tick bounds.
+    // These are traversal admission rules, not Godot contact-query state.
+    public const int ExitRegrabDelayTicks = 20;
+    public const int MaximumJumpPressAgeTicks = 1000;
 
     private static readonly float[] ShimmySteps =
     [
@@ -57,7 +61,20 @@ public sealed class Rac1LedgeTraversalSession
     private Rac1LedgeCandidate _candidate;
     private int _entryFrame;
     private int _blendTicks;
+    public int GrabCooldownTicks { get; private set; }
+    public int? JumpPressAgeTicks { get; private set; }
+    public bool CanProbeForGrab => !Active && GrabCooldownTicks == 0;
     public bool Active { get; private set; }
+
+    /// <summary>Advance admission once for each host ledge tick, including inactive ticks.</summary>
+    public void AdvanceInput(bool jumpPressed)
+    {
+        GrabCooldownTicks = Math.Max(0, GrabCooldownTicks - 1);
+        if (jumpPressed)
+            JumpPressAgeTicks = 0;
+        else if (JumpPressAgeTicks is int age)
+            JumpPressAgeTicks = Math.Min(age + 1, MaximumJumpPressAgeTicks);
+    }
     public int NativeAction { get; private set; }
     public int SelectionGeneration { get; private set; }
     public Rac1LedgeCandidate Candidate => _candidate;
@@ -66,9 +83,10 @@ public sealed class Rac1LedgeTraversalSession
     {
         if (!double.IsFinite(contactPlanarLength) || contactPlanarLength < 0d)
             throw new ArgumentOutOfRangeException(nameof(contactPlanarLength));
-        if (Active)
+        if (!CanProbeForGrab)
             return false;
         _candidate = candidate;
+        JumpPressAgeTicks = null;
         Active = true;
         Select(GrabAction, contactPlanarLength > 3.5f * (1f / 60f) ? 0 : 2, 9);
         return true;
@@ -81,6 +99,8 @@ public sealed class Rac1LedgeTraversalSession
         _candidate = default;
         _entryFrame = 0;
         _blendTicks = 0;
+        GrabCooldownTicks = 0;
+        JumpPressAgeTicks = null;
     }
 
     public Rac1LedgeStepResult Step(
@@ -188,6 +208,7 @@ public sealed class Rac1LedgeTraversalSession
     private Rac1LedgeStepResult Exit(Rac1LedgeExitKind exit)
     {
         Active = false;
+        GrabCooldownTicks = ExitRegrabDelayTicks;
         int action = exit == Rac1LedgeExitKind.LedgeJump ? LedgeJumpAction : 6;
         return new(Rac1NativeVector3.Zero, _candidate.FacingYaw, action,
             exit == Rac1LedgeExitKind.LedgeJump ? 34 : 10, 0,

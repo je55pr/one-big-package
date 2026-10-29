@@ -167,6 +167,43 @@ public sealed class Rac1LedgeTraversalTests
     }
 
     [Fact]
+    public void LedgeSessionOwnsJumpBufferAndExitRegrabCooldown()
+    {
+        var session = new Rac1LedgeTraversalSession();
+        session.AdvanceInput(true);
+        Assert.Equal(0, session.JumpPressAgeTicks);
+        session.AdvanceInput(false);
+        Assert.Equal(1, session.JumpPressAgeTicks);
+        Assert.True(session.TryGrab(Candidate));
+        Assert.Null(session.JumpPressAgeTicks);
+
+        // Input advances on host ledge ticks. Entering a grab clears the old
+        // jump buffer; the next jump can exit only after grab animation ends.
+        session.Step(StepInput with { AuthoredAnimationTime = 14d }, _ => Candidate);
+        session.AdvanceInput(true);
+        var exit = session.Step(StepInput with { JumpPressAgeTicks = session.JumpPressAgeTicks }, _ => Candidate);
+        Assert.Equal(Rac1LedgeExitKind.LedgeJump, exit.ExitKind);
+        Assert.Equal(Rac1LedgeTraversalSession.ExitRegrabDelayTicks, session.GrabCooldownTicks);
+        Assert.False(session.CanProbeForGrab);
+        Assert.False(session.TryGrab(Candidate));
+        for (int tick = 1; tick < Rac1LedgeTraversalSession.ExitRegrabDelayTicks; tick++)
+        {
+            session.AdvanceInput(false);
+            Assert.False(session.CanProbeForGrab);
+        }
+        session.AdvanceInput(false);
+        Assert.True(session.CanProbeForGrab);
+        for (int tick = 0; tick < Rac1LedgeTraversalSession.MaximumJumpPressAgeTicks + 2; tick++)
+            session.AdvanceInput(false);
+        Assert.Equal(Rac1LedgeTraversalSession.MaximumJumpPressAgeTicks, session.JumpPressAgeTicks);
+        Assert.True(session.TryGrab(Candidate));
+        Assert.Null(session.JumpPressAgeTicks);
+        session.Reset();
+        Assert.Null(session.JumpPressAgeTicks);
+        Assert.Equal(0, session.GrabCooldownTicks);
+    }
+
+    [Fact]
     public void AscendingSteepWallCorrectionRemovesOnlyOpposedPlanarMotionAndAddsNativeDownRequest()
     {
         var request = new Rac1NativeVector3(.1d, .03d, .05d);
