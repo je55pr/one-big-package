@@ -13,11 +13,18 @@ internal sealed class Rac2WorldLeaseClock(Func<bool> worldCurrent, Func<bool> so
     private bool _sourceInvalidated;
     private bool _retired;
 
-    internal bool Current
+    internal bool Current => !_retired && !_sourceInvalidated && worldCurrent() && SourceReadyForActivation;
+
+    /// <summary>
+    /// Validate the R&C2 source while the new world is being activated, before
+    /// WorldSceneLifetime can publish it as the current lease. A failed source
+    /// admission latches invalid for the lifetime of this lease.
+    /// </summary>
+    internal bool SourceReadyForActivation
     {
         get
         {
-            if (_retired || _sourceInvalidated || !worldCurrent()) return false;
+            if (_retired || _sourceInvalidated) return false;
             if (sourceRequired && !sourceValid())
             {
                 _sourceInvalidated = true;

@@ -356,6 +356,10 @@ internal sealed partial class Rac2WorldModule
                         }
                         break;
                     }
+
+                default:
+                    throw new InvalidOperationException(
+                        $"Unsupported Aranos MSR1 encounter phase: {session.Phase}");
             }
         }
     }

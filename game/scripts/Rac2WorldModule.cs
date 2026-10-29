@@ -123,6 +123,10 @@ internal sealed partial class Rac2WorldModule : IDisposable
         _player = player;
         if (_ports.Ordinary() || _scene.DynamicObjectNodes?.Any(node => node.Source.SourceGame == ObpSourceGame.Rac2) != true)
             return;
+        // During ActivateOwnedWorld this lease has not been published as Current.
+        // Check source admission independently so diagnostics cannot auto-strike
+        // an R&C2 target after the source has been invalidated or detached.
+        if (!_clock.SourceReadyForActivation) return;
         player.CrateStrikeRequested += OnRac2PrimaryAttackRequested;
         if (_resources.CrateDiagnostics.Probe is { AutoStrike: true, TargetIndex: { } index } &&
             _scene.DynamicObjectNodes.FirstOrDefault(node => node.Source.SourceGame == ObpSourceGame.Rac2 &&

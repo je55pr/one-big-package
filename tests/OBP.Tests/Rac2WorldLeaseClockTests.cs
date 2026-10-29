@@ -24,6 +24,44 @@ public sealed class Rac2WorldLeaseClockTests
     }
 
     [Fact]
+    public void ActivationAdmitsValidSourceBeforeWorldBecomesCurrent()
+    {
+        bool published = false;
+        int sourceChecks = 0;
+        var lease = new Rac2WorldLeaseClock(() => published, () =>
+        {
+            sourceChecks++;
+            return true;
+        }, sourceRequired: true);
+
+        Assert.False(lease.Current);
+        Assert.Equal(0, sourceChecks); // The world has not yet been published.
+        Assert.True(lease.SourceReadyForActivation);
+        Assert.Equal(1, sourceChecks);
+        published = true;
+        Assert.True(lease.Current);
+        Assert.Equal(2, sourceChecks);
+    }
+
+    [Fact]
+    public void ActivationRejectsDetachedSourceAndLatchesTheInvalidLease()
+    {
+        bool published = false;
+        bool sourceAvailable = false;
+        var lease = new Rac2WorldLeaseClock(() => published, () => sourceAvailable, sourceRequired: true);
+
+        Assert.False(lease.SourceReadyForActivation);
+        sourceAvailable = true;
+        published = true;
+        Assert.False(lease.SourceReadyForActivation);
+        Assert.False(lease.Current);
+        lease.Advance(1d / 60, () => throw new Exception("Invalid lease evaluated the actor clock."),
+            () => throw new Exception("Invalid lease ticked lift."),
+            () => throw new Exception("Invalid lease ticked door."),
+            () => throw new Exception("Invalid lease ticked hostiles."));
+    }
+
+    [Fact]
     public void UnrelatedWorldDoesNotRequireRac2SourceAndRetirementIsPermanent()
     {
         var lease = new Rac2WorldLeaseClock(() => true,

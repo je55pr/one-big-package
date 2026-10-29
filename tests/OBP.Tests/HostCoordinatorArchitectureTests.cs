@@ -71,6 +71,7 @@ public class HostCoordinatorArchitectureTests
         Assert.Contains("if (_player is { } player) resources.Rac2Gameplay?.Arm(player);", worldEntry, StringComparison.Ordinal);
         Assert.DoesNotContain("_worldScenes?.Current?.Resources.Rac2Gameplay?.Arm(player)", app, StringComparison.Ordinal);
         Assert.Contains("internal bool Current => _clock.Current;", core, StringComparison.Ordinal);
+        Assert.Contains("if (!_clock.SourceReadyForActivation) return;", core, StringComparison.Ordinal);
         Assert.Contains("_clock.Retire();", core, StringComparison.Ordinal);
         Assert.Contains("_player.CrateStrikeRequested -= OnRac2PrimaryAttackRequested;", core, StringComparison.Ordinal);
         Assert.Contains("_clock.Advance(delta, _ports.Ordinary, TickRac2OpeningLiftNativeTick,", core, StringComparison.Ordinal);
