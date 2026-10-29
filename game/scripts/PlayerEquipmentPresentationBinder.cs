@@ -17,6 +17,8 @@ namespace OBP.Game;
 /// </summary>
 internal sealed class PlayerEquipmentPresentationBinder
 {
+    internal Rac1ExplosionPresenter Explosions { get; } = new();
+    internal Rac1WeaponAudioPresenter WeaponAudio { get; } = new();
     private readonly Dictionary<SourceWeaponKey, EquipmentPresentationBinding> _bindings = [];
     private readonly Dictionary<int, List<(ArrayMesh Mesh, Material Material)>> _effectMeshes = [];
     private string? _selectedBankPath;
@@ -110,6 +112,8 @@ internal sealed class PlayerEquipmentPresentationBinder
 
     internal void RetireWorld()
     {
+        Explosions.RetireWorld();
+        WeaponAudio.Reset(freeImmediately: true);
         ClearBindings();
         _effectMeshes.Clear();
         EffectMaterials = null;

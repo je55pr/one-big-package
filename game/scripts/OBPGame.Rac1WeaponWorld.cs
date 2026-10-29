@@ -2,11 +2,49 @@ using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime.Gameplay;
+using NVector3 = System.Numerics.Vector3;
 
 namespace OBP.Game;
 
 public partial class OBPGame
 {
+    private Rac1ParticleSession? EnsureRac1Particles()
+        => _equipmentPresentation.Explosions.EnsureParticles(_rac1EquipmentAssets, _args.FixedSeed);
+
+    private void ResetRac1BombPresentation()
+    {
+        _equipmentPresentation.Explosions.RetireWorld();
+        _rac1BombThrowGeneration = 0; _rac1BombThrowActive = false; _rac1BombImpactCount = 0;
+    }
+
+    private Vector3 Rac1EffectCamera(Vector3 fallback) =>
+        GetViewport().GetCamera3D()?.GlobalPosition ?? _player?.GlobalPosition ?? fallback;
+
+    private void SpawnRac1BombExplosion(Vector3 origin, bool playSound = true, Vector3? impactNormal = null, Vector3? reflectedPush = null)
+        => _equipmentPresentation.Explosions.SpawnBomb(origin, Rac1EffectCamera(origin), Rac1EffectRandom,
+            FusionWeapons.CreateNativeEffect, point => FusionWeapons.PlayNativeSound(121, 0, point),
+            SetBombOrientation, _rac1EquipmentAssets, _args.FixedSeed, playSound, impactNormal, reflectedPush);
+
+    private void SpawnRac1WeaponExplosion(Rac1WeaponId weapon, Vector3 origin)
+    {
+        bool groundedMine = weapon == Rac1WeaponId.MineGlove &&
+            EquipmentGround(origin, .5f, 2.5f) is { } ground && origin.Y - ground.Y <= 2;
+        _equipmentPresentation.Explosions.SpawnWeapon(weapon, origin, Rac1EffectCamera(origin), groundedMine,
+            Rac1EffectRandom, FusionWeapons.CreateNativeEffect, SetBombOrientation, _rac1EquipmentAssets, _args.FixedSeed);
+    }
+
+    private void SpawnRac1ExplosionBursts(Vector3 origin, IReadOnlyList<Rac1BombExplosion.Burst> bursts)
+        => _equipmentPresentation.Explosions.SpawnBursts(origin, bursts, Rac1EffectRandom, FusionWeapons.CreateNativeEffect);
+
+    private void StepRac1BombEffectsPhysics()
+        => _equipmentPresentation.Explosions.Step(_sceneResult?.Root, Rac1EffectCamera(Vector3.Zero),
+            _rac1EquipmentAssets, _args.FixedSeed,
+            !OrdinaryPlayerSession && !_args.Rac1WeaponsSmoke && !_args.Rac1BombGloveSmoke, SetBombOrientation);
+
+    private QuadMesh GetRac1ParticleMesh(int poolType)
+        => _equipmentPresentation.Explosions.GetParticleMesh(poolType, _rac1EquipmentAssets?.ParticleTextures,
+            _avatarPresentation.GloveAsset?.ParticleTexturesByPoolType);
+
     private readonly List<(Node3D Node, int Age, int Lifetime, float Size)> _rac1WeaponFlashes = [];
     private ulong _rac1WeaponWorldTick;
     private static Color EquipmentColor(uint rgba) => new((rgba & 255) / 128f, ((rgba >> 8) & 255) / 128f,
@@ -172,12 +210,12 @@ public partial class OBPGame
 
     private void StepRac1NativeFlameContacts()
     {
-        if (_rac1Particles is null) return;
+        if (_equipmentPresentation.Explosions.Particles is not { } particles) return;
         foreach (var flame in _rac1NativeFlames.ToArray())
         {
             var p = flame.Motion;
-            if (!_rac1Particles.IsLive(p) || p.Remaining < 2) { _rac1NativeFlames.Remove(flame); continue; }
-            _rac1Particles.FlameSecondary(p);
+            if (!particles.IsLive(p) || p.Remaining < 2) { _rac1NativeFlames.Remove(flame); continue; }
+            particles.FlameSecondary(p);
             Vector3 point = FromEffectNative(p.Position);
             float radius = p.Size * .5f;
             foreach (var (victim, bounds) in EquipmentGeometry)

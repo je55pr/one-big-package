@@ -798,3 +798,40 @@ partial members in the retirement set, removes four obsolete source-origin
 exceptions, and refreshes only the exact affected actor composition and debug
 HUD adapter fingerprints. Full source-free architecture checks and optional
 source-authorized UYA TABLE1 sampling cover the extraction.
+
+## #369 R&C1 explosion and held-weapon audio presentation
+
+`Rac1ExplosionPresenter` and `Rac1WeaponAudioPresenter` live under the existing
+`PlayerEquipmentPresentationBinder`, which owns selected equipment presentation
+and its current-world binding. The two former `OBPGame.Rac1BombEffects.cs` and
+`OBPGame.Rac1WeaponAudio.cs` root fragments (including their fields) are retired;
+their Godot UIDs move to the replacement presenters. Existing root call sites
+remain narrow composition forwards, not caches or gameplay implementations.
+
+The decoded `Rac1EquipmentAssets.Catalogue` and level sound banks remain
+source-owned and are **borrowed** by the presenters. Particle sessions, fragment
+and burst nodes, shader/mesh caches, native particle-pool views, the looping
+weapon voice, and the Taunter voice/timer are current-world state. World
+retirement clears scene nodes and CPU particle state, discards mesh materials,
+stops voices immediately, and clears bounded diagnostic traces; source
+replacement invalidates the binder before new source assets are installed.
+Selection and player death continue to call the existing audio reset, while
+pause suspends voices without restarting their native pitch or sound cursors.
+
+Native bomb class 1192 bursts, class 122 fragments, explosion class 121 cue,
+Mine Glove ground-pool selection, Pyrocitor emitter slots and flame contacts
+all keep their original native recipes, original random calls, camera/distance
+selection, frame stepping and source textures. Weapon loops retain
+(168,1)/(176,1)/(849,2)/(177,4)/(185,0); Taunter remains class 175, steps
+0..5, with `max(17, ceil(clip.DurationSeconds * 60))` native spacing.
+The explosion owner exposes copied source-qualified frame/class/position event
+observations (last 512) and bounded particle type observations (8192), while
+weapon audio exposes copied native tick/class/sound/loop observations
+(last 4096). Diagnostics consume snapshots instead of root mutable lists.
+
+The frozen root origin remains unchanged: 24 removed members are explicitly
+retired; twelve exact temporary composition forwards expire with #376. This
+work does not alter the source-native effect generators or the dedicated
+effects project (#280/#282-#285). Source-free and authorized native validation
+should distinguish engine assertions from an optional human visual/audio
+review. The latter remains a separate acceptance gate.

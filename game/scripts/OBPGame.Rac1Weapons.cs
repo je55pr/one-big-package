@@ -11,6 +11,28 @@ namespace OBP.Game;
 
 public partial class OBPGame
 {
+    private void ResetRac1WeaponAudio(bool freeImmediately = false)
+        => _equipmentPresentation.WeaponAudio.Reset(freeImmediately);
+
+    private void RecordRac1WeaponSound(int cls, int sound, bool loop = false)
+        => _equipmentPresentation.WeaponAudio.Record(cls, sound, _rac1WeaponWorldTick, _args.Rac1WeaponsSmoke, loop);
+
+    private void StepRac1WeaponAudio()
+        => _equipmentPresentation.WeaponAudio.Step(new(
+            _player is not null && _playerAudio?.Ready == true && PlayerLife.Alive && !MovementReproduction.IsLoading &&
+                !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active,
+            _rac1Weapons.Equipped, _rac1EquipmentUseTicks, _rac1PyroEmitting,
+            _rac1AdditionalWeapons?.Vacuuming == true, _rac1ArsenalHeld, _rac1Weapons.GetAmmo(19) > 0,
+            _rac1WeaponWorldTick, _args.Rac1WeaponsSmoke), _player, _playerAudio?.Random,
+            _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets)?.Sounds);
+
+    private void SetPlayerAudioPaused(bool paused)
+    {
+        _playerAudio?.SetPaused(paused);
+        _equipmentPresentation.WeaponAudio.SetPaused(paused);
+        FusionWeapons.SetPaused(paused);
+    }
+
     private Rac1EquipmentAssets.Catalogue? _rac1EquipmentAssets;
     private string? _rac1EquipmentSource;
     private WorldMaterialFactory? _rac1EquipmentMaterials;
@@ -75,7 +97,7 @@ public partial class OBPGame
         RetireRac1CapturedCargoPresentation();
         _rac1EquipmentShots.Clear(); _rac1DoomAgents.Clear();
         _rac1WeaponMotes.Clear(); _rac1FlameHitTicks.Clear(); _rac1WeaponGenerations.Clear();
-        _rac1NativeFlames.Clear(); _rac1Particles?.RemoveType(12); _rac1Particles?.RemoveType(2);
+        _rac1NativeFlames.Clear(); _equipmentPresentation.Explosions.Particles?.RemoveType(12); _equipmentPresentation.Explosions.Particles?.RemoveType(2);
         _rac1ChickenCargo.Clear();
         _rac1AdditionalWeapons = new(_rac1Weapons);
         _rac1AdditionalWeaponsInventory = _rac1Weapons;

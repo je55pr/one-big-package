@@ -21,6 +21,9 @@
 
   <ItemGroup>
     <Compile Include="../../game/scripts/Rac1PlayerAudioPresenter.cs" Link="Game/Rac1PlayerAudioPresenter.cs" />
+    <Compile Include="../../game/scripts/Rac1ExplosionPresenter.cs" Link="Game/Rac1ExplosionPresenter.cs" />
+    <Compile Include="../../game/scripts/Rac1WeaponSoundTrace.cs" Link="Game/Rac1WeaponSoundTrace.cs" />
+    <Compile Include="../../game/scripts/Rac1ParticleView.cs" Link="Game/Rac1ParticleView.cs" />
     <Compile Include="../../game/scripts/CommandLineArgs.cs" Link="Game/CommandLineArgs.cs" />
     <Compile Include="../../game/scripts/AutomationRunPolicy.cs" Link="Game/AutomationRunPolicy.cs" />
     <Compile Include="../../game/scripts/DiagnosticSnapshotGate.cs" Link="Game/DiagnosticSnapshotGate.cs" />
