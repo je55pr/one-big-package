@@ -351,6 +351,23 @@ public sealed class Rac1WeaponInventory
         return new Rac1AmmoGrantResult(nativeItemId, ammoBefore, _ammo[nativeItemId]);
     }
 
+    /// <summary>
+    /// Development-only refill of owned, finite-capacity ammo slots. Does not
+    /// unlock equipment, alter quick-select, or fill unowned weapon slots.
+    /// Returns how many ammo slots actually changed.
+    /// </summary>
+    public int RefillOwnedAmmo()
+    {
+        int changed = 0;
+        for (int id = 0; id < Rac1NativeInventoryLayout.ItemCount; id++)
+        {
+            int capacity = Rac1ItemAmmoDescriptors.Get(id).MaxAmmo;
+            if (capacity == 0 || !OwnsNativeItem(id) || _ammo[id] >= capacity) continue;
+            if (GrantAmmoClamped(id, capacity - _ammo[id]).Changed) changed++;
+        }
+        return changed;
+    }
+
     public int AddAmmoClamped(int nativeItemId, int amount) =>
         GrantAmmoClamped(nativeItemId, amount).AmmoAfter;
 

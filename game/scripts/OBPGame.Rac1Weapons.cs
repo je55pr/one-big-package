@@ -109,6 +109,15 @@ public partial class OBPGame
         _rac1EquipmentGeometryFrame = ulong.MaxValue; _rac1EquipmentGeometry = [];
     }
 
+    private void RefillRac1OwnedAmmo()
+    {
+        if (_player is null || FusionWeapons.TestActive) return;
+        int changed = _rac1Weapons.RefillOwnedAmmo();
+        if (changed > 0) PersistRac1CampaignState("developer refill all ammo");
+        RefreshRac1HudState();
+        MovementReproduction.Report($"Refilled all owned R&C1 ammunition ({changed} ammo slots changed).");
+    }
+
     private void ToggleRac1WeaponPreview()
         => SetRac1WeaponPreview(Input.IsKeyPressed(Key.Shift));
 

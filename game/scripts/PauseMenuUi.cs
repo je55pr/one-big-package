@@ -12,7 +12,7 @@ public sealed partial class PauseMenuUi : CanvasLayer
     public event Action? SaveMovementStateRequested;
     public event Action? LoadMovementStateRequested;
     public event Action? WeaponPreviewRequested;
-    public event Action? RefillPreviewRequested;
+    public event Action? RefillAllAmmoRequested;
     public event Action? PackPreviewRequested;
     public event Action? SwingshotPreviewRequested;
     public event Action? FusionTestRequested;
@@ -22,6 +22,7 @@ public sealed partial class PauseMenuUi : CanvasLayer
     public bool DebugOutputEnabled { get; set; }
     public string EquipmentStatus { get; init; } = string.Empty;
     public bool WeaponPreviewEnabled { get; init; }
+    public bool RefillAllAmmoAvailable { get; init; }
     public bool MovementStatesAvailable { get; init; }
     private Label? _movementStatus;
     private Button? _resume;
@@ -123,12 +124,12 @@ public sealed partial class PauseMenuUi : CanvasLayer
         if (MovementStatesAvailable)
         {
             var weapons = MakeButton("TOGGLE WEAPON PREVIEW");
-            var refill = MakeButton("REFILL PREVIEW AMMO");
-            refill.Disabled = !WeaponPreviewEnabled;
+            var refill = MakeButton("REFILL ALL AMMO");
+            refill.Disabled = !RefillAllAmmoAvailable;
             var pack = MakeButton("CYCLE MOVEMENT PACK");
             var swingshot = MakeButton("TOGGLE SWINGSHOT PREVIEW");
             weapons.Pressed += () => WeaponPreviewRequested?.Invoke();
-            refill.Pressed += () => RefillPreviewRequested?.Invoke();
+            refill.Pressed += () => RefillAllAmmoRequested?.Invoke();
             pack.Pressed += () => PackPreviewRequested?.Invoke();
             swingshot.Pressed += () => SwingshotPreviewRequested?.Invoke();
             column.AddChild(new Label { Text = "TESTING EQUIPMENT", ThemeTypeVariation = "HeaderSmall" });

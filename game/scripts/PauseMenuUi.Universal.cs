@@ -259,6 +259,7 @@ public sealed partial class PauseMenuUi
                 _universalBody.AddChild(new Label { Name = "ProfileDiagnostics", Text = profileStatus, AutowrapMode = TextServer.AutowrapMode.WordSmart });
             var debug = new CheckButton { Text = "SHOW DEBUG OUTPUT", ButtonPressed = DebugOutputEnabled, CustomMinimumSize = new(0, 48) };
             debug.Toggled += enabled => { DebugOutputEnabled = enabled; DebugOutputChanged?.Invoke(enabled); }; _universalBody.AddChild(debug); _universalFocus.Add(debug);
+            if (RefillAllAmmoAvailable) Option("REFILL ALL AMMO", () => RefillAllAmmoRequested?.Invoke());
             if (MovementStatesAvailable)
             {
                 Option("SAVE MOVEMENT STATE", () => SaveMovementStateRequested?.Invoke());

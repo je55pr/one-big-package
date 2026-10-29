@@ -283,6 +283,32 @@ public sealed class Rac1WeaponInventoryTests
     }
 
     [Fact]
+    public void DeveloperRefillOnlyRestoresOwnedFiniteAmmoAndLeavesEquipmentSelectionUntouched()
+    {
+        var inventory = new Rac1WeaponInventory(
+            CreatePersistent(
+                ammo: new Dictionary<int, int> { [10] = 0, [15] = 8, [16] = 2, [17] = 5 },
+                owned: [10, 15, 16],
+                unlocked: [10, 15, 16],
+                quickSelect: [16, 15, 10]),
+            currentItemId: 16);
+        var before = inventory.CapturePersistentState();
+
+        Assert.Equal(3, inventory.RefillOwnedAmmo());
+        Assert.Equal(40, inventory.GetAmmo(10));
+        Assert.Equal(200, inventory.GetAmmo(15));
+        Assert.Equal(240, inventory.GetAmmo(16));
+        Assert.Equal(5, inventory.GetAmmo(17)); // Unowned slots are not touched.
+        Assert.False(inventory.OwnsNativeItem(17));
+        Assert.False(inventory.HasUnlockFlag(17));
+        Assert.Equal(16, inventory.CurrentItemId);
+        Assert.Equal(before.Items, inventory.CapturePersistentState().Items);
+        Assert.Equal(before.UnlockFlags, inventory.CapturePersistentState().UnlockFlags);
+        Assert.Equal(before.QuickSelect, inventory.CapturePersistentState().QuickSelect);
+        Assert.Equal(0, inventory.RefillOwnedAmmo()); // Repeated clicks are safe.
+    }
+
+    [Fact]
     public void WrenchUseDoesNotConsumeRangedAmmo()
     {
         var inventory = new Rac1WeaponInventory(true, firstRangedAmmo: 6);

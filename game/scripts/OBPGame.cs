@@ -2348,6 +2348,7 @@ public partial class OBPGame : Node3D
             DebugOutputEnabled = _debugOutputEnabled,
             MovementStatesAvailable = _player?.CanSaveMovementState == true,
             WeaponPreviewEnabled = _persistentPlayer.WeaponPreview is not null,
+            RefillAllAmmoAvailable = _player is not null && !FusionWeapons.TestActive,
             FusionTestAvailable = FusionWeapons.CanRunFixture,
             FusionTestEnabled = FusionWeapons.TestActive,
             EquipmentStatus = _player is { } activePlayer
@@ -2365,7 +2366,7 @@ public partial class OBPGame : Node3D
         menu.SaveMovementStateRequested += MovementReproduction.SaveMovementState;
         menu.LoadMovementStateRequested += () => MovementReproduction.StartMovementStateLoad(MovementReproduction.MovementStatePath);
         menu.WeaponPreviewRequested += () => { ClosePauseMenu(); SetRac1WeaponPreview(_persistentPlayer.WeaponPreview is not null); };
-        menu.RefillPreviewRequested += () => { ClosePauseMenu(); if (_persistentPlayer.WeaponPreview is not null) SetRac1WeaponPreview(false); };
+        menu.RefillAllAmmoRequested += () => { RefillRac1OwnedAmmo(); ClosePauseMenu(); };
         menu.PackPreviewRequested += () => { _player?.CycleRac1DevelopmentPack(); ClosePauseMenu(); };
         menu.SwingshotPreviewRequested += () => { _player?.ToggleRac1DevelopmentSwingshot(); ClosePauseMenu(); };
         menu.WorldsRequested += ReturnToWorldsFromPause;
