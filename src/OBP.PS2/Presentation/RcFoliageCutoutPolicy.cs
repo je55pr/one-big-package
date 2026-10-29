@@ -55,6 +55,10 @@ public static class RcFoliageCutoutPolicy
     // decoded alpha, never by game, planet, object ID or texture index.
     private const int MaximumSparseCardFaces = 32;
     private const double MinimumSparseCardCutout = 0.65;
+    // Retail Marcadia wheat includes sparse opaque tip texels (as few as 0.2%).
+    // Requiring at least some prevents entirely soft/low-alpha textures from
+    // becoming invisible when a 0.5 alpha-scissor discards every visible pixel.
+    private const double MinimumSparseCardOpaque = 0.001;
 
     public static HashSet<int> FindFoliageCutoutTextures(
         double[] positions,
@@ -82,6 +86,7 @@ public static class RcFoliageCutoutPolicy
             if (textureFaces.Count() > MaximumSparseCardFaces ||
                 !alpha.TryGetValue(textureFaces.Key, out var profile) ||
                 profile.CutoutFraction < MinimumSparseCardCutout ||
+                profile.OpaqueFraction < MinimumSparseCardOpaque ||
                 profile.TranslucentFraction > MaximumTranslucentFraction)
                 continue;
 

@@ -28,6 +28,9 @@ public sealed class TrilogyFoliagePresentationTests
         {
             [77] = new(0.12, 0.76, 0.12, true),
             [78] = new(0.5, 0.25, 0.25, true),
+            [79] = new(0, 0.81, 0.19, true), // Alpha-zero/low-alpha only.
+            [80] = new(0.0005, 0.81, 0.1895, true),
+            [81] = new(0.002, 0.871, 0.127, true), // Retail-like wheat.
         };
 
         HashSet<int> Find(int[] textures, bool?[] blend) =>
@@ -40,6 +43,9 @@ public sealed class TrilogyFoliagePresentationTests
         Assert.Equal(new[] { 77 }, Find([77], [true]).Order());
         Assert.Empty(Find([77], [false]));
         Assert.Empty(Find([78], [true]));
+        Assert.Empty(Find([79], [true]));
+        Assert.Empty(Find([80], [true]));
+        Assert.Equal(new[] { 81 }, Find([81], [true]).Order());
         Assert.Empty(Find([77, 77], [true, false]));
         Assert.Empty(Find(Enumerable.Repeat(77, 33).ToArray(),
             Enumerable.Repeat<bool?>(true, 33).ToArray()));
@@ -123,6 +129,35 @@ public sealed class TrilogyFoliagePresentationTests
                 Assert.True(MaterialModel.UsesOpaqueShrubDepth("shrub", profile, presentation));
             }
         }
+    }
+
+    [SkippableFact]
+    public void Rac3Table19AllSoftSparseShrubsAreNotCutout()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_UYA_ISO not set");
+        using var disc = new FileRandomAccessReader(iso!);
+        var core = Rac3LevelCore.Open(disc, 19).Core;
+        var classes = Rac3Assets.ReadShrubClasses(core);
+        var alpha = Rac3Assets.ReadTextures(core, Rac3Assets.TextureTable.Shrub)
+            .ToDictionary(t => t.Index, t => AlphaProfile.Analyse(t.Rgba));
+
+        // These sparse cards contain only transparent and low-alpha texels.
+        // An alpha-scissor would discard their entire visible texture.
+        foreach ((int classId, int textureId) in new[] { (3806, 30), (3808, 31) })
+        {
+            Assert.Equal(0, alpha[textureId].OpaqueFraction);
+            Assert.InRange(alpha[textureId].CutoutFraction, 0.83, 0.85);
+            var shrub = classes[classId];
+            Assert.Empty(RcFoliageCutoutPolicy.FindFoliageCutoutTextures(
+                shrub.Positions, shrub.Indices, shrub.TriangleTextureIds,
+                shrub.TriangleMaterialStateIndices, shrub.TriangleAlphaBlendEnabled,
+                shrub.Materials, alpha));
+        }
+
+        var world = Rac3WorldImport.BuildObserved(disc, 19, nativeMobyPoseOverride: false).World;
+        Assert.Equal(253, world.Meshes.Count);
+        Assert.Equal(822759, world.TotalRenderTriangles);
     }
 
     [SkippableFact]
@@ -232,15 +267,15 @@ public sealed class TrilogyFoliagePresentationTests
         {
             AlphaBlend = new RcGsAlphaState(0, 1, 0, 1, 0),
         };
-        HashSet<int> Select(bool blend) => RcFoliageCutoutPolicy.FindFoliageCutoutTextures(
-            positions, indices, [12], [0], [blend], [state], alpha);
+        // Both classes have identical eligible source evidence; test the
+        // importer's class-scoped selection, not a blend-disabled early exit.
+        Assert.Equal(new[] { 12 }, RcFoliageCutoutPolicy.FindFoliageCutoutTextures(
+            positions, indices, [12], [0], [true], [state], alpha).Order());
         var selected = new Dictionary<int, HashSet<int>>
         {
-            [1] = Select(true),
-            [2] = Select(false),
+            [1] = [12],
+            [2] = [],
         };
-        Assert.Equal(new[] { 12 }, selected[1].Order());
-        Assert.Empty(selected[2]);
         var meshes = new List<RuntimeMesh>();
         if (rac3)
         {
@@ -249,7 +284,7 @@ public sealed class TrilogyFoliagePresentationTests
                 {
                     Materials = [state],
                     TriangleMaterialStateIndices = [0],
-                    TriangleAlphaBlendEnabled = [id == 1],
+                    TriangleAlphaBlendEnabled = [true],
                 };
             var classes = new Dictionary<int, Rac3Assets.StaticClass>
             {
@@ -268,9 +303,8 @@ public sealed class TrilogyFoliagePresentationTests
             Rac2WorldImport.PlaceMatrixInstances("shrub",
                 [new(0, 1, Matrix(0)), new(1, 1, Matrix(10)),
                  new(2, 2, Matrix(20)), new(3, 2, Matrix(30))],
-                id => (positions, uvs, indices, new[] { 12 },
-                    new RuntimeMaterialPresentation?[]
-                    { presentation with { AlphaBlendEnabled = id == 1 } }),
+                _ => (positions, uvs, indices, new[] { 12 },
+                    new RuntimeMaterialPresentation?[] { presentation }),
                 meshes, (_, _, _) => { }, growBounds: false, alpha, selected);
         }
 
