@@ -19,11 +19,12 @@ public sealed class Rac1PulsingOrbSession
     private readonly Dictionary<int, double> _phases = [];
 
     public int Count => _phases.Count;
+    public static bool SupportsLevel(int levelId) => levelId is 0 or 2 or 5 or 18;
 
     public bool Register(int levelId, RuntimeDynamicObject source)
     {
         if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != NativeClassId) return false;
-        if (levelId is not (0 or 2 or 5 or 18))
+        if (!SupportsLevel(levelId))
             throw new InvalidDataException($"R&C1 class-1060 updater is not admitted for level {levelId}.");
         byte[]? raw = source.NativePayloads?.SingleOrDefault(p => p.Format == "rac1-pvar")?.Data;
         if (raw is not { Length: 16 })

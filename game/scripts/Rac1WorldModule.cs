@@ -26,18 +26,20 @@ internal sealed class Rac1WorldModule : IDisposable
 
     internal Rac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene, Rac1PickupRandom random,
         Rac1WorldResetPorts reset, Rac1WorldActorPorts actors, Rac1WorldTickPorts ticks,
-        Rac1PlayerGameplayPorts player, Rac1WorldContactPorts contacts, Rac1GameplayHudPorts hud,
+        Rac1PlayerGameplayPorts player, Rac1WorldContactPorts contacts, Rac1AuthoredMechanismPorts authored, Rac1GameplayHudPorts hud,
         Rac1TaxiHostPorts taxis, Func<Rac1WorldModule, Rac1EnemyHost> enemies)
     {
         _world = world; _scene = scene; _reset = reset; _actors = actors; _ticks = ticks;
         _playerPorts = player; _contacts = contacts; _binding = new(player);
         Context = new(world.LevelId, random);
+        Mechanisms = new(world, scene, authored);
         Taxis = new(taxis);
         Enemies = enemies(this);
         Hud = new(world, Context, Presentation, hud, () => _disposed);
     }
 
     internal Rac1WorldContext Context { get; }
+    internal Rac1AuthoredMechanismRegistry Mechanisms { get; }
     internal Rac1WorldPresentation Presentation { get; } = new();
     internal Rac1GameplayHudPresenter Hud { get; }
     internal Rac1EnemyHost Enemies { get; }
@@ -71,10 +73,6 @@ internal sealed class Rac1WorldModule : IDisposable
         _reset.Player();
         Context.EquipmentUsePressed = false;
         _reset.Wheel();
-        _reset.Water();
-        _reset.Music();
-        _reset.RedPlants();
-        _reset.PulsingOrbs();
         _reset.Explosives();
         _reset.Checkpoints();
         _reset.Missions();
@@ -84,9 +82,8 @@ internal sealed class Rac1WorldModule : IDisposable
         if (retiring) Enemies.Dispose(); else Enemies.ResetRac1Enemies();
         _reset.Pickups();
         _reset.GoldBolts();
-        _reset.Cranks();
         _reset.Breakables();
-        _reset.Mechanisms();
+        if (retiring) Mechanisms.Dispose();
         Presentation.Dispose();
     }
 
@@ -95,14 +92,16 @@ internal sealed class Rac1WorldModule : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         _binding.Arm(player);
         _player = player;
+        Mechanisms.OnVisualTickSkipped();
+        Mechanisms.BindPlayer(player);
         BindSourcePlayerContacts(player);
     }
 
     private void BindSourcePlayerContacts(PlayerHost player)
     {
         if (_world.Game != ObpSourceGame.Rac1) return;
-        player.Rac1CrankInput = _contacts.Crank;
-        player.Rac1WaterSurfaceHeight = _contacts.WaterHeight;
+        player.Rac1CrankInput = (held, stick) => !_playerPorts.Health().Probe().IsDead && Mechanisms.TryTurnCrank(held, stick);
+        player.Rac1WaterSurfaceHeight = Mechanisms.SampleWaterHeight;
         player.Rac1NovalisDrowned += _contacts.Drowned;
         player.Rac1WaterSoundRequested += _contacts.WaterSound;
         player.ConfigureRac1TraversalTargets(_world.DynamicObjects ?? []);
@@ -110,16 +109,29 @@ internal sealed class Rac1WorldModule : IDisposable
 
     internal void Tick(double delta)
     {
-        if (_disposed || _ticks.Suspended() || _world.Game != ObpSourceGame.Rac1 ||
-            _player is null || !GodotObject.IsInstanceValid(_player)) return;
-        if (!_playerPorts.Persistent() && !_binding.TickParityLifecycle()) return;
-        if (!_playerPorts.Alive()) { Taxis.AbortRide(); return; }
+        if (_disposed) return;
+        if (_ticks.Suspended() || _world.Game != ObpSourceGame.Rac1 ||
+            _player is null || !GodotObject.IsInstanceValid(_player))
+        {
+            Mechanisms.OnVisualTickSkipped();
+            return;
+        }
+        if (!_playerPorts.Persistent() && !_binding.TickParityLifecycle())
+        {
+            Mechanisms.OnVisualTickSkipped();
+            return;
+        }
+        if (!_playerPorts.Alive())
+        {
+            Taxis.AbortRide();
+            Mechanisms.OnVisualTickSkipped();
+            return;
+        }
         Taxis.Tick(delta);
-        _ticks.Music(delta);
+        Mechanisms.Tick(delta, Rac1AuthoredTickPhase.Music);
         _ticks.Swing(delta);
         if (!_playerPorts.Ordinary()) Enemies.TickRac1Hostiles(delta);
-        _ticks.RedPlants(delta);
-        _ticks.PulsingOrbs(delta);
+        Mechanisms.Tick(delta, Rac1AuthoredTickPhase.Visual);
         _ticks.Explosives(delta);
         _ticks.Checkpoints();
         _ticks.MetalDetector(delta);
@@ -127,6 +139,9 @@ internal sealed class Rac1WorldModule : IDisposable
         _ticks.GoldBolts();
         _ticks.Missions(delta);
     }
+
+    internal void PhysicsStep(bool suspended, bool waitingForReplay) =>
+        Mechanisms.PhysicsStep(suspended, waitingForReplay);
 
     public void Dispose()
     {
@@ -208,13 +223,8 @@ internal sealed class Rac1WorldModule : IDisposable
         _actors.MetalDetector(world);
         _actors.PlacedBolts(world, result);
         _actors.GoldBolts(world, result);
-        _actors.RedPlants(world, result);
-        _actors.PulsingOrbs(world, result);
-        _actors.Cranks(world, result);
+        Mechanisms.Configure();
         _actors.Breakables(world, result);
-        _actors.Mechanisms(world, result);
-        _actors.Water(world);
-        _actors.Music(world);
 
         int authoredClass749 = 0;
         int rejectedHostiles = 0;

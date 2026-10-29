@@ -748,7 +748,7 @@ Mechanism labels describe interactive object families. They are not necessarily 
 <tr><td></td><td nowrap="nowrap">Ship landing pad</td><td nowrap="nowrap">🔴</td><td></td></tr>
 </tbody></table>
 
-References: [OBP Novalis bolt crank](game/scripts/OBPGame.Rac1NovalisCranks.cs), [R&C1 traversal](research/RAC1_TRAVERSAL_EQUIPMENT.md), [Teleporter appearances](https://ratchetandclank.fandom.com/wiki/Teleporter), [GC gameplay instructions](https://ratchetandclank.fandom.com/wiki/Going_Commando_script), [UYA gameplay instructions](https://ratchetandclank.fandom.com/wiki/Up_Your_Arsenal_script), [UYA capture nodes](https://ratchetandclank.fandom.com/wiki/Node).
+References: [OBP Novalis bolt crank](game/scripts/Rac1NovalisCrankMechanism.cs), [R&C1 traversal](research/RAC1_TRAVERSAL_EQUIPMENT.md), [Teleporter appearances](https://ratchetandclank.fandom.com/wiki/Teleporter), [GC gameplay instructions](https://ratchetandclank.fandom.com/wiki/Going_Commando_script), [UYA gameplay instructions](https://ratchetandclank.fandom.com/wiki/Up_Your_Arsenal_script), [UYA capture nodes](https://ratchetandclank.fandom.com/wiki/Node).
 
 </details>
 
