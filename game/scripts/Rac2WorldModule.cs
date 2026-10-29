@@ -128,7 +128,9 @@ internal sealed partial class Rac2WorldModule : IDisposable
 
     internal void Arm(PlayerHost player)
     {
-        if (!Current) return;
+        if (_disposed) return;
+        // The activating scene is not globally current until after player creation.
+        // Bind directly to its owned resources rather than the global lease lookup.
         if (_player is not null && GodotObject.IsInstanceValid(_player))
             _player.CrateStrikeRequested -= OnRac2PrimaryAttackRequested;
         _player = player;

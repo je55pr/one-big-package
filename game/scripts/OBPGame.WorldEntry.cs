@@ -182,7 +182,11 @@ public partial class OBPGame
         resources.FusionWeapons = FusionWeapons.BindWorld(resources.Scene.Root);
         if (_args.AnimSolo) FrameAnimatedMobies(world);
         else if (staticCamera) FrameShowcaseCamera(world);
-        else SpawnPlayer(world);
+        else
+        {
+            SpawnPlayer(world);
+            if (_player is { } player) resources.Rac2Gameplay?.Arm(player);
+        }
         _mode = Mode.World;
         _sceneKind = lab is null ? "destination" : "fusion-lab";
         _navigation.WorldActivated(_args.CaptureFrame is null);

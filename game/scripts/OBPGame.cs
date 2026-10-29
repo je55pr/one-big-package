@@ -1203,7 +1203,6 @@ public partial class OBPGame : Node3D
         player.DevelopmentControls.SaveMovementStateRequested += SaveMovementState;
         player.DevelopmentControls.LoadMovementStateRequested += () => StartMovementStateLoad(MovementStatePath);
         AttachPlayerAvatarVisual(player);
-        _worldScenes?.Current?.Resources.Rac2Gameplay?.Arm(player);
         Rac1World.Arm(player);
         ArmRac3Gameplay(player);
     }
