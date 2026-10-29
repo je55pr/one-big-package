@@ -92,11 +92,11 @@ public sealed record MovementReproWorld(
         catch (ArgumentException ex) { throw new InvalidDataException("Invalid movement state inventory.", ex); }
         if (CapturedMobies is { } cargo && (cargo.Count > Rac1AdditionalWeaponSession.SuckCapacity ||
             cargo.Distinct().Count() != cargo.Count || cargo.Any(key =>
-                key.NativeClassId is not (500 or 749) && !(key.NativeClassId == 1440 && MorphedMobies?.Contains(key) == true) ||
+                key.NativeClassId is not (Rac1ClassIds.WoodenCrate or Rac1ClassIds.VeldinToad) && !(key.NativeClassId == Rac1ClassIds.VeldinFlameRobot && MorphedMobies?.Contains(key) == true) ||
                 !InactiveObjects.Any(item => item.Key == key))))
             throw new InvalidDataException("Invalid movement state Suck Cannon cargo.");
         if (MorphedMobies is { } morphed && (morphed.Count > 4096 || morphed.Distinct().Count() != morphed.Count ||
-            morphed.Any(key => key.NativeClassId is not (749 or 1440) || key.InstanceIndex is < 0 or > 1_000_000 ||
+            morphed.Any(key => key.NativeClassId is not (Rac1ClassIds.VeldinToad or Rac1ClassIds.VeldinFlameRobot) || key.InstanceIndex is < 0 or > 1_000_000 ||
                 InactiveObjects.Any(item => item.Key == key) && CapturedMobies?.Contains(key) != true)))
             throw new InvalidDataException("Invalid movement state Morph-o-Ray transformations.");
     }

@@ -1,4 +1,5 @@
 using OBP.RAC1.Animation;
+using OBP.RAC1.Gameplay;
 
 namespace OBP.RAC1.Player;
 
@@ -119,5 +120,5 @@ public sealed class Rac1PlayerAudioSession
     // Opening Veldin spawn explicitly writes common hit-record+9: 1 for
     // class749, 0 for class1440. Authored PVar bytes are not the initialized record.
     public static bool? WrenchVictimSoftness(int nativeClass) => nativeClass switch
-    { 749 => true, 1440 => false, _ => null };
+    { Rac1ClassIds.VeldinToad => true, Rac1ClassIds.VeldinFlameRobot => false, _ => null };
 }

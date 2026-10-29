@@ -25,7 +25,7 @@ public partial class OBPGame
             // Bounded OBP eligibility adapter for opening Veldin. Full native
             // capture callbacks remain unpromoted: accept small class749 and
             // ordinary wood crates; do not vacuum large robots or metal crates.
-            foreach (var target in EquipmentTargets.Where(node => node.Source.NativeClassId is 749 or 500 ||
+            foreach (var target in EquipmentTargets.Where(node => node.Source.NativeClassId is Rac1ClassIds.VeldinToad or Rac1ClassIds.WoodenCrate ||
                 _rac1Chickens.ContainsKey(node.Source.InstanceIndex)).ToArray())
             {
                 var point = target.Root.GlobalPosition + Vector3.Up * .4f;

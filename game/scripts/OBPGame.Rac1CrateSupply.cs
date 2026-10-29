@@ -21,7 +21,7 @@ public partial class OBPGame
     private void SpawnRac1CrateSupply(RuntimeWorldScene.DynamicObjectNode crate, Vector3 origin)
     {
         if (_sceneResult is null) return;
-        if (crate.Source.NativeClassId == Rac1CrateSupply.NanotechCrateClass)
+        if (crate.Source.NativeClassId == Rac1ClassIds.NanotechCrate)
         {
             var node = new Node3D { Name = "Rac1NanotechCloud_HostParticlePresentation" };
             // Class806's one-point/eight-particle rules are recovered. These
@@ -39,7 +39,7 @@ public partial class OBPGame
             node.GlobalPosition = origin + Vector3.Up * .5f;
             _rac1NanotechClouds.Add(new(node, new(ToEffectNative(node.GlobalPosition))));
         }
-        else if (crate.Source.NativeClassId == 511)
+        else if (crate.Source.NativeClassId == Rac1ClassIds.AmmoCrate)
         {
             var definition = Rac1CrateSupply.SelectFirstAmmo(crate.Source, _rac1Weapons, Rac1EffectRandom);
             if (_rac1PickupAssets?.Models.ContainsKey(definition.ModelClass) != true)
@@ -90,7 +90,7 @@ public partial class OBPGame
             }
             if (cloud.Travel < 1) continue;
             cloud.Motion.Arrive(_rac1Nanotech);
-            PlayRac1PickupSound(Rac1CrateSupply.NanotechCrateClass, Rac1CrateAudio.NanotechArrivalLocalSound, position);
+            PlayRac1PickupSound(Rac1ClassIds.NanotechCrate, Rac1CrateAudio.NanotechArrivalLocalSound, position);
             cloud.Node.QueueFree();
             _rac1NanotechClouds.Remove(cloud);
             RefreshRac1HudState();

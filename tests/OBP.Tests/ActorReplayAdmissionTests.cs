@@ -1,5 +1,6 @@
 using OBP.Core;
 using OBP.Fusion;
+using OBP.RAC1.Gameplay;
 
 namespace OBP.Tests;
 
@@ -9,11 +10,11 @@ public sealed class ActorReplayAdmissionTests
         new(new("world", 7, new(game, nativeClass, 1)), new(game, "build", "asset"), adapter, context, []);
 
     [Theory]
-    [InlineData(ObpSourceGame.Rac1, 500, "source-world/rac1")]
-    [InlineData(ObpSourceGame.Rac1, 501, "source-world/rac1")]
-    [InlineData(ObpSourceGame.Rac1, 511, "source-world/rac1")]
-    [InlineData(ObpSourceGame.Rac1, 749, "source-world/rac1")]
-    [InlineData(ObpSourceGame.Rac1, 1440, "source-world/rac1")]
+    [InlineData(ObpSourceGame.Rac1, Rac1ClassIds.WoodenCrate, "source-world/rac1")]
+    [InlineData(ObpSourceGame.Rac1, Rac1ClassIds.NanotechCrate, "source-world/rac1")]
+    [InlineData(ObpSourceGame.Rac1, Rac1ClassIds.AmmoCrate, "source-world/rac1")]
+    [InlineData(ObpSourceGame.Rac1, Rac1ClassIds.VeldinToad, "source-world/rac1")]
+    [InlineData(ObpSourceGame.Rac1, Rac1ClassIds.VeldinFlameRobot, "source-world/rac1")]
     [InlineData(ObpSourceGame.Rac2, 2827, "source-world/rac2")]
     [InlineData(ObpSourceGame.Rac3, 500, "source-world/rac3")]
     public void ExistingOriginalContextsRetainTheirReplayIds(ObpSourceGame game, int nativeClass, string adapter) =>
@@ -39,6 +40,7 @@ public sealed class ActorReplayAdmissionTests
     {
         Assert.Throws<InvalidOperationException>(() => OBP.Game.ActorReplayAdmission.Require(Registration(ObpSourceGame.Rac2, 500, "source-world/rac3"), []));
         Assert.Throws<InvalidOperationException>(() => OBP.Game.ActorReplayAdmission.Require(Registration(ObpSourceGame.Rac1, 999, "source-world/rac1"), []));
-        Assert.Throws<InvalidOperationException>(() => OBP.Game.ActorReplayAdmission.Require(Registration(ObpSourceGame.Rac1, 749, "rac1/class749/v1"), []));
+        Assert.Throws<InvalidOperationException>(() => OBP.Game.ActorReplayAdmission.Require(Registration(ObpSourceGame.Rac1, Rac1ClassIds.MetalCrate, "source-world/rac1"), []));
+        Assert.Throws<InvalidOperationException>(() => OBP.Game.ActorReplayAdmission.Require(Registration(ObpSourceGame.Rac1, Rac1ClassIds.VeldinToad, "rac1/class749/v1"), []));
     }
 }

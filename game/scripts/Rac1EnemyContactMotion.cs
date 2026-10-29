@@ -1,4 +1,5 @@
 using Godot;
+using OBP.RAC1.Gameplay;
 
 namespace OBP.Game;
 
@@ -10,7 +11,7 @@ internal static class Rac1EnemyContactMotion
         // Grounded class-749 gravity belongs to the support sweep after the wall slide.
         // Including it in MoveAndCollide can produce an inconsistent second floor contact
         // between fresh processes. Never edit launches, airborne motion or hit reactions.
-        if (nativeClass == 749 && grounded && !reacting && motion.Y < 0)
+        if (nativeClass == Rac1ClassIds.VeldinToad && grounded && !reacting && motion.Y < 0)
             motion.Y = 0;
         return motion;
     }

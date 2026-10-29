@@ -14,7 +14,7 @@ public static class FusionDamagePolicy
 {
     public const string Id = "rac1-veldin-original-damage-v1";
     public static bool Admits(WeaponTargetKey target) => target.SourceGame == ObpSourceGame.Rac1 && target.InstanceIndex >= 0 &&
-        target.NativeClassId is 500 or 501 or 511 or 749 or 1440;
+        target.NativeClassId is Rac1ClassIds.WoodenCrate or Rac1ClassIds.NanotechCrate or Rac1ClassIds.AmmoCrate or Rac1ClassIds.VeldinToad or Rac1ClassIds.VeldinFlameRobot;
 
     /// <summary>Keep foreign queries within the admitted R&C1 families; native victim rules still decide each hit.</summary>
     public static bool AdmitsQueryTarget(SourceWeaponKey weapon, WeaponTargetKey target) =>
@@ -23,7 +23,7 @@ public static class FusionDamagePolicy
     public static Rac1GameplayDamageEvent? Translate(WeaponDamageIntent intent)
     {
         if (!Admits(intent.Target) || !float.IsFinite(intent.SourceDamage) || intent.SourceDamage <= 0 ||
-            intent.Target.NativeClassId == 749 && intent.SourceDamage < 1 ||
+            intent.Target.NativeClassId == Rac1ClassIds.VeldinToad && intent.SourceDamage < 1 ||
             intent.Shot.Weapon != FusionWeaponSession.Lancer && intent.Shot.Weapon != FusionWeaponSession.ShockCannon)
             return null;
         // The source is a logical player action in this target-game envelope.

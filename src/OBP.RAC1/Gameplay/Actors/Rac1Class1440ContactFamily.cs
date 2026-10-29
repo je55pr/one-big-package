@@ -12,7 +12,7 @@ namespace OBP.RAC1.Gameplay;
 /// </summary>
 public static class Rac1Class1440ContactFamily
 {
-    public const int NativeClassId = 1440;
+    public const int NativeClassId = Rac1ClassIds.VeldinFlameRobot;
     public const string PVarPayloadFormat = "rac1-pvar";
     public const int HealthOffset = 0x20;
     public const int TargetMobyOffset = 0x110;

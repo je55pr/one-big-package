@@ -1,5 +1,6 @@
 using Godot;
 using OBP.Core;
+using OBP.RAC1.Gameplay;
 using OBP.RAC2.Gameplay;
 using OBP.RAC3.Gameplay;
 using OBP.Runtime.Gameplay;
@@ -32,7 +33,7 @@ internal sealed class FusionWeaponWorldActions(FusionWeaponContactPorts ports)
         bool ordinary = ports.Ordinary();
         return ports.Geometry().Where(target => target.Active && (ordinary
                 ? FusionDamagePolicy.AdmitsQueryTarget(selected, target.Key) : FusionDamagePolicy.Admits(target.Key)))
-            .Where(target => selected != FusionWeaponSession.Lancer || target.Key.SourceGame != ObpSourceGame.Rac1 || target.Key.NativeClassId != 749)
+            .Where(target => selected != FusionWeaponSession.Lancer || target.Key.SourceGame != ObpSourceGame.Rac1 || target.Key.NativeClassId != Rac1ClassIds.VeldinToad)
             .Select(target => target.Bounds.GetCenter()).Where(point => point.DistanceSquaredTo(origin) is > .1f && point.DistanceSquaredTo(origin) < range * range &&
                 (point - origin).Normalized().Dot(forward) > .9f && ports.LineOfSight(origin, point))
             .OrderBy(point => point.DistanceSquaredTo(origin)).FirstOrDefault(origin + forward * range);

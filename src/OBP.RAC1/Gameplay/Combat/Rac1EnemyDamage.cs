@@ -28,7 +28,7 @@ public static class Rac1EnemyDamage
     }
 
     public static bool IsClass1440Contact(Rac1GameplayDamageEvent damage) =>
-        damage.Source.Kind == Rac1GameplayEntityKind.Moby && damage.Source.NativeClassId == 1440 &&
+        damage.Source.Kind == Rac1GameplayEntityKind.Moby && damage.Source.NativeClassId == Rac1ClassIds.VeldinFlameRobot &&
         damage.Owner?.RuntimeEntity == damage.Source && damage.NativeDamageFlags == 0x00010001 &&
         damage.NativeDamage == 1 && damage.NativeMarker is null;
 
@@ -67,8 +67,8 @@ public static class Rac1EnemyDamage
     private static bool IsHostAdaptedWeapon(Rac1GameplayDamageEvent damage) =>
         damage.HostWeaponIntent is { } intent && intent.Shot.Weapon.SourceGame is ObpSourceGame.Rac2 or ObpSourceGame.Rac3 &&
         intent.Shot.Weapon.NativeItemId >= 0 && intent.Target.SourceGame == ObpSourceGame.Rac1 &&
-        intent.Target.NativeClassId is 749 or 1440 &&
-        (intent.Target.NativeClassId != 749 || intent.SourceDamage >= 1) &&
+        intent.Target.NativeClassId is Rac1ClassIds.VeldinToad or Rac1ClassIds.VeldinFlameRobot &&
+        (intent.Target.NativeClassId != Rac1ClassIds.VeldinToad || intent.SourceDamage >= 1) &&
         damage.Source == Rac1GameplayEntityRef.Player && damage.Owner?.RuntimeEntity == Rac1GameplayEntityRef.Player &&
         damage.Target.MatchesMoby(new(intent.Target.NativeClassId, intent.Target.InstanceIndex)) &&
         float.IsFinite(intent.SourceDamage) && intent.SourceDamage > 0 && damage.NativeDamage == intent.SourceDamage &&

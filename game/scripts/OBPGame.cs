@@ -456,7 +456,7 @@ public partial class OBPGame : Node3D
                 ToNumerics(v.Root.GlobalPosition), ToNumerics(v.Root.GlobalRotation), v.Root.Visible)).ToArray(),
             Rac1World.Enemies.Roster.Where(v => IsInstanceValid(v.Value.Body)).Select(v => new CaptureEnemyCheckpoint(v.Key, ToNumerics(v.Value.Body.Velocity), v.Value.Animation.Sequence,
                 v.Value.Animation.Position, v.Value.DeathTicks, v.Value.RewardEmitted, v.Value.Buried,
-                v.Value.Node.Source.NativeClassId == 1440 && Rac1World.Enemies.Class1440 is not null ? Rac1World.Enemies.Class1440.Get(v.Key).Health : null,
+                v.Value.Node.Source.NativeClassId == Rac1ClassIds.VeldinFlameRobot && Rac1World.Enemies.Class1440 is not null ? Rac1World.Enemies.Class1440.Get(v.Key).Health : null,
                 Rac1World.Presentation.HostileNodes.ContainsKey(v.Key) ? Rac1World.Context.Hostiles.Probe(v.Value.Node.Source).Health : null)).ToArray(),
             [Rac1World.Presentation.Projectiles.Count, _rac1PickupMotion.Count, _rac1EquipmentShots.Count, _rac1DoomAgents.Count, _rac1AmmoPickups.Count, _rac1NanotechClouds.Count],
             Rac1World.Presentation.Projectiles.Select(v => new CaptureBombCheckpoint(v.Key, ToNumerics(FromEffectNative(v.Value.Motion.Position)), ToNumerics(FromEffectNative(v.Value.Motion.Velocity)),
@@ -1541,7 +1541,7 @@ public partial class OBPGame : Node3D
             Orientation = FromEffectOrientation,
             CrateBody = id => _rac1CrateBodies.ContainsKey(id),
             Strike = node => TryStrikeRac1Crate(node),
-            Damage = () => _rac1Nanotech.ApplyDamage(Rac1DamageRuntime.FromClass749Attack(new(749, 149), new(34, 1))),
+            Damage = () => _rac1Nanotech.ApplyDamage(Rac1DamageRuntime.FromClass749Attack(new(Rac1ClassIds.VeldinToad, 149), new(34, 1))),
         }, targets, worlds);
         return new(movement.Ports, new(loot, targets, movement.Equipment, new GodotRac1LootDiagnosticCapture(this,
             () => _world?.LevelId ?? throw new DiagnosticUnavailableException("The loot capture world is unavailable."), () => _ui, () => _player, new GodotDiagnosticFrameClock(this))));
