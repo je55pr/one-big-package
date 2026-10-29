@@ -50,6 +50,43 @@ public sealed class CoverageReportTests
     }
 
     [Fact]
+    public void UnlinkedGameScriptCannotBeClaimedAsPortableExecution()
+    {
+        using var fixture = new Fixture();
+        fixture.CreateReports();
+        string unlinked = "game/scripts/OBPGame.cs";
+        File.WriteAllText(Path.Combine(fixture.Root, unlinked), "public class OBPGame {}");
+        var cobertura = XDocument.Load(fixture.Cobertura);
+        cobertura.Descendants("package").Single(item => (string?)item.Attribute("name") == "OBP.Tests")
+            .Descendants("class").Single().SetAttributeValue("filename", unlinked);
+        cobertura.Save(fixture.Cobertura);
+        var open = XDocument.Load(fixture.OpenCover);
+        open.Descendants("Module").Single(item => item.Element("ModuleName")?.Value == "OBP.Tests")
+            .Descendants("File").Single().SetAttributeValue("fullPath", unlinked);
+        open.Save(fixture.OpenCover);
+        Assert.Contains("outside the declared repository source scope",
+            Assert.Throws<InvalidDataException>(fixture.Write).Message, StringComparison.Ordinal);
+        Assert.False(Directory.Exists(fixture.Output));
+    }
+
+    [Theory]
+    [InlineData("OBP.Tests", "src/OBP.Core/Fixture.cs")]
+    [InlineData("OBP.Core", "game/scripts/Fixture.cs")]
+    [InlineData("OBP.Runtime", "src/OBP.Core/Fixture.cs")]
+    public void OpenCoverRejectsWrongModuleSourceIndependently(string module, string falseSource)
+    {
+        using var fixture = new Fixture();
+        fixture.CreateReports();
+        var open = XDocument.Load(fixture.OpenCover);
+        open.Descendants("Module").Single(item => item.Element("ModuleName")?.Value == module)
+            .Descendants("File").Single().SetAttributeValue("fullPath", falseSource);
+        open.Save(fixture.OpenCover);
+        Assert.Contains("outside the declared repository source scope",
+            Assert.Throws<InvalidDataException>(fixture.Write).Message, StringComparison.Ordinal);
+        Assert.False(Directory.Exists(fixture.Output));
+    }
+
+    [Fact]
     public void MissingCollectionFailsInsteadOfPublishingAZeroReport()
     {
         using var fixture = new Fixture();
@@ -349,6 +386,12 @@ public sealed class CoverageReportTests
         public void CreateReports(string? zeroModule = null, string[]? modules = null, string fileName = "Fixture.cs")
         {
             modules ??= ["OBP.Core", "OBP.IO", "OBP.Runtime", "OBP.Fusion", "OBP.PS2", "OBP.RAC1", "OBP.RAC2", "OBP.RAC3", "OBP.Tests"];
+            string projectDirectory = Path.Combine(Root, "tests", "OBP.Tests");
+            Directory.CreateDirectory(projectDirectory);
+            new XDocument(new XElement("Project", new XElement("ItemGroup",
+                new XElement("Compile", new XAttribute("Include", "../../game/scripts/" + fileName),
+                    new XAttribute("Link", "Game/" + fileName)))))
+                .Save(Path.Combine(projectDirectory, "OBP.Tests.csproj"));
             var packages = new XElement("packages"); var openModules = new XElement("Modules");
             foreach (string module in modules)
             {
