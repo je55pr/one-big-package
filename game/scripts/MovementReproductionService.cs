@@ -257,11 +257,11 @@ internal sealed class MovementReproductionService(MovementReproductionPorts port
         PlayerHost player = _player ?? throw new InvalidOperationException("Replay player is missing.");
         using var worldWork = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
             _ports.WorldLifetime());
-        player.DevelopmentProfileEnabled = _args.ReplayProfile;
-        System.Diagnostics.Stopwatch? timer = _args.ReplayProfile ? System.Diagnostics.Stopwatch.StartNew() : null;
-        if (_args.ReplayProfile)
-            RenderingServer.ViewportSetMeasureRenderTime(_ports.Owner.GetViewport().GetViewportRid(), true);
-        var samples = new List<MovementReplaySample> { CaptureMovementReplaySample(0, timer) };
+        bool profile = _args.ReplayProfile;
+        Rid measuredViewport = default;
+        bool measurementTouched = false;
+        System.Diagnostics.Stopwatch? timer = null;
+        var samples = new List<MovementReplaySample>();
         var complete = new TaskCompletionSource<List<MovementReplaySample>>(TaskCreationOptions.RunContinuationsAsynchronously);
         void CompletedPhysics()
         {
@@ -284,6 +284,18 @@ internal sealed class MovementReproductionService(MovementReproductionPorts port
         // heading determines the route; this never steers toward a guessed point.
         try
         {
+            worldWork.Token.ThrowIfCancellationRequested();
+            if (!GodotObject.IsInstanceValid(player) || !player.IsInsideTree())
+                throw new InvalidOperationException("Replay player is no longer in the active world.");
+            player.DevelopmentProfileEnabled = profile;
+            timer = profile ? System.Diagnostics.Stopwatch.StartNew() : null;
+            if (profile)
+            {
+                measuredViewport = _ports.Owner.GetViewport().GetViewportRid();
+                measurementTouched = true;
+                RenderingServer.ViewportSetMeasureRenderTime(measuredViewport, true);
+            }
+            samples.Add(CaptureMovementReplaySample(0, timer));
             player.DevelopmentPhysicsCompleted += CompletedPhysics;
             _ports.SetAnalogueSmokeInput(0f, 1f);
             return await complete.Task.WaitAsync(TimeSpan.FromSeconds(frames / 60d + 30d), worldWork.Token);
@@ -297,8 +309,8 @@ internal sealed class MovementReproductionService(MovementReproductionPorts port
         {
             player.DevelopmentPhysicsCompleted -= CompletedPhysics;
             if (GodotObject.IsInstanceValid(player)) player.DevelopmentProfileEnabled = false;
-            if (_args.ReplayProfile)
-                RenderingServer.ViewportSetMeasureRenderTime(_ports.Owner.GetViewport().GetViewportRid(), false);
+            if (measurementTouched)
+                RenderingServer.ViewportSetMeasureRenderTime(measuredViewport, false);
             _ports.ClearSmokeInput();
         }
     }

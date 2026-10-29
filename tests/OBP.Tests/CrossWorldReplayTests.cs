@@ -139,6 +139,10 @@ public sealed class CrossWorldReplayTests : IDisposable
         {
             Replay = state.Replay with { FileName = "../escaped.run.jsonl.gz" }
         }));
+        using (var oversized = File.Create(prefix))
+            oversized.SetLength(PlaytestRunReader.MaximumCompressedBytes + 1L);
+        Assert.Throws<InvalidDataException>(() => ReplayBookmarkResolver.Resolve(bookmark, state));
+        File.Delete(prefix);
         Assert.Equal(original, File.ReadAllBytes(bookmark));
 
         // The filename is valid and the digest matches, but the file is a link
