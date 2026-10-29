@@ -25,6 +25,7 @@
     <Compile Include="../../game/scripts/AutomationRunPolicy.cs" Link="Game/AutomationRunPolicy.cs" />
     <Compile Include="../../game/scripts/DiagnosticSnapshotGate.cs" Link="Game/DiagnosticSnapshotGate.cs" />
     <Compile Include="../../game/scripts/SourceSetupPolicy.cs" Link="Game/SourceSetupPolicy.cs" />
+    <Compile Include="../../game/scripts/DestinationSelectorVisibility.cs" Link="Game/DestinationSelectorVisibility.cs" />
     <Compile Include="../../game/scripts/SourceSetupCoordinator.cs" Link="Game/SourceSetupCoordinator.cs" />
     <Compile Include="../../game/scripts/PhysicalSourceSetupStorage.cs" Link="Game/PhysicalSourceSetupStorage.cs" />
     <Compile Include="../../game/scripts/EffectCaptureContract.cs" Link="Game/EffectCaptureContract.cs" />

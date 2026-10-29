@@ -164,11 +164,12 @@ public partial class DestinationSelectorUi : CanvasLayer
         }
 
         foreach (var destination in provider.Catalogue.Destinations
-                     .Where(destination => DebugOutputEnabled || destination.Kind != ObpDestinationKind.Unresolved)
+                     .Where(destination => DestinationSelectorVisibility.IsVisible(destination, provider, DebugOutputEnabled))
                      .OrderBy(d => SortKind(d.Kind)))
         {
             bool current = destination.DestinationId == currentDestinationId;
-            string menuLabel = MenuDestinationLabel(destination);
+            string displayName = DestinationSelectorVisibility.DisambiguatedName(destination, provider.Catalogue.Destinations);
+            string menuLabel = MenuDestinationLabel(destination, displayName);
             var button = new Button
             {
                 Text = current
@@ -178,7 +179,7 @@ public partial class DestinationSelectorUi : CanvasLayer
                 CustomMinimumSize = new Vector2(0, 50),
                 FocusMode = Control.FocusModeEnum.All,
                 Disabled = !provider.CanLoad(destination),
-                TooltipText = DebugOutputEnabled ? TechnicalTooltip(destination) : provider.CanLoad(destination) ? destination.DisplayName : "This world is not implemented yet.",
+                TooltipText = DebugOutputEnabled ? TechnicalTooltip(destination) : provider.CanLoad(destination) ? displayName : "This world is not implemented yet.",
             };
             if (current) button.Modulate = UiTheme.Accent;
 
@@ -194,7 +195,7 @@ public partial class DestinationSelectorUi : CanvasLayer
             if (!button.Disabled && _firstDestinationButton is null) _firstDestinationButton = button;
             if (!button.Disabled && current) _currentDestinationButton = button;
         }
-        if (!DebugOutputEnabled && provider.Catalogue.Destinations.Any(destination => destination.Kind == ObpDestinationKind.Unresolved))
+        if (!DebugOutputEnabled && DestinationSelectorVisibility.HasHiddenDestinations(provider.Catalogue.Destinations, provider))
             content.AddChild(Status("Additional destinations are not yet implemented."));
     }
 
@@ -206,9 +207,9 @@ public partial class DestinationSelectorUi : CanvasLayer
         CustomMinimumSize = new Vector2(0, 36),
     };
 
-    private static string MenuDestinationLabel(ObpDestination destination)
+    private static string MenuDestinationLabel(ObpDestination destination, string displayName)
     {
-        string label = destination.DisplayName.Trim();
+        string label = displayName.Trim();
         if (label.StartsWith("R&C1 ", StringComparison.OrdinalIgnoreCase)) label = label[5..];
         if (label.StartsWith("UYA ", StringComparison.OrdinalIgnoreCase)) label = label[4..];
         label = label.Replace("LEVEL", "LEVEL ", StringComparison.OrdinalIgnoreCase)

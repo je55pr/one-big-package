@@ -1,4 +1,5 @@
 using OBP.Core;
+using OBP.Game;
 using OBP.RAC1;
 using OBP.RAC2;
 using OBP.RAC3;
@@ -137,6 +138,63 @@ public sealed class DestinationCatalogueTests
         Assert.DoesNotContain(catalogue.Destinations,
             destination => destination.DisplayName.Contains("TABLE", StringComparison.OrdinalIgnoreCase)
                 || destination.DisplayName.Contains("Unnamed", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void WorldSelectorShowsLoadableUnclassifiedRac3DestinationsWithoutDebugMode()
+    {
+        var provider = Rac3WorldProvider.Instance;
+        Assert.Equal(51, provider.Catalogue.Destinations.Count);
+        Assert.All(provider.Catalogue.Destinations, destination =>
+        {
+            Assert.Equal(ObpDestinationKind.Unresolved, destination.Kind);
+            Assert.True(provider.CanLoad(destination));
+            Assert.True(DestinationSelectorVisibility.IsVisible(destination, provider, debugOutputEnabled: false));
+        });
+
+        var unknown = provider.Catalogue.Destinations[0] with
+        {
+            DestinationId = "rac3:TABLE999",
+            NativeDestinationId = "TABLE999",
+        };
+        Assert.False(provider.CanLoad(unknown));
+        Assert.False(DestinationSelectorVisibility.IsVisible(unknown, provider, debugOutputEnabled: false));
+        Assert.True(DestinationSelectorVisibility.IsVisible(unknown, provider, debugOutputEnabled: true));
+    }
+
+    [Fact]
+    public void WorldSelectorDoesNotAdvertiseExtraDestinationsWhenAllRac3RowsAreLoadable()
+    {
+        var provider = Rac3WorldProvider.Instance;
+        Assert.False(DestinationSelectorVisibility.HasHiddenDestinations(provider.Catalogue.Destinations, provider));
+    }
+
+    [Fact]
+    public void WorldSelectorAdvertisesAdditionalDestinationsWhenUnresolvedRowCannotLoad()
+    {
+        var provider = Rac3WorldProvider.Instance;
+        var unknown = provider.Catalogue.Destinations[0] with
+        {
+            DestinationId = "rac3:TABLE999",
+            NativeDestinationId = "TABLE999",
+        };
+        Assert.True(DestinationSelectorVisibility.HasHiddenDestinations(
+            provider.Catalogue.Destinations.Append(unknown), provider));
+    }
+
+    [Fact]
+    public void WorldSelectorDistinguishesDuplicateRac3LocationNamesWithoutRenamingCatalogueEntries()
+    {
+        var destinations = Rac3WorldProvider.Instance.Catalogue.Destinations;
+        var firstSewers = destinations.Single(destination => destination.NativeDestinationId == "TABLE28");
+        var secondSewers = destinations.Single(destination => destination.NativeDestinationId == "TABLE48");
+        var veldin = destinations.Single(destination => destination.NativeDestinationId == "TABLE1");
+
+        Assert.Equal("Aquatos Sewers", firstSewers.DisplayName);
+        Assert.Equal("Aquatos Sewers", secondSewers.DisplayName);
+        Assert.Equal("Aquatos Sewers (TABLE28)", DestinationSelectorVisibility.DisambiguatedName(firstSewers, destinations));
+        Assert.Equal("Aquatos Sewers (TABLE48)", DestinationSelectorVisibility.DisambiguatedName(secondSewers, destinations));
+        Assert.Equal("Veldin", DestinationSelectorVisibility.DisambiguatedName(veldin, destinations));
     }
 
     [Fact]
