@@ -76,6 +76,11 @@ internal sealed class PlayerLifecycleBridge(PlayerLifecycleSessionPorts ports)
         // OBP entry-point policy; inventory, wallet and source campaign remain persistent.
         native.Life.Respawn();
         session.Configure(session.Capture().Configuration);
+        void Reject()
+        {
+            session.Restore(before);
+            ports.Present(new(PlayerLifecycleEventKind.RespawnRejected, health, native.Life.Capture()));
+        }
         try
         {
             if (ports.EnterWorld())
@@ -87,12 +92,10 @@ internal sealed class PlayerLifecycleBridge(PlayerLifecycleSessionPorts ports)
         }
         catch
         {
-            session.Restore(before);
-            ports.Present(new(PlayerLifecycleEventKind.RespawnRejected, health, native.Life.Capture()));
+            Reject();
             throw;
         }
-        session.Restore(before);
-        ports.Present(new(PlayerLifecycleEventKind.RespawnRejected, health, native.Life.Capture()));
+        Reject();
         return false;
     }
 

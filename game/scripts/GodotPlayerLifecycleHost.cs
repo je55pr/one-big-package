@@ -96,9 +96,12 @@ internal sealed class GodotPlayerLifecycleHost : IDisposable
                 _ports.RefreshHud();
                 break;
             case PlayerLifecycleEventKind.Sample:
-                if (_ports.Hud.Current.Health is not { } displayed || displayed.Current != change.Health.Current || displayed.Capacity != change.Health.Capacity ||
+                if (_ports.Hud.Current.Health is not { } displayed || displayed.Current != (int)change.Health.Current || displayed.Capacity != (int)change.Health.Capacity ||
                     displayed.LifeState != (change.Health.Alive ? HudLifeState.Alive : HudLifeState.Dead)) _ports.RefreshHud();
                 if (_player is { } current && _ports.Hud.Current.Air != Rac1HudProjection.CaptureAir(current.Rac1SwimState, current.Rac1MovementEquipment.OxygenMask)) _ports.RefreshHud();
+                break;
+            case PlayerLifecycleEventKind.DamageSample:
+                // No admitted damage: the health snapshot was already copied above.
                 break;
             case PlayerLifecycleEventKind.Defeated:
                 if (_retry is not null || _ports.NativeRetryOpen() || _world is null) break;
@@ -111,6 +114,8 @@ internal sealed class GodotPlayerLifecycleHost : IDisposable
             case PlayerLifecycleEventKind.Respawned:
                 ResetRetry();
                 break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(change), change.Kind, "Unsupported player lifecycle event.");
         }
     }
 

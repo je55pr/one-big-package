@@ -13,6 +13,7 @@ public sealed class PlayerLifecycleBridgeTests
     {
         public IReadOnlyDictionary<string, string> Capture() => new Dictionary<string, string>();
         public void ValidateRestore(IReadOnlyDictionary<string, string> preferences) { }
+        // This fixture has no preference state to restore; the native adapter restores gameplay state.
         public void Restore(IReadOnlyDictionary<string, string> preferences) { }
     }
     private sealed class Fixture
@@ -75,6 +76,28 @@ public sealed class PlayerLifecycleBridgeTests
         Assert.Single(f.Events, change => change.Kind == PlayerLifecycleEventKind.Hurt);
         f.Bridge.RetireActor(key);
         Assert.False(f.Bridge.Contains(key));
+    }
+
+    [Fact]
+    public void MixedSourceDamageSharesOneWorldLeaseAndRetiresOneActor()
+    {
+        var f = new Fixture();
+        using var world = f.Bridge.BeginWorld("world", 1);
+        var rac1 = new ActorInstanceKey("world", 1, new(ObpSourceGame.Rac1, 1440, 7));
+        var rac2 = new ActorInstanceKey("world", 1, new(ObpSourceGame.Rac2, 1440, 7));
+        Assert.True(f.Hit(rac1).Applied);
+        Assert.Equal(3, f.Player.Native!.Life.Capture().Current);
+        // Respect the recovered RAC1 hit-protection window before the second source hits.
+        int protectionTicks = f.Player.Native.Health.Probe().EnemyHitProtectionTicks;
+        for (int tick = 0; tick < protectionTicks; tick++) f.Player.Native.Life.TickNative();
+        Assert.True(f.Hit(rac2).Applied);
+        Assert.Equal(2, f.Player.Native.Life.Capture().Current);
+        Assert.Equal(2, f.Events.Count(change => change.Kind == PlayerLifecycleEventKind.Hurt));
+        Assert.True(f.Bridge.Contains(rac1));
+        Assert.True(f.Bridge.Contains(rac2));
+        f.Bridge.RetireActor(rac1);
+        Assert.False(f.Bridge.Contains(rac1));
+        Assert.True(f.Bridge.Contains(rac2));
     }
 
     [Fact]
