@@ -67,29 +67,7 @@ internal sealed class Rac1AmoeboidEnemyAdapter
             foreach (var placement in instances.Where(x => x.OClass == 830))
                 _rac1Class830Controllers.Register(placement.Index, placement.OClass,
                     placement.PVar ?? throw new InvalidDataException("Class-830 controller has no PVar."));
-        foreach (var candidate in (world.DynamicObjects ?? [])
-            .Where(moby => moby.NativeClassId == Rac1AmoeboidTargetSelection.TargetClassId))
-        {
-            var node = Rac1WorldPresentation.FindPresentedDynamic(result, candidate);
-            if (node is null) continue; // No source-backed presented target.
-            var placement = Rac1Instances.RequirePlacement(instances, candidate.InstanceIndex, candidate.NativeClassId);
-            int group = Rac1AmoeboidAuthored.ReadGroup(placement.RawRecord);
-            // State 0 clears the targeting flag in authored state-12/15
-            // gates; only the independent volume activation is hosted.
-            var pvar = placement.PVar ??
-                throw new InvalidDataException("Class-623 target has no PVar.");
-            _rac1Class623Activation.Register(candidate.InstanceIndex, placement.OClass, pvar);
-            var links = _rac1Class623Activation.Links(candidate.InstanceIndex);
-            if (links.LinkedMobyIndex >= 0 &&
-                (links.LinkedMobyIndex >= instances.Count ||
-                 instances[links.LinkedMobyIndex].OClass != 830))
-                throw new InvalidDataException("Class-623 target references a non-controller Moby.");
-            if (links.TriggerVolumeIndex >= _rac1AmoeboidVolumes.Count)
-                throw new InvalidDataException("Class-623 target references a missing trigger volume.");
-            if (!_rac1AmoeboidTargetGroups.TryGetValue(group, out var members))
-                _rac1AmoeboidTargetGroups.Add(group, members = []);
-            members.Add(node);
-        }
+        RegisterClass623Targets(world, result, instances);
         _rac1Amoeboids = new(_host.Context.MobyRuntime,
             Rac1AmoeboidPathRouter.Read(gameplay),
             // Exact source 0x276fe8 waypoint/mask search, but Godot's
@@ -116,6 +94,38 @@ internal sealed class Rac1AmoeboidEnemyAdapter
         GD.Print($"[rac1-amoeboids] L{world.LevelId}: {_rac1Amoeboids.RegisteredCount} authored, " +
             $"{_rac1Amoeboids.ActiveCount} active, {_rac1Amoeboids.GatedCount} gated, " +
             $"{_rac1Amoeboids.DormantCount} reserve");
+    }
+
+    /// <summary>Bind class-623 targets and their authored class-830/volume links before registering actors.</summary>
+    private void RegisterClass623Targets(RuntimeWorld world, RuntimeWorldScene.Result result,
+        IReadOnlyList<Rac1Instances.MobyInstance> instances)
+    {
+        foreach (var candidate in (world.DynamicObjects ?? [])
+            .Where(moby => moby.NativeClassId == Rac1AmoeboidTargetSelection.TargetClassId))
+        {
+            var node = Rac1WorldPresentation.FindPresentedDynamic(result, candidate);
+            if (node is null) continue; // No source-backed presented target.
+            var placement = Rac1Instances.RequirePlacement(instances, candidate.InstanceIndex, candidate.NativeClassId);
+            int group = Rac1AmoeboidAuthored.ReadGroup(placement.RawRecord);
+            // State 0 clears the targeting flag in authored state-12/15
+            // gates; only the independent volume activation is hosted.
+            var pvar = placement.PVar ??
+                throw new InvalidDataException("Class-623 target has no PVar.");
+            _rac1Class623Activation.Register(candidate.InstanceIndex, placement.OClass, pvar);
+            var links = _rac1Class623Activation.Links(candidate.InstanceIndex);
+            if (links.LinkedMobyIndex >= 0 &&
+                (links.LinkedMobyIndex >= instances.Count ||
+                 instances[links.LinkedMobyIndex].OClass != 830))
+                throw new InvalidDataException("Class-623 target references a non-controller Moby.");
+            if (links.TriggerVolumeIndex >= _rac1AmoeboidVolumes.Count)
+                throw new InvalidDataException("Class-623 target references a missing trigger volume.");
+            if (!_rac1AmoeboidTargetGroups.TryGetValue(group, out var members))
+            {
+                members = [];
+                _rac1AmoeboidTargetGroups.Add(group, members);
+            }
+            members.Add(node);
+        }
     }
 
     internal void Initialize(Rac1HostedEnemy enemy)
@@ -168,6 +178,34 @@ internal sealed class Rac1AmoeboidEnemyAdapter
             : null;
     }
 
+    /// <summary>Resolve the hosted target without granting class-623 damage before its native receiver exists.</summary>
+    private (NVector3 Target, Rac1GameplayEntityRef SelectedTarget) SelectHostedTarget(
+        Rac1HostedEnemy enemy, NVector3 pos, NVector3 playerTarget)
+    {
+        var selectedTarget = Rac1GameplayEntityRef.Player;
+        int candidateGroup = _rac1Amoeboids!.TargetCandidateGroup(enemy.Node.Source.InstanceIndex);
+        if (candidateGroup >= 0 && _rac1AmoeboidTargetGroups.TryGetValue(candidateGroup, out var targets))
+        {
+            var nearest = Rac1AmoeboidTargetSelection.SelectForHostedCombat(
+                Rac1Class623HitReceiverAvailable, candidateGroup, pos, playerTarget,
+                _rac1Amoeboids.HostDetectionRange(enemy.Node.Source.InstanceIndex),
+                targets.Select(candidate => new Rac1AmoeboidTargetSelection.Candidate(
+                    candidate.Source.InstanceIndex, candidate.Source.NativeClassId, candidateGroup,
+                    ToEffectNative(candidate.Root.GlobalPosition),
+                    candidate.Root.Visible &&
+                        candidate.State.Presentation.Presence == RuntimeEntityPresence.Active &&
+                        _rac1Class623Activation.Get(candidate.Source.InstanceIndex).HasTargetableFlag,
+                    _rac1Class623Activation.Get(candidate.Source.InstanceIndex).NativeState)));
+            if (nearest is not null)
+            {
+                playerTarget = nearest.Position;
+                selectedTarget = Rac1GameplayEntityRef.Moby(
+                    new(Rac1AmoeboidTargetSelection.TargetClassId, nearest.InstanceIndex));
+            }
+        }
+        return (playerTarget, selectedTarget);
+    }
+
     internal void Tick(Rac1HostedEnemy enemy)
     {
         if (_rac1Amoeboids is null || _host.Player is null || !_host.Owns(enemy)) return;
@@ -180,28 +218,8 @@ internal sealed class Rac1AmoeboidEnemyAdapter
         if (enemy.Reaction is not null)
             _host.StepRac1EnemyReaction(enemy);
         var pos = ToEffectNative(node.Root.GlobalPosition);
-        var target = ToEffectNative(_host.Combat.Goal(enemy, _host.Player.GlobalPosition));
-        Rac1GameplayEntityRef selectedTarget = Rac1GameplayEntityRef.Player;
-        int candidateGroup = _rac1Amoeboids.TargetCandidateGroup(node.Source.InstanceIndex);
-        if (candidateGroup >= 0 && _rac1AmoeboidTargetGroups.TryGetValue(candidateGroup, out var targets))
-        {
-            var nearest = Rac1AmoeboidTargetSelection.SelectForHostedCombat(
-                Rac1Class623HitReceiverAvailable, candidateGroup, pos, target,
-                _rac1Amoeboids.HostDetectionRange(node.Source.InstanceIndex),
-                targets.Select(candidate => new Rac1AmoeboidTargetSelection.Candidate(
-                    candidate.Source.InstanceIndex, candidate.Source.NativeClassId, candidateGroup,
-                    ToEffectNative(candidate.Root.GlobalPosition),
-                    candidate.Root.Visible &&
-                        candidate.State.Presentation.Presence == RuntimeEntityPresence.Active &&
-                        _rac1Class623Activation.Get(candidate.Source.InstanceIndex).HasTargetableFlag,
-                    _rac1Class623Activation.Get(candidate.Source.InstanceIndex).NativeState)));
-            if (nearest is not null)
-            {
-                target = nearest.Position;
-                selectedTarget = Rac1GameplayEntityRef.Moby(
-                    new(Rac1AmoeboidTargetSelection.TargetClassId, nearest.InstanceIndex));
-            }
-        }
+        var (target, selectedTarget) = SelectHostedTarget(enemy, pos,
+            ToEffectNative(_host.Combat.Goal(enemy, _host.Player.GlobalPosition)));
         // A target change during an existing lunge is not permission to hit
         // the new victim. This is a conservative Godot attribution guard
         // until the native class-623 target pointer/hit receiver is recovered.
