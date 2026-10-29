@@ -37,7 +37,9 @@ public static partial class Rac2WorldImport
         Func<int, (double[] Positions, float[] Uvs, int[] Indices, int[] TriTexIds, RuntimeMaterialPresentation?[] TriPresentations)?> lookup,
         List<RuntimeMesh> meshes,
         Action<double, double, double> grow,
-        bool growBounds)
+        bool growBounds,
+        IReadOnlyDictionary<int, AlphaProfile>? alphaProfiles = null,
+        IReadOnlyDictionary<int, HashSet<int>>? cutoutSurfaces = null)
     {
         var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation),
             (List<double> P, List<float> U, List<int> I, Dictionary<(double, double, double, double, double), int> Weld)>();
@@ -70,6 +72,23 @@ public static partial class Rac2WorldImport
                 var presentation = (uint)f < (uint)c.TriPresentations.Length
                     ? c.TriPresentations[f]
                     : null;
+                // Only the proven overlapping leaf surfaces change rendering.
+                // Preserve grouping for all other shrubs to avoid multiplying
+                // draw calls across ordinary RAC2/RAC3 levels.
+                if (alphaProfiles?.TryGetValue(tex, out var profile) == true &&
+                    cutoutSurfaces?.TryGetValue(inst.OClass, out var cutoutTextures) == true &&
+                    cutoutTextures.Contains(tex) &&
+                    profile.CutoutFraction >= 0.05 &&
+                    presentation?.AlphaBlendEnabled is true &&
+                    presentation.BlendEquation is not (RuntimeBlendEquation.FixedAlpha or
+                        RuntimeBlendEquation.AdditiveSourceAlpha or RuntimeBlendEquation.AdditiveFixedAlpha))
+                {
+                    presentation = (presentation ?? new RuntimeMaterialPresentation()) with
+                    {
+                        PreferPerPlacementFoliageDepth = true,
+                        PreferFoliageCutout = true,
+                    };
+                }
                 var surface = (tex, presentation);
                 if (!bySurface.TryGetValue(surface, out var g))
                 {

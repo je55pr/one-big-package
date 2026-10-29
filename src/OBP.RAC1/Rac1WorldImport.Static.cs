@@ -239,9 +239,9 @@ public static partial class Rac1WorldImport
                 var presentation = (uint)face < (uint)cls.TrianglePresentations.Length
                     ? cls.TrianglePresentations[face]
                     : null;
-                // Only the R&C1 importer opts its shrub surfaces into the
-                // per-placement transparency policy; the neutral Godot host
-                // must not branch on source-game identity.
+                // Each PS2 source importer opts supported shrub surfaces into
+                // per-placement transparency; the neutral Godot host never
+                // branches on source-game identity.
                 if (alphaProfiles is not null)
                 {
                     // Only the proven interleaved texture pair receives
