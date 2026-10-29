@@ -28,6 +28,30 @@ public static class Ps2MobyNativePose
     }
 
     /// <summary>
+    /// A rigid-jointed class has one source joint per vertex and no blended
+    /// skin weights. It still needs the native joint pose even though the VU
+    /// packet has no two-way/three-way skin records.
+    /// </summary>
+    public static bool HasRigidJointBinding(GcUyaMoby.Mesh mesh, int jointCount)
+    {
+        if (mesh.Skinned || jointCount is <= 0 or > 112 || !mesh.SkinStateFullyResolved ||
+            mesh.Positions.Length == 0 ||
+            mesh.SkinLocalPositions.Length != mesh.Positions.Length ||
+            mesh.VertexJoints.Length != mesh.Positions.Length ||
+            mesh.VertexWeights.Length != mesh.Positions.Length)
+            return false;
+
+        for (int v = 0; v < mesh.Positions.Length; v += 3)
+        {
+            if (mesh.VertexJoints[v] < 0 || mesh.VertexJoints[v] >= jointCount ||
+                mesh.VertexWeights[v] != 1f ||
+                mesh.VertexWeights[v + 1] != 0f || mesh.VertexWeights[v + 2] != 0f)
+                return false;
+        }
+        return true;
+    }
+
+    /// <summary>
     /// Evaluate a complete native regular key, including source inherited and
     /// post-chain scales. No interpolation, layers, joint modifiers, source
     /// class state or gameplay sequence selection is performed.
@@ -37,15 +61,15 @@ public static class Ps2MobyNativePose
     {
         if (!frame.ExtraChannelsResolved)
             throw new InvalidDataException("Native Moby frame has unresolved extra channels.");
-        if (!mesh.SkinStateFullyResolved || !mesh.SkinningApplied ||
+        if (classBytes.Length < GcUyaMoby.ClassHeaderSize)
+            throw new InvalidDataException("Native Moby class header is truncated.");
+        int n = classBytes[8];
+        if (!mesh.SkinStateFullyResolved ||
+            (!mesh.SkinningApplied && !HasRigidJointBinding(mesh, n)) ||
             mesh.SkinLocalPositions.Length != mesh.Positions.Length ||
             mesh.VertexJoints.Length != mesh.Positions.Length ||
             mesh.VertexWeights.Length != mesh.Positions.Length)
-            throw new InvalidDataException("Native Moby pose requires complete, resolved skin streams.");
-        if (classBytes.Length < GcUyaMoby.ClassHeaderSize)
-            throw new InvalidDataException("Native Moby class header is truncated.");
-
-        int n = classBytes[8];
+            throw new InvalidDataException("Native Moby pose requires complete, resolved joint bindings.");
         int skeleton = BinaryPrimitives.ReadInt32LittleEndian(classBytes.AsSpan(0x14));
         int common = BinaryPrimitives.ReadInt32LittleEndian(classBytes.AsSpan(0x18));
         if (n is <= 0 or > 112 || frame.JointRotations.Length != n ||

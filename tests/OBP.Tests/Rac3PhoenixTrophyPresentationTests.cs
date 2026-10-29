@@ -1,0 +1,80 @@
+using OBP.IO;
+using OBP.PS2.Geometry;
+using OBP.RAC3;
+using OBP.RAC3.Level;
+using OBP.Runtime;
+using Xunit;
+
+namespace OBP.Tests;
+
+public sealed class Rac3PhoenixTrophyPresentationTests
+{
+    [Fact]
+    public void RigidJointEligibilityRequiresCompleteSingleJointInfluences()
+    {
+        var mesh = new GcUyaMoby.Mesh(
+            [0d, 0d, 0d, 1d, 1d, 1d], [], [], [], 1f,
+            Skinned: false, SkinningApplied: false)
+        {
+            SkinLocalPositions = [0d, 0d, 0d, 1d, 1d, 1d],
+            VertexJoints = [0, 0, 0, 1, 0, 0],
+            VertexWeights = [1f, 0f, 0f, 1f, 0f, 0f],
+        };
+
+        Assert.True(Ps2MobyNativePose.HasRigidJointBinding(mesh, 2));
+        Assert.False(Ps2MobyNativePose.HasRigidJointBinding(mesh, 1));
+        Assert.False(Ps2MobyNativePose.HasRigidJointBinding(
+            mesh with { VertexWeights = [1f, 0f, 0f] }, 2));
+        Assert.False(Ps2MobyNativePose.HasRigidJointBinding(
+            mesh with { VertexWeights = [0.5f, 0.5f, 0f, 1f, 0f, 0f] }, 2));
+        Assert.False(Ps2MobyNativePose.HasRigidJointBinding(
+            mesh with { SkinStateFullyResolved = false }, 2));
+        Assert.False(Ps2MobyNativePose.HasRigidJointBinding(
+            mesh with { Skinned = true }, 2));
+    }
+
+    [SkippableFact]
+    public void PhoenixTrophyFiguresStandAndRingJointsStayTogetherWithoutMovingInstances()
+    {
+        var iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_UYA_ISO not set");
+
+        using var reader = new FileRandomAccessReader(iso!);
+        RuntimeWorld legacy = Rac3WorldImport.BuildObserved(reader, 3, nativeMobyPoseOverride: false).World;
+        RuntimeWorld corrected = Rac3WorldImport.BuildObserved(reader, 3, nativeMobyPoseOverride: true).World;
+        var oldObjects = legacy.DynamicObjects!.ToDictionary(m => (m.NativeClassId, m.InstanceIndex));
+        var newObjects = corrected.DynamicObjects!.ToDictionary(m => (m.NativeClassId, m.InstanceIndex));
+
+        Assert.Equal(oldObjects.Keys.Order(), newObjects.Keys.Order());
+        foreach (var key in oldObjects.Keys)
+            Assert.Equal(oldObjects[key].Transform.Matrix, newObjects[key].Transform.Matrix);
+
+        // These fifteen classes represent Phoenix's miniature and ring displays;
+        // some classes have multiple placed instances. Y is native Z-up converted.
+        for (int classId = 7501; classId <= 7515; classId++)
+        {
+            var figures = corrected.DynamicObjects!
+                .Where(m => m.NativeClassId == classId).ToArray();
+            Assert.NotEmpty(figures);
+            foreach (var figure in figures)
+            {
+                var vertices = figure.Meshes.SelectMany(mesh => Enumerable.Range(0, mesh.Positions.Length / 3)
+                    .Select(i => (X: mesh.Positions[i * 3], Y: mesh.Positions[i * 3 + 1]))).ToArray();
+                Assert.NotEmpty(vertices);
+                double width = vertices.Max(v => v.X) - vertices.Min(v => v.X);
+                double height = vertices.Max(v => v.Y) - vertices.Min(v => v.Y);
+                if (classId <= 7509)
+                {
+                    Assert.True(height > width * 1.2,
+                        $"Trophy figurine class {classId} is still lying sideways: width={width}, height={height}.");
+                }
+                else
+                {
+                    Assert.InRange(vertices.Min(v => v.Y), -0.8, -0.5);
+                    Assert.True(height > 1.3,
+                        $"Trophy ring class {classId} is still separated: height={height}.");
+                }
+            }
+        }
+    }
+}
