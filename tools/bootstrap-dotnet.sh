@@ -31,4 +31,4 @@ else
 fi
 echo "For this shell, run:"
 echo "  export DOTNET_ROOT=\"$dest\""
-echo '  export PATH="$DOTNET_ROOT:$PATH"'
+echo "  export PATH=\"\$DOTNET_ROOT:\$PATH\""

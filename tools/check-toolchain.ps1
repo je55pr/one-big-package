@@ -35,7 +35,7 @@ try {
   if ($LASTEXITCODE -ne 0 -or @($runtimes -match '^Microsoft\.NETCore\.App 8\.0\.').Count -eq 0) {
     throw "The .NET 8 runtime needed to execute net8.0 tools/tests is missing. Run ./tools/bootstrap-dotnet.ps1."
   }
-  Write-Host "Toolchain OK: .NET SDK $sdk (global.json: >= $required, $($policy.sdk.rollForward)); C# $language; .NET 8 runtime present"
+  Write-Output "Toolchain OK: .NET SDK $sdk (global.json: >= $required, $($policy.sdk.rollForward)); C# $language; .NET 8 runtime present"
 }
 finally {
   Pop-Location

@@ -19,14 +19,14 @@ function Test-ObpDotnet([string]$exe) {
 Push-Location $root
 try {
   if ((Get-Command dotnet -ErrorAction SilentlyContinue) -and (Test-ObpDotnet 'dotnet')) {
-    Write-Host "Compatible .NET SDK $(& dotnet --version) and .NET 8 runtime already available."
+    Write-Output "Compatible .NET SDK $(& dotnet --version) and .NET 8 runtime already available."
     return
   }
 
   $dest = Join-Path $root '.tools/dotnet'
   $localDotnet = Join-Path $dest 'dotnet.exe'
   if ((Test-Path $localDotnet) -and (Test-ObpDotnet $localDotnet)) {
-    Write-Host "Compatible local .NET SDK $(& $localDotnet --version) and runtime already in $dest."
+    Write-Output "Compatible local .NET SDK $(& $localDotnet --version) and runtime already in $dest."
   }
   else {
     New-Item -ItemType Directory -Force $dest | Out-Null
@@ -37,11 +37,11 @@ try {
     & $installer -Runtime dotnet -Channel '8.0' -InstallDir $dest -NoPath
     if ($LASTEXITCODE -ne 0) { throw "Installing .NET 8 runtime failed." }
     if (-not (Test-ObpDotnet $localDotnet)) { throw "The locally installed toolchain failed validation." }
-    Write-Host "Installed .NET SDK $version and .NET 8 runtime in $dest."
+    Write-Output "Installed .NET SDK $version and .NET 8 runtime in $dest."
   }
-  Write-Host 'For this PowerShell session, run:'
-  Write-Host ('  $env:DOTNET_ROOT = "{0}"' -f $dest)
-  Write-Host '  $env:PATH = "$env:DOTNET_ROOT;$env:PATH"'
+  Write-Output 'For this PowerShell session, run:'
+  Write-Output ('  $env:DOTNET_ROOT = "{0}"' -f $dest)
+  Write-Output '  $env:PATH = "$env:DOTNET_ROOT;$env:PATH"'
 }
 finally {
   Pop-Location
