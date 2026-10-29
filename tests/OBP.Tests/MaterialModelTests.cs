@@ -98,6 +98,20 @@ public class MaterialModelTests
         Assert.False(MaterialModel.RequiresFoliageAlphaSorting("moby", canopy, nativeBlend));
     }
 
+    [Theory]
+    [InlineData("moby", false, false, false)] // R&C1 Veldin / UYA Florana phantom surfaces
+    [InlineData("moby", true, false, true)]   // real decoded textures
+    [InlineData("moby", false, true, true)]   // explicitly supplied vertex colours
+    [InlineData("moby", true, true, true)]
+    [InlineData("tie", false, false, true)]   // other world geometry is unchanged
+    [InlineData("sky", false, false, true)]
+    [InlineData("fusion-wall", false, false, true)]
+    public void InstancedMobyWithoutAnAppearanceDoesNotInventOpaqueTint(
+        string kind, bool texture, bool colour, bool expected)
+    {
+        Assert.Equal(expected, MaterialModel.CanPresentInstancedSurface(kind, texture, colour));
+    }
+
     [Fact]
     public void Culling_And_Tiling_And_VertexColour_ByKind()
     {
