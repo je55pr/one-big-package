@@ -26,6 +26,14 @@ public sealed class Rac3PhoenixTrophyPresentationTests
         Assert.False(Ps2MobyNativePose.HasRigidJointBinding(
             mesh with { VertexWeights = [1f, 0f, 0f] }, 2));
         Assert.False(Ps2MobyNativePose.HasRigidJointBinding(
+            mesh with
+            {
+                Positions = [1d, 2d],
+                SkinLocalPositions = [1d, 2d],
+                VertexJoints = [0, 0],
+                VertexWeights = [1f, 0f],
+            }, 2));
+        Assert.False(Ps2MobyNativePose.HasRigidJointBinding(
             mesh with { VertexWeights = [0.5f, 0.5f, 0f, 1f, 0f, 0f] }, 2));
         Assert.False(Ps2MobyNativePose.HasRigidJointBinding(
             mesh with { SkinStateFullyResolved = false }, 2));
@@ -63,12 +71,30 @@ public sealed class Rac3PhoenixTrophyPresentationTests
             foreach (var figure in figures)
             {
                 var vertices = figure.Meshes.SelectMany(mesh => Enumerable.Range(0, mesh.Positions.Length / 3)
-                    .Select(i => (X: mesh.Positions[i * 3], Y: mesh.Positions[i * 3 + 1]))).ToArray();
+                    .Select(i => (X: mesh.Positions[i * 3], Y: mesh.Positions[i * 3 + 1],
+                        Z: mesh.Positions[i * 3 + 2]))).ToArray();
                 Assert.NotEmpty(vertices);
                 double width = vertices.Max(v => v.X) - vertices.Min(v => v.X);
                 double height = vertices.Max(v => v.Y) - vertices.Min(v => v.Y);
                 if (classId <= 7509)
                 {
+                    // Preserve the retail reveal key's horizontal orientation
+                    // exactly; a 180-degree yaw can keep the same height.
+                    var cls = originalMeshes[classId];
+                    Assert.NotNull(cls.NativePoseSource);
+                    var restKey = cls.Sequences.Single(s => s.Index == 0).Frames[0];
+                    var revealKey = cls.Sequences.Single(s => s.Index == 1).Frames[1] with
+                    {
+                        TranslationOverrides = restKey.TranslationOverrides,
+                    };
+                    var expectedPose = Ps2MobyNativePose.Pose(cls.NativePoseSource!, cls.Mesh, revealKey);
+                    var expectedHorizontal = cls.Mesh.Indices.Distinct().Select(index => (
+                        X: Math.Round(expectedPose[index * 3], 5),
+                        Z: Math.Round(expectedPose[index * 3 + 1], 5))).ToHashSet();
+                    var actualHorizontal = vertices.Select(v => (
+                        X: Math.Round(v.X, 5), Z: Math.Round(v.Z, 5))).ToHashSet();
+                    Assert.Equal(expectedHorizontal.Count, actualHorizontal.Count);
+                    Assert.All(expectedHorizontal, point => Assert.Contains(point, actualHorizontal));
                     Assert.True(height > width * 1.2,
                         $"Trophy figurine class {classId} is still lying sideways: width={width}, height={height}.");
                     // Figurines were collected in flight, so their model origin

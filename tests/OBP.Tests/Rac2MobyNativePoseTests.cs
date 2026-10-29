@@ -234,6 +234,35 @@ public sealed class Rac2MobyNativePoseTests
         return source;
     }
 
+    [Fact]
+    public void UnresolvedRigidMatrixSlotCannotMasqueradeAsAValidJointBinding()
+    {
+        // A rigid packet has no blended skinning, but its matrix-slot lookup
+        // still determines the source joint. A missing slot falls back to
+        // joint zero for legacy rendering and must not admit native posing.
+        var source = new byte[0x600];
+        PacketClass().CopyTo(source, 0);
+        source[8] = 8;
+        BinaryPrimitives.WriteInt32LittleEndian(source.AsSpan(0x14), 0x200);
+        BinaryPrimitives.WriteInt32LittleEndian(source.AsSpan(0x18), 0x400);
+        foreach (int vertex in new[] { 0xc0, 0x120 })
+        {
+            source[vertex + 2] = 4; // Resolve slot 1 (address 4).
+            source[vertex + 3] = 4; // Install the rigid joint before lookup.
+        }
+
+        var resolved = GcUyaMoby.ReadClass(source, recoverPersistentVertexCache: true);
+        Assert.False(resolved.Skinned);
+        Assert.True(resolved.SkinStateFullyResolved);
+        Assert.True(Ps2MobyNativePose.HasRigidJointBinding(resolved, 8));
+
+        source[0xc2] = 8; // Slot 2 was never written: decoder substitutes J0.
+        var unresolved = GcUyaMoby.ReadClass(source, recoverPersistentVertexCache: true);
+        Assert.False(unresolved.Skinned);
+        Assert.False(unresolved.SkinStateFullyResolved);
+        Assert.False(Ps2MobyNativePose.HasRigidJointBinding(unresolved, 8));
+    }
+
     [Theory]
     [InlineData(-1)]
     [InlineData(0)]

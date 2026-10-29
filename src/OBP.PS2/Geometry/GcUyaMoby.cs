@@ -1178,7 +1178,11 @@ public static class GcUyaMoby
             VertexJoints = vertexJointsOut.ToArray(),
             VertexWeights = vertexWeightsOut.ToArray(),
             SkinLocalPositions = skinLocalPositionsOut.ToArray(),
-            SkinStateFullyResolved = !skinned || (globalBind is not null && skinState.FullyResolved),
+            // Rigid packets have no blended weights, but still resolve joint
+            // slots. Do not classify a substituted joint-zero binding as native.
+            // Preserve the legacy non-skinning decode contract when disabled.
+            SkinStateFullyResolved = !allowSkinning || jointCount == 0 ||
+                (globalBind is not null && skinState.FullyResolved),
             Materials = materials,
             TriangleMaterialStateIndices = triangleMaterialStateIndices.ToArray(),
         };

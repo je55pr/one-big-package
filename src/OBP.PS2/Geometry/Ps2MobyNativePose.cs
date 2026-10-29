@@ -35,7 +35,7 @@ public static class Ps2MobyNativePose
     public static bool HasRigidJointBinding(GcUyaMoby.Mesh mesh, int jointCount)
     {
         if (mesh.Skinned || jointCount is <= 0 or > 112 || !mesh.SkinStateFullyResolved ||
-            mesh.Positions.Length == 0 ||
+            mesh.Positions.Length == 0 || mesh.Positions.Length % 3 != 0 ||
             mesh.SkinLocalPositions.Length != mesh.Positions.Length ||
             mesh.VertexJoints.Length != mesh.Positions.Length ||
             mesh.VertexWeights.Length != mesh.Positions.Length)
