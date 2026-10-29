@@ -35,10 +35,12 @@ internal sealed partial class Rac1EnemyHost : IDisposable
     {
         _world = world; _sceneResult = scene; Context = context; Presentation = presentation; _ports = ports;
         Roster = new(enemy => (enemy.Node.Source.SourceGame, enemy.Node.Source.InstanceIndex), RetireContact);
+        Frogs = new(this, ports.Frogs);
         _toads = new(this); _robots = new(this); _peckbots = new(this); _birdbots = new(this); _seekers = new(this); _amoeboids = new(this);
         _families = new IRac1EnemyAdapter[] { _toads, _robots, _peckbots, _birdbots, _seekers }.ToDictionary(family => family.ClassId);
     }
 
+    internal Rac1FrogEncounter Frogs { get; }
     internal Rac1WorldContext Context { get; }
     internal Rac1WorldPresentation Presentation { get; }
     internal Rac1EnemyRoster<Rac1HostedEnemy> Roster { get; }
@@ -87,10 +89,10 @@ internal sealed partial class Rac1EnemyHost : IDisposable
         var active = neighbor.Current();
         void Current(Action reset) { if (active) reset(); }
         OBP.Game.Diagnostics.DiagnosticCleanup.Run("R&C1 enemy reset",
-            () => Current(neighbor.EndQueenCamera), () => Current(neighbor.ResetCarriers), () => Current(neighbor.ResetQueenChildren),
+            () => Current(Frogs.Reset),
             Roster.Clear,
             () => { _robots.Session = null; _peckbots.Session = null; _birdbots.Session = null; _seekers.Session = null; },
-            () => Current(neighbor.ClearFrogState), () => Current(neighbor.ResetAridia),
+            () => Current(neighbor.ResetAridia),
             _clock.Reset,
             () => Current(neighbor.ResetAridiaScripts), () => Current(neighbor.ResetConstructorbots),
             _amoeboids.Reset, _birdbots.Reset);
@@ -187,7 +189,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
         if (world.LevelId is 6 or 10)
         {
             var gameplay = Rac1LevelSettings.ReadGameplay(reader, level);
-            _ports.Neighbors.Frogs(world, result, Rac1Paths.Read(gameplay),
+            Frogs.ConfigureRac1Frogs(world, result, Rac1Paths.Read(gameplay),
                 Rac1ClipVolumes.Read(gameplay), nodes);
         }
         _peckbots.Register(world, result, nodes);
@@ -214,7 +216,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
                 // contacts until it has actually emerged or been released.
                 uint initialContactMask = group.Key == Rac1AridiaEnemies.Sandshark ||
                     (Rac1AmoeboidAuthored.IsFamily(group.Key) && !_amoeboids.Frame(node.Source.InstanceIndex).Active) ||
-                    (group.Key == Rac1FrogAuthored.ClassId && !_ports.Neighbors.FrogSession()!.Get(node.Source.InstanceIndex).Presented)
+                    (group.Key == Rac1FrogAuthored.ClassId && !Frogs.FrogPresented(node.Source.InstanceIndex))
                     ? 0u : 1u;
                 var body = new CharacterBody3D
                 {
@@ -236,7 +238,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
                         : Rac1AmoeboidAuthored.IsFamily(group.Key)
                             ? _amoeboids.Frame(node.Source.InstanceIndex).Sequence
                         : group.Key == Rac1FrogAuthored.ClassId
-                            ? _ports.Neighbors.FrogSession()!.Get(node.Source.InstanceIndex).Sequence
+                            ? Frogs.FrogSequence(node.Source.InstanceIndex)
                         : group.Key == Rac1AridiaEnemies.Constructorbot &&
                             _ports.Neighbors.Constructorbots.TryGetValue(node.Source.InstanceIndex, out var startup) &&
                             asset.Clips.ContainsKey(startup.Sequence)
@@ -259,7 +261,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
                     _amoeboids.Initialize(enemy);
             }
         }
-        _ports.Neighbors.Carriers(result);
+        Frogs.ConfigureRac1FrogCarriers(result);
         if (world.LevelId == 6)
         {
             var gameplay = Rac1LevelSettings.ReadGameplay(reader, level);
@@ -268,13 +270,13 @@ internal sealed partial class Rac1EnemyHost : IDisposable
             var queenClass = classes.Mobies[Rac1FrogQueenGroup.QueenClassId];
             var overlay = Rac1ExecutableOverlay.Read(reader, level);
             var cameraAnchor = overlay.Read(0x167540, 12);
-            _ports.Neighbors.Queen(world, result, groups, queenClass,
+            Frogs.ConfigureRac1FrogQueen(world, result, groups, queenClass,
                 core.Assets.AsSpan(queenClass.AssetOffset, queenClass.AssetLength),
                 Rac1AlienQueenGateNative.Read(overlay), new NVector3(
                     System.Buffers.Binary.BinaryPrimitives.ReadSingleLittleEndian(cameraAnchor),
                     System.Buffers.Binary.BinaryPrimitives.ReadSingleLittleEndian(cameraAnchor.Slice(4)),
                     System.Buffers.Binary.BinaryPrimitives.ReadSingleLittleEndian(cameraAnchor.Slice(8))));
-            _ports.Neighbors.Waves(world, result,
+            Frogs.ConfigureRac1FrogWaves(world, result,
                 groups, Rac1ClipVolumes.Read(gameplay), triggerClass,
                 core.Assets.AsSpan(triggerClass.AssetOffset, triggerClass.AssetLength));
         }
@@ -282,7 +284,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
             $"{_rac1Class1440?.RegisteredCount ?? 0} class1440, {_rac1Peckbots?.RegisteredCount ?? 0} Novalis Peckbots, " +
             $"{_rac1Birdbots?.RegisteredCount ?? 0} Novalis Birdbots, " +
             $"{_rac1Seekers?.RegisteredCount ?? 0} Seekers, " +
-            $"{_ports.Neighbors.FrogSession()?.RegisteredCount ?? 0} Frogs ({_ports.Neighbors.FrogSession()?.PresentedCount ?? 0} admitted)");
+            $"{Frogs.Session?.RegisteredCount ?? 0} Frogs ({Frogs.Session?.PresentedCount ?? 0} admitted)");
     }
 
     internal static Vector3 EnemyForward(RuntimeWorldScene.DynamicObjectNode node) =>
@@ -299,18 +301,18 @@ internal sealed partial class Rac1EnemyHost : IDisposable
         if (!Current || _player is null) return false;
         if (!_ports.Player.Persistent()) _rac1Nanotech.UpdateNative();
         _amoeboids.TickGates();
-        _ports.Neighbors.TickShuttle();
-        _ports.Neighbors.TickWaves();
-        _ports.Neighbors.TickQueenFlight();
-        _ports.Neighbors.TickQueenRecovery();
-        _ports.Neighbors.TickQueenChildren();
+        Frogs.TickRac1FrogShuttleSwitch();
+        Frogs.TickRac1FrogWaves();
+        Frogs.TickRac1QueenFlight();
+        Frogs.TickRac1QueenRecovery();
+        Frogs.TickRac1QueenLinkedChildren();
         foreach (var enemy in _rac1Enemies.Values.OrderBy(enemy => enemy.Node.Source.InstanceIndex))
         {
             var node = enemy.Node;
             if (!IsInstanceValid(node.Root)) continue;
             if (node.Source.NativeClassId == Rac1FrogSession.ClassId &&
-                _ports.Neighbors.CarrierChild(node.Source.InstanceIndex))
-                _ports.Neighbors.TickCarrier(enemy);
+                Frogs.HasCarrierChild(node.Source.InstanceIndex))
+                Frogs.TickRac1FrogCarrier(enemy);
             if (!IsRac1GameplayActive(node)) continue;
             bool aridia = Rac1AridiaEnemies.IsEnemyClass(node.Source.NativeClassId);
             // Aridia has 137 authored enemies; most are dormant, buried or
@@ -328,8 +330,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
             // and animation phase, but need no contact probes, sounds or AI
             // until Ratchet enters their gameplay neighbourhood.
             if (node.Source.NativeClassId == Rac1FrogAuthored.ClassId &&
-                node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition) >
-                    30f * 30f) continue;
+                !Frogs.ShouldTickFrog(enemy)) continue;
             if (node.Source.NativeClassId == Rac1SeekerSession.ClassId &&
                 _rac1Seekers!.Get(node.Source.InstanceIndex).NativeState is not
                     (Rac1SeekerSession.HurtState or Rac1SeekerSession.DeathState or Rac1SeekerSession.ExplosionState) &&
@@ -369,7 +370,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
                     _ports.Combat.Sound(node.Source.NativeClassId, sound, node.Root.GlobalPosition);
             if (_families.TryGetValue(node.Source.NativeClassId, out var family)) family.Tick(enemy);
             else if (Rac1AmoeboidAuthored.IsFamily(node.Source.NativeClassId)) _amoeboids.Tick(enemy);
-            else if (node.Source.NativeClassId == Rac1FrogAuthored.ClassId) _ports.Neighbors.TickFrog(enemy);
+            else if (node.Source.NativeClassId == Rac1FrogAuthored.ClassId) Frogs.TickRac1Frog(enemy);
             else if (!aridiaStepped) _ports.Neighbors.TickAridia(enemy);
             // All known Aridia attacks occur within the native-candidate
             // host encounter region. Preserve gameplay ticks at 24 units,
@@ -406,13 +407,8 @@ internal sealed partial class Rac1EnemyHost : IDisposable
         }
         else if (node.Source.NativeClassId == Rac1FrogAuthored.ClassId)
         {
-            var result = Context.MobyRuntime.DispatchDamage<Rac1FrogDamageResult>(damage);
+            var result = Frogs.ApplyFrogDamage(enemy, damage);
             lethal = result.Lethal; sequence = result.Frame.Sequence;
-            if (!result.Frame.Presented)
-            {
-                node.ApplyState(Context.MobyRuntime.Require(node.Source).EntityState);
-                enemy.Body.CollisionLayer = enemy.Body.CollisionMask = 0;
-            }
         }
         else throw new InvalidDataException("No admitted R&C1 enemy damage adapter.");
         if (node.Source.NativeClassId != Rac1SeekerSession.ClassId || enemy.Animation.Sequence != sequence)

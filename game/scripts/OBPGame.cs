@@ -336,23 +336,16 @@ public partial class OBPGame : Node3D
                 (id, presence) => { if (_rac1CrateBodies.TryGetValue(id, out var body) && IsInstanceValid(body)) body.CollisionLayer = presence == RuntimeEntityPresence.Active ? 1u : 0; },
                 id => _rac1Chickens.ContainsKey(id)),
             new(() => ReferenceEquals(_worldScenes?.Current?.Resources.Rac1Gameplay, owner),
-                EndRac1QueenScriptedCamera, ResetRac1FrogCarriers, ResetRac1QueenLinkedChildren,
-                () =>
-                {
-                    _rac1Frogs = null; _rac1FrogShuttle = null;
-                    _rac1FrogWaves = null; _rac1FrogQueen = null; _rac1FrogWaveNodes.Clear();
-                    _rac1QueenRecovery = null; _rac1QueenEntrance = null;
-                    _rac1QueenFlight = null; _rac1QueenPendingCamera = null;
-                    _rac1QueenAnimation = null; _rac1QueenNode = null;
-                    _rac1QueenLinkedGate = null; _rac1QueenGateNative = null;
-                    _rac1QueenLinkedNodes.Clear(); _rac1QueenLinkedBaseRotations.Clear();
-                }, () => _rac1AridiaEnemies = new(), ResetRac1AridiaScriptActors, ResetRac1ConstructorbotStartups,
+                () => _rac1AridiaEnemies = new(), ResetRac1AridiaScriptActors, ResetRac1ConstructorbotStartups,
                 () => _rac1AridiaEnemies, volumes => _rac1AridiaClipVolumes = volumes, _rac1ConstructorbotStartups, _rac1ConstructorbotNativeWaypoints,
-                ConfigureRac1AridiaScriptActors, ConfigureRac1Frogs, ConfigureRac1FrogQueen, ConfigureRac1FrogWaves, ConfigureRac1FrogCarriers,
-                () => _rac1Frogs, TickRac1FrogShuttleSwitch, TickRac1FrogWaves, () => TickRac1QueenFlight(), TickRac1QueenRecovery, TickRac1QueenLinkedChildren,
-                id => _rac1FrogCarrierChildren.ContainsKey(id), TickRac1FrogCarrier, TickRac1AridiaEnemy, TickRac1Frog,
+                ConfigureRac1AridiaScriptActors, TickRac1AridiaEnemy,
                 HideBuriedRac1AridiaEnemy, RestoreRac1AridiaEnemyVisibility,
-                ApplyRac1AridiaWeaponDamage)));
+                ApplyRac1AridiaWeaponDamage),
+            new(GetViewport, () => _activeCamera, camera => _activeCamera = camera, () => _camera,
+                () => _rac1MissileCamera, _rac1WrenchHitTargets.Contains,
+                key => { _rac1WrenchHitTargets.Add(key); },
+                (nativeClass, name) => CreateRac1EffectNode(nativeClass, name),
+                (node, debris) => _rac1Debris.Add((node, debris)), FromEffectOrientation)));
 
     private void RefreshRac1HudState(params HudFeedbackDraft[] feedback)
     {
@@ -1706,60 +1699,69 @@ public partial class OBPGame : Node3D
             ProbeRac1AridiaWalkerSpherePushouts, MoveRac1AridiaWalkerContact, Rac1EnemyHost.SelectRac1EnemySequence, ActivateNearbyRac1AridiaShark));
     }
 
-    private GodotRac1FrogDiagnosticFixture CreateRac1FrogDiagnosticFixture(GodotRac1EnemyDiagnosticFixture actors) => new(actors,
-        new GodotRac1DiagnosticWorldScope(new GodotDiagnosticWorldObservations(WorldScenes)), new()
-        {
-            Frogs = () => _rac1Frogs,
-            Shuttle = () => _rac1FrogShuttle,
-            Waves = () => _rac1FrogWaves,
-            WaveControllers = () => [.. _rac1FrogWaveNodes.Keys],
-            Carriers = () => System.Collections.Immutable.ImmutableDictionary.CreateRange(_rac1FrogCarrierChildren),
-            HasPickupModel = nativeClass => _rac1PickupAssets?.Models.ContainsKey(nativeClass) == true,
-            Counts = () => (Rac1World.Presentation.CrateNodes.Count, _rac1PickupMotion.Count, _rac1Debris.Count),
-            TickFrog = TickRac1Frog,
-            TickCarrier = TickRac1FrogCarrier,
-            MeleeTouchesPlayer = Rac1World.Enemies.EnemyMeleeTouchesPlayer,
-            ResolveWrench = ResolveRac1AnimatedWrenchContacts,
-            TickShuttle = TickRac1FrogShuttleSwitch,
-            ApplyShuttle = ApplyRac1FrogShuttleSelection,
-            TickWaves = TickRac1FrogWaves,
-            Queen = CreateRac1QueenDiagnosticBindings(),
-        });
-
-    private GodotRac1QueenDiagnosticBindings CreateRac1QueenDiagnosticBindings() => new()
+    private GodotRac1FrogDiagnosticFixture CreateRac1FrogDiagnosticFixture(GodotRac1EnemyDiagnosticFixture actors)
     {
-        Group = () => _rac1FrogQueen,
-        Recovery = () => _rac1QueenRecovery,
-        Entrance = () => _rac1QueenEntrance,
-        Flight = () => _rac1QueenFlight,
-        PendingCamera = () => _rac1QueenPendingCamera,
-        Linked = () => _rac1QueenLinkedGate,
-        Tuning = () => _rac1QueenGateNative,
-        Animation = () => _rac1QueenAnimation,
-        Node = () => _rac1QueenNode,
-        AuthoredNativeZ = () => _rac1QueenAuthoredNativeZ,
-        Parents = () => System.Collections.Immutable.ImmutableDictionary.CreateRange(_rac1QueenLinkedNodes),
-        Children = () => System.Collections.Immutable.ImmutableDictionary.CreateRange(_rac1QueenLinkedChildVisuals),
-        WorldRoot = () => _sceneResult?.Root,
-        Player = () => _player,
-        ActiveCamera = () => _activeCamera,
-        QueenCamera = () => _rac1QueenScriptedCamera,
-        GuidedCamera = () => _rac1MissileCamera,
-        DamageSequence = () => Rac1World.Context.DamageTransport.Sequence,
-        ForgetWrenchContact = key => _rac1WrenchHitTargets.Remove(key),
-        ResolveWrench = ResolveRac1QueenWrenchContacts,
-        InvalidateEquipmentGeometry = () => _rac1EquipmentGeometryFrame = ulong.MaxValue,
-        GeometryContainsQueen = () => _rac1QueenNode is { } queen && EquipmentGeometry.Any(entry => entry.Node == queen),
-        AimTargetAdmitted = () => _rac1QueenNode is { } queen && IsRac1WeaponAimTarget(queen),
-        TickFlight = () => TickRac1QueenFlight(),
-        TickRecovery = TickRac1QueenRecovery,
-        TickLinked = TickRac1QueenLinkedChildren,
-        SynchronizeLinked = SynchronizeRac1QueenLinkedParents,
-        ObserveFrogEvent = ObserveRac1QueenFrogEvent,
-        BeginGuided = BeginRac1GuidedCamera,
-        EndGuided = EndRac1GuidedCamera,
-        EndQueen = EndRac1QueenScriptedCamera,
-    };
+        Func<Rac1FrogEncounter?> encounter = () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Enemies.Frogs;
+        return new(actors,
+            new GodotRac1DiagnosticWorldScope(new GodotDiagnosticWorldObservations(WorldScenes)), new()
+            {
+                Frogs = () => encounter()?.Session,
+                Shuttle = () => encounter()?.Shuttle,
+                Waves = () => encounter()?.Waves,
+                WaveControllers = () => encounter()?.WaveControllerIds ?? [],
+                Carriers = () => encounter()?.CarrierChildren ?? System.Collections.Immutable.ImmutableDictionary<int, Node3D>.Empty,
+                HasPickupModel = nativeClass => _rac1PickupAssets?.Models.ContainsKey(nativeClass) == true,
+                Counts = () => (Rac1World.Presentation.CrateNodes.Count, _rac1PickupMotion.Count, _rac1Debris.Count),
+                TickFrog = enemy => encounter()?.TickRac1Frog(enemy),
+                TickCarrier = enemy => encounter()?.TickRac1FrogCarrier(enemy),
+                MeleeTouchesPlayer = Rac1World.Enemies.EnemyMeleeTouchesPlayer,
+                ResolveWrench = ResolveRac1AnimatedWrenchContacts,
+                TickShuttle = () => encounter()?.TickRac1FrogShuttleSwitch(),
+                ApplyShuttle = () => encounter()?.ApplyRac1FrogShuttleSelection(),
+                TickWaves = () => encounter()?.TickRac1FrogWaves(),
+                Queen = CreateRac1QueenDiagnosticBindings(),
+            });
+    }
+
+    private GodotRac1QueenDiagnosticBindings CreateRac1QueenDiagnosticBindings()
+    {
+        Func<Rac1FrogEncounter?> encounter = () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Enemies.Frogs;
+        return new()
+        {
+            Group = () => encounter()?.QueenGroup,
+            Recovery = () => encounter()?.Recovery,
+            Entrance = () => encounter()?.Entrance,
+            Flight = () => encounter()?.Flight,
+            PendingCamera = () => encounter()?.PendingCamera,
+            Linked = () => encounter()?.LinkedGate,
+            Tuning = () => encounter()?.GateNative,
+            Animation = () => encounter()?.QueenAnimation,
+            Node = () => encounter()?.QueenNode,
+            AuthoredNativeZ = () => encounter()?.AuthoredQueenZ ?? 0,
+            Parents = () => encounter()?.QueenParents ?? System.Collections.Immutable.ImmutableDictionary<int, RuntimeWorldScene.DynamicObjectNode>.Empty,
+            Children = () => encounter()?.QueenChildren ?? System.Collections.Immutable.ImmutableDictionary<int, Node3D>.Empty,
+            WorldRoot = () => _sceneResult?.Root,
+            Player = () => _player,
+            ActiveCamera = () => _activeCamera,
+            QueenCamera = () => encounter()?.QueenCamera,
+            GuidedCamera = () => _rac1MissileCamera,
+            DamageSequence = () => Rac1World.Context.DamageTransport.Sequence,
+            ForgetWrenchContact = key => _rac1WrenchHitTargets.Remove(key),
+            ResolveWrench = (previousHand, previousTip, hand, tip, radius, result) =>
+                encounter()?.ResolveRac1QueenWrenchContacts(previousHand, previousTip, hand, tip, radius, result),
+            InvalidateEquipmentGeometry = () => _rac1EquipmentGeometryFrame = ulong.MaxValue,
+            GeometryContainsQueen = () => encounter()?.QueenNode is { } queen && EquipmentGeometry.Any(entry => entry.Node == queen),
+            AimTargetAdmitted = () => encounter()?.QueenNode is { } queen && IsRac1WeaponAimTarget(queen),
+            TickFlight = () => encounter()?.TickRac1QueenFlight(),
+            TickRecovery = () => encounter()?.TickRac1QueenRecovery(),
+            TickLinked = () => encounter()?.TickRac1QueenLinkedChildren(),
+            SynchronizeLinked = () => encounter()?.SynchronizeRac1QueenLinkedParents(),
+            ObserveFrogEvent = (state, sequence, completed) => encounter()?.ObserveRac1QueenFrogEvent(state, sequence, completed) ?? 0,
+            BeginGuided = BeginRac1GuidedCamera,
+            EndGuided = EndRac1GuidedCamera,
+            EndQueen = () => encounter()?.EndRac1QueenScriptedCamera(),
+        };
+    }
 
     private CaptureDiagnosticHarness CreateCaptureDiagnosticHarness() => CaptureReplay.Diagnostics(() =>
     {

@@ -1,4 +1,6 @@
 using Godot;
+using static Godot.GodotObject;
+using static OBP.Game.Rac1EnemyCoordinates;
 using OBP.RAC1.Gameplay;
 using OBP.Godot;
 
@@ -7,7 +9,7 @@ namespace OBP.Game;
 /// <summary>Native class-827 carrier-owned class-500 *spawned* visuals.
 /// The copied mesh is from the mounted R&C1 retail disc, not a fabricated box.
 /// These children have no authored placement, crate payout or world-crate UID.</summary>
-public partial class OBPGame
+internal sealed partial class Rac1FrogEncounter
 {
     private readonly Dictionary<int, Node3D> _rac1FrogCarrierChildren = [];
 
@@ -18,14 +20,14 @@ public partial class OBPGame
         _rac1FrogCarrierChildren.Clear();
     }
 
-    private void ConfigureRac1FrogCarriers(RuntimeWorldScene.Result result)
+    internal void ConfigureRac1FrogCarriers(RuntimeWorldScene.Result result)
     {
         if (_rac1Frogs is null) return;
-        var carrierEnemies = Rac1World.Enemies.Roster.Values.Where(e =>
+        var carrierEnemies = _host.Roster.Values.Where(e =>
             e.Node.Source.NativeClassId == Rac1FrogSession.ClassId &&
             _rac1Frogs.Get(e.Node.Source.InstanceIndex).CarrierMode).ToArray();
         if (carrierEnemies.Length == 0) return;
-        var donor = Rac1World.Presentation.CrateNodes.FirstOrDefault(crate =>
+        var donor = _host.Presentation.CrateNodes.FirstOrDefault(crate =>
             crate.Source.NativeClassId == Rac1FrogSession.CarrierChildClassId &&
             crate.Root.GetChildren().OfType<MeshInstance3D>().Any());
         if (donor is null)
@@ -65,17 +67,16 @@ public partial class OBPGame
 
     private void EmitRac1FrogCarrierBurst(Vector3 parentPosition)
     {
-        if (_rac1PickupAssets is null) return;
         foreach (var piece in Rac1FrogCarrierBurst.Create(ToEffectNative(parentPosition), Rac1EffectRandom))
         {
-            if (!_rac1PickupAssets.Models.ContainsKey(piece.NativeClassId))
+            if (!_host.Combat.HasFragment(piece.NativeClassId))
                 continue; // Never invent a missing level-specific fragment.
-            var visual = CreateRac1EffectNode(piece.NativeClassId,
+            var visual = _ports.CreateFragmentNode(piece.NativeClassId,
                 $"FrogCarrierDebris_retail_class{piece.NativeClassId}");
             visual.GlobalPosition = FromEffectNative(piece.Position);
-            visual.Quaternion = FromEffectOrientation(piece.Orientation);
+            visual.Quaternion = _ports.FromEffectOrientation(piece.Orientation);
             visual.Scale = Vector3.One * piece.Scale;
-            _rac1Debris.Add((visual, piece));
+            _ports.TrackFragment(visual, piece);
         }
     }
 
@@ -85,7 +86,7 @@ public partial class OBPGame
     {
         if (_rac1Frogs is null ||
             !_rac1FrogCarrierChildren.TryGetValue(instance, out var child) ||
-            !IsInstanceValid(child) || !Rac1World.Enemies.Roster.TryGetValue(instance, out var enemy) ||
+            !IsInstanceValid(child) || !_host.Roster.TryGetValue(instance, out var enemy) ||
             !_rac1Frogs.HitCarrierChild(instance, sourceClass))
             return false;
         EmitRac1FrogCarrierBurst(enemy.Node.Root.GlobalPosition);
@@ -93,34 +94,34 @@ public partial class OBPGame
         _rac1FrogCarrierChildren.Remove(instance);
         enemy.Body.CollisionLayer = 0;
         enemy.Body.CollisionMask = 0;
-        enemy.Node.ApplyState(Rac1World.Context.MobyRuntime.Require(enemy.Node.Source).EntityState);
+        enemy.Node.ApplyState(_host.Context.MobyRuntime.Require(enemy.Node.Source).EntityState);
         GD.Print($"[frog-carrier] class500 child hit removed parent i{instance}, no crate payout");
         return true;
     }
 
-    private void ResolveRac1FrogCarrierWrenchContacts(Vector3 previousHand, Vector3 previousTip,
+    internal void ResolveRac1FrogCarrierWrenchContacts(Vector3 previousHand, Vector3 previousTip,
         Vector3 hand, Vector3 tip, float radius)
     {
         foreach (var pair in _rac1FrogCarrierChildren.ToArray())
         {
             var key = new Rac1MobyRuntimeKey(Rac1FrogSession.ClassId, pair.Key);
-            if (_rac1WrenchHitTargets.Contains(key) || !IsInstanceValid(pair.Value)) continue;
+            if (_ports.HasWrenchContact(key) || !IsInstanceValid(pair.Value)) continue;
             bool contact = pair.Value.GetChildren().OfType<MeshInstance3D>().Any(mesh =>
             {
                 Aabb bounds = (mesh.GlobalTransform * mesh.GetAabb()).Grow(radius);
-                return WrenchSegmentIntersects(bounds, previousHand, previousTip) ||
-                    WrenchSegmentIntersects(bounds, hand, tip) ||
-                    WrenchSegmentIntersects(bounds, previousHand, hand) ||
-                    WrenchSegmentIntersects(bounds, previousTip, tip) ||
-                    WrenchSegmentIntersects(bounds, previousHand, tip) ||
-                    WrenchSegmentIntersects(bounds, previousTip, hand);
+                return ActorContactGeometry.WrenchSegmentIntersects(bounds, previousHand, previousTip) ||
+                    ActorContactGeometry.WrenchSegmentIntersects(bounds, hand, tip) ||
+                    ActorContactGeometry.WrenchSegmentIntersects(bounds, previousHand, hand) ||
+                    ActorContactGeometry.WrenchSegmentIntersects(bounds, previousTip, tip) ||
+                    ActorContactGeometry.WrenchSegmentIntersects(bounds, previousHand, tip) ||
+                    ActorContactGeometry.WrenchSegmentIntersects(bounds, previousTip, hand);
             });
             if (!contact || !TryStrikeRac1FrogCarrier(pair.Key, 71)) continue;
-            _rac1WrenchHitTargets.Add(key);
+            _ports.AddWrenchContact(key);
         }
     }
 
-    private void TickRac1FrogCarrier(Rac1HostedEnemy enemy)
+    internal void TickRac1FrogCarrier(Rac1HostedEnemy enemy)
     {
         if (_player is null || _rac1Frogs is null) return;
         int instance = enemy.Node.Source.InstanceIndex;
@@ -133,8 +134,8 @@ public partial class OBPGame
         var authored = _rac1Frogs.GetAuthored(instance);
         if (authored.TargetInstance >= 0)
         {
-            if (!Rac1World.Presentation.LinkedTargets.TryGetValue(authored.TargetInstance, out var linked) ||
-                !IsInstanceValid(linked.Root) || !Rac1World.Enemies.IsRac1GameplayActive(linked))
+            if (!_host.Presentation.LinkedTargets.TryGetValue(authored.TargetInstance, out var linked) ||
+                !IsInstanceValid(linked.Root) || !_host.IsRac1GameplayActive(linked))
                 eligible = false;
             else target = linked.Root.GlobalPosition;
         }
@@ -147,7 +148,7 @@ public partial class OBPGame
         bool active = frame.Presented;
         enemy.Body.CollisionLayer = active ? 1u : 0u;
         enemy.Body.CollisionMask = active ? 1u : 0u;
-        enemy.Node.ApplyState(Rac1World.Context.MobyRuntime.Require(enemy.Node.Source).EntityState);
+        enemy.Node.ApplyState(_host.Context.MobyRuntime.Require(enemy.Node.Source).EntityState);
         Rac1EnemyHost.SelectRac1EnemySequence(enemy, frame.Sequence, 5);
         GD.Print($"[frog-carrier] parent i{instance} released native class500 child at four-unit target gate");
     }

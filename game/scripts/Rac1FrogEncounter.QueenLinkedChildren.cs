@@ -1,4 +1,6 @@
 using Godot;
+using static Godot.GodotObject;
+using static OBP.Game.Rac1EnemyCoordinates;
 using OBP.RAC1.Gameplay;
 using OBP.Godot;
 
@@ -11,7 +13,7 @@ namespace OBP.Game;
 /// The per-level native radial offset and angle constants are read from
 /// the original overlay. Collision/camera event producers remain separate.
 /// </summary>
-public partial class OBPGame
+internal sealed partial class Rac1FrogEncounter
 {
     private readonly Dictionary<int, Node3D> _rac1QueenLinkedChildVisuals = [];
 
@@ -70,7 +72,7 @@ public partial class OBPGame
         GD.Print($"[frog-queen] {_rac1QueenLinkedChildVisuals.Count} runtime class1021 retail-mesh child visuals from two source parent Mobies");
     }
 
-    private void TickRac1QueenLinkedChildren()
+    internal void TickRac1QueenLinkedChildren()
     {
         if (_rac1QueenLinkedGate is null || _rac1QueenGateNative is null) return;
         // The original class1021 parents use Ratchet's *current* native position
