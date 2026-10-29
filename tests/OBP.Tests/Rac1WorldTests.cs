@@ -154,9 +154,12 @@ public sealed class Rac1LevelTests_World
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
         using var reader = Rac1VerifiedDisc.Open(iso!);
         var world = Rac1WorldImport.Build(reader, 1);
-        // Novalis' two verified leaf-card classes now use depth-writing
-        // cutouts; unrelated blended foliage remains sorted per placement.
-        Assert.Equal(1_498, world.Meshes.Count);
+        // The sparse-foliage cutout policy batches ten additional Novalis shrub
+        // draw surfaces compared with the former layered-card-only policy.
+        // Only the draw-surface census changes; all native triangles remain.
+        Assert.Equal(1_488, world.Meshes.Count);
+        Assert.Equal(1_195, world.Meshes.Count(m => m.AssetKind == "shrub"));
+        Assert.Equal(430_644, world.Meshes.Where(m => m.AssetKind == "shrub").Sum(m => m.TriangleCount));
         Assert.Equal(1_118_293, world.TotalRenderTriangles);
         Assert.Equal(520_649, world.TotalDynamicTriangles);
         Assert.Equal(6_856, (world.AnimatedMeshes ?? []).Sum(m => m.TriangleCount));
