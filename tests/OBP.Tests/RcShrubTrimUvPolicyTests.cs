@@ -62,7 +62,7 @@ public sealed class RcShrubTrimUvPolicyTests
         stateIds[0] = 0;
         Assert.Equal(new[] { 7 }, Classify().Order());
         Assert.Empty(Classify(points, uv.Select((v, i) => (i & 1) != 0 ? 3 - v : v).ToArray()));
-        Assert.Empty(Classify(points.Select((v, i) => (uint)i % 3u == 2u ? v * 5 : v).ToArray(), uv));
+        Assert.Empty(Classify(points.Select((v, i) => i == (i / 3) * 3 + 2 ? v * 5 : v).ToArray(), uv));
 
         images[7] = gradient with { Rgba = gradient.Rgba.ToArray() };
         images[7].Rgba[3] = 0;
@@ -114,6 +114,32 @@ public sealed class RcShrubTrimUvPolicyTests
             Assert.Single(output, mesh => mesh.TextureId == 7).Uvs);
         Assert.Equal(new float[] { 1, 2, 1, 1, 0, 1 },
             Assert.Single(output, mesh => mesh.TextureId == 8).Uvs);
+
+        // The same texture on another class must retain its source UVs.
+        var other = new List<RuntimeMesh>();
+        Rac3WorldImport.PlaceStatics(
+            "shrub",
+            [new(1, 18, Identity())],
+            new Dictionary<int, Rac3Assets.StaticClass> { [18] = meshClass with { OClass = 18 } },
+            9, other, (_, _, _) => { },
+            reversedTrimTextures: new Dictionary<int, HashSet<int>> { [17] = [7] });
+        Assert.Equal(new float[] { 0, 2, 1, 2, 0, 1 },
+            Assert.Single(other, mesh => mesh.TextureId == 7).Uvs);
+
+        // Ties may unwrap packed UV seams but must ignore shrub trim policy.
+        var normalTie = new List<RuntimeMesh>();
+        var mappedTie = new List<RuntimeMesh>();
+        var classes = new Dictionary<int, Rac3Assets.StaticClass> { [17] = meshClass };
+        Rac3WorldImport.PlaceStatics(
+            "tie", [new(2, 17, Identity())], classes,
+            9, normalTie, (_, _, _) => { });
+        Rac3WorldImport.PlaceStatics(
+            "tie", [new(2, 17, Identity())], classes,
+            9, mappedTie, (_, _, _) => { },
+            reversedTrimTextures: new Dictionary<int, HashSet<int>> { [17] = [7] });
+        foreach (var baseline in normalTie)
+            Assert.Equal(baseline.Uvs,
+                Assert.Single(mappedTie, mesh => mesh.TextureId == baseline.TextureId).Uvs);
     }
 
     [SkippableFact]

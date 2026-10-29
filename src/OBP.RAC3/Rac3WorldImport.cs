@@ -313,6 +313,9 @@ public static partial class Rac3WorldImport
                 world[v] = x; world[v + 1] = z; world[v + 2] = y; grow(x, z, y);
             }
             var localRemaps = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), Dictionary<(int Vertex, bool UnwrapS, bool UnwrapT), int>>();
+            HashSet<int>? reversed = null;
+            if (kind == "shrub")
+                reversedTrimTextures?.TryGetValue(inst.OClass, out reversed);
             for (int f = 0; f < cls.TriangleTextureIds.Length; f++)
             {
                 int tex = cls.TriangleTextureIds[f];
@@ -321,9 +324,7 @@ public static partial class Rac3WorldImport
                     cls.TriangleAlphaBlendEnabled, f);
                 presentation = RcFoliageCutoutPolicy.WithFoliageCutout(
                     inst.OClass, tex, presentation, alphaProfiles, cutoutSurfaces);
-                bool invertTrimV = kind == "shrub" &&
-                    reversedTrimTextures?.TryGetValue(inst.OClass, out var reversed) == true &&
-                    reversed.Contains(tex);
+                bool invertTrimV = reversed?.Contains(tex) == true;
                 var surface = (tex, presentation);
                 if (!groups.TryGetValue(surface, out var g)) groups[surface] = g = ([], [], []);
                 if (!localRemaps.TryGetValue(surface, out var remap))

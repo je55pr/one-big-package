@@ -87,6 +87,8 @@ public static class RcShrubTrimUvPolicy
                         if (dz * dt < 0)
                             reversedEdges++;
                     }
+                if (!repeat)
+                    break;
             }
 
             // The brighter top rows of the texture currently map down toward
