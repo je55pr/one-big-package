@@ -37,6 +37,18 @@ internal sealed class Rac3WorldModule : IDisposable
     private int _admitted5821;
     private string _status = "off";
 
+    // Source gating lives with the source module. World activation must not
+    // select player or gameplay ownership through an origin-dependent branch.
+    internal static Rac3WorldModule? CreateForWorld(RuntimeWorld world, RuntimeWorldScene.Result scene)
+    {
+        // Only the R&C3 importer attaches this source-qualified context.
+        if (Rac3WorldGameplaySidecar.TryGet(world, out Rac3WorldGameplayContext? gameplay) && gameplay is not null)
+            return new(world, scene);
+        if (world.BuildId == Rac3Authority.Primary.BuildId)
+            GD.PushError("[uya-gameplay] blocked: RAC3 production gameplay sidecar missing");
+        return null;
+    }
+
     internal Rac3WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene)
     {
         _world = world;

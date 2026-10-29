@@ -130,8 +130,7 @@ public partial class OBPGame
         _navigation.RetireMenuPages();
         Sources.RetireView();
         entry.Resources.Rac1Gameplay = CreateRac1WorldModule(entry.Plan.Prepared.World, entry.Resources.Scene);
-        if (entry.Plan.Prepared.World.Game == ObpSourceGame.Rac3)
-            entry.Resources.Rac3Gameplay = new Rac3WorldModule(entry.Plan.Prepared.World, entry.Resources.Scene);
+        entry.Resources.Rac3Gameplay = Rac3WorldModule.CreateForWorld(entry.Plan.Prepared.World, entry.Resources.Scene);
         ActivateWorld(entry.Plan.Prepared.World, entry.Resources, entry.NativeDestination, entry.Lab);
         entry.Resources.BindPlayer(_player);
     }
