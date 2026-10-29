@@ -70,16 +70,17 @@ public static class RcFoliageCutoutPolicy
             triangleAlphaBlendEnabled, materials, alpha);
 
         int faceCount = triangleTextureIds.Length;
-        if (faceCount is 0 or > MaximumSparseCardFaces)
-            return selected;
 
+        // Sparse-card eligibility is per texture group. A class may contain
+        // many unrelated faces without making one small foliage texture dense.
         // All faces sharing a texture must use a supported native blend;
         // never turn just one face of a fixed-alpha/additive surface into a
         // different compositing mode through texture-wide grouping.
         foreach (var textureFaces in Enumerable.Range(0, faceCount)
                      .GroupBy(face => triangleTextureIds[face]))
         {
-            if (!alpha.TryGetValue(textureFaces.Key, out var profile) ||
+            if (textureFaces.Count() > MaximumSparseCardFaces ||
+                !alpha.TryGetValue(textureFaces.Key, out var profile) ||
                 profile.CutoutFraction < MinimumSparseCardCutout ||
                 profile.TranslucentFraction > MaximumTranslucentFraction)
                 continue;

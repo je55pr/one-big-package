@@ -54,6 +54,8 @@ public partial class FoliageSortingProbe : Node
                 Surface("shrub", 14, 20),
                 Surface("shrub", 14, 80),
                 Surface("shrub", 15, 60),
+                Surface("shrub", 20, 320) with { MaterialPresentation = new(
+                    AlphaBlendEnabled: true, PreferPerPlacementFoliageDepth: false) },
                 Surface("shrub", 16, 120) with { MaterialPresentation = new(
                     AlphaBlendEnabled: true, PreferPerPlacementFoliageDepth: true,
                     BlendEquation: OBP.Runtime.Presentation.RuntimeBlendEquation.FixedAlpha,
@@ -77,13 +79,14 @@ public partial class FoliageSortingProbe : Node
             Textures: [
                 Texture("shrub", 14, partial: true),
                 Texture("shrub", 15, partial: false),
+                Texture("shrub", 20, partial: false),
                 Texture("shrub", 16, partial: false),
                 Texture("shrub", 17, partial: false),
                 Texture("shrub", 18, partial: false),
                 Texture("shrub", 19, partial: true),
                 Texture("tie", 14, partial: true),
             ],
-            MaterialCount: 7,
+            MaterialCount: 8,
             CollisionMeshes: [],
             Bounds: new ObpBounds(Vec3.Zero, new Vec3(100, 10, 10)),
             Environment: null,
@@ -128,6 +131,16 @@ public partial class FoliageSortingProbe : Node
         if (bark.Transparency != BaseMaterial3D.TransparencyEnum.Disabled ||
             trunk.Position != Vector3.Zero)
             throw new InvalidOperationException("Opaque bark should write depth without repositioning.");
+
+        // A fully opaque alpha-enabled shrub must write depth even without
+        // the former per-placement preference, which was the removed gate.
+        var opaqueWithoutPreference = scene.AmbientMeshBindings!.Single(binding =>
+            binding.AssetKind == "shrub" && binding.TextureId == 20).Mesh;
+        var noPreferenceMaterial = (StandardMaterial3D)opaqueWithoutPreference.MaterialOverride;
+        if (noPreferenceMaterial.Transparency != BaseMaterial3D.TransparencyEnum.Disabled ||
+            opaqueWithoutPreference.Position != Vector3.Zero)
+            throw new InvalidOperationException(
+                "Opaque shrub must write depth even when per-placement foliage depth is disabled.");
 
         var cutoutLeaf = scene.AmbientMeshBindings!.Single(binding =>
             binding.AssetKind == "shrub" && binding.TextureId == 19).Mesh;
