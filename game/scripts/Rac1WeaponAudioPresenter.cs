@@ -15,18 +15,18 @@ internal sealed class Rac1WeaponAudioPresenter
     private readonly RuntimeAudioHost _rac1TaunterAudio = new();
     private (int Class, int Sound)? _rac1WeaponLoop;
     private int _rac1TaunterSoundStep, _rac1TaunterSoundTicks;
-    private readonly List<(ulong Tick, int Class, int Sound, bool Loop)> _rac1WeaponSoundTrace = [];
+    private readonly Rac1WeaponSoundTrace _trace = new();
 
     internal void Reset(bool freeImmediately = false)
     {
         _rac1WeaponLoopAudio.StopAll(freeImmediately); _rac1WeaponLoop = null;
         _rac1TaunterAudio.StopAll(freeImmediately);
         _rac1TaunterSoundTicks = _rac1TaunterSoundStep = 0;
-        _rac1WeaponSoundTrace.Clear();
+        _trace.Clear();
     }
 
     internal (int Class, int Sound)? Loop => _rac1WeaponLoop;
-    internal (ulong Tick, int Class, int Sound, bool Loop)[] Events => [.. _rac1WeaponSoundTrace];
+    internal (ulong Tick, int Class, int Sound, bool Loop)[] Events => _trace.Events;
 
     internal void Step(Rac1WeaponAudioFacts facts, PlayerHost? player, Rac1PickupRandom? random,
         IReadOnlyDictionary<(int Class, int LocalSound), Rac1CrateAudio.Sound>? sounds)
@@ -73,11 +73,7 @@ internal sealed class Rac1WeaponAudioPresenter
     }
 
     internal void Record(int cls, int sound, ulong tick, bool trace, bool loop = false)
-    {
-        if (!trace) return;
-        if (_rac1WeaponSoundTrace.Count == 4096) _rac1WeaponSoundTrace.RemoveAt(0);
-        _rac1WeaponSoundTrace.Add((tick, cls, sound, loop));
-    }
+        => _trace.Record(cls, sound, tick, trace, loop);
 
     internal void SetPaused(bool paused)
     {

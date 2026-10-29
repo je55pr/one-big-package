@@ -52,7 +52,6 @@ internal sealed class Rac1ExplosionPresenter
         _rac1ParticleView = null;
         _rac1BombParticleMeshes.Clear();
         _events.Clear(); _frame = 0;
-
     }
 
     internal void SpawnBomb(Vector3 origin, Vector3 camera, Rac1PickupRandom random, Func<int, string, Node3D> createEffect,
@@ -66,8 +65,11 @@ internal sealed class Rac1ExplosionPresenter
         SpawnFragments(Rac1BombExplosion.Fragments(ToEffectNative(origin), random,
             ToEffectNative(impactNormal ?? Vector3.Up), push, ToEffectNative(camera)), createEffect, setOrientation);
         if (playSound) sound(origin);
-        EnsureParticles(assets, seed)?.Bomb(ToEffectNative(origin), ToEffectNative(camera), push);
-        Record(121, origin, "native-bomb-pool");
+        if (EnsureParticles(assets, seed) is { } particles)
+        {
+            particles.Bomb(ToEffectNative(origin), ToEffectNative(camera), push);
+            Record(121, origin, "native-bomb-pool");
+        }
     }
 
     internal void SpawnWeapon(Rac1WeaponId weapon, Vector3 origin, Vector3 camera, bool groundedMine,
@@ -77,15 +79,29 @@ internal sealed class Rac1ExplosionPresenter
         var recipe = Rac1WeaponExplosion.ForWeapon(weapon);
         if (weapon == Rac1WeaponId.MineGlove && groundedMine)
         {
-            EnsureParticles(assets, seed)?.MineGroundExplosion(ToEffectNative(origin), ToEffectNative(camera));
-            Record(74, origin, "native-mine-ground-pool");
+            if (EnsureParticles(assets, seed) is { } mineParticles)
+            {
+                mineParticles.MineGroundExplosion(ToEffectNative(origin), ToEffectNative(camera));
+                Record(74, origin, "native-mine-ground-pool");
+            }
             return;
         }
         SpawnBursts(origin, recipe.Bursts(origin.DistanceTo(camera)), random, createEffect);
         SpawnFragments(recipe.Fragments(ToEffectNative(origin), ToEffectNative(camera), random), createEffect, setOrientation);
-        EnsureParticles(assets, seed)?.WeaponExplosion(recipe, ToEffectNative(origin), ToEffectNative(camera));
-        Record((int)weapon, origin, "native-weapon-pool");
+        if (EnsureParticles(assets, seed) is { } particles)
+        {
+            particles.WeaponExplosion(recipe, ToEffectNative(origin), ToEffectNative(camera));
+            Record(NativeExplosionClass(weapon), origin, "native-weapon-pool");
+        }
     }
+
+    // The item's equipment class is not always the child/explosion emitter's native Moby class.
+    internal static int NativeExplosionClass(Rac1WeaponId weapon) => weapon switch
+    {
+        Rac1WeaponId.MineGlove => 74,
+        Rac1WeaponId.GloveOfDoom => 230,
+        _ => Rac1WeaponProfiles.Get(weapon).ModelClass
+    };
 
     internal void SpawnBursts(Vector3 origin, IReadOnlyList<Rac1BombExplosion.Burst> bursts,
         Rac1PickupRandom random, Func<int, string, Node3D> createEffect)
