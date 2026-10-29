@@ -6,7 +6,7 @@ using OBP.Runtime;
 
 namespace OBP.Game;
 
-public partial class OBPGame
+internal sealed partial class Rac1AridiaEncounter
 {
     private Rac1AridiaClass604Session _rac1AridiaController604 = new();
     private Rac1AridiaSandmouseSession _rac1AridiaSandmouse = new();
@@ -26,7 +26,7 @@ public partial class OBPGame
     /// class604 +0xbc control writes, animation completion and hero/route
     /// conditions before either machine can advance beyond this safe state.
     /// </summary>
-    private void ConfigureRac1AridiaScriptActors(RuntimeWorld world,
+    internal void ConfigureScriptActors(RuntimeWorld world,
         RuntimeWorldScene.Result result, IReadOnlyList<Rac1Instances.MobyInstance> placements)
     {
         var dynamic = (world.DynamicObjects ?? []).ToDictionary(moby => moby.InstanceIndex);
@@ -41,24 +41,24 @@ public partial class OBPGame
                 throw new InvalidDataException(
                     $"Aridia Sandmouse {source.InstanceIndex} has no authored linked class604.");
             var linkedKey = new Rac1MobyRuntimeKey(linked.NativeClassId, controllerId);
-            if (!Rac1World.Context.MobyRuntime.TryGet(linkedKey, out _))
+            if (!_host.Context.MobyRuntime.TryGet(linkedKey, out _))
             {
                 var linkedNode = Rac1WorldPresentation.FindPresentedDynamic(result, linked)
                     ?? Rac1WorldPresentation.CreateInvisibleRuntimeNode(result, linked);
                 _rac1AridiaController604.Register(controllerId);
-                var linkedNative = Rac1World.Context.MobyRuntime.Register(linked, linkedNode.State, nativeState: 0,
+                var linkedNative = _host.Context.MobyRuntime.Register(linked, linkedNode.State, nativeState: 0,
                     pvar: placements[controllerId].PVar ?? []);
                 linkedNode.ApplyState(linkedNative.EntityState);
                 var init = _rac1AridiaController604.Step(controllerId, default);
-                Rac1World.Context.MobyRuntime.SetNativeState(linkedNative, init.NativeState);
+                _host.Context.MobyRuntime.SetNativeState(linkedNative, init.NativeState);
             }
 
             var node = Rac1WorldPresentation.FindPresentedDynamic(result, source)
                 ?? Rac1WorldPresentation.CreateInvisibleRuntimeNode(result, source);
             _rac1AridiaSandmouse.Register(source.InstanceIndex, controllerId);
-            var native = Rac1World.Context.MobyRuntime.Register(source, node.State, nativeState: 0, pvar: pvar);
+            var native = _host.Context.MobyRuntime.Register(source, node.State, nativeState: 0, pvar: pvar);
             node.ApplyState(native.EntityState);
-            Rac1World.Context.MobyRuntime.SetNativeState(native,
+            _host.Context.MobyRuntime.SetNativeState(native,
                 _rac1AridiaSandmouse.Step(source.InstanceIndex, default));
         }
         GD.Print($"[rac1-aridia] scripted class604={_rac1AridiaController604.Count} " +

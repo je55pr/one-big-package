@@ -2794,9 +2794,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AridiaDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1AridiaDiagnosticFixture:private",
       "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #363. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged.",
-      "ExpiresWith": "#363",
-      "Hash": "8507bb702b6c266c378de8b92c8869a8e78e574a2afb791a086eb97827d8573f"
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #363. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #363 now reads world-scoped Aridia encounter snapshots and routes explicit probe actions through Rac1EnemyHost.Aridia; native sessions, constructorbot caches, group admission and scripted bindings no longer live in root. Remaining factory is diagnostic composition only and expires with #376.",
+      "ExpiresWith": "#376",
+      "Hash": "60d81914e81e0a009a4fab463d5e183801b7ba5515af36baed64560e346284a5"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1ArsenalDiagnosticFixture(:IDiagnosticWorldObservations,:GodotRac1WeaponTargetFixture):GodotRac1ArsenalDiagnosticFixture:private",
@@ -3739,9 +3739,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1EnemyHost(:RuntimeWorld,:RuntimeWorldScene . Result,:Rac1WorldModule):Rac1EnemyHost:private",
       "Owner": "#361",
-      "Rationale": "Exact scene enemy composition: source path/random, current player contact facts, existing combat/reward presentation and bounded frog/Aridia neighbor callbacks. #364 moves amoeboid gates, contacts and family state into the world-scoped enemy adapter; existing native family and replay regressions guard its semantics. The world module owns the host and contacts; native controllers remain source-owned. Existing neighbor reset/state bindings expire as #362/#363/#368 migrate those owners; final composition removes this factory. No root reference or native algorithm escapes to the host. #362 moves all native frog/Queen/carrier state, contact, source timing and visual/camera leases into Rac1FrogEncounter; only guarded diagnostic composition and narrow camera/effect callbacks remain at the root. Native Frog/Queen checks and source-neutral player-selection rejection tests protect this intermediate boundary; #376 retires the remaining composition glue.",
+      "Rationale": "Exact scene enemy composition: source path/random, current player contact facts, existing combat/reward presentation and bounded frog/Aridia neighbor callbacks. #364 moves amoeboid gates, contacts and family state into the world-scoped enemy adapter; existing native family and replay regressions guard its semantics. The world module owns the host and contacts; native controllers remain source-owned. Existing neighbor reset/state bindings expire as #362/#363/#368 migrate those owners; final composition removes this factory. No root reference or native algorithm escapes to the host. #362 moves all native frog/Queen/carrier state, contact, source timing and visual/camera leases into Rac1FrogEncounter; only guarded diagnostic composition and narrow camera/effect callbacks remain at the root. Native Frog/Queen checks and source-neutral player-selection rejection tests protect this intermediate boundary; #376 retires the remaining composition glue. #363 routes source-authored Aridia setup, script actors, 60Hz ticks, collision contacts, damage and retirement through Rac1EnemyHost.Aridia instead of reciprocal root delegates; only source-specific player damage descriptor binding remains in typed player ports.",
       "ExpiresWith": "#376",
-      "Hash": "333a4246d4cc44d9e3526ef7b2b55fcf7271490e60718365c229445ac645852e"
+      "Hash": "783768858dcc4f6005a7363d00fe391747cd40e13ceb3acd568b599cea926d85"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac2WorldModule(:RuntimeWorld,:GodotWorldResources):Rac2WorldModule:private",
@@ -4891,7 +4891,42 @@
     "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:ToTaxiCabBasis(:Basis):Rac1TaxiCabBasis:private,static",
     "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:ToTaxiPoint(:Vector3):Rac1TaxiPoint:private,static",
     "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:TryHandleRac1MetropolisTaxiInput(:InputEvent):bool:private",
-    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:TryResolveRac1TaxiLanding(:PlayerHost,:Vector3,out:Vector3):bool:private"
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:TryResolveRac1TaxiLanding(:PlayerHost,:Vector3,out:Vector3):bool:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::field:_rac1AridiaClipVolumes:IReadOnlyList < Rac1ClipVolume >:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::field:_rac1AridiaEnemies:Rac1AridiaEnemySession:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::field:_rac1ConstructorbotNativeLiftCounts:Dictionary < int , int >:private,readonly",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::field:_rac1ConstructorbotNativeWaypoints:Dictionary < int , Vector3 >:private,readonly",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::field:_rac1ConstructorbotRoamExitFlags:Dictionary < int , int >:private,readonly",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::field:_rac1ConstructorbotRoamingTargets:Dictionary < int , Vector3 >:private,readonly",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::field:_rac1ConstructorbotSphereContactCounts:Dictionary < int , int >:private,readonly",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::field:_rac1ConstructorbotSphereProbeCounts:Dictionary < int , int >:private,readonly",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::field:_rac1ConstructorbotStartups:Dictionary < int , Rac1AridiaConstructorbotNative . Frame >:private,readonly",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::field:_rac1ConstructorbotStateThreeVerticalSteps:Dictionary < int , float >:private,readonly",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::field:_rac1ConstructorbotSweepProbeCounts:Dictionary < int , int >:private,readonly",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::field:_rac1ConstructorbotWalkerSpeeds:Dictionary < int , float >:private,readonly",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::field:_rac1ConstructorbotWalkerSphere:SphereShape3D ?:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::field:_rac1ConstructorbotWalkerYawVelocities:Dictionary < int , float >:private,readonly",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::method:ActivateNearbyRac1AridiaShark(:int,:Vector3):void:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::method:ApplyRac1AridiaPlayerDamage(:RuntimeWorldScene . DynamicObjectNode):void:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::method:ApplyRac1AridiaWeaponDamage(:RuntimeWorldScene . DynamicObjectNode,:Rac1GameplayDamageEvent):bool:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::method:AridiaConstructorbotJointTouchesPlayer(:Rac1HostedEnemy):bool:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::method:HideBuriedRac1AridiaEnemy(:Rac1HostedEnemy):void:private,static",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::method:MoveRac1AridiaWalkerContact(:Rac1HostedEnemy,:Vector3):bool:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::method:ProbeRac1AridiaWalkerGroundLift(:Rac1HostedEnemy,:Vector3):float ?:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::method:ProbeRac1AridiaWalkerSpherePushouts(:Rac1HostedEnemy,:Vector3):Rac1AridiaConstructorbotNative . WalkerPushoutFrame:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::method:ProbeRac1AridiaWalkerSupport(:Rac1HostedEnemy,:Vector3,out:float,out:float):bool:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::method:ProbeRac1ConstructorbotStateThreeFloor(:Rac1HostedEnemy,:Vector3):float ?:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::method:ResetRac1ConstructorbotStartups():void:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::method:ResolveAridiaSharkLinkedMobyState(:int):int ?:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::method:RestoreRac1AridiaEnemyVisibility(:Rac1HostedEnemy):void:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::method:StepRac1NativeConstructorbot(:Rac1HostedEnemy):Rac1AridiaConstructorbotNative . Frame ?:private",
+    "game/scripts/OBPGame.Rac1AridiaEnemies.cs::OBPGame::method:TickRac1AridiaEnemy(:Rac1HostedEnemy):void:private",
+    "game/scripts/OBPGame.Rac1AridiaScripted.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Rac1AridiaScripted.cs::OBPGame::field:_rac1AridiaController604:Rac1AridiaClass604Session:private",
+    "game/scripts/OBPGame.Rac1AridiaScripted.cs::OBPGame::field:_rac1AridiaSandmouse:Rac1AridiaSandmouseSession:private",
+    "game/scripts/OBPGame.Rac1AridiaScripted.cs::OBPGame::method:ConfigureRac1AridiaScriptActors(:RuntimeWorld,:RuntimeWorldScene . Result,:IReadOnlyList < Rac1Instances . MobyInstance >):void:private",
+    "game/scripts/OBPGame.Rac1AridiaScripted.cs::OBPGame::method:ResetRac1AridiaScriptActors():void:private"
   ],
   "RetiredAccess": [
     "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()"
