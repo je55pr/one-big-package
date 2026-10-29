@@ -123,27 +123,46 @@ public sealed class CaptureDiagnosticTests
         Assert.True(fixture.Disposed);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task BugReportWaitsForColdWorldReadinessWithoutSkippingTheRecorderGate(bool worldBecomesReady)
+    [Fact]
+    public async Task BugReportWaitsForSlowColdWorldPreparation()
     {
         var fixture = new Fixture
         {
             State = Fixture.Initial with { WaitingForEntry = true, PreparingWorld = true },
-            ReadyAfterProcess = worldBecomesReady ? 7UL : null,
+            ReadyAfterProcess = 7,
+            MillisecondsPerFrame = 1000,
+        };
+        using var run = new DiagnosticRunContext(fixture, CancellationToken.None, 200);
+        await new BugReporterScenario(fixture.Context(run), fixture, null!).WaitForOrdinaryWorldAsync();
+        Assert.Equal(7UL, fixture.Process); // Longer than the old five-second deadline.
+        Assert.Empty(fixture.Protocol);
+    }
+
+    [Theory]
+    [InlineData(false, true, false, false)]
+    [InlineData(true, false, false, false)]
+    [InlineData(true, true, true, false)]
+    [InlineData(true, true, false, true)]
+    public async Task BugReportRunNeverInjectsInputUntilEveryReadinessConditionIsMet(
+        bool recorderPresent, bool playerPresent, bool waitingForEntry, bool preparingWorld)
+    {
+        var fixture = new Fixture
+        {
+            State = Fixture.Initial with
+            {
+                RecorderPresent = recorderPresent,
+                PlayerPresent = playerPresent,
+                WaitingForEntry = waitingForEntry,
+                PreparingWorld = preparingWorld,
+            },
             MillisecondsPerFrame = 1000,
         };
         using var run = new DiagnosticRunContext(fixture, CancellationToken.None, 200);
         var scenario = new BugReporterScenario(fixture.Context(run), fixture, null!);
-        if (worldBecomesReady) await scenario.WaitForOrdinaryWorldAsync();
-        else
-        {
-            var error = await Assert.ThrowsAsync<InvalidOperationException>(scenario.WaitForOrdinaryWorldAsync);
-            Assert.Equal("Recorder did not enter its ordinary world.", error.Message);
-        }
-        Assert.Equal(worldBecomesReady ? 7UL : 120UL, fixture.Process);
-        Assert.Empty(fixture.Protocol); // No report/gameplay input until the real recorder is ready.
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(scenario.RunAsync);
+        Assert.Equal("Recorder did not enter its ordinary world.", error.Message);
+        Assert.Equal(120UL, fixture.Process);
+        Assert.Empty(fixture.Protocol);
     }
 
     [Fact]
