@@ -81,7 +81,7 @@ public static partial class Rac3WorldImport
             RcShrubTrimUvPolicy.FindInvertedTrimTextures(
                 entry.Value.Positions, entry.Value.Uvs, entry.Value.Indices,
                 entry.Value.TriangleTextureIds, entry.Value.TriangleMaterialStateIndices,
-                entry.Value.Materials, shrubTextureMap));
+                entry.Value.TriangleAlphaBlendEnabled, entry.Value.Materials, shrubTextureMap));
         PlaceStatics("tie", gameplay.TieInstances, ties, texByKind["tie"].Count, meshes, Grow);
         PlaceStatics("shrub", gameplay.ShrubInstances, shrubs, texByKind["shrub"].Count,
             meshes, Grow, shrubAlpha, shrubCutouts, shrubTrimFlips);

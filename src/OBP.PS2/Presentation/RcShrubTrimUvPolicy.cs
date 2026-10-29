@@ -15,13 +15,15 @@ public static class RcShrubTrimUvPolicy
     public static HashSet<int> FindInvertedTrimTextures(
         double[] positions, float[] uvs, int[] indices,
         int[] faceTextures, int[] faceMaterialStates,
+        bool?[] faceAlphaBlendEnabled,
         IReadOnlyList<RcMaterialState> materials,
         IReadOnlyDictionary<int, RcLevelTextureTable.Texture> textures)
     {
         var result = new HashSet<int>();
         if (positions.Length < 9 || uvs.Length != positions.Length / 3 * 2 ||
             indices.Length != faceTextures.Length * 3 ||
-            faceMaterialStates.Length != faceTextures.Length)
+            faceMaterialStates.Length != faceTextures.Length ||
+            faceAlphaBlendEnabled.Length != faceTextures.Length)
             return result;
 
         double minX = double.PositiveInfinity, minY = double.PositiveInfinity, minZ = double.PositiveInfinity;
@@ -56,7 +58,11 @@ public static class RcShrubTrimUvPolicy
             {
                 int state = faceMaterialStates[f];
                 if ((uint)state >= (uint)materials.Count ||
-                    materials[state].WrapT != RcTextureWrapHint.Repeat)
+                    materials[state].WrapT != RcTextureWrapHint.Repeat ||
+                    Ps2MaterialPresentation.From(materials[state], faceAlphaBlendEnabled[f])
+                        .BlendEquation is RuntimeBlendEquation.FixedAlpha or
+                            RuntimeBlendEquation.AdditiveSourceAlpha or
+                            RuntimeBlendEquation.AdditiveFixedAlpha)
                 {
                     repeat = false;
                     break;

@@ -2,7 +2,9 @@ using OBP.IO;
 using OBP.PS2.Graphics;
 using OBP.PS2.Presentation;
 using OBP.PS2.Textures;
+using OBP.RAC3;
 using OBP.RAC3.Level;
+using OBP.Runtime;
 
 namespace OBP.Tests;
 
@@ -26,19 +28,38 @@ public sealed class RcShrubTrimUvPolicyTests
             .ToArray();
         var texIds = Enumerable.Repeat(7, triangles.Length / 3).ToArray();
         var stateIds = new int[texIds.Length];
+        var alphaBlendEnabled = Enumerable.Repeat<bool?>(true, texIds.Length).ToArray();
         var materials = new[]
         {
             new RcMaterialState(7, RcTextureWrapHint.Repeat,
                 RcTextureWrapHint.Repeat, RcTextureMinFilterHint.Linear,
                 0, 0, 0, 0, "synthetic"),
+            new RcMaterialState(7, RcTextureWrapHint.Repeat,
+                RcTextureWrapHint.Repeat, RcTextureMinFilterHint.Linear,
+                0, 0, 0, 0, "additive")
+            {
+                AlphaBlend = new RcGsAlphaState(0, 2, 0, 1, 0),
+            },
         };
         var gradient = Texture(7, (x, y) => (byte)(220 - y * 3));
         var images = new Dictionary<int, RcLevelTextureTable.Texture> { [7] = gradient };
 
         HashSet<int> Classify(double[]? p = null, float[]? u = null) =>
             RcShrubTrimUvPolicy.FindInvertedTrimTextures(
-                p ?? points, u ?? uv, triangles, texIds, stateIds, materials, images);
+                p ?? points, u ?? uv, triangles, texIds, stateIds,
+                alphaBlendEnabled, materials, images);
 
+        Assert.Equal(new[] { 7 }, Classify().Order());
+        // All faces with this texture must have compatible native blending.
+        // A single additive or fixed-alpha face suppresses a class-wide flip.
+        stateIds[0] = 1;
+        Assert.Empty(Classify());
+        materials[1] = materials[1] with
+        {
+            AlphaBlend = new RcGsAlphaState(0, 1, 2, 1, 64),
+        };
+        Assert.Empty(Classify());
+        stateIds[0] = 0;
         Assert.Equal(new[] { 7 }, Classify().Order());
         Assert.Empty(Classify(points, uv.Select((v, i) => (i % 2) == 1 ? 3 - v : v).ToArray()));
         Assert.Empty(Classify(points.Select((v, i) => (i % 3) == 2 ? v * 5 : v).ToArray(), uv));
@@ -53,6 +74,46 @@ public sealed class RcShrubTrimUvPolicyTests
         images[7] = gradient;
         materials[0] = materials[0] with { WrapT = RcTextureWrapHint.Clamp };
         Assert.Empty(Classify());
+    }
+
+    [Fact]
+    public void Rac3ImporterReversesOnlySelectedTrimUvsAndPreservesGeometry()
+    {
+        static float[] Identity() =>
+        [
+            1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1,
+        ];
+
+        var meshClass = new Rac3Assets.StaticClass(
+            17,
+            [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0],
+            [0, 2, 1, 2, 0, 1, 1, 1],
+            [0, 1, 2, 1, 3, 2],
+            [7, 8])
+        {
+            Materials =
+            [
+                new RcMaterialState(7, RcTextureWrapHint.Repeat,
+                    RcTextureWrapHint.Repeat, RcTextureMinFilterHint.Linear,
+                    0, 0, 0, 0, "synthetic"),
+            ],
+            TriangleMaterialStateIndices = [0, 0],
+            TriangleAlphaBlendEnabled = [true, true],
+        };
+        var output = new List<RuntimeMesh>();
+        Rac3WorldImport.PlaceStatics(
+            "shrub",
+            [new(0, 17, Identity())],
+            new Dictionary<int, Rac3Assets.StaticClass> { [17] = meshClass },
+            9, output, (_, _, _) => { },
+            reversedTrimTextures: new Dictionary<int, HashSet<int>> { [17] = [7] });
+
+        Assert.Equal(2, output.Count);
+        Assert.Equal(2, output.Sum(mesh => mesh.TriangleCount));
+        Assert.Equal(new float[] { 0, -1, 1, -1, 0, 0 },
+            Assert.Single(output, mesh => mesh.TextureId == 7).Uvs);
+        Assert.Equal(new float[] { 1, 2, 1, 1, 0, 1 },
+            Assert.Single(output, mesh => mesh.TextureId == 8).Uvs);
     }
 
     [SkippableFact]
@@ -71,7 +132,7 @@ public sealed class RcShrubTrimUvPolicyTests
             return RcShrubTrimUvPolicy.FindInvertedTrimTextures(
                 cls.Positions, cls.Uvs, cls.Indices,
                 cls.TriangleTextureIds, cls.TriangleMaterialStateIndices,
-                cls.Materials, textures);
+                cls.TriangleAlphaBlendEnabled, cls.Materials, textures);
         }
 
         Assert.Equal(new[] { 17 }, For(3292).Order());
@@ -83,8 +144,42 @@ public sealed class RcShrubTrimUvPolicyTests
             RcShrubTrimUvPolicy.FindInvertedTrimTextures(
                 cls.Positions, cls.Uvs, cls.Indices,
                 cls.TriangleTextureIds, cls.TriangleMaterialStateIndices,
-                cls.Materials, textures)).Distinct().Order().ToArray();
+                cls.TriangleAlphaBlendEnabled, cls.Materials, textures)).Distinct().Order().ToArray();
         Assert.Equal(new[] { 11, 17 }, all);
+
+        // Exercise the real importer against a decoded Marcadia planter class,
+        // not just the detector. Only the eligible native texture is reversed.
+        var planter = classes[3293];
+        var meshes = new List<RuntimeMesh>();
+        Rac3WorldImport.PlaceStatics(
+            "shrub",
+            [new(0, 3293,
+            [
+                1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1,
+            ])],
+            new Dictionary<int, Rac3Assets.StaticClass> { [3293] = planter },
+            textures.Count, meshes, (_, _, _) => { },
+            reversedTrimTextures: new Dictionary<int, HashSet<int>> { [3293] = For(3293) });
+
+        Assert.Equal(planter.Indices.Length / 3, meshes.Sum(mesh => mesh.TriangleCount));
+        foreach (int textureId in new[] { 17, 18, 19 })
+        {
+            bool reversed = textureId == 17;
+            var expected = Enumerable.Range(0, planter.TriangleTextureIds.Length)
+                .Where(face => planter.TriangleTextureIds[face] == textureId)
+                .SelectMany(face => Enumerable.Range(0, 3)
+                    .Select(corner =>
+                    {
+                        int nativeVertex = planter.Indices[face * 3 + corner];
+                        float nativeV = planter.Uvs[nativeVertex * 2 + 1];
+                        return reversed ? 1f - nativeV : nativeV;
+                    }))
+                .Order().ToArray();
+            var actual = meshes.Where(mesh => mesh.TextureId == textureId)
+                .SelectMany(mesh => mesh.Indices.Select(vertex => mesh.Uvs[vertex * 2 + 1]))
+                .Order().ToArray();
+            Assert.Equal(expected, actual);
+        }
     }
 
     private static RcLevelTextureTable.Texture Texture(int id, Func<int, int, byte> shade)
