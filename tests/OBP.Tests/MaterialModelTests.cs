@@ -186,6 +186,19 @@ public class MaterialModelTests
         Assert.False(MaterialModel.UsesBakeCurve("tie"));
     }
 
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(64, 0.5)]
+    [InlineData(128, 1)]
+    [InlineData(192, 1)]
+    [InlineData(255, 1)]
+    public void TfragVertexOpacity_InterpretsPs2Gs128AsOpaque(byte nativeAlpha, double expected)
+    {
+        // The neutral tfrag decoder preserves native RGBA / 255. Only the
+        // Godot presentation converts PS2's 128-as-one alpha convention.
+        Assert.Equal(expected, MaterialModel.TfragVertexOpacity(nativeAlpha / 255f), precision: 5);
+    }
+
     [Fact]
     public void Emission_OnlyForVeryBrightTextures_Clamped()
     {

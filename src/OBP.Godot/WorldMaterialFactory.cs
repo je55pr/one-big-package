@@ -244,9 +244,28 @@ public sealed class WorldMaterialFactory
             return;
         }
 
+        // Tfrag liquid/overlay textures often contain a genuine gradient of
+        // partial alpha. Forcing every below-half pixel into alpha scissor
+        // cuts holes in those surfaces. Preserve native blend-enable when
+        // available; otherwise use the neutral content profile specifically
+        // for terrain. Other asset kinds retain their established fallback.
+        if (key.Item1 == "tfrag" && _alpha.TryGetValue(key, out var terrainAlpha))
+        {
+            var (mode, threshold) = MaterialModel.ResolveAlpha(terrainAlpha);
+            if (mode == AlphaMode.Blend)
+            {
+                mat.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
+            }
+            else if (mode == AlphaMode.Scissor)
+            {
+                mat.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;
+                mat.AlphaScissorThreshold = threshold;
+            }
+            return;
+        }
+
         // Blend-disable does not prove alpha testing is disabled. Native
-        // alpha-test semantics remain unresolved, so preserve the established
-        // texture-content scissor fallback whenever blending is not enabled.
+        // alpha-test semantics remain unresolved for other mesh families.
         if (_alpha.TryGetValue(key, out var profile) && profile.AnyBelowHalf)
         {
             mat.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;

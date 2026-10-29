@@ -176,6 +176,15 @@ public static class MaterialModel
     public static bool UsesBakeCurve(string assetKind) => assetKind == "tfrag";
 
     /// <summary>
+    /// PS2 GS vertex alpha uses 0x80 as full opacity. The neutral decoded tfrag
+    /// records deliberately retain the original byte divided by 255; remap only
+    /// at the host presentation boundary so half-opaque source colour is not
+    /// mistaken for half-transparent terrain in Godot.
+    /// </summary>
+    public static float TfragVertexOpacity(float decodedAlpha) =>
+        System.Math.Clamp(decodedAlpha * (255f / 128f), 0f, 1f);
+
+    /// <summary>
     /// A subtle emission energy for textures that decode very bright (signs,
     /// lamps, screens) so they read as light sources under the glow-free
     /// pipeline — never a relight, just a lift on that one material. 0 = none.

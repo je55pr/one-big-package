@@ -146,7 +146,12 @@ public static partial class RuntimeWorldScene
                         b = MaterialModel.BakeCurve(b);
                     }
 
-                    col[i] = new Color(r, g, b, m.Colors[i * 4 + 3]);
+                    float alpha = m.Colors[i * 4 + 3];
+                    if (m.AssetKind == "tfrag")
+                    {
+                        alpha = MaterialModel.TfragVertexOpacity(alpha);
+                    }
+                    col[i] = new Color(r, g, b, alpha);
                 }
 
                 arrays[(int)Mesh.ArrayType.Color] = col;
