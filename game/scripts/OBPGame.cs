@@ -55,14 +55,8 @@ public partial class OBPGame : Node3D
             .Concat(_rac1ChickenCargo).Distinct().ToArray(),
         ChickenCargo: _rac1ChickenCargo, RetireCapturedCargoPresentation: RetireRac1CapturedCargoPresentation,
         HeldItemId: () => _rac1HeldItem.NativeItemId,
-        MorphEnemy: MorphArsenalEnemy, DisableCrateCollider: Rac1World.Loot.DisableRac1CrateCollider,
-        RemovePlacedBolt: id =>
-        {
-            Rac1World.Loot.PendingPlacedBolts.RemoveAll(pending => pending.Registration.PickupId == id);
-            Rac1World.Loot.PlacedBoltNodes.Remove(id);
-            Rac1World.Presentation.PickupNodes.Remove(id);
-            Rac1World.Loot.PickupMotions.Remove(id);
-        }));
+        MorphEnemy: MorphArsenalEnemy, DisableCrateCollider: id => Rac1World.Loot.DisableRac1CrateCollider(id),
+        RemovePlacedBolt: id => Rac1World.Loot.RemovePlacedBolt(id)));
     private MovementReproductionService? _movementReproduction;
     private MovementReproductionService MovementReproduction => _movementReproduction ??= new(new(
         Owner: this, HostOperations: _hostOperations, Args: () => _args,
@@ -303,23 +297,21 @@ public partial class OBPGame : Node3D
                 else _playerNative.EndWorld();
             },
             Wheel: () => { _lastQuickSelectTap = 0; _previousSelectedWeapon = null; },
-            Water: () => _rac1NovalisWater = null,
-            Music: ResetRac1NovalisMusic, RedPlants: ResetRac1RedPlants, PulsingOrbs: ResetRac1PulsingOrbs,
             Explosives: ResetRac1ExplosiveCrates, Checkpoints: ResetRac1CheckpointTriggers,
             Missions: ResetRac1Missions, MetalDetector: ResetRac1MetalDetector, Wrench: ResetRac1WrenchHost,
             Retry: ResetRac1CombatRetry, Pickups: () => Rac1World.Loot.ResetRac1PickupPresentation(),
-            GoldBolts: () => Rac1World.Loot.ResetRac1GoldBolts(), Cranks: ResetRac1NovalisCranks, Breakables: ResetRac1NovalisBreakables,
-            Mechanisms: () => _rac1NovalisMechanisms.Clear(), AdditionalWeapons: ResetRac1AdditionalWeapons,
+            GoldBolts: () => Rac1World.Loot.ResetRac1GoldBolts(), Breakables: ResetRac1NovalisBreakables,
+            AdditionalWeapons: ResetRac1AdditionalWeapons,
+
             BombPresentation: ResetRac1BombPresentation),
         new Rac1WorldActorPorts(world => Rac1World.Loot.ConfigureRac1PickupPresentation(world), node => Rac1World.Loot.AddRac1CrateCollider(node),
             ConfigureRac1ExplosiveCrates, ConfigureRac1CheckpointTriggers, ConfigureRac1Missions, ConfigureRac1MetalDetector,
-            (world, result) => Rac1World.Loot.ConfigureRac1PlacedBolts(world, result), (world, result) => Rac1World.Loot.ConfigureRac1GoldBolts(world, result), ConfigureRac1RedPlants, ConfigureRac1PulsingOrbs,
-            ConfigureRac1NovalisCranks, ConfigureRac1NovalisBreakables, ConfigureRac1NovalisMechanisms,
-            ConfigureRac1NovalisWater, ConfigureRac1NovalisMusic),
+            (world, result) => Rac1World.Loot.ConfigureRac1PlacedBolts(world, result),
+            (world, result) => Rac1World.Loot.ConfigureRac1GoldBolts(world, result), ConfigureRac1NovalisBreakables),
         new Rac1WorldTickPorts(() => MovementReproduction.IsLoading,
-            TickRac1NovalisMusic, TickRac1Swing, TickRac1RedPlants,
-            TickRac1PulsingOrbs, TickRac1ExplosiveCrates, TickRac1CheckpointTriggers, TickRac1MetalDetector,
+            TickRac1Swing, TickRac1ExplosiveCrates, TickRac1CheckpointTriggers, TickRac1MetalDetector,
             delta => Rac1World.Loot.TickRac1Pickups(delta), () => Rac1World.Loot.TickRac1GoldBolts(), TickRac1Missions),
+
         new Rac1PlayerGameplayPorts(() => OrdinaryPlayerSession, () => _playerNative is not null, () => PlayerLife.Alive,
             () => _rac1Nanotech, () => _rac1Weapons, _persistentPlayer.Equipment.RefreshMovementEquipment,
             OnRac1PrimaryAttackRequested, OnRac1WeaponSelectionRequested, OnRac1WeaponCycleRequested,
@@ -327,8 +319,25 @@ public partial class OBPGame : Node3D
             FusionWeapons.ConfigureNativePresentation, _persistentPlayer.BeginParityWorld,
             () => TryCompleteRac1EnvironmentalRestart(automatic: true), TickRac1VeldinEnvironmentalDeath,
             () => { FusionWeapons.ClearOnDeath(); ResetRac1WrenchHost(); ShowRac1CombatRetry(); }),
-        new Rac1WorldContactPorts(TryTurnRac1NovalisCrank, SampleRac1NovalisWaterHeight, OnRac1NovalisDrowned,
-            sound => _playerAudio?.Play(new(0, sound))),
+        new Rac1WorldContactPorts(() =>
+        {
+            if (_worldScenes?.Current?.Resources.Rac1Gameplay?.Mechanisms.HasWater != true ||
+                _player is null || _rac1Nanotech.Probe().IsDead)
+                return;
+            // Native action6a has already completed; the persistent player session
+            // still owns the checkpoint reset and HUD feedback.
+            var dead = _rac1Nanotech.ApplyEnvironmentalDeathReset();
+            _player.Rac1GameplayState = dead;
+            Rac1World.Context.CombatStatus = "Novalis drowned (native water action completed)";
+            RefreshRac1HudState();
+            GD.Print($"[rac1-novalis-water] {Rac1World.Context.CombatStatus}");
+        }, sound => _playerAudio?.Play(new(0, sound))),
+        new Rac1AuthoredMechanismPorts(
+            () => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path,
+            (nativeClass, sound, position) => Rac1World.Loot.PlayRac1PickupSound(nativeClass, sound, position),
+            intent => _worldHost.StartLevelAudio([intent]),
+            _worldHost.StopLevelAudio,
+            status => Rac1World.Context.CombatStatus = status),
         new Rac1GameplayHudPorts(_hudState, () => OrdinaryPlayerSession, () => _playerSession is not null,
             PlayerLife.PublishHud, FusionWeapons.Hud, () => _rac1Nanotech, () => _rac1Weapons, () => _rac1BoltWallet,
             () => _rac1AdditionalWeapons?.Cargo.Count ?? 0, () => _player, MetalDetectorHudText),
@@ -486,7 +495,9 @@ public partial class OBPGame : Node3D
             _rac1EquipmentShots.Select(v => new CaptureShotCheckpoint(v.Id, ToNumerics(v.Position), ToNumerics(v.Step), (int)v.Weapon, v.Age, v.Grounded)).ToArray(),
             _rac1DoomAgents.Where(v => IsInstanceValid(v.Body)).Select(v => new CaptureBodyCheckpoint(v.Id, ToNumerics(v.Body.GlobalPosition), ToNumerics(v.Body.Velocity))).ToArray(),
             Rac1World.Presentation.PickupNodes.Where(v => IsInstanceValid(v.Value)).Select(v => new CapturePositionCheckpoint(v.Key, ToNumerics(v.Value.GlobalPosition))).ToArray(),
-            _rac1NovalisCrankNodes.Keys.Select(v => new CaptureCrankCheckpoint(v, _rac1NovalisCranks.Progress(v))).ToArray()),
+            Rac1World.Mechanisms.Cranks is { } cranks
+                ? cranks.CrankNodes.Keys.Select(v => new CaptureCrankCheckpoint(v, cranks.Session.Progress(v))).ToArray()
+                : []),
         () => new(ProfilePlayer.Capture(_playerSession!.Capture()), CaptureProfileSources(), ActorHost.ReadActors().Select(actor => new CaptureActorCheckpoint(
             actor.Registration.Instance.Target, actor.State.Position, actor.State.Alive, actor.State.Retired, actor.State.Health ?? -1, actor.State.NativeState, actor.State.NativeSequence ?? -1)).ToArray(), ActorHost.TickCount),
         () => Sources.Setup.Library.Attached.Values.Select(source => source.Identity).ToArray(), () => ActorHost.ReadReplayAdapters(),
@@ -621,8 +632,10 @@ public partial class OBPGame : Node3D
             Sources: () => Sources.Setup.Library.Attached.Values.ToDictionary(source => source.Game, source => source.Identity.BuildId),
             SelectedAvatar: () => _playerSession?.Capture().Configuration.Avatar,
             PresentedAvatar: () => _avatarPresentation.Avatar?.Identity,
-            Presentation: key => _equipmentPresentation.Observe(key, _equipmentPresentation.ModelAvailable(key, _avatarPresentation, _rac1EquipmentAssets, FusionWeapons.Sources.Assets), _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is not null),
-            Context: () => new(_player?.HasRac1SwingshotTargets == true, _rac1NovalisWater is not null),
+            Presentation: key => _equipmentPresentation.Observe(key, _equipmentPresentation.ModelAvailable(key, _avatarPresentation, _rac1EquipmentAssets, FusionWeapons.Sources.Assets), _equipmentPresentation.Assets(OrdinaryPlayerSession, _worldScenes?.Current?.Resources.Rac1Gameplay?.Loot.PickupAssets) is not null),
+            Context: () => new(_player?.HasRac1SwingshotTargets == true,
+                _worldScenes?.Current?.Resources.Rac1Gameplay?.Mechanisms.HasWater == true),
+
             SelectWeapon: FusionWeapons.Select,
             ResetWeaponPresentation: () =>
             {
@@ -756,7 +769,8 @@ public partial class OBPGame : Node3D
     public override void _PhysicsProcess(double delta)
     {
         if (_mode != Mode.World || MovementReproduction.IsLoading || _player is null || _player.DevelopmentControls.FlyEnabled) return;
-        StepRac1NovalisMechanisms();
+        _worldScenes?.Current?.Resources.Rac1Gameplay?.PhysicsStep(MovementReproduction.IsLoading,
+            _captureReplay?.Recorder is { WaitingForEntry: true });
         _playerAudio?.StepReactions();
         // Avatar updates stop at death; detached source particles still age out.
         if (!_player.Rac1GameplayAlive) StepRac1BombEffectsPhysics();
@@ -1430,10 +1444,11 @@ public partial class OBPGame : Node3D
             new GodotMovementAnimation(new(() => _avatarPresentation.View, () => _avatarPresentation.Controller, () => _avatarPresentation.Sink,
                 CurrentPlayerAvatarSourceSequence, PlayerAvatarPresentationIsSynchronized, () => _avatarPresentation.Avatar?.AnimationBounds.Height ?? double.NaN)),
             new GodotMovementGeometry(this), new GodotMovementWorld(() => _world,
-                () => _sceneResult?.CollisionBodies ?? 0, () => _rac1NovalisWater is not null),
+                () => _sceneResult?.CollisionBodies ?? 0,
+                () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Mechanisms.HasWater == true),
             new GodotDiagnosticInputActions(), new GodotMovementPhysicalInput(), clock, message => GD.Print(message), message => GD.PrintErr(message));
         var water = new GodotMovementWater(() => [.. Rac1World.Enemies.Roster.Values.Select(enemy => ((Node3D)enemy.Node.Root, (Node3D)enemy.Body))],
-            position => SampleRac1NovalisWaterHeight(GodotMovementPlayer.Engine(position)),
+            position => _worldScenes?.Current?.Resources.Rac1Gameplay?.Mechanisms.SampleWaterHeight(GodotMovementPlayer.Engine(position)),
             () => _playerHud?.FindChild("Air", true, false) is Control air ? air.Visible : null, _rac1Nanotech.Probe);
         var environment = new DiagnosticEnvironmentalDeathFixture(() => new(_rac1Nanotech.EnvironmentalDeathGeneration,
             _rac1Nanotech.EnvironmentalRestartGeneration, _rac1Nanotech.Probe(), Rac1World.Context.LastEnvironmentalDeathBoundary,
@@ -2009,19 +2024,27 @@ public partial class OBPGame : Node3D
             () =>
             {
                 var taxi = (_worldScenes?.Current?.Resources.Rac1Gameplay?.Taxis)?.ReadSnapshot();
-                return new(worlds.ReadWorld(), _rac1NovalisMechanisms.Count, taxi?.Nodes ?? 0, taxi?.Hulls ?? 0,
-                    _rac1Music?.Tracks.Count ?? 0, _rac1MusicDecoded.Count, _rac1MusicReader is not null,
+                var mechanisms = _worldScenes?.Current?.Resources.Rac1Gameplay?.Mechanisms;
+                var music = mechanisms?.Music;
+                return new(worlds.ReadWorld(), mechanisms?.Route?.Mechanisms.Count ?? 0, taxi?.Nodes ?? 0, taxi?.Hulls ?? 0,
+                    music?.Music?.Tracks.Count ?? 0, music?.DecodedCount ?? 0, music?.ReaderOpen == true,
                     taxi?.CameraWorldOwned ?? false,
                     taxi is { Flying: true } || taxi?.PendingStop is not null || taxi is { RiderFrame: true },
                     SharedProfilePath is not null);
             },
             () => _worldHost.Root, () => (_worldScenes?.Current?.Resources.Rac1Gameplay?.Taxis)?.CaptureHulls() ?? [], () => _player?.Camera);
         return new(movement.Ports,
-            () => new GodotRac1NovalisRouteFixture(() => _rac1NovalisMechanisms, () => _player, worlds),
-            () => new GodotRac1NovalisMusicFixture(worlds, () => new(worlds.ReadWorld(), _rac1Music is { } music
+            () => new GodotRac1NovalisRouteFixture(() => _worldScenes?.Current?.Resources.Rac1Gameplay?.Mechanisms.Route?.Mechanisms ?? [], () => _player, worlds),
+            () => new GodotRac1NovalisMusicFixture(worlds, () => new(worlds.ReadWorld(),
+                _worldScenes?.Current?.Resources.Rac1Gameplay?.Mechanisms.Music?.Music is { } music
                     ? [.. music.Tracks.Select(track => new Rac1NovalisMusicTrackDiagnostic(track.Index, track.Sector, track.DurationSeconds))] : [],
-                _rac1MusicArea, _rac1MusicSlot, _rac1MusicIntroRemaining, _rac1MusicDecoded.Count,
-                [.. _worldHost.AudioDiagnostics.Select(item => item.Message)], _worldHost.AudioStatusLine), OnRac1NovalisCrankMusic, TickRac1NovalisMusic),
+                _worldScenes?.Current?.Resources.Rac1Gameplay?.Mechanisms.Music?.Area,
+                _worldScenes?.Current?.Resources.Rac1Gameplay?.Mechanisms.Music?.Slot ?? -1,
+                _worldScenes?.Current?.Resources.Rac1Gameplay?.Mechanisms.Music?.IntroRemaining ?? 0,
+                _worldScenes?.Current?.Resources.Rac1Gameplay?.Mechanisms.Music?.DecodedCount ?? 0,
+                [.. _worldHost.AudioDiagnostics.Select(item => item.Message)], _worldHost.AudioStatusLine),
+                index => _worldScenes?.Current?.Resources.Rac1Gameplay?.Mechanisms.SelectAuthoredMusicCrank(index),
+                delta => _worldScenes?.Current?.Resources.Rac1Gameplay?.Mechanisms.Tick(delta, Rac1AuthoredTickPhase.Music)),
             CreateRac1TaxiDiagnosticFixture, ui, lifetime, ui.Menus,
             new DiagnosticNavigationActions(destination => TrilogyWorldProviders.Resolve(destination) is { } native && OnDestinationChosen(native)),
             new DiagnosticSourceAttachmentFixture(Sources.Setup.Library, RefreshPlayerSourceAvailability));

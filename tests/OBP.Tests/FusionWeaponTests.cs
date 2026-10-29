@@ -116,7 +116,7 @@ public sealed class FusionWeaponTests
         var fusion = new FusionWeaponSession(0); fusion.Select(FusionWeaponSession.Lancer);
         WeaponFrame frame;
         do { frame = fusion.Advance(Held); if (frame.Queries.Count == 0) fusion.ResolveContacts(frame, []); } while (frame.Queries.Count == 0);
-        var key = new WeaponTargetKey(ObpSourceGame.Rac1, 1440, 189);
+        var key = new WeaponTargetKey(ObpSourceGame.Rac1, Rac1ClassIds.VeldinFlameRobot, 189);
         var intents = fusion.ResolveContacts(frame, [new(0, key, .7f, .7f), new(0, key, .2f, .2f)]);
         var intent = Assert.Single(intents);
         Assert.Equal(.5f, intent.SourceDamage);
@@ -133,7 +133,7 @@ public sealed class FusionWeaponTests
     public void ShockQueriesCoalesceAndPreserveOriginalSpreadAndChargedDamage()
     {
         var fusion = new FusionWeaponSession(123); fusion.Select(FusionWeaponSession.ShockCannon);
-        var target = new WeaponTargetKey(ObpSourceGame.Rac1, 1440, 189);
+        var target = new WeaponTargetKey(ObpSourceGame.Rac1, Rac1ClassIds.VeldinFlameRobot, 189);
         var intents = new List<WeaponDamageIntent>();
         for (int i = 0; i < 85; i++)
         {
@@ -170,14 +170,14 @@ public sealed class FusionWeaponTests
     public void ForeignQueryAdmissionSkipsUnsupportedRac1ActorsWithoutAliasingOtherSources()
     {
         var unsupported = new WeaponTargetKey(ObpSourceGame.Rac1, 612, 1);
-        var supportedBehindIt = new WeaponTargetKey(ObpSourceGame.Rac1, 1440, 2);
+        var supportedBehindIt = new WeaponTargetKey(ObpSourceGame.Rac1, Rac1ClassIds.VeldinFlameRobot, 2);
         WeaponTargetKey[] orderedContacts = [unsupported, supportedBehindIt];
         foreach (var weapon in new[] { FusionWeaponSession.Lancer, FusionWeaponSession.ShockCannon })
         {
             Assert.Equal(supportedBehindIt, orderedContacts.First(target => FusionDamagePolicy.AdmitsQueryTarget(weapon, target)));
             Assert.True(FusionDamagePolicy.AdmitsQueryTarget(weapon, unsupported with { SourceGame = ObpSourceGame.Rac2 }));
             Assert.True(FusionDamagePolicy.AdmitsQueryTarget(weapon, unsupported with { SourceGame = ObpSourceGame.Rac3 }));
-            Assert.True(FusionDamagePolicy.AdmitsQueryTarget(weapon, unsupported with { NativeClassId = 749 }));
+            Assert.True(FusionDamagePolicy.AdmitsQueryTarget(weapon, unsupported with { NativeClassId = Rac1ClassIds.VeldinToad }));
         }
         Assert.True(FusionDamagePolicy.AdmitsQueryTarget(FusionWeaponSession.BombGlove, unsupported));
     }
@@ -185,7 +185,7 @@ public sealed class FusionWeaponTests
     [Fact]
     public void ForeignDamageUsesExplicitTargetAdmissionWithoutAliasingNativeClasses()
     {
-        var target = new WeaponTargetKey(ObpSourceGame.Rac1, 1440, 189);
+        var target = new WeaponTargetKey(ObpSourceGame.Rac1, Rac1ClassIds.VeldinFlameRobot, 189);
         var intent = new WeaponDamageIntent(new(FusionWeaponSession.Lancer, 1, 1), target, .5f, 0x10000, "projectile");
         var damage = Assert.IsType<Rac1GameplayDamageEvent>(FusionDamagePolicy.Translate(intent));
         Assert.Equal(.5, damage.NativeDamage);
@@ -195,8 +195,8 @@ public sealed class FusionWeaponTests
         Assert.Equal(.5f, Rac1EnemyDamage.ResolveNativeDamage(damage, []));
         Assert.Equal(Rac1GameplayEntityRef.Player, damage.Source);
         Assert.Null(FusionDamagePolicy.Translate(intent with { Target = target with { SourceGame = ObpSourceGame.Rac2 } }));
-        Assert.Null(FusionDamagePolicy.Translate(intent with { Target = target with { NativeClassId = 502 } }));
-        Assert.Null(FusionDamagePolicy.Translate(intent with { Target = target with { NativeClassId = 749 } }));
+        Assert.Null(FusionDamagePolicy.Translate(intent with { Target = target with { NativeClassId = Rac1ClassIds.MetalCrate } }));
+        Assert.Null(FusionDamagePolicy.Translate(intent with { Target = target with { NativeClassId = Rac1ClassIds.VeldinToad } }));
         Assert.False(Rac1EnemyDamage.IsPlayerWeapon(new(damage.Source, damage.Target, .5, 0x10000)));
 
         // The actual R&C1 robot consumer retains fractional health and cooldown.

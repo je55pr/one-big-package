@@ -27,7 +27,8 @@ internal sealed record Rac2CrateBoltPorts(
 /// admitted pickups and forwards exact actor/pickup identities to the grant port.
 /// </summary>
 internal sealed class Rac2CrateBoltPresentation(
-    RuntimeWorld world, RuntimeWorldScene.Result scene, GodotWorldResources resources, Rac2CrateBoltPorts ports)
+    RuntimeWorld world, RuntimeWorldScene.Result scene, GodotWorldResources resources, Rac2CrateBoltPorts ports,
+    Func<bool> canSpawn)
     : IDisposable
 {
     private sealed class PlayerBoltReceipt(ActorInstanceKey actor)
@@ -44,7 +45,9 @@ internal sealed class Rac2CrateBoltPresentation(
 
     internal void Spawn(Vector3 centre, Rac2Class500Payout payout)
     {
-        if (_disposed || !ports.Current() || world.Game.SourceGame != ObpSourceGame.Rac2) return;
+        // The owning module admits only a valid R&C2 source, including class-500
+        // actors in a mixed-source world and pre-publication diagnostic auto-strikes.
+        if (_disposed || !canSpawn()) return;
         int count = payout.PhysicalPickups.Count;
         for (int i = 0; i < count; i++)
         {

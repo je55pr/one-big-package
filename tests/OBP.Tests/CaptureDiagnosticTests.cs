@@ -124,6 +124,63 @@ public sealed class CaptureDiagnosticTests
     }
 
     [Fact]
+    public async Task BugReportWaitsForSlowColdWorldPreparation()
+    {
+        var fixture = new Fixture
+        {
+            State = Fixture.Initial with { WaitingForEntry = true, PreparingWorld = true },
+            ReadyAfterProcess = 7,
+            MillisecondsPerFrame = 1000,
+        };
+        using var run = new DiagnosticRunContext(fixture, CancellationToken.None, 200);
+        await new BugReporterScenario(fixture.Context(run), fixture, null!).WaitForOrdinaryWorldAsync();
+        Assert.Equal(7UL, fixture.Process); // Longer than the old five-second deadline.
+        Assert.Empty(fixture.Protocol);
+    }
+
+    [Fact]
+    public async Task BugReportFormStillUsesFiveSecondUiDeadlineAfterWorldEntry()
+    {
+        var fixture = new Fixture { MillisecondsPerFrame = 1000 };
+        var reports = new UnopenedReportFixture();
+        using var run = new DiagnosticRunContext(fixture, CancellationToken.None, 200);
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            new BugReporterScenario(fixture.Context(run), fixture, reports).RunAsync());
+        Assert.Equal("F8 did not open the report form.", error.Message);
+        // 128 frames to press F8, then only five further process frames to fail.
+        Assert.Equal(133UL, fixture.Process);
+        Assert.Contains(fixture.Protocol, item => item.Contains("key F8 True Physical", StringComparison.Ordinal));
+        Assert.False(reports.DescriptionFocused);
+    }
+
+    [Theory]
+    [InlineData(false, true, false, false)]
+    [InlineData(true, false, false, false)]
+    [InlineData(true, true, true, false)]
+    [InlineData(true, true, false, true)]
+    public async Task BugReportRunNeverInjectsInputUntilEveryReadinessConditionIsMet(
+        bool recorderPresent, bool playerPresent, bool waitingForEntry, bool preparingWorld)
+    {
+        var fixture = new Fixture
+        {
+            State = Fixture.Initial with
+            {
+                RecorderPresent = recorderPresent,
+                PlayerPresent = playerPresent,
+                WaitingForEntry = waitingForEntry,
+                PreparingWorld = preparingWorld,
+            },
+            MillisecondsPerFrame = 1000,
+        };
+        using var run = new DiagnosticRunContext(fixture, CancellationToken.None, 200);
+        var scenario = new BugReporterScenario(fixture.Context(run), fixture, null!);
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(scenario.RunAsync);
+        Assert.Equal("Recorder did not enter its ordinary world.", error.Message);
+        Assert.Equal(120UL, fixture.Process);
+        Assert.Empty(fixture.Protocol);
+    }
+
+    [Fact]
     public async Task RecordingCannotSendInputBeforeEntryCompletes()
     {
         var fixture = new Fixture { State = Fixture.Initial with { WaitingForEntry = true } };
@@ -329,6 +386,22 @@ public sealed class CaptureDiagnosticTests
         Assert.Equal(new[] { ("capture-failed", 2) }, fixture.Quits);
     }
 
+    private sealed class UnopenedReportFixture : IBugReporterDiagnosticFixture
+    {
+        public bool DescriptionFocused { get; private set; }
+        public BugReporterUiDiagnostic ReadUi() => new(false, false, false, false, "", null, null, "");
+        public BugReporterWorldDiagnostic ReadWorld() => throw new InvalidOperationException("Form did not open.");
+        public BugReporterArchiveDiagnostic ReadArchive() => throw new InvalidOperationException("Form did not open.");
+        public void FocusDescription() => DescriptionFocused = true;
+        public void FocusButton(string label) => throw new InvalidOperationException($"Form did not open for button '{label}'.");
+        public Vector2 ReportButtonCentre => throw new InvalidOperationException("Form did not open.");
+        public Task CaptureAsync(string name, DiagnosticRunContext run)
+        {
+            run.CancellationToken.ThrowIfCancellationRequested();
+            throw new InvalidOperationException($"Form did not open for capture '{name}'.");
+        }
+    }
+
     private sealed class Fixture : ICaptureRecorderDiagnosticFixture, ICaptureDiagnosticInput, ICaptureDiagnosticInputFactory,
         ICaptureDiagnosticTime, IDiagnosticFrameClock, IDiagnosticSources, IDiagnosticNavigationActions, ICaptureEquipmentActions, IDiagnosticAcceptanceReporter
     {
@@ -349,6 +422,8 @@ public sealed class CaptureDiagnosticTests
             PlayerNode = 17,
         };
         internal CaptureRuntimeDiagnostic State { get; set; } = Initial;
+        internal ulong? ReadyAfterProcess;
+        internal ulong MillisecondsPerFrame = 1;
         internal ulong Physics, Process;
         internal bool Saved, MutateProfile, MissingBookmark, Disposed, HoldFrames, DisposedAtQuit, FailDispose;
         internal static ImmutableArray<DiagnosticSourceSnapshot> AllSources => [new(ObpSourceGame.Rac1, "fixture", true), new(ObpSourceGame.Rac2, "fixture", true), new(ObpSourceGame.Rac3, "fixture", true)];
@@ -383,7 +458,12 @@ public sealed class CaptureDiagnosticTests
         public void Mouse(bool pressed, Vector2 position) => throw new NotSupportedException();
         public ICaptureDiagnosticInput Acquire() => this;
         public void Dispose() { Disposed = true; Released.TrySetResult(); if (FailDispose) throw new IOException("fixture cleanup failure"); }
-        public CaptureRuntimeDiagnostic Read() => State with { PhysicsTick = (long)Physics };
+        public CaptureRuntimeDiagnostic Read() => State with
+        {
+            PhysicsTick = (long)Physics,
+            WaitingForEntry = State.WaitingForEntry && (ReadyAfterProcess is null || Process < ReadyAfterProcess),
+            PreparingWorld = State.PreparingWorld && (ReadyAfterProcess is null || Process < ReadyAfterProcess),
+        };
         public void ResizeWindow(int width, int height) => Record($"resize {width} {height}");
         public ICaptureBookmarkDiagnostic RequestBookmark(int visit, string destination)
         { Bookmarks.Add((visit, destination)); return new Bookmark(!MissingBookmark, destination); }
@@ -396,7 +476,7 @@ public sealed class CaptureDiagnosticTests
             if (phase == DiagnosticFramePhase.Physics) Physics++; else Process++;
             return HoldFrames ? NextFrame.Task.WaitAsync(cancellationToken) : Task.CompletedTask;
         }
-        public ulong Milliseconds => Process + Physics;
+        public ulong Milliseconds => (Process + Physics) * MillisecondsPerFrame;
         public Task DelayAsync(int milliseconds, CancellationToken token) => throw new NotSupportedException();
         public ImmutableArray<DiagnosticSourceSnapshot> ReadSources() => Sources;
         public Task<DiagnosticActionResult> NavigateAsync(string destinationId, CancellationToken cancellationToken)

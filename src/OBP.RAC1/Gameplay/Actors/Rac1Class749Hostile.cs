@@ -11,7 +11,7 @@ namespace OBP.RAC1.Gameplay;
 /// </summary>
 public static class Rac1Class749Hostile
 {
-    public const int NativeClassId = 749;
+    public const int NativeClassId = Rac1ClassIds.VeldinToad;
     public const string PVarPayloadFormat = "rac1-pvar";
     public const int PVarSize = 0x280;
     public const int HealthOffset = 0x20;

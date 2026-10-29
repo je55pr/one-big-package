@@ -15,6 +15,10 @@ internal sealed class Rac2WorldLeaseClock(Func<bool> worldCurrent, Func<bool> so
 
     internal bool Current => !_retired && !_sourceInvalidated && worldCurrent() && SourceReadyForActivation;
 
+    // Crate rewards may spawn from a validated activating lease before global publication.
+    // Outside activation the source lease must be current; invalidation and retirement latch.
+    internal bool CanSpawnCrateBolts(bool activating) => Current || (activating && SourceReadyForActivation);
+
     /// <summary>
     /// Validate the R&C2 source while the new world is being activated, before
     /// WorldSceneLifetime can publish it as the current lease. A failed source

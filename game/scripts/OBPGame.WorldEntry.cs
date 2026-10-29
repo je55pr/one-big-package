@@ -258,7 +258,7 @@ public partial class OBPGame
             IncludeSky = !_args.AnimSolo,
             IncludeCollision = true,
             AdmitCollisionFace = world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 1 }
-                ? AdmitRac1NovalisCollisionFace
+                ? Rac1NovalisWaterMechanism.AdmitCollisionFace
                 : null,
             ShowCollisionDebug = _args.CollisionDebug,
             OnlyAnimatedMobies = _args.AnimSolo,

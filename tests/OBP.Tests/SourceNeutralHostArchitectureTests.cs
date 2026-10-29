@@ -69,16 +69,16 @@ public sealed class SourceNeutralHostArchitectureTests
     public void AnApprovedWaterAdapterCannotStartSelectingThePlayerAvatar()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.Rac1NovalisWater.cs");
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1NovalisWaterMechanism.cs");
         string source = original.GetText().ToString().Replace(
-            "_rac1NovalisWater = Rac1NovalisWaterSurfaces.FromWorld(world);",
+            "_water = Rac1NovalisWaterSurfaces.FromWorld(world);",
             "var wrongProvider = OBP.Game.PlayerAvatarPresentationHost.Provider(OBP.Core.ObpSourceGame.Rac1);\n" +
-            "_rac1NovalisWater = Rac1NovalisWaterSurfaces.FromWorld(world);", StringComparison.Ordinal);
+            "_water = Rac1NovalisWaterSurfaces.FromWorld(world);", StringComparison.Ordinal);
         Assert.NotEqual(original.GetText().ToString(), source);
         var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
             CSharpSyntaxTree.ParseText(source, path: original.FilePath))), HostOwnershipAudit.Policy());
         Assert.Single(errors);
-        Assert.Contains("ConfigureRac1NovalisWater", errors[0]);
+        Assert.Contains("Rac1NovalisWaterMechanism.Configure", errors[0]);
         Assert.Contains("source-world adapter selects a player service", errors[0]);
     }
 
@@ -136,7 +136,7 @@ public sealed class SourceNeutralHostArchitectureTests
 
     [Theory]
     [InlineData("game/scripts/OBPGame.Rac1MetalDetector.cs", "_world?.Game != ObpSourceGame.Rac1")]
-    [InlineData("game/scripts/OBPGame.Rac1NovalisWater.cs", "_rac1NovalisWater = Rac1NovalisWaterSurfaces.FromWorld(world);")]
+    [InlineData("game/scripts/Rac1NovalisWaterMechanism.cs", "_water = Rac1NovalisWaterSurfaces.FromWorld(world);")]
     public void FrozenBaselinesIgnoreCommentsAndCheckoutLineEndings(string path, string anchor)
     {
         var compilation = HostOwnershipAudit.Host.Value;
@@ -228,10 +228,10 @@ public sealed class SourceNeutralHostArchitectureTests
     [Fact]
     public void LegitimateWorldAdapterUpdatesRequireAReviewedFingerprint()
     {
-        var (compilation, _) = InsertAdapterStatement("game/scripts/OBPGame.Rac1NovalisWater.cs", "ConfigureRac1NovalisWater",
+        var (compilation, _) = InsertAdapterStatement("game/scripts/Rac1NovalisWaterMechanism.cs", "Configure",
             "Godot.GD.Print(\"Novalis source-water diagnostic\");");
         var usages = HostOwnershipAudit.Scan(compilation);
-        var adapter = usages.Single(usage => usage.Key.EndsWith("::OBPGame.ConfigureRac1NovalisWater(RuntimeWorld)", StringComparison.Ordinal));
+        var adapter = usages.Single(usage => usage.Key.EndsWith("::Rac1NovalisWaterMechanism.Configure(RuntimeWorld,RuntimeWorldScene.Result)", StringComparison.Ordinal));
         Assert.False(adapter.PlayerSelection);
         var policy = HostOwnershipAudit.Policy();
         var errors = HostOwnershipAudit.Violations(usages, policy);

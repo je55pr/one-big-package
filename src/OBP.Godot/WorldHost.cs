@@ -105,6 +105,9 @@ public sealed class WorldHost
     public int StartLevelAudio(IEnumerable<RuntimeAudioPlaybackIntent> intents) =>
         IsLoaded && _hostNode is { } host ? _audio.StartLevelAudio(host, intents) : 0;
 
+    /// <summary>Retire this world's source music before its scene lease is detached.</summary>
+    public void StopLevelAudio() => _audio.StopLevelAudio();
+
     /// <summary>Present one neutral gameplay sound effect in the loaded world.</summary>
     public bool PlayEffect(RuntimeAudioPlaybackIntent intent) =>
         IsLoaded && _hostNode is { } host && _audio.PlayEffect(host, intent);

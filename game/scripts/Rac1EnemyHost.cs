@@ -156,11 +156,11 @@ internal sealed partial class Rac1EnemyHost : IDisposable
                     group.Key == Rac1FrogAuthored.ClassId);
             foreach (var node in group)
             {
-                if (group.Key == 749) node.Root.Scale *= Rac1EnemyMotion.Class749Scale;
+                if (group.Key == Rac1ClassIds.VeldinToad) node.Root.Scale *= Rac1EnemyMotion.Class749Scale;
                 // Host contact adapter: upright capsules, independent of skeletal presentation.
                 // The retail common query solver and per-part collision primitives are not reconstructed.
-                float radius = group.Key == 749 ? .5f : group.Key == Rac1AridiaEnemies.Nest ? 1.1f : group.Key is Rac1AridiaEnemies.Sandshark or Rac1FrogAuthored.ClassId ? .35f : .45f;
-                float height = group.Key == 749 ? 1 : group.Key is Rac1AridiaEnemies.Sandshark or Rac1FrogAuthored.ClassId ? .7f : group.Key == Rac1NovalisPeckbotSession.ClassId ? 1.3f : 1.7f;
+                float radius = group.Key == Rac1ClassIds.VeldinToad ? .5f : group.Key == Rac1AridiaEnemies.Nest ? 1.1f : group.Key is Rac1AridiaEnemies.Sandshark or Rac1FrogAuthored.ClassId ? .35f : .45f;
+                float height = group.Key == Rac1ClassIds.VeldinToad ? 1 : group.Key is Rac1AridiaEnemies.Sandshark or Rac1FrogAuthored.ClassId ? .7f : group.Key == Rac1NovalisPeckbotSession.ClassId ? 1.3f : 1.7f;
                 // A buried Sandshark is not a solid collider in the native
                 // encounter. Register its shape but do not put it into broadphase
                 // contacts until it has actually emerged or been released.
@@ -194,7 +194,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
                             asset.Clips.ContainsKey(startup.Sequence)
                             ? startup.Sequence
                         : asset.Clips.ContainsKey(1) ? 1 : asset.Clips.Keys.Min();
-                var motion = group.Key is 749 or 1440 or Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId
+                var motion = group.Key is Rac1ClassIds.VeldinToad or Rac1ClassIds.VeldinFlameRobot or Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId
                     ? new Rac1EnemyMotion(group.Key, MathF.Atan2(nativeForward.Y, nativeForward.X))
                     : null;
                 var enemy = new Rac1HostedEnemy(node, asset, body, motion, clip);
@@ -410,7 +410,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
         SetRac1EnemyFlame(enemy, false);
         if (Rac1AridiaEnemies.IsEnemyClass(enemy.Node.Source.NativeClassId) ||
             enemy.Node.Source.NativeClassId is Rac1SeekerSession.ClassId or Rac1FrogAuthored.ClassId) return;
-        if (enemy.Node.Source.NativeClassId == 749) _ports.Combat.Sound(749, 7, enemy.Node.Root.GlobalPosition);
+        if (enemy.Node.Source.NativeClassId == Rac1ClassIds.VeldinToad) _ports.Combat.Sound(Rac1ClassIds.VeldinToad, 7, enemy.Node.Root.GlobalPosition);
         else if (enemy.Node.Source.NativeClassId != Rac1NovalisBirdbotSession.ClassId)
             SpawnRac1EnemyFragments(enemy);
     }
@@ -433,7 +433,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
 
     internal void SetRac1EnemyFlame(Rac1HostedEnemy enemy, bool emitting)
     {
-        if (enemy.Node.Source.NativeClassId is not (1440 or Rac1AridiaEnemies.Constructorbot) || _sceneResult is null) return;
+        if (enemy.Node.Source.NativeClassId is not (Rac1ClassIds.VeldinFlameRobot or Rac1AridiaEnemies.Constructorbot) || _sceneResult is null) return;
         if (emitting && enemy.Flame is null)
         {
             // Host particle presentation, not a recovered retail particle/texture program.

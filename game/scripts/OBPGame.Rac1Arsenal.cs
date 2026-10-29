@@ -387,7 +387,8 @@ public partial class OBPGame
             // 12-unit forward cone. The mine interaction is tracked separately.
             if (_rac1WeaponWorldTick % 30 == 0)
             {
-                var crate = EquipmentTargets.Where(node => node.Source.NativeClassId is 500 or 501 or 505 or 511)
+                // Native class 505 is admitted by this cone, but its object identity is not yet confirmed.
+                var crate = EquipmentTargets.Where(node => node.Source.NativeClassId is Rac1ClassIds.WoodenCrate or Rac1ClassIds.NanotechCrate or 505 or Rac1ClassIds.AmmoCrate)
                     .FirstOrDefault(node => node.Root.GlobalPosition.DistanceTo(from) < 12 &&
                         (node.Root.GlobalPosition - from).Normalized().Dot(EquipmentForward) > MathF.Cos(Rac1ArsenalRules.TaunterHalfAngle) &&
                         BombHasLineOfSight(from, node.Root.GlobalPosition + Vector3.Up * .4f));

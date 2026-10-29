@@ -38,13 +38,13 @@ internal sealed class Rac1Class1440EnemyAdapter(Rac1EnemyHost host) : IRac1Enemy
         _host.SetRac1EnemyFlame(enemy, next.NativeState == 5);
         if (next.DamageTarget is { } victim)
         {
-            var damage = Rac1DamageRuntime.FromClass1440Contact(new(1440, instance), victim);
+            var damage = Rac1DamageRuntime.FromClass1440Contact(new(Rac1ClassIds.VeldinFlameRobot, instance), victim);
             if (victim == Rac1GameplayEntityRef.Player && !_host.Combat.HitsDecoy(enemy)) _host.ApplyRac1EnemyPlayerDamage(damage);
             else if (_host.Roster.TryGetValue((int)victim.RuntimeId, out var targetEnemy) && _host.ApplyRac1EnemyWeaponDamage(targetEnemy.Node, damage))
                 _host.Context.DamageTransport.Publish(damage);
         }
     }
-    public int ClassId => 1440;
+    public int ClassId => Rac1ClassIds.VeldinFlameRobot;
     public Rac1EnemyDamageAdmission Damage(Rac1GameplayDamageEvent damage)
     {
         var result = _host.Context.MobyRuntime.DispatchDamage<Rac1Class1440Session.DamageResult>(damage);
