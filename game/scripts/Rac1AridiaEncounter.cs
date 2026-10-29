@@ -13,6 +13,21 @@ internal sealed partial class Rac1AridiaEncounter : IDisposable
 {
     private readonly Rac1EnemyHost _host;
     private bool _disposed;
+    // Exclude all hosted actor bodies and Ratchet from terrain queries.
+    // This source-world roster is fixed during a native actor tick.
+    private global::Godot.Collections.Array<Rid>? _actorExclusions;
+    private uint _actorExclusionsFrame = uint.MaxValue;
+    private global::Godot.Collections.Array<Rid> ActorExclusions()
+    {
+        if (_actorExclusions is null || _actorExclusionsFrame != _host.NativeFrame)
+        {
+
+            _actorExclusions = new(_host.Roster.Values.Select(other => other.Body.GetRid())
+                .Append(_host.Player!.GetRid()));
+            _actorExclusionsFrame = _host.NativeFrame;
+        }
+        return _actorExclusions;
+    }
     internal Rac1AridiaEncounter(Rac1EnemyHost host) => _host = host;
     internal Rac1AridiaEnemySession Session { get => _rac1AridiaEnemies; set => _rac1AridiaEnemies = value; }
     internal int ClipVolumeCount => _rac1AridiaClipVolumes.Count;
@@ -74,6 +89,9 @@ internal sealed partial class Rac1AridiaEncounter : IDisposable
         _rac1ConstructorbotRoamingTargets.Clear();
         _rac1ConstructorbotRoamExitFlags.Clear();
         _rac1AridiaClipVolumes = [];
+
+        _actorExclusions = null;
+        _actorExclusionsFrame = uint.MaxValue;
         _rac1ConstructorbotWalkerSphere?.Dispose();
         _rac1ConstructorbotWalkerSphere = null;
     }
@@ -150,6 +168,7 @@ internal sealed partial class Rac1AridiaEncounter : IDisposable
         bool lethal = _rac1AridiaEnemies.Health(id) == 0;
         if (lethal)
         {
+            enemy.RewardEmitted = true;
             enemy.Body.CollisionLayer = enemy.Body.CollisionMask = 0;
             enemy.DeathTicks = 0;
             int preferredSequence = node.Source.NativeClassId == Rac1AridiaEnemies.Nest ? 3 : 6;
@@ -162,7 +181,11 @@ internal sealed partial class Rac1AridiaEncounter : IDisposable
                 // reward word at +0x10, not a fabricated fixed enemy amount.
                 int selected = _host.Combat.Reward(Rac1EnemyMotion.RewardCentre(node.Source));
                 if (selected > 0)
-                    _host.Combat.Pickups(node.Root.GlobalPosition, _host.Context.BoltPickups.Emit(selected));
+                {
+                    var pickups = _host.Context.BoltPickups.Emit(selected);
+                    _host.Combat.Pickups(node.Root.GlobalPosition, pickups);
+                    _host.Combat.TrackPickups(node, pickups.Select(pickup => pickup.PickupId));
+                }
             }
             // The native nest death path makes an explosion and debris but
             // does not invoke moby_drop_bolts in the translated routine.

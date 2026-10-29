@@ -38,9 +38,7 @@ internal sealed partial class Rac1AridiaEncounter
         Vector3 to = position - Vector3.Up * hostMaximumDescent;
         // Terrain queries must not report another hosted enemy capsule as
         // floor. Share exclusions with the shape-sweep fallback below.
-        var excludedActors = new global::Godot.Collections.Array<Rid>(
-            _host.Roster.Values.Select(other => other.Body.GetRid())
-                .Append(_host.Player!.GetRid()));
+        var excludedActors = ActorExclusions();
         var ray = PhysicsRayQueryParameters3D.Create(from, to);
         ray.Exclude = excludedActors;
         var hit = enemy.Body.GetWorld3D().DirectSpaceState.IntersectRay(ray);
@@ -92,9 +90,7 @@ internal sealed partial class Rac1AridiaEncounter
         if (start.DistanceSquaredTo(end) < 1e-10f) return false;
         // Match the capsule sweep's actor exclusions. A different enemy
         // sitting over terrain must not become the source walker floor.
-        var excludedActors = new global::Godot.Collections.Array<Rid>(
-            _host.Roster.Values.Select(other => other.Body.GetRid())
-                .Append(_host.Player!.GetRid()));
+        var excludedActors = ActorExclusions();
         var query = PhysicsRayQueryParameters3D.Create(start, end);
         query.Exclude = excludedActors;
         var hit = enemy.Body.GetWorld3D().DirectSpaceState.IntersectRay(query);
@@ -158,10 +154,7 @@ internal sealed partial class Rac1AridiaEncounter
             Radius = Rac1AridiaConstructorbotNative.WalkerCollisionRadius
         };
         int instance = enemy.Node.Source.InstanceIndex;
-        int observedContacts = 0;
-        var excluded = new global::Godot.Collections.Array<Rid>(
-            _host.Roster.Values.Select(other => other.Body.GetRid())
-                .Append(_host.Player!.GetRid()));
+        var excluded = ActorExclusions();
         var result = Rac1AridiaConstructorbotNative.StepSpherePushouts(
             ToEffectNative(proposed), sourceCandidate =>
             {
@@ -204,13 +197,12 @@ internal sealed partial class Rac1AridiaEncounter
                     sourceSphereCentre, candidates[..count],
                     Rac1AridiaConstructorbotNative.WalkerCollisionRadius);
                 if (nearest is null) return null;
-                observedContacts++;
+                // Count the native contact at the point of observation. This
+                // avoids inferring a nullable result from the callback later.
+                _rac1ConstructorbotSphereContactCounts[instance] =
+                    _rac1ConstructorbotSphereContactCounts.GetValueOrDefault(instance) + 1;
                 return sourceCandidate + nearest.Value;
             });
-        if (observedContacts > 0)
-            _rac1ConstructorbotSphereContactCounts[instance] =
-                _rac1ConstructorbotSphereContactCounts.GetValueOrDefault(instance) +
-                observedContacts;
         return result;
     }
 
@@ -231,9 +223,7 @@ internal sealed partial class Rac1AridiaEncounter
             Rac1AridiaConstructorbotNative.ConstructorbotFloorDrop);
         var query = PhysicsRayQueryParameters3D.Create(
             FromEffectNative(segment.Start), FromEffectNative(segment.End));
-        query.Exclude = new global::Godot.Collections.Array<Rid>(
-            _host.Roster.Values.Select(other => other.Body.GetRid())
-                .Append(_host.Player!.GetRid()));
+        query.Exclude = ActorExclusions();
         var hit = enemy.Body.GetWorld3D().DirectSpaceState.IntersectRay(query);
         if (!hit.TryGetValue("position", out var contact) ||
             !hit.TryGetValue("normal", out var normal) ||
@@ -275,9 +265,7 @@ internal sealed partial class Rac1AridiaEncounter
             var query = PhysicsRayQueryParameters3D.Create(
                 FromEffectNative(sourceSweep.Start),
                 FromEffectNative(sourceSweep.End));
-            query.Exclude = new global::Godot.Collections.Array<Rid>(
-                _host.Roster.Values.Select(other => other.Body.GetRid())
-                    .Append(_host.Player!.GetRid()));
+            query.Exclude = ActorExclusions();
             var hit = enemy.Body.GetWorld3D().DirectSpaceState.IntersectRay(query);
             if (hit.TryGetValue("position", out var hitPoint))
             {

@@ -24,7 +24,8 @@ public sealed class Rac1AridiaEncounterArchitectureTests
             "_rac1ConstructorbotWalkerSpeeds", "_rac1ConstructorbotWalkerYawVelocities",
             "_rac1ConstructorbotWalkerSphere", "_rac1ConstructorbotRoamingTargets",
             "_rac1ConstructorbotRoamExitFlags", "_rac1ConstructorbotSweepProbeCounts",
-            "_rac1ConstructorbotSphereProbeCounts", "_rac1ConstructorbotNativeLiftCounts"
+            "_rac1ConstructorbotSphereProbeCounts", "_rac1ConstructorbotNativeLiftCounts",
+            "_rac1ConstructorbotSphereContactCounts", "_rac1ConstructorbotStateThreeVerticalSteps"
         })
         {
             Assert.Single(owner.GetMembers(name).OfType<IFieldSymbol>());
