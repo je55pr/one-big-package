@@ -25,9 +25,10 @@ public static class Rac1AridiaOceanSource
     ];
 
     public sealed record Surface(
-        uint SourceAddress, float CenterX, float CenterY, float Height,
+        uint SourceAddress, float OriginX, float OriginY, float Height,
         float StepX, float StepY, int GridColumns, int GridRows,
-        uint AnimatedFramePacket, uint CellPacketAddress)
+        uint AnimatedFramePacket, uint CellPacketAddress, uint CellMaskAddress,
+        byte[] CellMask)
     {
         public int CellColumns => GridColumns / 7;
         public int CellRows => GridRows / 7;
@@ -63,6 +64,7 @@ public static class Rac1AridiaOceanSource
             var rows = BinaryPrimitives.ReadUInt16LittleEndian(bytes[0x1a..]);
             var framePacket = BinaryPrimitives.ReadUInt32LittleEndian(bytes[0x1c..]);
             var cellPacket = BinaryPrimitives.ReadUInt32LittleEndian(bytes[0x34..]);
+            var cellMaskAddress = BinaryPrimitives.ReadUInt32LittleEndian(bytes[0x38..]);
 
             if (!float.IsFinite(centerX) || !float.IsFinite(centerY) ||
                 !float.IsFinite(height) || !float.IsFinite(stepX) || !float.IsFinite(stepY) ||
@@ -75,8 +77,11 @@ public static class Rac1AridiaOceanSource
             // Preserve its address: decoding its VIF payload and waveform
             // is a separate step from recognizing authored grid metadata.
             _ = overlay.Read(cellPacket, 0x200);
+            var flags = overlay.Read(cellMaskAddress, (columns / 7) * (rows / 7)).ToArray();
+            if (flags.Any(flag => flag is not (0 or 1)))
+                throw new InvalidDataException($"Aridia ocean cell flags at 0x{cellMaskAddress:x8} have unsupported values.");
             result.Add(new Surface(address, centerX, centerY, height,
-                stepX, stepY, columns, rows, framePacket, cellPacket));
+                stepX, stepY, columns, rows, framePacket, cellPacket, cellMaskAddress, flags));
         }
         return result;
     }

@@ -82,6 +82,10 @@ public sealed class Rac1LiquidSourceRecordsTests
         Assert.InRange(records[0].Height, 24.7f, 24.8f);
         Assert.InRange(records[5].Height, 4.7f, 4.9f);
         Assert.All(records, r => Assert.Equal((uint)0x001f3e80, r.AnimatedFramePacket));
+        Assert.Equal([57, 8, 31, 20, 17, 2, 1],
+            records.Select(r => r.CellMask.Count(flag => flag == 1)));
+        Assert.Equal(136, records.Sum(r => r.CellMask.Count(flag => flag == 1)));
+        Assert.All(records, r => Assert.Equal(r.CellColumns * r.CellRows, r.CellMask.Length));
 
         var overlay = Rac1LevelOverlay.Open(disc, level);
         var cellPackets = records.SelectMany(record =>
