@@ -20,8 +20,8 @@ public static class Rac1AridiaOceanSource
     public const int AnimatedFxFrameCount = 64;
     public const int NativeStripVertexCount = 124;
     public const uint NativeStripIndexAddress = 0x001cb400;
-    public const uint NativeStripCoordinatesAddress = 0x001cb510;
-    public const float NativeLocalCoordinateScale = 1f / 6f;
+    public const uint NativeStripTextureAddress = 0x001cb510;
+    public const float NativeStripTextureScale = 1f / 6f;
 
     private static readonly uint[] Addresses =
     [
@@ -148,13 +148,14 @@ public static class Rac1AridiaOceanSource
         return indices;
     }
 
-    /// <summary>The game copies the overlay's 124 pairs at 0x1cb510 into its
-    /// VU draw template, multiplying each by 1/6 at ocean actor startup.
-    /// These are normalized local XY positions, not UV or animated height.</summary>
-    public static Vector2[] ReadScaledStripCoordinates(Rac1LevelOverlay overlay)
+    /// <summary>The game copies the overlay's 124 pairs at 0x1cb510 into
+    /// the VU1 input, multiplying each by 1/6 at ocean actor startup.
+    /// The DMA chain sends these as strip texture ST coordinates after the
+    /// separately built world XYZ and per-cell packed colours.</summary>
+    public static Vector2[] ReadStripTextureCoordinates(Rac1LevelOverlay overlay)
     {
         ArgumentNullException.ThrowIfNull(overlay);
-        var data = overlay.Read(NativeStripCoordinatesAddress, NativeStripVertexCount * 2 * 4).Span;
+        var data = overlay.Read(NativeStripTextureAddress, NativeStripVertexCount * 2 * 4).Span;
         var result = new Vector2[NativeStripVertexCount];
         for (int i = 0; i < result.Length; i++)
         {
@@ -162,8 +163,8 @@ public static class Rac1AridiaOceanSource
             float y = BinaryPrimitives.ReadSingleLittleEndian(data.Slice(i * 8 + 4, 4));
             if (!float.IsFinite(x) || !float.IsFinite(y) || MathF.Abs(x) > 3 || MathF.Abs(y) > 3)
                 throw new InvalidDataException($"Aridia local strip coordinate {i} is invalid.");
-            result[i] = new Vector2(x * NativeLocalCoordinateScale,
-                y * NativeLocalCoordinateScale);
+            result[i] = new Vector2(x * NativeStripTextureScale,
+                y * NativeStripTextureScale);
         }
         return result;
     }

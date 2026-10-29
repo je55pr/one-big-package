@@ -106,7 +106,7 @@ public sealed class Rac1LiquidSourceRecordsTests
         Assert.Equal(new byte[] { 0, 8, 1, 9, 2, 10, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15, 15, 8 },
             stripIndices.Take(18));
         Assert.Equal((byte)63, stripIndices.Max());
-        var stripPositions = Rac1AridiaOceanSource.ReadScaledStripCoordinates(overlay);
+        var stripPositions = Rac1AridiaOceanSource.ReadStripTextureCoordinates(overlay);
         Assert.Equal(124, stripPositions.Length);
         Assert.Equal(-0.5f, stripPositions[0].X);
         Assert.Equal(-0.5f, stripPositions[0].Y);

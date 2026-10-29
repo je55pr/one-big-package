@@ -54,13 +54,22 @@ preserve this topology and colour assignment without inventing UVs,
 alpha, wave geometry or a Godot material.
 
 A separate 248-float source table at **0x001cb510** contains 124
-paired local XY positions from -3 to +3. The original class-854 actor's
-initialisation calls `ocean_wave_scale_l2(1/6)`, producing local
-coordinates from -0.5 to +0.5. `ReadScaledStripCoordinates` recovers
-those original values; all 124 pairs match the indexed 8x8 strip lattice
-to within 0.001. Despite the original function's name, this table
-contains **static planar positions**, not evidence of animated wave
-height or authored texture UVs.
+paired values from -3 to +3. The class-854 actor's initialisation calls
+`ocean_wave_scale_l2(1/6)`, producing values from -0.5 to +0.5.
+The generated native `ari_ocean_cells_draw_l2` DMA builder confirms
+these are **texture ST inputs**, not geometry positions: it submits
+124 independently computed world XYZ values, then 124 packed colour
+values from each cell, then this scaled pair table to VU1 program 7.
+`ReadStripTextureCoordinates` recovers the original ST values; all
+124 pairs match the indexed 8x8 lattice to within 0.001. UV phase,
+Q, wrapping and the GS texture function still need host parity checks.
+
+`Rac1AridiaOceanGeometry.Read` combines these native inputs into the
+exact 136 enabled cell strips: **16,864 per-strip vertices and 13,328
+nondegenerate triangles** across seven source records. It preserves
+native XYZ (converted to OBP Y-up), per-vertex ST and original RGB bytes,
+but deliberately does **not** choose alpha, blending, fog or texture
+frame. It is a source-backed geometry decoder, not an enabled renderer.
 
 The source record also has a **+0x38 pointer to one byte per native 7x7 cell**.
 All 231 bytes are 0 or 1, with 136 enabled across the seven records
@@ -81,13 +90,22 @@ blend/alpha equation. The exact material stays unresolved.
 
 ## What remains to render correctly
 
-1. Recover how the native VU0 / VU1 setup transforms the now-decoded
-   local strip XY, source RGB and per-cell placement into full world-space
-   vertices, animation height (if any), texture STQ and GS draw state.
-   The native index order, 124 XY pairs and colour values are now known.
-2. Recover source frame timing and the two-frame interpolation in the
-   animated Fx 40..103 texture sequence. The frame-packet pointer is
-   initially zero in the overlay; it is populated at runtime.
+1. Reproduce the recovered 8x8 source vertex lattice and VU1 strip
+   presentation with the actual ST inputs and source RGB. The translated
+   native `ari_ocean_cells_draw_l2` computes the 8x8 XYZ grid by adding
+   `StepX`/`StepY` across columns/rows and 7x those steps per cell, at
+   the record's base height. Its 124 positions follow the 0x1cb400
+   strip-index table, not 124 invented grid triangles. Precise screen-space
+   clipping, Q interpolation, GS alpha/depth/fog and blend state remain.
+2. Reproduce the source's two-frame FX interpolation and UV sampling in
+   the host renderer. The generated `ari_ocean_draw_tr_l2` call specifies
+   **30 game ticks per frame**, **64 frames starting at Fx 40**.
+   `ari_ocean_vu7_setup_l2` divides the native frame counter by 30,
+   takes the modulo-64 texture pair, and interpolates by the fractional
+   frame position. `Rac1AridiaOceanAnimation` now extracts all 64
+   original frame textures and reproduces the frame-selection clock;
+   native GS pixel blending has not yet been reproduced. The frame-packet
+   pointer is initially zero in the overlay and is populated at runtime.
 3. Preserve the source's clipping, depth writing, blending and fog rules
    where recovered, with bounded host approximations identified separately.
 4. Emit game-neutral render surfaces, not collision-class-derived mud meshes.
