@@ -10,7 +10,7 @@ public sealed class Rac1EnemyTickClockTests
         var clock = new Rac1EnemyTickClock();
         var trace = new List<string>();
         bool Step() { trace.Add("native:" + clock.Frame); return true; }
-        void Shots(double _) => trace.Add("projectiles");
+        Action<double> Shots = _ => trace.Add("projectiles");
         clock.Advance(.5 / 60, Step, Shots);
         clock.Advance(2.5 / 60, Step, Shots);
         Assert.Equal(new[] { "projectiles", "native:1", "native:2", "native:3", "projectiles" }, trace);
