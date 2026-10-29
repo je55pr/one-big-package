@@ -8,6 +8,7 @@ param(
     [string]$Rac3Iso = $env:OBP_UYA_ISO,
     [string]$OutputDirectory,
     [ValidateSet('all', 'render', 'record', 'replay')][string]$Mode = 'all',
+    [ValidateRange(65, 600)][int]$RecordingStopFrame = 65,
     [switch]$SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -41,6 +42,7 @@ function Invoke-EffectsRun([string]$RunName, [string[]]$ExtraArguments) {
     $start.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
     $start.RedirectStandardOutput = $true
     $start.RedirectStandardError = $true
+    $start.EnvironmentVariables['OBP_EFFECT_REPLAY_STOP_FRAME'] = $RecordingStopFrame.ToString([Globalization.CultureInfo]::InvariantCulture)
     $arguments = @('--path', (Join-Path $root 'game'), '--rendering-method', 'gl_compatibility', '--rendering-driver', 'opengl3',
         '--fixed-fps', '60', '--max-fps', '60', '--resolution', '960x540', '--', '--effects-smoke', '--fixed-seed', '1234', '--no-profile',
         '--source-config', (Join-Path $output 'sources.private.json'), '--rac1-iso', $Rac1Iso, '--rac2-iso', $Rac2Iso, '--rac3-iso', $Rac3Iso) + $ExtraArguments

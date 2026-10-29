@@ -120,6 +120,12 @@ internal sealed partial class Rac1EnemyHost
     internal void MoveRac1EnemyContact(Rac1HostedEnemy enemy, Vector3 remaining)
     {
         if (!Owns(enemy)) return;
+        // Ordinary grounded gravity is handled by the support sweep below.
+        // Including that small downward component in wall slides makes the
+        // second contact depend on whether Godot happens to report the floor.
+        // Preserve vertical motion for airborne actors and hit reactions.
+        if (enemy.Grounded && enemy.Reaction is null && remaining.Y < 0)
+            remaining.Y = 0;
         for (int slide = 0; slide < 3 && remaining.LengthSquared() > 1e-9f; slide++)
         {
             var collision = enemy.Body.MoveAndCollide(remaining);
