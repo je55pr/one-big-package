@@ -159,6 +159,7 @@
     <Compile Include="../../game/scripts/BugReportReplayProcess.cs" Link="Game/BugReportReplayProcess.cs" />
     <Compile Include="../../game/scripts/ActorSourceCache.cs" Link="Game/ActorSourceCache.cs" />
     <Compile Include="../../game/scripts/ActorPlacementPreparation.cs" Link="Game/ActorPlacementPreparation.cs" />
+    <Compile Include="../../game/scripts/Rac3Class5821DamagePort.cs" Link="Game/Rac3Class5821DamagePort.cs" />
     <Compile Include="../../game/scripts/ActorReplayAdmission.cs" Link="Game/ActorReplayAdmission.cs" />
     <Compile Include="../../game/scripts/ActorContactGeometry.cs" Link="Game/ActorContactGeometry.cs" />
     <Compile Include="../../game/scripts/SourceVerificationOperation.cs" Link="Game/SourceVerificationOperation.cs" />

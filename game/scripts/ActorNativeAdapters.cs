@@ -33,7 +33,8 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
 
     internal IReadOnlyList<IActorFactory> CreateFactories(ActorSceneFactory scenes, ActorSourceCache sources) =>
         [new Rac1ToadActorFactory(scenes, sources, Rac1Bindings()),
-            new Rac2Msr1ActorFactory(scenes, sources, Rac2Bindings()), new Rac3PropActorFactory(scenes)];
+            new Rac2Msr1ActorFactory(scenes, sources, Rac2Bindings()), new Rac3PropActorFactory(scenes),
+            new Rac3Class5821DamageActorFactory(scenes)];
 
     private Rac2ActorBindings Rac2Bindings()
     {

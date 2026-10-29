@@ -680,7 +680,7 @@ public sealed class Rac3Class5821ActorTests
             nativeDamageFlags: flags,
             nativeRecordKind: recordKind);
 
-    private static RuntimeDynamicObject Class5821(
+    internal static RuntimeDynamicObject Class5821(
         int instanceIndex,
         short authoredLifetime)
     {
