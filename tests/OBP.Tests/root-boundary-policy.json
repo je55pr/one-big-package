@@ -3739,9 +3739,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1EnemyHost(:RuntimeWorld,:RuntimeWorldScene . Result,:Rac1WorldModule):Rac1EnemyHost:private",
       "Owner": "#361",
-      "Rationale": "Exact scene enemy composition: source path/random, current player contact facts, existing combat/reward presentation and bounded frog/Aridia/amoeboid neighbor callbacks. The world module owns the host and contacts; native controllers remain source-owned. Existing neighbor reset/state bindings expire as #362/#363/#368 migrate those owners; final composition removes this factory. No root reference or native algorithm escapes to the host.",
+      "Rationale": "Exact scene enemy composition: source path/random, current player contact facts, existing combat/reward presentation and bounded frog/Aridia neighbor callbacks. #364 moves amoeboid gates, contacts and family state into the world-scoped enemy adapter; existing native family and replay regressions guard its semantics. The world module owns the host and contacts; native controllers remain source-owned. Existing neighbor reset/state bindings expire as #362/#363/#368 migrate those owners; final composition removes this factory. No root reference or native algorithm escapes to the host.",
       "ExpiresWith": "#376",
-      "Hash": "76f2ee07d1333697301c0243decb73303c24f57cbcdb5bacef9cc79babaf66bd"
+      "Hash": "dfec1e11b79c875796cbffd776eeb7bf3fb1909255e81788548f815e0bb57f24"
     }
   ],
   "RetiredMembers": [
@@ -4603,7 +4603,23 @@
     "game/scripts/OBPGame.Rac1NovalisPeckbots.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/scripts/OBPGame.Rac1NovalisPeckbots.cs::OBPGame::method:TickRac1NovalisPeckbot(:Rac1HostedEnemy):void:private",
     "game/scripts/OBPGame.Rac1Seekers.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/scripts/OBPGame.Rac1Seekers.cs::OBPGame::method:TickRac1Seeker(:Rac1HostedEnemy):void:private"
+    "game/scripts/OBPGame.Rac1Seekers.cs::OBPGame::method:TickRac1Seeker(:Rac1HostedEnemy):void:private",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::field:Rac1AmoeboidHostActiveRadius:float:const,private",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::field:Rac1Class623HitReceiverAvailable:bool:const,private",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::field:_rac1AmoeboidLungeTargets:Rac1AmoeboidLungeTargetLatch:private,readonly",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::field:_rac1AmoeboidTargetGroups:Dictionary < int , List < RuntimeWorldScene . DynamicObjectNode > >:private,readonly",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::field:_rac1AmoeboidVolumes:IReadOnlyList < Rac1ClipVolume >:private",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::field:_rac1Amoeboids:Rac1AmoeboidFamilySession ?:private",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::field:_rac1Class623Activation:Rac1Class623ActivationSession:private,readonly",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::field:_rac1Class830Controllers:Rac1Class830ControllerSession:private,readonly",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::method:ActivateRac1Amoeboid(:Rac1AmoeboidFrame):void:private",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::method:ApplyRac1AmoeboidDamage(:RuntimeWorldScene . DynamicObjectNode,:Rac1GameplayDamageEvent):bool:private",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::method:ConfigureRac1Amoeboids(:RuntimeWorld,:RuntimeWorldScene . Result,:List < RuntimeWorldScene . DynamicObjectNode >,:byte [  ]):void:private",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::method:InitializeRac1AmoeboidPresentation(:Rac1HostedEnemy):void:private",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::method:ResetRac1Amoeboids():void:private",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::method:TickRac1Amoeboid(:Rac1HostedEnemy):void:private",
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::method:TickRac1AmoeboidGates():void:private"
   ],
   "RetiredAccess": [
     "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()"

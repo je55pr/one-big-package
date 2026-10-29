@@ -39,20 +39,18 @@ internal delegate void Rac1WaveEnemyConfiguration(RuntimeWorld world, RuntimeWor
 // They contain no root reference, shared AI, inventory or player-selection policy.
 internal sealed record Rac1EnemyNeighborPorts(Func<bool> Current,
     Action EndQueenCamera, Action ResetCarriers, Action ResetQueenChildren, Action ClearFrogState,
-    Action ResetAridia, Action ResetAridiaScripts, Action ResetConstructorbots, Action ResetAmoeboids,
+    Action ResetAridia, Action ResetAridiaScripts, Action ResetConstructorbots,
     Func<Rac1AridiaEnemySession> Aridia, Action<IReadOnlyList<Rac1ClipVolume>> AridiaVolumes,
     IDictionary<int, Rac1AridiaConstructorbotNative.Frame> Constructorbots, IDictionary<int, Vector3> ConstructorbotWaypoints,
     Action<RuntimeWorld, RuntimeWorldScene.Result, IReadOnlyList<Rac1Instances.MobyInstance>> AridiaScripts,
     Rac1FrogEnemyConfiguration Frogs, Rac1QueenEnemyConfiguration Queen, Rac1WaveEnemyConfiguration Waves,
     Action<RuntimeWorldScene.Result> Carriers,
-    Action<RuntimeWorld, RuntimeWorldScene.Result, List<RuntimeWorldScene.DynamicObjectNode>, byte[]> Amoeboids,
-    Func<Rac1FrogSession?> FrogSession, Func<Rac1AmoeboidFamilySession?> AmoeboidSession,
-    Action TickAmoeboidGates, Action TickShuttle, Action TickWaves, Action TickQueenFlight, Action TickQueenRecovery, Action TickQueenChildren,
+    Func<Rac1FrogSession?> FrogSession,
+    Action TickShuttle, Action TickWaves, Action TickQueenFlight, Action TickQueenRecovery, Action TickQueenChildren,
     Func<int, bool> CarrierChild, Action<Rac1HostedEnemy> TickCarrier,
-    Action<Rac1HostedEnemy> TickAridia, Action<Rac1HostedEnemy> TickFrog, Action<Rac1HostedEnemy> TickAmoeboid,
-    Action<Rac1HostedEnemy> HideAridia, Action<Rac1HostedEnemy> ShowAridia, Action<Rac1HostedEnemy> InitializeAmoeboid,
-    Func<RuntimeWorldScene.DynamicObjectNode, Rac1GameplayDamageEvent, bool> AridiaDamage,
-    Func<RuntimeWorldScene.DynamicObjectNode, Rac1GameplayDamageEvent, bool> AmoeboidDamage);
+    Action<Rac1HostedEnemy> TickAridia, Action<Rac1HostedEnemy> TickFrog,
+    Action<Rac1HostedEnemy> HideAridia, Action<Rac1HostedEnemy> ShowAridia,
+    Func<RuntimeWorldScene.DynamicObjectNode, Rac1GameplayDamageEvent, bool> AridiaDamage);
 
 internal sealed record Rac1EnemyPorts(Func<string> SourcePath, Func<Rac1PickupRandom> Random,
     Rac1EnemyPlayerPorts Player, Rac1EnemyCombatPorts Combat, Rac1EnemyNeighborPorts Neighbors);

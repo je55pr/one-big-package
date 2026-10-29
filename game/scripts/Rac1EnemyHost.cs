@@ -27,6 +27,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
     private readonly Rac1PeckbotEnemyAdapter _peckbots;
     private readonly Rac1BirdbotEnemyAdapter _birdbots;
     private readonly Rac1SeekerEnemyAdapter _seekers;
+    private readonly Rac1AmoeboidEnemyAdapter _amoeboids;
     private readonly Dictionary<int, IRac1EnemyAdapter> _families;
 
     internal Rac1EnemyHost(RuntimeWorld world, RuntimeWorldScene.Result scene, Rac1WorldContext context,
@@ -34,7 +35,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
     {
         _world = world; _sceneResult = scene; Context = context; Presentation = presentation; _ports = ports;
         Roster = new(enemy => (enemy.Node.Source.SourceGame, enemy.Node.Source.InstanceIndex), RetireContact);
-        _toads = new(this); _robots = new(this); _peckbots = new(this); _birdbots = new(this); _seekers = new(this);
+        _toads = new(this); _robots = new(this); _peckbots = new(this); _birdbots = new(this); _seekers = new(this); _amoeboids = new(this);
         _families = new IRac1EnemyAdapter[] { _toads, _robots, _peckbots, _birdbots, _seekers }.ToDictionary(family => family.ClassId);
     }
 
@@ -55,6 +56,9 @@ internal sealed partial class Rac1EnemyHost : IDisposable
     internal RuntimeWorldScene.Result Scene => _sceneResult;
     internal bool Current => !_disposed && _ports.Neighbors.Current();
     internal bool Owns(Rac1HostedEnemy enemy) => Current && !enemy.Retired && Roster.Contains(enemy);
+    internal bool OwnsNodeForFamily(RuntimeWorldScene.DynamicObjectNode node) =>
+        Current && Roster.TryGetValue(node.Source.InstanceIndex, out var enemy) &&
+        !enemy.Retired && ReferenceEquals(enemy.Node, node);
     internal IEnumerable<RuntimeWorldScene.DynamicObjectNode> Targets => Rac1EnemyNodes;
     internal Rac1PickupRandom Random => _ports.Random();
     private Rac1PickupRandom Rac1EffectRandom => Random;
@@ -89,7 +93,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
             () => Current(neighbor.ClearFrogState), () => Current(neighbor.ResetAridia),
             _clock.Reset,
             () => Current(neighbor.ResetAridiaScripts), () => Current(neighbor.ResetConstructorbots),
-            () => Current(neighbor.ResetAmoeboids), _birdbots.Reset);
+            _amoeboids.Reset, _birdbots.Reset);
     }
 
     private static void RetireContact(Rac1HostedEnemy enemy)
@@ -189,7 +193,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
         _peckbots.Register(world, result, nodes);
         _birdbots.Register(world, result, nodes);
         _seekers.Register(world, result, nodes);
-        _ports.Neighbors.Amoeboids(world, result, nodes, Rac1LevelSettings.ReadGameplay(reader, level));
+        _amoeboids.Register(world, result, nodes, Rac1LevelSettings.ReadGameplay(reader, level));
         foreach (var group in nodes.GroupBy(node => node.Source.NativeClassId))
         {
             var cls = classes.Mobies[group.Key];
@@ -209,7 +213,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
                 // encounter. Register its shape but do not put it into broadphase
                 // contacts until it has actually emerged or been released.
                 uint initialContactMask = group.Key == Rac1AridiaEnemies.Sandshark ||
-                    (Rac1AmoeboidAuthored.IsFamily(group.Key) && !_ports.Neighbors.AmoeboidSession()!.Get(node.Source.InstanceIndex).Active) ||
+                    (Rac1AmoeboidAuthored.IsFamily(group.Key) && !_amoeboids.Frame(node.Source.InstanceIndex).Active) ||
                     (group.Key == Rac1FrogAuthored.ClassId && !_ports.Neighbors.FrogSession()!.Get(node.Source.InstanceIndex).Presented)
                     ? 0u : 1u;
                 var body = new CharacterBody3D
@@ -230,7 +234,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
                         : group.Key == Rac1SeekerSession.ClassId
                             ? _rac1Seekers!.Get(node.Source.InstanceIndex).Sequence
                         : Rac1AmoeboidAuthored.IsFamily(group.Key)
-                            ? _ports.Neighbors.AmoeboidSession()!.Get(node.Source.InstanceIndex).Sequence
+                            ? _amoeboids.Frame(node.Source.InstanceIndex).Sequence
                         : group.Key == Rac1FrogAuthored.ClassId
                             ? _ports.Neighbors.FrogSession()!.Get(node.Source.InstanceIndex).Sequence
                         : group.Key == Rac1AridiaEnemies.Constructorbot &&
@@ -245,14 +249,14 @@ internal sealed partial class Rac1EnemyHost : IDisposable
                 node.ConfigureAnimations(asset.Presentation);
                 if (group.Key != Rac1AridiaEnemies.Sandshark &&
                     (!Rac1AmoeboidAuthored.IsFamily(group.Key) ||
-                     _ports.Neighbors.AmoeboidSession()!.Get(node.Source.InstanceIndex).Active))
+                     _amoeboids.Frame(node.Source.InstanceIndex).Active))
                     node.ApplyAnimationSample(enemy.Animation.Sample);
                 else if (group.Key == Rac1AridiaEnemies.Sandshark)
                     _ports.Neighbors.HideAridia(enemy);
                 SynchronizeEnemyTransform(enemy);
                 _rac1Enemies.Add(node.Source.InstanceIndex, enemy);
                 if (Rac1AmoeboidAuthored.IsFamily(group.Key))
-                    _ports.Neighbors.InitializeAmoeboid(enemy);
+                    _amoeboids.Initialize(enemy);
             }
         }
         _ports.Neighbors.Carriers(result);
@@ -294,7 +298,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
     {
         if (!Current || _player is null) return false;
         if (!_ports.Player.Persistent()) _rac1Nanotech.UpdateNative();
-        _ports.Neighbors.TickAmoeboidGates();
+        _amoeboids.TickGates();
         _ports.Neighbors.TickShuttle();
         _ports.Neighbors.TickWaves();
         _ports.Neighbors.TickQueenFlight();
@@ -364,7 +368,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
                 if (node.Root.GlobalPosition.DistanceTo(_player.GlobalPosition) < 40 && !_ports.Combat.ActorSound(node, sound))
                     _ports.Combat.Sound(node.Source.NativeClassId, sound, node.Root.GlobalPosition);
             if (_families.TryGetValue(node.Source.NativeClassId, out var family)) family.Tick(enemy);
-            else if (Rac1AmoeboidAuthored.IsFamily(node.Source.NativeClassId)) _ports.Neighbors.TickAmoeboid(enemy);
+            else if (Rac1AmoeboidAuthored.IsFamily(node.Source.NativeClassId)) _amoeboids.Tick(enemy);
             else if (node.Source.NativeClassId == Rac1FrogAuthored.ClassId) _ports.Neighbors.TickFrog(enemy);
             else if (!aridiaStepped) _ports.Neighbors.TickAridia(enemy);
             // All known Aridia attacks occur within the native-candidate
@@ -388,7 +392,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
     {
         if (!Current || !Roster.TryGetValue(node.Source.InstanceIndex, out var owned) || !ReferenceEquals(owned.Node, node)) return false;
         if (Rac1AmoeboidAuthored.IsFamily(node.Source.NativeClassId))
-            return _ports.Neighbors.AmoeboidDamage(node, damage);
+            return _amoeboids.ApplyDamage(node, damage);
         if (Rac1AridiaEnemies.IsEnemyClass(node.Source.NativeClassId))
             return _ports.Neighbors.AridiaDamage(node, damage);
         if (!Context.MobyRuntime.CanDispatchDamage(damage)) return false;
