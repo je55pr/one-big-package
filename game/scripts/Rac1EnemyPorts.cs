@@ -13,7 +13,8 @@ namespace OBP.Game;
 internal sealed record Rac1EnemyPlayerPorts(Func<PlayerHost?> Player, Func<bool> Alive, Func<bool> Persistent,
     Func<Rac1RatchetNanotechSession> Health,
     Action<RuntimeWorldScene.DynamicObjectNode, uint, int, ulong> SourceDamage,
-    Action<int, int> Hurt, Action<HudFeedbackDraft[]> Hud);
+    Action<int, int> Hurt, Action<HudFeedbackDraft[]> Hud,
+    Action<RuntimeWorldScene.DynamicObjectNode, uint, int, ulong> AridiaSourceDamage);
 
 internal sealed record Rac1EnemyCombatPorts(Func<Rac1HostedEnemy, Vector3, Vector3> Goal,
     Func<Rac1HostedEnemy, bool> HitsDecoy, Func<Rac1HostedEnemy, bool> ChargeDecoy,
@@ -27,16 +28,8 @@ internal sealed record Rac1EnemyCombatPorts(Func<Rac1HostedEnemy, Vector3, Vecto
     Action<RuntimeWorldScene.DynamicObjectNode, Rac1BoltCrateDamageAdmission> CrateDamage,
     Action<int, RuntimeEntityPresence> CratePresence, Func<int, bool> Chicken);
 
-// Temporary integration ports to #363/#368's existing source owners.
-// They contain no root reference, shared AI, inventory or player-selection policy.
-internal sealed record Rac1EnemyNeighborPorts(Func<bool> Current,
-    Action ResetAridia, Action ResetAridiaScripts, Action ResetConstructorbots,
-    Func<Rac1AridiaEnemySession> Aridia, Action<IReadOnlyList<Rac1ClipVolume>> AridiaVolumes,
-    IDictionary<int, Rac1AridiaConstructorbotNative.Frame> Constructorbots, IDictionary<int, Vector3> ConstructorbotWaypoints,
-    Action<RuntimeWorld, RuntimeWorldScene.Result, IReadOnlyList<Rac1Instances.MobyInstance>> AridiaScripts,
-    Action<Rac1HostedEnemy> TickAridia,
-    Action<Rac1HostedEnemy> HideAridia, Action<Rac1HostedEnemy> ShowAridia,
-    Func<RuntimeWorldScene.DynamicObjectNode, Rac1GameplayDamageEvent, bool> AridiaDamage);
+// The world lease check does not expose Aridia native state.
+internal sealed record Rac1EnemyNeighborPorts(Func<bool> Current);
 
 internal sealed record Rac1EnemyPorts(Func<string> SourcePath, Func<Rac1PickupRandom> Random,
     Rac1EnemyPlayerPorts Player, Rac1EnemyCombatPorts Combat, Rac1EnemyNeighborPorts Neighbors,

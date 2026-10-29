@@ -325,7 +325,9 @@ public partial class OBPGame : Node3D
             new(() => _player, () => PlayerLife.Alive, () => _playerNative is not null, () => _rac1Nanotech,
                 (attacker, tick, amount, flags) => PlayerLife.ApplySourceDamage(attacker, OBP.RAC1.Rac1Authority.Primary.BuildId,
                     PlayerSessionNativeState.Rac1DamageAdapter, PlayerSessionNativeState.Rac1DamageDescriptor, tick, amount, flags),
-                (before, after) => _playerAudio?.NotifyDamage(before, after), feedback => RefreshRac1HudState(feedback)),
+                (before, after) => _playerAudio?.NotifyDamage(before, after), feedback => RefreshRac1HudState(feedback),
+                (attacker, tick, amount, flags) => PlayerLife.ApplySourceDamage(attacker, OBP.RAC1.Rac1Authority.Primary.BuildId,
+                    PlayerSessionNativeState.AridiaDamageAdapter, PlayerSessionNativeState.AridiaDamageDescriptor, tick, amount, flags)),
             new(ArsenalEnemyGoal, ArsenalEnemyHitsDecoy,
                 enemy => _rac1Decoys.Any(decoy => decoy.Grounded && decoy.View.GlobalPosition.DistanceTo(enemy.Body.GlobalPosition) < 1.8f),
                 id => _rac1EquipmentShots.FirstOrDefault(shot => shot.Weapon == Rac1WeaponId.MineGlove && shot.Id == id)?.Position,
@@ -341,12 +343,7 @@ public partial class OBPGame : Node3D
                 TryTriggerRac1ExplosiveDamage, CompleteRac1CrateDamage,
                 (id, presence) => { if (_rac1CrateBodies.TryGetValue(id, out var body) && IsInstanceValid(body)) body.CollisionLayer = presence == RuntimeEntityPresence.Active ? 1u : 0; },
                 id => _rac1Chickens.ContainsKey(id)),
-            new(() => ReferenceEquals(_worldScenes?.Current?.Resources.Rac1Gameplay, owner),
-                () => _rac1AridiaEnemies = new(), ResetRac1AridiaScriptActors, ResetRac1ConstructorbotStartups,
-                () => _rac1AridiaEnemies, volumes => _rac1AridiaClipVolumes = volumes, _rac1ConstructorbotStartups, _rac1ConstructorbotNativeWaypoints,
-                ConfigureRac1AridiaScriptActors, TickRac1AridiaEnemy,
-                HideBuriedRac1AridiaEnemy, RestoreRac1AridiaEnemyVisibility,
-                ApplyRac1AridiaWeaponDamage),
+            new(() => ReferenceEquals(_worldScenes?.Current?.Resources.Rac1Gameplay, owner)),
             new(GetViewport, () => _activeCamera, camera => _activeCamera = camera, () => _camera,
                 () => _rac1MissileCamera, _rac1WrenchHitTargets.Contains,
                 key => { _rac1WrenchHitTargets.Add(key); },
@@ -1691,18 +1688,17 @@ public partial class OBPGame : Node3D
 
     private GodotRac1AridiaDiagnosticFixture CreateRac1AridiaDiagnosticFixture(GodotRac1EnemyDiagnosticFixture actors)
     {
-        return new(actors, new(() => Rac1World.Context.MobyRuntime, () => _rac1AridiaEnemies, session => _rac1AridiaEnemies = session,
-            () => _rac1AridiaClipVolumes.Count, index => _rac1AridiaClipVolumes[index].Centre,
-            (index, point) => _rac1AridiaClipVolumes[index].Contains(point),
-            id => _rac1ConstructorbotNativeWaypoints.TryGetValue(id, out var point) ? point : null,
-            id => _rac1ConstructorbotRoamingTargets.TryGetValue(id, out var point) ? point : null,
-            id => _rac1ConstructorbotRoamExitFlags.TryGetValue(id, out var flags) ? flags : null,
-            id => _rac1ConstructorbotRoamingTargets.Remove(id),
-            id => _rac1ConstructorbotNativeLiftCounts.GetValueOrDefault(id),
-            id => _rac1ConstructorbotSweepProbeCounts.GetValueOrDefault(id),
-            id => _rac1ConstructorbotStateThreeVerticalSteps.GetValueOrDefault(id), Rac1EnemyHost.AridiaHostUpdateRadius,
-            ProbeRac1ConstructorbotStateThreeFloor, ProbeRac1AridiaWalkerGroundLift, ProbeRac1AridiaWalkerSupport,
-            ProbeRac1AridiaWalkerSpherePushouts, MoveRac1AridiaWalkerContact, Rac1EnemyHost.SelectRac1EnemySequence, ActivateNearbyRac1AridiaShark));
+        var aridia = Rac1World.Enemies.Aridia;
+        return new(actors, new(() => Rac1World.Context.MobyRuntime, () => aridia.Session, session => aridia.Session = session,
+            () => aridia.ClipVolumeCount, aridia.ClipVolumeCentre,
+            aridia.ClipVolumeContains,
+            aridia.Waypoint, aridia.RoamingTarget, aridia.RoamExitFlag,
+            aridia.RemoveRoamingTarget,
+            id => aridia.NativeLiftCount(id),
+            id => aridia.SweepProbeCount(id),
+            id => aridia.VerticalStep(id), Rac1EnemyHost.AridiaHostUpdateRadius,
+            aridia.ProbeRac1ConstructorbotStateThreeFloor, aridia.ProbeRac1AridiaWalkerGroundLift, aridia.ProbeRac1AridiaWalkerSupport,
+            aridia.ProbeRac1AridiaWalkerSpherePushouts, aridia.MoveRac1AridiaWalkerContact, Rac1EnemyHost.SelectRac1EnemySequence, aridia.ActivateNearbyRac1AridiaShark));
     }
 
     private GodotRac1FrogDiagnosticFixture CreateRac1FrogDiagnosticFixture(GodotRac1EnemyDiagnosticFixture actors)
