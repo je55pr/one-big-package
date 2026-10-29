@@ -18,9 +18,12 @@ public sealed class Rac1AridiaEncounterSemanticsTests
         var constructor = Assert.Single(neighbor.InstanceConstructors.Where(method =>
             method.Parameters.Length == 1 && method.Parameters[0].Name == "Current"));
         Assert.Equal("Func<bool>", constructor.Parameters[0].Type.ToDisplayString());
-        Assert.DoesNotContain(ports.GetMembers().OfType<IPropertySymbol>(),
-            member => member.Type.ToDisplayString().Contains("Rac1Aridia", StringComparison.Ordinal));
-        Assert.DoesNotContain(neighbor.GetMembers().OfType<IPropertySymbol>(),
+        // Inspect each nested record, not only its top-level reference.
+        var portRecords = ports.GetMembers().OfType<IPropertySymbol>()
+            .Select(member => member.Type).OfType<INamedTypeSymbol>()
+            .Where(type => type.Name.EndsWith("Ports", StringComparison.Ordinal))
+            .Prepend(ports);
+        Assert.DoesNotContain(portRecords.SelectMany(type => type.GetMembers().OfType<IPropertySymbol>()),
             member => member.Type.ToDisplayString().Contains("Rac1Aridia", StringComparison.Ordinal));
 
         // Validate the host's typed encounter calls as AST nodes. This guard
