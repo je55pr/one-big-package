@@ -20,7 +20,12 @@ public static class Rac3Assets
         GcUyaMoby.Mesh Mesh,
         int[] TriangleTextureIds,
         IReadOnlyList<GcUyaMoby.MobyJoint> Joints,
-        IReadOnlyList<GcUyaMoby.MobySequence> Sequences);
+        IReadOnlyList<GcUyaMoby.MobySequence> Sequences)
+    {
+        // Temporary, bounded retail source needed to evaluate the same native
+        // animation frames as the first-key pose (not carried into RuntimeWorld).
+        public byte[]? NativePoseSource { get; init; }
+    }
     public sealed record MobyClassSet(
         int DeclaredCount,
         IReadOnlyDictionary<int, MobyVisualClass> Decoded,
@@ -45,10 +50,13 @@ public static class Rac3Assets
     public static bool NativeMobyPoseEnabled =>
         Environment.GetEnvironmentVariable("OBP_RAC3_LEGACY_MOBY") != "1";
 
+    public static MobyClassSet ReadMobyClasses(Rac3LevelCore.Core core, int textureCount) =>
+        ReadMobyClasses(core, textureCount, NativeMobyPoseEnabled);
+
     public static MobyClassSet ReadMobyClasses(
-        Rac3LevelCore.Core core, int textureCount, bool? nativePoseOverride = null)
+        Rac3LevelCore.Core core, int textureCount, bool nativePoseOverride)
     {
-        bool nativePose = nativePoseOverride ?? NativeMobyPoseEnabled;
+        bool nativePose = nativePoseOverride;
         var table = core.Header.MobyClasses;
         if (table.Count < 0 || table.Offset < 0 ||
             (long)table.Offset + (long)table.Count * GcUyaMoby.ClassEntrySize > core.Index.Length)
@@ -154,7 +162,10 @@ public static class Rac3Assets
                     // recovered packet topology without inventing a pose.
                 }
             }
-            decoded.Add(oClass, new MobyVisualClass(oClass, mesh, mapped, joints, sequences));
+            decoded.Add(oClass, new MobyVisualClass(oClass, mesh, mapped, joints, sequences)
+            {
+                NativePoseSource = mesh.NativeInitialPoseApplied ? classBytes : null,
+            });
         }
 
         if (decoded.Count + zeroLocalCore.Count != table.Count)

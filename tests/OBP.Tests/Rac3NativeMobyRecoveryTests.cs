@@ -1,6 +1,8 @@
 using System.Text.Json;
 using OBP.IO;
+using OBP.PS2.Geometry;
 using OBP.RAC3;
+using OBP.RAC3.Gameplay;
 using OBP.RAC3.Level;
 using Xunit;
 
@@ -108,6 +110,26 @@ public sealed class Rac3NativeMobyRecoveryTests
         }
     }
 
+    private static HashSet<(int ClassId, int InstanceId)> PresentedMobyActors(OBP.Runtime.RuntimeWorld world)
+    {
+        var presented = world.DynamicObjects!
+            .Where(item => item.Meshes.Count > 0)
+            .Select(item => (ClassId: item.NativeClassId, InstanceId: item.InstanceIndex))
+            .ToHashSet();
+        const string prefix = "uya-preview-moby";
+        foreach (var mesh in world.AnimatedMeshes ?? [])
+        {
+            if (!mesh.Name.StartsWith(prefix, StringComparison.Ordinal)) continue;
+            int split = mesh.Name.IndexOf("_i", prefix.Length, StringComparison.Ordinal);
+            int end = split < 0 ? -1 : mesh.Name.IndexOf("_s", split + 2, StringComparison.Ordinal);
+            if (split > prefix.Length && end > split + 2 &&
+                int.TryParse(mesh.Name.AsSpan(prefix.Length, split - prefix.Length), out int oClass) &&
+                int.TryParse(mesh.Name.AsSpan(split + 2, end - split - 2), out int instance))
+                presented.Add((oClass, instance));
+        }
+        return presented;
+    }
+
     [SkippableFact]
     public void RecoveredVeldinPreviewPreservesAnimatedActorAndFrameRoster()
     {
@@ -120,5 +142,29 @@ public sealed class Rac3NativeMobyRecoveryTests
         Assert.Equal(37_922, animated.Sum(m => m.TriangleCount));
         Assert.All(animated, m => Assert.All(m.Frames.SelectMany(frame => frame),
             value => Assert.True(double.IsFinite(value))));
+
+        // This class is the native-sphere outlier. Verify its rendered preview
+        // uses native inverse-bind poses, not the old rotation-only evaluator.
+        var opened = Rac3LevelCore.Open(reader, 1);
+        var gameplay = Rac3Gameplay.Read(opened.GameplayReader);
+        int texCount = Rac3Assets.ReadTextures(opened.Core, Rac3Assets.TextureTable.Moby).Count;
+        var cls = Rac3Assets.ReadMobyClasses(opened.Core, texCount, nativePoseOverride: true).Decoded[6317];
+        var sequence = cls.Sequences.Single(s => s.Index == 4);
+        var native = Ps2MobyNativePose.Pose(cls.NativePoseSource!, cls.Mesh, sequence.Frames[0]);
+        var instance = gameplay.MobyInstances.Single(m => m.Index == 477 && m.OClass == 6317);
+        var transform = Rac3Gameplay.MobyTransform(instance);
+        var preview = animated.First(m => m.Name.StartsWith("uya-preview-moby6317_i477_", StringComparison.Ordinal));
+        for (int i = 0; i < Math.Min(30, native.Length); i += 3)
+        {
+            double x = native[i], y = native[i + 2], z = native[i + 1];
+            var expected = new[]
+            {
+                transform[0] * x + transform[4] * y + transform[8] * z + transform[12],
+                transform[1] * x + transform[5] * y + transform[9] * z + transform[13],
+                transform[2] * x + transform[6] * y + transform[10] * z + transform[14],
+            };
+            for (int k = 0; k < 3; k++)
+                Assert.InRange(Math.Abs(preview.Frames[0][i + k] - expected[k]), 0, 1e-5);
+        }
     }
 }

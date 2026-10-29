@@ -32,8 +32,11 @@ public static partial class Rac3WorldImport
 
     public static RuntimeWorld Build(IRandomAccessReader disc, int tableIndex) => BuildObserved(disc, tableIndex).World;
 
+    public static ImportResult BuildObserved(IRandomAccessReader disc, int tableIndex) =>
+        BuildObserved(disc, tableIndex, Rac3Assets.NativeMobyPoseEnabled);
+
     public static ImportResult BuildObserved(
-        IRandomAccessReader disc, int tableIndex, bool? nativeMobyPoseOverride = null)
+        IRandomAccessReader disc, int tableIndex, bool nativeMobyPoseOverride)
     {
         var opened = Rac3LevelCore.Open(disc, tableIndex);
         var core = opened.Core;
