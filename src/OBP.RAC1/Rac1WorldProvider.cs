@@ -31,7 +31,9 @@ public sealed class Rac1WorldProvider : IObpWorldProvider
             ?? throw new ArgumentException($"Destination '{destination.DestinationId}' is not loadable by the R&C1 provider.", nameof(destination));
 
         using var reader = new FileRandomAccessReader(sourcePath);
-        return Rac1WorldImport.Build(reader, level);
+        // Developer-only visual comparison, disabled for ordinary retail play.
+        bool oceanPreview = Environment.GetEnvironmentVariable("OBP_RAC1_OCEAN_PREVIEW") == "1";
+        return Rac1WorldImport.Build(reader, level, includeAridiaOceanPreview: oceanPreview);
     }
 
     public int? ResolveNativeLevel(ObpDestination destination)

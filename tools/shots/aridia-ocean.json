@@ -1,0 +1,7 @@
+{
+  "world": "rac1:LEVEL2",
+  "shots": [
+    { "name": "ocean-top", "camera": "topDown", "settleFrames": 45 },
+    { "name": "ocean-orbit", "camera": "orbit", "settleFrames": 45, "azimuthDegrees": 40, "elevationDegrees": 36 }
+  ]
+}

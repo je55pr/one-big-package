@@ -11,7 +11,14 @@ internal static class ActorFactoryRegistrations
     public static IReadOnlyDictionary<ObpSourceGame, Func<string, int, RuntimeWorld>> SourceImports { get; } =
         new Dictionary<ObpSourceGame, Func<string, int, RuntimeWorld>>
         {
-            [ObpSourceGame.Rac1] = (path, level) => { using var reader = new FileRandomAccessReader(path); return OBP.RAC1.Rac1WorldImport.Build(reader, level); },
+            [ObpSourceGame.Rac1] = (path, level) =>
+            {
+                using var reader = new FileRandomAccessReader(path);
+                // Developer-only visual comparison. The underlying native
+                // VU ocean draw has not yet been recovered frame-exactly.
+                bool oceanPreview = System.Environment.GetEnvironmentVariable("OBP_RAC1_OCEAN_PREVIEW") == "1";
+                return OBP.RAC1.Rac1WorldImport.Build(reader, level, includeAridiaOceanPreview: oceanPreview);
+            },
             [ObpSourceGame.Rac2] = (path, level) => { using var reader = new FileRandomAccessReader(path); return OBP.RAC2.Rac2WorldImport.Build(reader, level); },
             [ObpSourceGame.Rac3] = (path, level) => { using var reader = new FileRandomAccessReader(path); return OBP.RAC3.Rac3WorldImport.Build(reader, level); },
         };

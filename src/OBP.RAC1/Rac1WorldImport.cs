@@ -9,6 +9,7 @@ using OBP.Runtime.Presentation;
 using OBP.RAC1.Level;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
+using OBP.RAC1.Presentation;
 using OBP.Runtime;
 
 namespace OBP.RAC1;
@@ -23,7 +24,7 @@ namespace OBP.RAC1;
 public static partial class Rac1WorldImport
 {
     /// <summary>Build one native R&amp;C1 level into the game-neutral runtime model.</summary>
-    public static RuntimeWorld Build(IRandomAccessReader disc, int levelId)
+    public static RuntimeWorld Build(IRandomAccessReader disc, int levelId, bool includeAridiaOceanPreview = false)
     {
         var catalogue = Rac1DiscIndex.Read(disc);
         var level = catalogue.Levels.SingleOrDefault(l => l.LevelId == levelId)
@@ -68,6 +69,15 @@ public static partial class Rac1WorldImport
             (maxY - minY) * (maxY - minY) +
             (maxZ - minZ) * (maxZ - minZ));
         int skyExtraMaterials = AddSky(core, levelRadius, meshes, textures);
+
+        // Render-only preview from Aridia's own executable-overlay class-854
+        // ocean records, independent of collision. Wave/UV parity is pending.
+        if (includeAridiaOceanPreview && levelId == Rac1AridiaOceanSource.LevelId)
+        {
+            var ocean = Rac1AridiaOceanPreview.Build(Rac1LevelOverlay.Open(disc, level), core);
+            meshes.AddRange(ocean.Meshes);
+            textures.Add(ocean.Texture);
+        }
 
         // Outer native range 1 is the retail gameplay WAD. The 0x50 first-part
         // settings record is a distinct R&C1 generation (GC later grows it to
