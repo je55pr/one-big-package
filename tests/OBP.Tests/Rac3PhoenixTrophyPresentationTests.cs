@@ -42,6 +42,10 @@ public sealed class Rac3PhoenixTrophyPresentationTests
         using var reader = new FileRandomAccessReader(iso!);
         RuntimeWorld legacy = Rac3WorldImport.BuildObserved(reader, 3, nativeMobyPoseOverride: false).World;
         RuntimeWorld corrected = Rac3WorldImport.BuildObserved(reader, 3, nativeMobyPoseOverride: true).World;
+        var core = Rac3LevelCore.Open(reader, 3).Core;
+        var originalMeshes = Rac3Assets.ReadMobyClasses(core,
+            Rac3Assets.ReadTextures(core, Rac3Assets.TextureTable.Moby).Count,
+            nativePoseOverride: true).Decoded;
         var oldObjects = legacy.DynamicObjects!.ToDictionary(m => (m.NativeClassId, m.InstanceIndex));
         var newObjects = corrected.DynamicObjects!.ToDictionary(m => (m.NativeClassId, m.InstanceIndex));
 
@@ -67,9 +71,21 @@ public sealed class Rac3PhoenixTrophyPresentationTests
                 {
                     Assert.True(height > width * 1.2,
                         $"Trophy figurine class {classId} is still lying sideways: width={width}, height={height}.");
+                    // Figurines were collected in flight, so their model origin
+                    // is at the pickup centre. The back-row shelf is at local
+                    // Y=0, and no rendered geometry should be buried beneath it.
+                    Assert.InRange(vertices.Min(v => v.Y), -1e-5, 1e-5);
                 }
                 else
                 {
+                    // The non-collectible ring trophies in front already sit
+                    // correctly. Their geometry must remain identical to the
+                    // original native first-key pose.
+                    var native = originalMeshes[classId].Mesh;
+                    double originalMinY = native.Indices.Min(i => native.Positions[i * 3 + 2]);
+                    double originalMaxY = native.Indices.Max(i => native.Positions[i * 3 + 2]);
+                    Assert.Equal(originalMinY, vertices.Min(v => v.Y), 5);
+                    Assert.Equal(originalMaxY, vertices.Max(v => v.Y), 5);
                     Assert.InRange(vertices.Min(v => v.Y), -0.8, -0.5);
                     Assert.True(height > 1.3,
                         $"Trophy ring class {classId} is still separated: height={height}.");

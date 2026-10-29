@@ -33,9 +33,9 @@ internal static class Rac3PhoenixTrophyPresentation
                 !rest.Frames[0].ExtraChannelsResolved || !reveal.Frames[1].ExtraChannelsResolved)
                 continue;
 
-            // Retail's reveal starts by pitching the miniature upright. Its
-            // animated translation is not the shelf placement, so preserve the
-            // resting key's translation instead of levitating the figurine.
+            // Retail's reveal starts by pitching the collectible miniature
+            // upright. Its animated translation is a pickup flight, not a
+            // display placement, so retain the resting key's translation.
             var upright = reveal.Frames[1] with
             {
                 TranslationOverrides = rest.Frames[0].TranslationOverrides,
@@ -44,6 +44,20 @@ internal static class Rac3PhoenixTrophyPresentation
             {
                 var positions = Ps2MobyNativePose.Pose(source, cls.Mesh, upright);
                 var normals = Ps2MobyNativePose.PoseNormals(source, cls.Mesh, upright, positions);
+
+                // These figurines are also flying collectibles in the levels.
+                // Their model origin is at the centre of the pickup, not at
+                // their feet: even the upright pose sinks below a display
+                // shelf when placed at the room's authored trophy anchor.
+                // Align the lowest rendered vertex to the local Z=0 shelf
+                // plane. This uses each model's actual bounds, not a guessed
+                // global height, and never affects the front-row ring classes.
+                if (cls.Mesh.Indices.Length == 0) continue;
+                double lowestZ = cls.Mesh.Indices.Min(index => positions[index * 3 + 2]);
+                if (!double.IsFinite(lowestZ)) continue;
+                for (int i = 2; i < positions.Length; i += 3)
+                    positions[i] -= lowestZ;
+
                 presented[id] = cls with
                 {
                     Mesh = cls.Mesh with
