@@ -8,9 +8,15 @@ public sealed class BugReporterScenario(CaptureDiagnosticContext context, ICaptu
     private async Task TapPad(CaptureButton button)
     { Pad(button, true); await Frames(2); Pad(button, false); await Frames(2); }
     private async Task Click(string label) { reports.FocusButton(label); await TapPad(CaptureButton.A); }
+    // A cold Fusion Lab entry asynchronously imports actors from three retail worlds.
+    // Require a fully ready ordinary recorder, but do not apply the 5-second UI-action deadline to source preparation.
+    internal Task WaitForOrdinaryWorldAsync() => WaitProcess(
+        () => recorder.Read() is { RecorderPresent: true, PlayerPresent: true, WaitingForEntry: false, PreparingWorld: false },
+        "Recorder did not enter its ordinary world.", 120_000);
+
     public async Task RunAsync()
     {
-        await WaitProcess(() => recorder.Read() is { RecorderPresent: true, WaitingForEntry: false }, "Recorder did not enter its ordinary world.");
+        await WaitForOrdinaryWorldAsync();
         await DescribeAndSaveAsync();
         await VerifyUnderlyingControlsAsync();
         await SavePausedReportAsync();
