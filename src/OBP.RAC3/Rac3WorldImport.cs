@@ -72,7 +72,7 @@ public static partial class Rac3WorldImport
         var shrubAlpha = texByKind["shrub"].ToDictionary(
             t => t.Index, t => AlphaProfile.Analyse(t.Rgba));
         var shrubCutouts = shrubs.ToDictionary(entry => entry.Key, entry =>
-            RcFoliageCutoutPolicy.FindLayeredCutoutTextures(
+            RcFoliageCutoutPolicy.FindFoliageCutoutTextures(
                 entry.Value.Positions, entry.Value.Indices, entry.Value.TriangleTextureIds,
                 entry.Value.TriangleMaterialStateIndices, entry.Value.TriangleAlphaBlendEnabled,
                 entry.Value.Materials, shrubAlpha));
@@ -312,7 +312,7 @@ public static partial class Rac3WorldImport
                 var presentation = PresentationFor(
                     cls.Materials, cls.TriangleMaterialStateIndices,
                     cls.TriangleAlphaBlendEnabled, f);
-                presentation = RcFoliageCutoutPolicy.WithLayeredCutout(
+                presentation = RcFoliageCutoutPolicy.WithFoliageCutout(
                     inst.OClass, tex, presentation, alphaProfiles, cutoutSurfaces);
                 var surface = (tex, presentation);
                 if (!groups.TryGetValue(surface, out var g)) groups[surface] = g = ([], [], []);

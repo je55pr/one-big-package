@@ -15,6 +15,64 @@ namespace OBP.Tests;
 /// <summary>Cross-game regression for native leaf cards and class-local alpha intent.</summary>
 public sealed class TrilogyFoliagePresentationTests
 {
+    [Fact]
+    public void SparseNativeFoliageCardsUseClassGeometryAndAlphaRatherThanHardcodedIds()
+    {
+        var state = new RcMaterialState(0, RcTextureWrapHint.Unknown,
+            RcTextureWrapHint.Unknown, RcTextureMinFilterHint.Unknown,
+            0, 0, 0, 0, "synthetic")
+        {
+            AlphaBlend = new RcGsAlphaState(0, 1, 0, 1, 0),
+        };
+        var alpha = new Dictionary<int, AlphaProfile>
+        {
+            [77] = new(0.12, 0.76, 0.12, true),
+            [78] = new(0.5, 0.25, 0.25, true),
+        };
+
+        HashSet<int> Find(int[] textures, bool?[] blend) =>
+            RcFoliageCutoutPolicy.FindFoliageCutoutTextures(
+                [0, 0, 0, 1, 0, 0, 0, 1, 0],
+                Enumerable.Repeat(new[] { 0, 1, 2 }, textures.Length).SelectMany(x => x).ToArray(),
+                textures, Enumerable.Repeat(0, textures.Length).ToArray(),
+                blend, [state], alpha);
+
+        Assert.Equal(new[] { 77 }, Find([77], [true]).Order());
+        Assert.Empty(Find([77], [false]));
+        Assert.Empty(Find([78], [true]));
+        Assert.Empty(Find([77, 77], [true, false]));
+        Assert.Empty(Find(Enumerable.Repeat(77, 33).ToArray(),
+            Enumerable.Repeat<bool?>(true, 33).ToArray()));
+    }
+
+    [SkippableFact]
+    public void Rac3MarcadiaWheatAndGrassShareSparseFoliageDepthRule()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_UYA_ISO not set");
+        using var disc = new FileRandomAccessReader(iso!);
+        var core = Rac3LevelCore.Open(disc, 4).Core;
+        var classes = Rac3Assets.ReadShrubClasses(core);
+        var alpha = Rac3Assets.ReadTextures(core, Rac3Assets.TextureTable.Shrub)
+            .ToDictionary(t => t.Index, t => AlphaProfile.Analyse(t.Rgba));
+        HashSet<int> Selected(int sourceClass)
+        {
+            var shrub = classes[sourceClass];
+            return RcFoliageCutoutPolicy.FindFoliageCutoutTextures(
+                shrub.Positions, shrub.Indices, shrub.TriangleTextureIds,
+                shrub.TriangleMaterialStateIndices, shrub.TriangleAlphaBlendEnabled,
+                shrub.Materials, alpha);
+        }
+        // The saved planter wheat and nearby ground tufts follow exactly the
+        // same rule; none is manually repositioned or ID-special-cased.
+        Assert.Equal(new[] { 1, 2, 3 }, Selected(3058).Order());
+        Assert.Equal(new[] { 4 }, Selected(3063).Order());
+        Assert.Equal(new[] { 38 }, Selected(3401).Order());
+        Assert.Equal(new[] { 38 }, Selected(3404).Order());
+        Assert.Empty(Selected(3292)); // Fully opaque planter soil.
+        Assert.Empty(Selected(3293)); // Fully opaque surrounding soil.
+    }
+
     [SkippableFact]
     public void Rac3MarcadiaPlanterSoilWritesDepthAheadOfNearbyWheat()
     {
@@ -87,8 +145,18 @@ public sealed class TrilogyFoliagePresentationTests
             Assert.Contains(world.Meshes, m => m.AssetKind == "shrub" && m.TextureId == tex &&
                 m.MaterialPresentation is
                 { AlphaBlendEnabled: true, PreferFoliageCutout: true, PreferPerPlacementFoliageDepth: true });
-        Assert.DoesNotContain(world.Meshes, m => m.AssetKind == "shrub" &&
-            m.TextureId is not (42 or 43) && m.MaterialPresentation?.PreferFoliageCutout == true);
+        // The general sparse-card rule also admits some other Veldin shrubs.
+        // Ensure every newly cutout texture has source-class evidence instead
+        // of retaining the old assumption that only the two layered IDs qualify.
+        var admittedTextures = classes.Values.SelectMany(shrub =>
+            RcFoliageCutoutPolicy.FindFoliageCutoutTextures(
+                shrub.Positions, shrub.Indices, shrub.TriangleTextureIds,
+                shrub.TriangleMaterialStateIndices, shrub.TriangleAlphaBlendEnabled,
+                shrub.Materials, alpha)).ToHashSet();
+        Assert.Contains(3, admittedTextures);
+        Assert.All(world.Meshes.Where(m => m.AssetKind == "shrub" &&
+            m.MaterialPresentation?.PreferFoliageCutout == true),
+            m => Assert.Contains(m.TextureId, admittedTextures));
         Assert.Equal(890426, world.TotalRenderTriangles); // unchanged retail geometry census
     }
 
@@ -201,7 +269,7 @@ public sealed class TrilogyFoliagePresentationTests
             [12] = new(.6, .35, .05, true),
         };
         var selected = new Dictionary<int, HashSet<int>> { [1] = [12] };
-        var actual = RcFoliageCutoutPolicy.WithLayeredCutout(
+        var actual = RcFoliageCutoutPolicy.WithFoliageCutout(
             classId, textureId, native, alpha, selected);
         Assert.Equal(expected, actual?.PreferFoliageCutout == true);
         Assert.Equal(expected, actual?.PreferPerPlacementFoliageDepth == true);

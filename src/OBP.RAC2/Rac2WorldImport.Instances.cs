@@ -72,7 +72,7 @@ public static partial class Rac2WorldImport
                 var presentation = (uint)f < (uint)c.TriPresentations.Length
                     ? c.TriPresentations[f]
                     : null;
-                presentation = RcFoliageCutoutPolicy.WithLayeredCutout(
+                presentation = RcFoliageCutoutPolicy.WithFoliageCutout(
                     inst.OClass, tex, presentation, alphaProfiles, cutoutSurfaces);
                 var surface = (tex, presentation);
                 if (!bySurface.TryGetValue(surface, out var g))

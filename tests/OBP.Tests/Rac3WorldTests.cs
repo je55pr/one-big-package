@@ -290,7 +290,12 @@ public sealed class Rac3WorldTests
             // Keep the committed retail census as the pre-recovery comparison baseline.
             var result = Rac3WorldImport.BuildObserved(reader, table, nativeMobyPoseOverride: false);
             var world = result.World;
-            Assert.Equal(row.GetProperty("worldMeshCount").GetInt32(), world.Meshes.Count);
+            // Preserve the original production-import census as historical
+            // evidence. Small-card foliage depth grouping changes material
+            // surface counts in four retail rows without changing triangles.
+            int expectedMeshCount = row.TryGetProperty("worldMeshCountAfterSparseFoliage", out var grouped)
+                ? grouped.GetInt32() : row.GetProperty("worldMeshCount").GetInt32();
+            Assert.Equal(expectedMeshCount, world.Meshes.Count);
             Assert.Equal(row.GetProperty("worldRenderTriangles").GetInt32(), world.TotalRenderTriangles);
             Assert.Equal(row.GetProperty("collisionTriangles").GetInt32(), world.TotalCollisionTriangles);
             Assert.Equal(row.GetProperty("materialCount").GetInt32(), world.MaterialCount);

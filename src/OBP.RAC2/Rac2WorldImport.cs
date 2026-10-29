@@ -173,7 +173,7 @@ public static partial class Rac2WorldImport
         var shrubAlpha = textures.Where(t => t.AssetKind == "shrub")
             .ToDictionary(t => t.TextureId, t => AlphaProfile.Analyse(t.Rgba));
         var shrubCutouts = shrubClasses.ToDictionary(entry => entry.Key, entry =>
-            RcFoliageCutoutPolicy.FindLayeredCutoutTextures(
+            RcFoliageCutoutPolicy.FindFoliageCutoutTextures(
                 entry.Value.Mesh.Positions, entry.Value.Mesh.Indices,
                 entry.Value.TriangleTextureIds, entry.Value.Mesh.TriangleMaterialStateIndices,
                 entry.Value.Mesh.TriangleAlphaBlendEnabled, entry.Value.Mesh.Materials, shrubAlpha));
