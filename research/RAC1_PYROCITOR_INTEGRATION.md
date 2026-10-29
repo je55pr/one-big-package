@@ -48,16 +48,20 @@ game or a matching native class number alone is never proof of target identity.
   arms changed their world heading because both arm chains (roots 52 and 72)
   are parented under the animated torso joint6, giving a high/left weapon
   position; borrowing Blaster sequence57 was also visually incorrect.
-  The new host keeps Pyrocitor's **own source51 terminal pose** while equipped,
-  including between shots. During ordinary locomotion and ordinary jumps,
-  the arm-root local rotations counter the torso's current rotation so their
-  world heading matches the source51 full-body hold. Legs, torso and their
-  native locomotion clock are unchanged; the hand/socket remains attached to
-  the composed pose. Directional flips immediately interrupt the overlay,
-  while other special traversal animation clocks retain ownership. The
-  per-frame reference hierarchy is evaluated without skinning a duplicate
-  mesh. Persistent hold and shoulder retargeting are intentional OBP
-  presentation choices, not claims of retail animation equivalence.
+  Initial shoulder retargeting fixed the source51 direction during movement
+  but made **stationary idle look like active firing**, because the full-body
+  source51 terminal pose was kept even between shots. The corrected host
+  separates the two states: the Pyrocitor uses ordinary sequence0 as its
+  passive *moving* upper-body/hand pose, preserves ordinary standing idle
+  with no forced equipment overlay, and uses source51's held terminal pose
+  **only while firing**. Running and ordinary jump upper-body overlays are
+  stabilized by compensating the arm roots (52/72) against the current torso
+  rotation; the legs and locomotion clock are unchanged. The hand/socket
+  still follows the composed pose. Directional flips interrupt the overlay,
+  while special traversal animation clocks retain ownership. The reference
+  hierarchy is evaluated without skinning a duplicate mesh. Passive
+  sequence0 layering and shoulder retargeting are OBP presentation choices,
+  not claims of retail animation equivalence.
 - Host 60 Hz sound start/stop and fade/pause behavior; complete retail audio
   transitions and player-body animation interruption still need comparison.
 - No claimed exact side-by-side flame density, camera-response, type-25 ember

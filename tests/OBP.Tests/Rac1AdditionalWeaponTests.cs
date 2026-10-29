@@ -185,7 +185,7 @@ public sealed class Rac1AdditionalWeaponTests
         var reference = Assert.IsType<Rac1PlayerAnimationPresentationController>(
             Rac1PlayerAvatarProvider.Instance.CreateAnimationController(avatar));
         for (int tick = 0; tick < 10; tick++)
-            reference.ApplyEquipmentPose(sequence, Rac1ArsenalRules.PyrocitorReadyPhaseSeconds,
+            reference.ApplyEquipmentPose(sequence, Rac1ArsenalRules.PyrocitorFirePhaseSeconds,
                 loop: false, fullBody: true);
         var referenceHand = reference.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(0))!;
         for (int tick = 0; tick < 10; tick++)
@@ -194,7 +194,7 @@ public sealed class Rac1AdditionalWeaponTests
                 new(true, true, .1f, InputMagnitude: 1));
             var moving = controller.Current.SampledPose!.LocalPositions;
             var phase = controller.OrdinaryLocomotionSample;
-            var held = controller.ApplyEquipmentPose(sequence, Rac1ArsenalRules.PyrocitorReadyPhaseSeconds,
+            var held = controller.ApplyEquipmentPose(sequence, Rac1ArsenalRules.PyrocitorFirePhaseSeconds,
                 loop: false, fullBody: false, stabilizeShoulders: true).SampledPose!.LocalPositions;
             var feet = Enumerable.Range(0, avatar.VertexCount)
                 .Where(vertex => avatar.LocalAnimationFrames[0][vertex * 3 + 2] < .12).ToArray();
@@ -219,6 +219,40 @@ public sealed class Rac1AdditionalWeaponTests
                 Assert.Equal(moving, controller.ApplyEquipmentPose(null).SampledPose!.LocalPositions);
             }
         }
+    }
+
+    [SkippableFact]
+    public void PyrocitorRelaxedMovingPoseDiffersFromActiveFiringPose()
+    {
+        string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(path), "OBP_RAC1_ISO not set");
+        var avatar = Rac1PlayerAvatarProvider.Instance.Load(path!, "ratchet");
+        var controller = Assert.IsType<Rac1PlayerAnimationPresentationController>(
+            Rac1PlayerAvatarProvider.Instance.CreateAnimationController(avatar));
+        // Both states keep locomotion below the arm layer and a valid weapon hand
+        // socket. This must not regress to source51 while the trigger is released.
+        controller.StepOrdinaryAnimation(OBP.Runtime.Player.PlayerAnimationState.Run, 0,
+            new(true, true, .1f, InputMagnitude: 1));
+        for (int tick = 1; tick < 6; tick++)
+        {
+            controller.StepOrdinaryAnimation(OBP.Runtime.Player.PlayerAnimationState.Run, tick / 60d,
+                new(true, true, .1f, InputMagnitude: 1));
+            controller.ApplyEquipmentPose(Rac1ArsenalRules.PyrocitorReadySequence,
+                phaseSeconds: 0, loop: false, stabilizeShoulders: true);
+        }
+        var readySocket = controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(0));
+        var readyVertices = controller.Current.SampledPose!.LocalPositions;
+        Assert.NotNull(readySocket);
+        controller.StepOrdinaryAnimation(OBP.Runtime.Player.PlayerAnimationState.Run, 6 / 60d,
+            new(true, true, .1f, InputMagnitude: 1));
+        controller.ApplyEquipmentPose(Rac1ArsenalRules.PyrocitorHoldSequence,
+            Rac1ArsenalRules.PyrocitorFirePhaseSeconds, loop: false, stabilizeShoulders: true);
+        var firingSocket = controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(0));
+        Assert.NotNull(firingSocket);
+        Assert.NotEqual(readyVertices, controller.Current.SampledPose!.LocalPositions);
+        // Real R&C1 assets have different ready and firing hand orientations.
+        Assert.True(Math.Abs(readySocket!.Origin.X - firingSocket!.Origin.X) > .1);
+        Assert.True(Math.Abs(readySocket.X.X - firingSocket.X.X) > .1);
     }
 
     [SkippableFact]

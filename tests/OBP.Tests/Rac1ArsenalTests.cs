@@ -65,6 +65,11 @@ public sealed class Rac1ArsenalTests
     {
         Assert.Equal(51, Rac1WeaponProfiles.Get(Rac1WeaponId.Pyrocitor).BodySequence);
         Assert.Equal(51, Rac1ArsenalRules.PyrocitorHoldSequence);
+        Assert.Equal(0, Rac1ArsenalRules.PyrocitorReadySequence);
+        Assert.Equal(-1, Rac1ArsenalRules.PyrocitorBodySequence(firing: false, moving: false));
+        Assert.Equal(0, Rac1ArsenalRules.PyrocitorBodySequence(firing: false, moving: true));
+        Assert.Equal(51, Rac1ArsenalRules.PyrocitorBodySequence(firing: true, moving: false));
+        Assert.Equal(51, Rac1ArsenalRules.PyrocitorBodySequence(firing: true, moving: true));
         Assert.Equal(-1, Rac1ArsenalRules.MovingBodySequence(Rac1WeaponId.Pyrocitor));
         Assert.Equal(57, Rac1ArsenalRules.MovingBodySequence(Rac1WeaponId.Blaster));
         Assert.Equal(73, Rac1ArsenalRules.MovingBodySequence(Rac1WeaponId.Devastator));

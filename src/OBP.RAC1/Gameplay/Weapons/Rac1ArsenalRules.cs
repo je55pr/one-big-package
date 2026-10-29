@@ -41,8 +41,15 @@ public static class Rac1ArsenalRules
     /// authored moving slot. Its host-only stabilized hold is composed separately
     /// from source51 instead of pretending that the Blaster's 57 belongs to it.
     /// </summary>
+    // Neutral animation0 holds the weapon in its ordinary relaxed hand socket.
+    // Sequence51 is exclusively the actively firing pose, not the equipped idle.
+    public const int PyrocitorReadySequence = 0;
     public const int PyrocitorHoldSequence = 51;
-    public const double PyrocitorReadyPhaseSeconds = 0.5; // source51 is five frames × 1/15 s; hold at its final frame.
+    public const double PyrocitorFirePhaseSeconds = 0.5; // source51 is five frames × 1/15 s; fire at its final frame.
+
+    /// <summary>Host-only ready/firing selection; -1 preserves ordinary standing idle.</summary>
+    public static int PyrocitorBodySequence(bool firing, bool moving) =>
+        firing ? PyrocitorHoldSequence : moving ? PyrocitorReadySequence : -1;
 
     public static int MovingBodySequence(Rac1WeaponId weapon) => weapon switch
     {

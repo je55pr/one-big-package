@@ -366,10 +366,10 @@ public partial class OBPGame
         _avatarPresentation.StepNative(state, input);
 
 
-        // Pyrocitor's item row has a standing hold51 but no moving arm slot.
-        // Keep its own authored pose even between trigger presses. Only the
-        // host shoulder retarget stabilizes its heading during ordinary running.
-        // Authored flips and other traversal animations take ownership instead.
+        // Pyrocitor's source51 is a firing pose, not its passive held stance.
+        // The unfired gun uses ordinary idle when standing and the neutral
+        // upper-body pose while moving, with the same shoulder stabilization.
+        // Authored flips and special traversal animations own the body instead.
         bool pyrocitorReady = _rac1Weapons.Equipped == OBP.RAC1.Gameplay.Rac1WeaponId.Pyrocitor &&
             IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.Pyrocitor) &&
             (input.Traversal?.NativeAction is null or OBP.RAC1.Player.Rac1PlayerActionDomain.Jump or
@@ -381,8 +381,9 @@ public partial class OBPGame
             PlayerLife.Alive;
         bool walloper = IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.Walloper) && _rac1WalloperAge > 0;
         bool moving = input.Active || state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.JumpRise or PlayerAnimationState.Fall;
+        bool pyrocitorFiring = pyrocitorReady && _rac1PyroEmitting;
         int? equipmentPose = walloper ? OBP.RAC1.Gameplay.Rac1ArsenalRules.WalloperSequence :
-            pyrocitorReady ? OBP.RAC1.Gameplay.Rac1ArsenalRules.PyrocitorHoldSequence :
+            pyrocitorReady ? OBP.RAC1.Gameplay.Rac1ArsenalRules.PyrocitorBodySequence(pyrocitorFiring, moving) :
             holdGun ? (moving ? OBP.RAC1.Gameplay.Rac1ArsenalRules.MovingBodySequence(_rac1Weapons.Equipped) :
                 OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence) : null;
         // Jump/traversal clocks still own the body. Evaluate equipment from
@@ -400,7 +401,7 @@ public partial class OBPGame
         {
             controller.ClearSourceEquipment();
             _avatarPresentation.Sink?.SetAnimationPresentation(controller.ApplyEquipmentPose(equipmentPose,
-                pyrocitorReady ? OBP.RAC1.Gameplay.Rac1ArsenalRules.PyrocitorReadyPhaseSeconds :
+                pyrocitorReady ? pyrocitorFiring ? OBP.RAC1.Gameplay.Rac1ArsenalRules.PyrocitorFirePhaseSeconds : 0 :
                     walloper ? _rac1WalloperAge / 60d : _rac1EquipmentUseAge / 60d,
                 loop: !walloper && !pyrocitorReady, fullBody: walloper || !moving,
                 stabilizeShoulders: pyrocitorReady && moving));
