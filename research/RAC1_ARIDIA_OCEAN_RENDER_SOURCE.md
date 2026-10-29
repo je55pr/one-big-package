@@ -46,6 +46,20 @@ records. These packed values are **not** plain float-UV coordinates.
 The packet decoder preserves original bytes for native colour/vertex
 reconstruction without inventing texture mapping.
 
+The source record also has a **+0x38 pointer to one byte per native 7x7 cell**.
+All 231 bytes are 0 or 1, with 136 enabled across the seven records
+(57, 8, 31, 20, 17, 2, 1). The importer retains these masks independently
+of the draw packets; they are not collision-derived. The original class-854
+callback additionally selects *which records to draw* using the camera's
+level clip-volume membership: one record for the first region, five in the
+middle, one for the final region. Drawing all seven regions simultaneously
+is not original behaviour and produced overlapping geometry in the local
+experimental visual capture. No such preview is enabled in the game.
+
+The callback sets the native base RGBA bytes **15, 15, 25, 30** and uses
+VU1 program 7 to draw the strips. These bytes are not yet a proven Godot
+blend/alpha equation. The exact material stays unresolved.
+
 ## What remains to render correctly
 
 1. Decode each cell's VIF packet, position/height waveform, colour and UV
