@@ -32,13 +32,15 @@ public partial class PlayerDevelopmentControls : Node
             return;
         if (key.Keycode == Key.F12)
         {
+            // Loading can retire this player subtree synchronously. Consume the
+            // event before invoking the owner while our viewport still exists.
+            GetViewport().SetInputAsHandled();
             if (key.CtrlPressed)
                 CallDeferred(nameof(SaveViewBookmark));
             else if (key.ShiftPressed)
                 LoadMovementStateRequested?.Invoke();
             else
                 SaveMovementStateRequested?.Invoke();
-            GetViewport().SetInputAsHandled();
         }
         else if (key.Keycode == Key.Tab && !GetWindow().Unfocusable)
         {

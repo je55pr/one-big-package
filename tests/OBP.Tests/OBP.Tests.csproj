@@ -172,6 +172,7 @@
     <Compile Include="../../game/scripts/FusionWeaponData.cs" Link="Game/FusionWeaponData.cs" />
     <Compile Include="../../game/scripts/FusionWeaponMount.cs" Link="Game/FusionWeaponMount.cs" />
     <Compile Include="../../game/scripts/MovementReproState.cs" Link="Game/MovementReproState.cs" />
+    <Compile Include="../../game/scripts/ReplayBookmarkResolver.cs" Link="Game/ReplayBookmarkResolver.cs" />
   </ItemGroup>
 
   <ItemGroup>

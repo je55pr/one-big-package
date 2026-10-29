@@ -204,7 +204,7 @@ public partial class OBPGame
                 actorAlive: key => ActorHost.IsAlive(key),
                 placementOffset: () => lab is not null ? System.Numerics.Vector3.Zero :
                     WorldEffectHost.Runtime((_player?.GlobalPosition ?? Vector3.Zero) + EquipmentForward * 6 + Vector3.Up * 8) - new System.Numerics.Vector3(0, 0, 18),
-                suspended: () => _movementStateLoading || _captureReplay?.Recorder is { WaitingForEntry: true } or { PreparingWorld: true },
+                suspended: () => MovementReproduction.IsLoading || _captureReplay?.Recorder is { WaitingForEntry: true } or { PreparingWorld: true },
                 recordOperation: operation => CaptureReplay.RecordCommand(new("effects", operation)),
                 commandAllowed: () => _captureReplay?.Recorder is null || EffectCaptureContract.Includes(_args, _captureReplay!.Recorder!.Reader?.Header));
         }
@@ -396,7 +396,7 @@ public partial class OBPGame
         }
 
 
-        GodotRac1PlayerAudioPlayback.Step(_playerAudio, controller, _player, _movementStateLoading);
+        GodotRac1PlayerAudioPlayback.Step(_playerAudio, controller, _player, MovementReproduction.IsLoading);
         StepRac1BombProjectilesPhysics();
         StepRac1AdditionalWeaponWorld();
         StepRac1BombEffectsPhysics();

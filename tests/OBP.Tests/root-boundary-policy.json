@@ -2768,14 +2768,14 @@
       "Owner": "#344",
       "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged.",
       "ExpiresWith": "#358",
-      "Hash": "e820b8391074576549bca157a284d762e7d4eb2d4b7b1f95c3d0601dd424c26b"
+      "Hash": "a5863c5bbe1b69f604a677046e51205943b14819ec1d57d17243df15651b6428"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePauseMenuPresentation():PauseMenuUi:private",
       "Owner": "#348",
       "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing. #359 reads actor status through an owned read-only projection; the established reset callback is retained. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #360/#356 integration binds recording observations to the existing lease/persistent owners; callback and native policy ownership are retained. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
       "ExpiresWith": "#376",
-      "Hash": "0c632f4246c50a31e6923342d081815f43ee0bc87a88cd8b94cf02e4148ec284"
+      "Hash": "3e0fb8495f98e0a2af03f06dac02b6bd90beeb380328679800081283a612f81d"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlayerDiagnosticHarness():PlayerSessionDiagnosticHarness:private",
@@ -2908,7 +2908,7 @@
       "Owner": "#341",
       "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged.",
       "ExpiresWith": "#367",
-      "Hash": "9783d1930ab47311be7ef6c57b41eaa48cc931cec0e97c277c23c0ba4a1b162b"
+      "Hash": "d55a4bee881d8f1f99b42422645676eaa78b649d13fbfce14e908798da65b15c"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:DecorateFusionLab(:FusionLabDefinition,:bool):void:private",
@@ -3048,7 +3048,7 @@
       "Owner": "#348",
       "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
       "ExpiresWith": "#376",
-      "Hash": "11c76a97a6b3660f5c2bb5cf5621d3f2837780df394ae2a0d2a26caee50a2c07"
+      "Hash": "028fc90005a47f3db27205e646b6b9be8d044a1ea0596fb92cacf27925e932f4"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetRac1SmokeConditionedInput(:double,:double):void:private,static",
@@ -3503,7 +3503,7 @@
       "Owner": "#350",
       "Rationale": "Existing 60Hz game/weapon callback order remains on the host until registered source-game tick scheduling; avatar clock, pose sampling and view lifetimes are owned by PlayerAvatarPresentationHost. #354 binds the owned native player audio presenter and its copied observations. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #353 delegates the same health facts/actions to the scene-bound lifecycle owner.",
       "ExpiresWith": "#375",
-      "Hash": "80cb77a6d48c88bf023b6aba8152275fdac30d326ccbe3adbfc5bd65201161e3"
+      "Hash": "8e9a95edd1e6cb05ff478d0dcd0afb3ad9e978be51101a74893c6f9c5db3edcc"
     },
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:WorldOptions(:RuntimeWorld):WorldHost . Options:private",
@@ -3559,7 +3559,7 @@
       "Owner": "#357",
       "Rationale": "Exact replay composition: a narrow Godot scene adapter owns player input attachment and UI suspension; report and diagnostic actions receive the driver lifetime. Copied world/player facts and bookmark snapshots retain the existing owners. The root supplies no recording, checkpoint, native algorithm or diagnostic policy. Final host composition removes this binding.",
       "ExpiresWith": "#376",
-      "Hash": "9e090cd115b4a735dd2d9fff406757bd55d33972545e4e1a533b8c19a579030d"
+      "Hash": "b7a6e4a48537e2bba6bba2fa7f9c6f5660d18a0c7dbd2d30b2f44c641799ec50"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:CapturePresentation:GodotCapturePresentation:get/:private",
@@ -3636,7 +3636,7 @@
       "Owner": "#360",
       "Rationale": "Temporary composition binding to the lease-owned R&C1 module or existing persistent player owner. No collection or native gameplay policy lives in the root; Rac1WorldContextTests and world/player lifecycle reconciliation cover isolation. Reconciled #351 equipment delegations with #360 lease-owned R&C1 state; only existing owner ports are wired, with no added state or native formulas. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged.",
       "ExpiresWith": "#376",
-      "Hash": "7781c04975e660bb581227267b0a2e61dd4a58bcb81e8e7f633d215217a62229"
+      "Hash": "ce8c18455582df0201ecc750df22d152c2a409b356d4836e9569914d6777bc10"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RefreshRac1HudState(params:HudFeedbackDraft [  ]):void:private",
@@ -3699,7 +3699,7 @@
       "Owner": "#352",
       "Rationale": "Composes copied player/source observations and focused native equipment, collision, replay and renderer actions; existing native controllers retain rules and source authority. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged.",
       "ExpiresWith": "#376",
-      "Hash": "0bfa79deb06082b46b180c9ca506bc802b9a53c799591e5d86eb0e3eb7d7a96c"
+      "Hash": "a1825a473e9d92a9042ee50380edb5418226df87c768cac33bf72081c4aa4e0f"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ToNumerics(:Vector3):System . Numerics . Vector3:private,static",
@@ -3749,6 +3749,90 @@
       "Rationale": "Lease-scoped source-world factory selects the existing scene resource, authentic R&C2 build and narrowly typed presentation/player damage ports. Native actor state remains source-owned; no player provider is selected. #373 native opening/actor tests and mixed-source acceptance protect this composition. #373 follow-up labels the individual port callbacks to prevent silent boolean delegate order mistakes; regression and mixed-source native smoke verified.",
       "ExpiresWith": "#376",
       "Hash": "e9f3c8ca5745b83cfb400d81c514f7b79e2ecc5c1f9669bad2a8a4965aace1bd"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_movementNotices:GodotMovementStateNotice ?:private",
+      "Owner": "#358",
+      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
+      "ExpiresWith": "#376",
+      "Hash": "cb847d09450238e8ece21e72d4f40716332ef07280123b39b257ff390172490b"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_movementReproduction:MovementReproductionService ?:private",
+      "Owner": "#358",
+      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
+      "ExpiresWith": "#376",
+      "Hash": "d9c1cf1878a839730a37ce9ab5b311c117e41438de8c8ec55369e5417148abdf"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_movementWorldState:Rac1MovementWorldStateAdapter ?:private",
+      "Owner": "#358",
+      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
+      "ExpiresWith": "#376",
+      "Hash": "1ff5ecdde7b74dc0cbdcc6162080ffb22315b75d36239f267a921e46312e86b7"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_replayBookmarkNavigation:GodotReplayBookmarkNavigation ?:private",
+      "Owner": "#358",
+      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
+      "ExpiresWith": "#376",
+      "Hash": "20dea4eed346715d7f89288172b6168dceefe12ea4451667af06e591a2e356ac"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:LoadMovementStateFromBootstrap():void:public",
+      "Owner": "#358",
+      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
+      "ExpiresWith": "#376",
+      "Hash": "207bd874c5a8b089a7adc8097c244c24c410fcf4ea22f235084eea7322be740e"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:MovementWorldStateCapture():MovementReproWorld:private",
+      "Owner": "#358",
+      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
+      "ExpiresWith": "#376",
+      "Hash": "936c8a86fd9cda97bf5aff9a984ec94f2b05736419192b99ebe1446905d9cac9"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:PrepareMovementWorld(:MovementReproWorld):void:private",
+      "Owner": "#358",
+      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
+      "ExpiresWith": "#376",
+      "Hash": "d81769bd7552c5b17c32b662576522e8639c0f191a307ced88608bac20f49591"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:MovementNotices:GodotMovementStateNotice:get/:private",
+      "Owner": "#358",
+      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
+      "ExpiresWith": "#376",
+      "Hash": "c7a0d863850927e1a38590e1237fabf7916bf0fd37e9d309c88e7934f637cdb5"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:MovementReproduction:MovementReproductionService:get/:private",
+      "Owner": "#358",
+      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
+      "ExpiresWith": "#376",
+      "Hash": "4f3863356ff166e57799409c81533c1b6fd76fa58055e40d631992c21818f7b0"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:MovementWorldState:Rac1MovementWorldStateAdapter:get/:private",
+      "Owner": "#358",
+      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
+      "ExpiresWith": "#376",
+      "Hash": "8f69c712a276d76ebbafdd05fef3f13e94435420b2e7c18a6ce83a6300a3e292"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:ReplayBookmarkNavigation:GodotReplayBookmarkNavigation:get/:private",
+      "Owner": "#358",
+      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
+      "ExpiresWith": "#376",
+      "Hash": "2c91044e611744574ac381484e5d70e96de1e1bee3a463f63be4d463e2c8260f"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Rac1SuckCannon.cs::OBPGame::method:RetireRac1CapturedCargoPresentation():void:private",
+      "Owner": "#358",
+      "Rationale": "R&C1 Suck Cannon presentation owns retirement of captured cargo visuals when resetting a world or applying a saved movement state; no additional world controller is introduced.",
+      "ExpiresWith": "#376",
+      "Hash": "8516f95c9b088d999aa4687fcd215046a02a4dc43658fc84651cadac1e1d818f"
     }
   ],
   "RetiredMembers": [
@@ -4666,7 +4750,31 @@
     "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::method:OnRac2PrimaryAttackRequested():void:private",
     "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::method:ResetRac2GameplayHost():void:private",
     "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::method:SelectRac2PrimaryTargetFromAim():RuntimeWorldScene . DynamicObjectNode ?:private",
-    "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::method:TickRac2Gameplay(:double):void:private"
+    "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::method:TickRac2Gameplay(:double):void:private",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame+MovementReplayProfile::declaration:RecordDeclaration:private,sealed:::( double ElapsedMs , long RenderFrame , double ControllerMs , double ContactMs , double SlideMs , double SmallStepMs , double CrestMs , double PresentationMs , double CameraMs , double EngineProcessMs , double EnginePhysicsMs , double RenderCpuMs , double RenderGpuMs , double Fps )",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame+MovementReplaySample::declaration:RecordDeclaration:private,sealed:::( int Tick , Vec3 Position , Vec3 Velocity , double FacingYaw , double ControlHeading , string Phase , bool Floor , bool Support , string SmallStep , Vec3 [  ] ContactNormals , [ property : JsonIgnore ( Condition = JsonIgnoreCondition . WhenWritingNull ) ] MovementReplayProfile ? Profile )",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::field:_movementStateLoading:bool:private",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::field:_movementStateNotice:Label ?:private",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::field:_movementStateNoticeGeneration:int:private",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::field:_movementStatePathOverride:string ?:private",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::method:CaptureMovementReplaySample(:int,:System . Diagnostics . Stopwatch ?):MovementReplaySample:private",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::method:CaptureMovementState():MovementReproState:private",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::method:CaptureMovementWorld():MovementReproWorld:private",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::method:ClearMovementStateNoticeAsync(:int,:CancellationToken):Task:async,private",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::method:LoadMovementStateAsync(:string,:bool,:int ?,:CancellationToken):Task < List < MovementReplaySample > ? >:async,private",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::method:LoadMovementStateFromBootstrap():void:public",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::method:RecordForwardMovementReplayAsync(:int,:CancellationToken):Task < List < MovementReplaySample > >:async,private",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::method:ReportMovementState(:string):void:private",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::method:RestoreMovementWorld(:MovementReproWorld):void:private",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::method:SaveMovementState():void:private",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::method:StartMovementStateLoad(:string,:bool):void:private",
+    "game/scripts/OBPGame.MovementRepro.cs::OBPGame::property:MovementStatePath:string:get/:private",
+    "game/scripts/OBPGame.ReplayBookmarks.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.ReplayBookmarks.cs::OBPGame::field:_bookmarkReplayStep:int ?:private",
+    "game/scripts/OBPGame.ReplayBookmarks.cs::OBPGame::method:InitializeReplayBookmark():bool:private",
+    "game/scripts/OBPGame.ReplayBookmarks.cs::OBPGame::method:OpenReplayBookmark(:string,:MovementReproState):void:private",
+    "game/scripts/OBPGame.ReplayBookmarks.cs::OBPGame::method:ResolveReplayBookmark(:string,:MovementReproState):string:private,static"
   ],
   "RetiredAccess": [
     "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()"

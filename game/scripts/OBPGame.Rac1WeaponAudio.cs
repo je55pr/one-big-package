@@ -23,7 +23,7 @@ public partial class OBPGame
 
     private void StepRac1WeaponAudio()
     {
-        bool admitted = _player is not null && _playerAudio?.Ready == true && PlayerLife.Alive && !_movementStateLoading &&
+        bool admitted = _player is not null && _playerAudio?.Ready == true && PlayerLife.Alive && !MovementReproduction.IsLoading &&
             !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active;
         var weapon = _rac1Weapons.Equipped;
         (int Class, int Sound)? loop = admitted ? weapon switch

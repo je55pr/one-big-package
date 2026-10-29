@@ -112,6 +112,62 @@ public sealed class CrossWorldReplayTests : IDisposable
     }
 
     [Fact]
+    public void BookmarkResolverAcceptsMatchingSiblingAndRejectsTamperingWithoutChangingSave()
+    {
+        Directory.CreateDirectory(_directory);
+        string prefix = Path.Combine(_directory, "prefix.run.jsonl.gz");
+        string bookmark = Path.Combine(_directory, "state.json");
+        File.WriteAllText(prefix, "test-owned prefix bytes");
+        var state = MovementReproStateTests.Sample() with
+        {
+            Version = 3,
+            Destination = "rac2:LEVEL1",
+            Profile = Header("rac2:LEVEL1").PlayerProfile,
+            Replay = new(Path.GetFileName(prefix),
+                Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(prefix))), 0),
+        };
+        MovementReproStateFile.Save(bookmark, state);
+        byte[] original = File.ReadAllBytes(bookmark);
+        Assert.Equal(Path.GetFullPath(prefix), ReplayBookmarkResolver.Resolve(bookmark, state));
+        Assert.Equal(original, File.ReadAllBytes(bookmark));
+
+        File.WriteAllText(prefix, "modified prefix bytes");
+        Assert.Throws<InvalidDataException>(() => ReplayBookmarkResolver.Resolve(bookmark, state));
+        File.Delete(prefix);
+        Assert.Throws<FileNotFoundException>(() => ReplayBookmarkResolver.Resolve(bookmark, state));
+        Assert.Throws<InvalidDataException>(() => ReplayBookmarkResolver.Resolve(bookmark, state with
+        {
+            Replay = state.Replay with { FileName = "../escaped.run.jsonl.gz" }
+        }));
+        using (var oversized = File.Create(prefix))
+            oversized.SetLength(PlaytestRunReader.MaximumCompressedBytes + 1L);
+        Assert.Throws<InvalidDataException>(() => ReplayBookmarkResolver.Resolve(bookmark, state));
+        File.Delete(prefix);
+        Assert.Equal(original, File.ReadAllBytes(bookmark));
+
+        // The filename is valid and the digest matches, but the file is a link
+        // to an unrelated location rather than a sibling recording.
+        string external = Path.Combine(Path.GetTempPath(), "obp-outside-prefix-" + Guid.NewGuid().ToString("N") + ".run.jsonl.gz");
+        File.WriteAllText(external, "test-owned prefix bytes");
+        try
+        {
+            try { File.CreateSymbolicLink(prefix, external); }
+            catch (Exception error) when (error is UnauthorizedAccessException or IOException or PlatformNotSupportedException)
+            {
+                // Symlink creation requires developer privileges on some Windows runners.
+                return;
+            }
+            Assert.Throws<InvalidDataException>(() => ReplayBookmarkResolver.Resolve(bookmark, state));
+            Assert.Equal(original, File.ReadAllBytes(bookmark));
+        }
+        finally
+        {
+            if (File.Exists(prefix)) File.Delete(prefix);
+            File.Delete(external);
+        }
+    }
+
+    [Fact]
     public void LegacyNativeHeaderRetainsItsOriginalEmptyUniversalFields()
     {
         var legacy = Header("rac1:LEVEL0") with { Version = 1, Sources = [], Adapters = [], PlayerProfile = null };
