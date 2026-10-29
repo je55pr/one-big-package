@@ -36,6 +36,10 @@ public sealed class Rac3PhoenixTrophyPresentationTests
         Assert.False(Ps2MobyNativePose.HasRigidJointBinding(
             mesh with { VertexWeights = [0.5f, 0.5f, 0f, 1f, 0f, 0f] }, 2));
         Assert.False(Ps2MobyNativePose.HasRigidJointBinding(
+            mesh with { VertexWeights = [float.NaN, 0f, 0f, 1f, 0f, 0f] }, 2));
+        Assert.False(Ps2MobyNativePose.HasRigidJointBinding(
+            mesh with { VertexWeights = [1f, float.PositiveInfinity, 0f, 1f, 0f, 0f] }, 2));
+        Assert.False(Ps2MobyNativePose.HasRigidJointBinding(
             mesh with { SkinStateFullyResolved = false }, 2));
         Assert.False(Ps2MobyNativePose.HasRigidJointBinding(
             mesh with { Skinned = true }, 2));

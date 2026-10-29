@@ -41,11 +41,17 @@ public static class Ps2MobyNativePose
             mesh.VertexWeights.Length != mesh.Positions.Length)
             return false;
 
+        // Source weights use increments of 1/256. A smaller tolerance
+        // tolerates floating representation noise without admitting blends.
+        const float tolerance = 1f / 1024f;
+        static bool Matches(float actual, float expected) =>
+            float.IsFinite(actual) && MathF.Abs(actual - expected) < tolerance;
         for (int v = 0; v < mesh.Positions.Length; v += 3)
         {
             if (mesh.VertexJoints[v] < 0 || mesh.VertexJoints[v] >= jointCount ||
-                mesh.VertexWeights[v] != 1f ||
-                mesh.VertexWeights[v + 1] != 0f || mesh.VertexWeights[v + 2] != 0f)
+                !Matches(mesh.VertexWeights[v], 1f) ||
+                !Matches(mesh.VertexWeights[v + 1], 0f) ||
+                !Matches(mesh.VertexWeights[v + 2], 0f))
                 return false;
         }
         return true;
