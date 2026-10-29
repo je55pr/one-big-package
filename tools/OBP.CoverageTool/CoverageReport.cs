@@ -98,6 +98,7 @@ public static class CoverageReport
         root = Path.GetFullPath(root);
         var cobertura = Read(coberturaPath);
         var openCover = Read(openCoverPath);
+        var linkedScripts = LinkedScriptSources(root);
         if (cobertura.Root?.Name != "coverage" || openCover.Root?.Name != "CoverageSession")
             throw new InvalidDataException("Collector output has an unsupported coverage schema.");
         var lines = new Dictionary<(string Module, string File), Dictionary<int, bool>>();
@@ -109,7 +110,7 @@ public static class CoverageReport
             measuredModules.Add(module);
             foreach (var type in package.Descendants("class"))
             {
-                string file = SourcePath(root, Required(type, "filename"), sourceRepository);
+                string file = SourcePath(root, Required(type, "filename"), sourceRepository, module, linkedScripts);
                 type.SetAttributeValue("filename", file);
                 if (!lines.TryGetValue((module, file), out var fileLines)) lines[(module, file)] = fileLines = [];
                 foreach (var line in type.Element("lines")?.Elements("line") ?? [])
@@ -131,7 +132,7 @@ public static class CoverageReport
             var paths = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var file in module.Descendants("File"))
             {
-                string path = SourcePath(root, Required(file, "fullPath"), sourceRepository);
+                string path = SourcePath(root, Required(file, "fullPath"), sourceRepository, name, linkedScripts);
                 file.SetAttributeValue("fullPath", path);
                 if (!paths.TryAdd(Required(file, "uid"), path)) throw new InvalidDataException("Coverage has duplicate source identifiers.");
             }
@@ -175,7 +176,18 @@ public static class CoverageReport
         return XDocument.Load(reader);
     }
 
-    private static string SourcePath(string root, string reported, string sourceRepository)
+    /// <summary>Allow only game scripts explicitly compiled by the portable test project.</summary>
+    private static HashSet<string> LinkedScriptSources(string root)
+    {
+        string project = Path.Combine(root, "tests", "OBP.Tests", "OBP.Tests.csproj");
+        return Read(project).Descendants("Compile")
+            .Select(element => (string?)element.Attribute("Include"))
+            .Where(include => include?.StartsWith("../../game/scripts/", StringComparison.Ordinal) == true)
+            .Select(include => include![6..])
+            .ToHashSet(StringComparer.Ordinal);
+    }
+
+    private static string SourcePath(string root, string reported, string sourceRepository, string module, IReadOnlySet<string> linkedScripts)
     {
         string candidate = reported.Replace('\\', '/');
         string prefix = root.Replace('\\', '/').TrimEnd('/') + '/';
@@ -191,7 +203,9 @@ public static class CoverageReport
         }
         string[] segments = candidate.Split('/');
         if (segments.Any(segment => segment is "" or "." or "..") || candidate.Contains(':') ||
-            !(candidate.StartsWith("src/OBP.", StringComparison.Ordinal) || candidate.StartsWith("game/scripts/", StringComparison.Ordinal) || LinkedDiagnosticSources.Contains(candidate)) ||
+            !(module == "OBP.Tests"
+                ? linkedScripts.Contains(candidate) || LinkedDiagnosticSources.Contains(candidate)
+                : candidate.StartsWith("src/" + module + "/", StringComparison.Ordinal)) ||
             !candidate.EndsWith(".cs", StringComparison.Ordinal) || !File.Exists(Path.Combine(root, candidate)))
             throw new InvalidDataException("Coverage has a file outside the declared repository source scope.");
         return candidate;
