@@ -167,7 +167,7 @@ public sealed class Rac1HostArchitectureTests
 
         Assert.DoesNotContain(".Root.Visible", hostiles, StringComparison.Ordinal);
         Assert.Contains(
-            "Context.MobyRuntime.Require(node.Source).IsActive",
+            "TryOwnedRuntime(node, out var runtime) && runtime!.IsActive",
             hostiles,
             StringComparison.Ordinal);
         string enemies = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "Rac1EnemyHost.cs"));
