@@ -46,6 +46,21 @@ public static class Rac1Instances
         IReadOnlyList<MobyInstance> MobyInstances,
         int SpawnableMobyCount);
 
+    /// <summary>
+    /// Resolve the original authored Moby by native index and class, rejecting
+    /// stale or mismatched runtime placements before gameplay registration.
+    /// </summary>
+    public static MobyInstance RequirePlacement(IReadOnlyList<MobyInstance> instances,
+        int instanceIndex, int nativeClassId)
+    {
+        if (instanceIndex < 0 || instanceIndex >= instances.Count ||
+            instances[instanceIndex].Index != instanceIndex ||
+            instances[instanceIndex].OClass != nativeClassId)
+            throw new InvalidDataException(
+                $"R&C1 source class/index mismatch: class{nativeClassId} i{instanceIndex}.");
+        return instances[instanceIndex];
+    }
+
     public static Gameplay Parse(byte[] gameplay)
     {
         var ties = ReadMatrixBlock(gameplay, TiePointerOffset, TieRecordSize, "tie", true)

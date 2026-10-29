@@ -106,17 +106,36 @@ public static partial class Rac3WorldImport
         double k = cls.Mesh.Scale / 1024.0;
         double cx = sphere.X * k, cy = sphere.Y * k, cz = sphere.Z * k;
         double radius = sphere.Radius * k;
+        // Source sequence spheres are approximate. In Veldin class 6317,
+        // validated native frame vertices reach 1.086x the recorded radius.
+        // Keep the original strict gate for legacy poses and a bounded 10%
+        // margin for full native poses, rather than losing that preview.
+        double radiusTolerance = cls.NativePoseSource is null ? 1.001 : 1.10;
         if (!double.IsFinite(cx) || !double.IsFinite(cy) || !double.IsFinite(cz) ||
             !double.IsFinite(radius) || radius <= 0) return null;
 
         var frames = new double[sequence.Frames.Count][];
         for (int f = 0; f < sequence.Frames.Count; f++)
         {
-            var posed = GcUyaMobyPose.Pose(cls.Mesh, cls.Joints, sequence.Frames[f]);
+            double[] posed;
+            try
+            {
+                // A natively posed mesh must keep its source inverse bind and
+                // optional frame scale/translation channels during playback.
+                posed = cls.NativePoseSource is { } source
+                    ? Ps2MobyNativePose.Pose(source, cls.Mesh, sequence.Frames[f])
+                    : GcUyaMobyPose.Pose(cls.Mesh, cls.Joints, sequence.Frames[f]);
+            }
+            catch (InvalidDataException)
+            {
+                // The source actor remains visible in its static first pose
+                // when an unsupported preview animation frame is encountered.
+                return null;
+            }
             for (int i = 0; i < posed.Length; i += 3)
             {
                 double dx = posed[i] - cx, dy = posed[i + 1] - cy, dz = posed[i + 2] - cz;
-                if (Math.Sqrt(dx * dx + dy * dy + dz * dz) > radius * 1.001) return null;
+                if (Math.Sqrt(dx * dx + dy * dy + dz * dz) > radius * radiusTolerance) return null;
             }
             frames[f] = posed;
         }
