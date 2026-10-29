@@ -152,6 +152,8 @@
     <Compile Include="../../game/scripts/SourceVerificationOperation.cs" Link="Game/SourceVerificationOperation.cs" />
     <Compile Include="../../game/scripts/ApplicationPointer.cs" Link="Game/ApplicationPointer.cs" />
     <Compile Include="../../game/scripts/FusionWeaponSession.cs" Link="Game/FusionWeaponSession.cs" />
+    <Compile Include="../../game/scripts/FusionWeaponSourceHost.cs" Link="Game/FusionWeaponSourceHost.cs" />
+    <Compile Include="../../game/scripts/Rac1FusionCampaignIsolation.cs" Link="Game/Rac1FusionCampaignIsolation.cs" />
     <Compile Include="../../game/scripts/PlayerSessionNativeState.cs" Link="Game/PlayerSessionNativeState.cs" />
     <Compile Include="../../game/scripts/PlayerSessionHost.cs" Link="Game/PlayerSessionHost.cs" />
     <Compile Include="../../game/scripts/ProfileCoordinator.cs" Link="Game/ProfileCoordinator.cs" />

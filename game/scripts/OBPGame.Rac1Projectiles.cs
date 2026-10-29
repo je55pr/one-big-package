@@ -20,7 +20,7 @@ public partial class OBPGame
 
     private void StepRac1BombWeaponPhysics()
     {
-        if (PlayerPresentationAssets is null || Rac1World.Context.BombGlove is null || _player is null || !PlayerAlive) return;
+        if (_equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is null || Rac1World.Context.BombGlove is null || _player is null || !PlayerAlive) return;
         bool fire = Rac1World.Context.BombFireRequested && !_rac1DetectorEquipped &&
             !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active;
         Rac1World.Context.BombFireRequested = false;
@@ -30,7 +30,7 @@ public partial class OBPGame
             _rac1BombThrowGeneration++;
             _rac1BombThrowActive = true;
             SpawnRac1BombProjectile(shot);
-            PlayPlayerEquipmentSound(0, 26, _player.GlobalPosition); // 0x2c2.. hero throw, not the glove's equip cue.
+            FusionWeapons.PlayNativeSound(0, 26, _player.GlobalPosition); // 0x2c2.. hero throw, not the glove's equip cue.
             PersistRac1CampaignState("Bomb Glove ammo consumption");
             Rac1World.Context.CombatStatus = $"Bomb Glove fired: ammo {shot.AmmoBefore}->{shot.AmmoAfter}";
             RefreshRac1HudState();
@@ -90,7 +90,7 @@ public partial class OBPGame
         if (aim.Node is not null) target = aim.Point;
         var motion = new Rac1BombProjectileSession(origin, Rac1BombProjectileSession.LaunchVelocity(origin, target, yaw),
             new(Rac1EffectRandom.Angle(), Rac1EffectRandom.Angle(), Rac1EffectRandom.Angle()));
-        var node = CreatePlayerEquipmentEffectNode(121, $"Rac1RetailBomb_{shot.Projectile.ProjectileId}_Class121");
+        var node = FusionWeapons.CreateNativeEffect(121, $"Rac1RetailBomb_{shot.Projectile.ProjectileId}_Class121");
         node.GlobalPosition = FromEffectNative(origin);
         SetBombOrientation(node, motion.Rotation);
         var hosted = new Rac1HostedProjectile(node, motion, _rac1BombThrowGeneration);
