@@ -211,7 +211,8 @@ public static partial class Rac3WorldImport
 
     private static IReadOnlyDictionary<int, IReadOnlyList<RuntimeObjectMesh>> BuildMobyModels(
         IReadOnlyDictionary<int, Rac3Assets.MobyVisualClass> classes,
-        IReadOnlySet<int> referencedClasses)
+        IReadOnlySet<int> referencedClasses,
+        IDictionary<int, int[][]>? sourceVertexMaps = null)
     {
         var models = new Dictionary<int, IReadOnlyList<RuntimeObjectMesh>>();
         foreach (int oClass in referencedClasses.Order())
@@ -236,11 +237,13 @@ public static partial class Rac3WorldImport
             }
 
             var surfaces = new List<RuntimeObjectMesh>();
+            var vertexMaps = sourceVertexMaps is null ? null : new List<int[]>();
             foreach (var (surface, faces) in bySurface
                          .OrderBy(kv => kv.Key.TextureId)
                          .ThenBy(kv => kv.Key.Presentation?.ToString(), StringComparer.Ordinal))
             {
                 var remap = new Dictionary<int, int>();
+                var nativeVertexIds = sourceVertexMaps is null ? null : new List<int>();
                 var positions = new List<double>();
                 var uvs = new List<float>();
                 var indices = new List<int>();
@@ -253,6 +256,7 @@ public static partial class Rac3WorldImport
                         {
                             outputVertex = positions.Count / 3;
                             remap[vertex] = outputVertex;
+                            nativeVertexIds?.Add(vertex);
                             positions.Add(mesh.Positions[vertex * 3]);
                             positions.Add(mesh.Positions[vertex * 3 + 2]);
                             positions.Add(mesh.Positions[vertex * 3 + 1]);
@@ -266,8 +270,13 @@ public static partial class Rac3WorldImport
                 surfaces.Add(new RuntimeObjectMesh(
                     "moby", surface.TextureId, positions.ToArray(), uvs.ToArray(), indices.ToArray(),
                     MaterialPresentation: surface.Presentation));
+                vertexMaps?.Add(nativeVertexIds!.ToArray());
             }
-            if (surfaces.Count > 0) models.Add(oClass, surfaces);
+            if (surfaces.Count > 0)
+            {
+                models.Add(oClass, surfaces);
+                if (vertexMaps is not null) sourceVertexMaps!.Add(oClass, vertexMaps.ToArray());
+            }
         }
         return models;
     }

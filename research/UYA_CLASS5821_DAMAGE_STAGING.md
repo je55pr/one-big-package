@@ -60,6 +60,36 @@ the four-eyed or Mecha class IDs, or source-native swarm spawn behavior.
 
 This is a **damage-testing admission recipe**, not a normal one-eyed enemy or finished encounter. To request it through a version-1 placement use `sourceGame=Rac3`, `build=rac3-ntscu-original`, `levelId=1`, `nativeClassId=5821`, `adapterId=rac3/class5821-damage-only/v1`, `nativeContextId=uya/table1-class5821-damage-only/v1`, `initialNativeState=0` and an authored source instance/rigid transform. All other classes/contexts are rejected. This recipe belongs to OBP, not retail. Do not enable it for the Trial by Fire promotion until native animation, attack and movement progression are established.
 
+## Source-native state-10 action 12 clip admission
+
+The evidence-backed **state-8 to state-10** conditional branch selects action
+byte **12**. The state-10 action contains 20 decodable frames. The actor
+factory now uses source-verified TABLE1 geometry to prepare exactly this
+`RuntimeObjectAnimationClip` through
+`Rac3WorldImport.LoadClass5821State10Clip`, cached once per attached UYA
+source/class, and exposes it to the existing actor's native-mesh scene node.
+The source `BuildMobyModels` surface remapping is reused to preserve **original
+native vertex indices and skin weights** across material/texture splits. It
+does not guess an index from a shared XYZ coordinate; false joint matches
+would visibly tear the model during animation.
+
+The loader verifies exact same source mesh vertex positions, face topology,
+UVs, material presentation, surface ordering, 20 frame counts, valid original
+frame speed scalars and the existing 1.10x native sphere policy. It refuses
+a legacy-pose/imported-source mismatch rather than animating wrong geometry.
+The original source-native pose data stays outside Git. Authorized-retail
+`Rac3Class5821AttackPresentationRetailTests` verifies the 20-frame clip
+against the actual imported UYA actor, including every remapped surface,
+finite frame coordinates and wrong-surface rejection.
+
+**Important limitation:** The actor now **has** the decoded attack clip in
+its render bridge, but does **not automatically play it**. Its ordinary
+source-native action clock, transition into state 8, action-progress clock
+and state-10 exit remain unverified. Autoplaying or looping clip 12 would
+fabricate native AI, so the factory continues to report the overall
+`animation` and `native-update` capabilities as unimplemented while
+`native-state10-clip` is separately marked ready.
+
 ## Live R&C1 Pyrocitor-to-source-qualified actor contact bridge
 
 The original R&C1 `StepRac1NativeFlameContacts` still uses the existing

@@ -118,7 +118,16 @@ These observations lift the **geometric blocker only**. Existing TABLE1
 executable evidence additionally proves the conditional state-8 to state-10
 attack action/sequence byte **12**, now confirmed to have 20 poseable frames.
 The complete native action-state progression, locomotion controller,
-hit/death choices and ordinary-game rendered fidelity remain unverified. No arbitrary clip is
+hit/death choices and ordinary-game rendered fidelity remain unverified.
+
+The #297 follow-up now prepares **source-native clip 12** (20 frames) as an
+opt-in actor asset through `Rac3WorldImport.LoadClass5821State10Clip`. It
+reuses the original mesh importer's vertex-to-surface remaps, checks native
+sphere bounds and exact model topology, and is regression-tested against the
+authorized TABLE1 import. The actor has no source-native action clock yet,
+so this clip is **configured, not automatically played**, and its animated
+ordinary-game appearance still needs a rendered witness. See
+`UYA_CLASS5821_DAMAGE_STAGING.md`. No arbitrary clip is
 promoted as a recovered retail action.
 
 ## Production admission

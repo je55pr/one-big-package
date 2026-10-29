@@ -14,7 +14,7 @@ namespace OBP.Game;
 /// damage are currently supported. Native locomotion, attack scheduling,
 /// animation selection, death/rewards and audio remain unrecovered.
 /// </summary>
-internal sealed class Rac3Class5821DamageActorFactory(ActorSceneFactory scenes) : IActorFactory
+internal sealed class Rac3Class5821DamageActorFactory(ActorSceneFactory scenes, ActorSourceCache assets) : IActorFactory
 {
     public ActorAdapterDescriptor Descriptor { get; } = new(
         ObpSourceGame.Rac3, Rac3Authority.Primary.BuildId, Rac3Class5821Actor.NativeClassId,
@@ -43,6 +43,13 @@ internal sealed class Rac3Class5821DamageActorFactory(ActorSceneFactory scenes) 
         {
             var node = scene.Node;
             var native = new Rac3Class5821DamagePort(node.Source);
+            // Decode once per attached source/class and share the immutable frames
+            // between every native actor. Do not start playing without a native
+            // state-10 action clock from the still-unrecovered actor controller.
+            var clip = assets.Asset(source, placement.LevelId, placement.NativeClassId,
+                "uya/class5821-state10-native-action12/v1",
+                () => Rac3WorldImport.LoadClass5821State10Clip(source.Path, node.Source.Meshes));
+            node.ConfigureAnimations(new([clip]));
             var body = scene.AddBody();
             var registration = scene.Registration with
             {
@@ -51,8 +58,9 @@ internal sealed class Rac3Class5821DamageActorFactory(ActorSceneFactory scenes) 
                     new("damage", CapabilityAdmission.Ready),
                     new("native-update", CapabilityAdmission.Unimplemented,
                         "UYA class-5821 native locomotion, targeting and attack progression are not recovered."),
+                    new("native-state10-clip", CapabilityAdmission.Ready),
                     new("animation", CapabilityAdmission.Unimplemented,
-                        "The TABLE1 class-5821 skeletal clips are not animation-safe or native-state selected."),
+                        "Native action 12 has 20 source-backed poseable frames; the native state-to-frame clock and other action selectors remain unrecovered."),
                     new("terminal-reaction", CapabilityAdmission.Unimplemented,
                         "Native death, despawn and reward transitions after exhausted lifetime are not recovered."),
                     new("variant-identity", CapabilityAdmission.Ready)
