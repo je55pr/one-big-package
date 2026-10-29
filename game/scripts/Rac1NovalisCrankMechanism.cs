@@ -107,7 +107,8 @@ internal sealed class Rac1NovalisCrankMechanism(
         if (magnitude > .2f)
         {
             double previous = _session.Progress(crankId);
-            bool starting = previous == 0d;
+            // Progress is clamped to [0, 1]; the lower bound marks the first turn.
+            bool starting = previous <= 0d;
             double progress = _session.Turn(crankId, HostProgressPerTick * magnitude);
             if (starting)
             {

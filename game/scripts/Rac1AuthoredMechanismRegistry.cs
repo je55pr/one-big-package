@@ -71,6 +71,7 @@ internal sealed class Rac1AuthoredMechanismRegistry : IDisposable
             case Rac1NovalisWaterMechanism water: Water = water; break;
             case Rac1RedPlantMechanism plants: RedPlants = plants; break;
             case Rac1PulsingOrbMechanism orbs: Orbs = orbs; break;
+            default: break;
         }
     }
 
