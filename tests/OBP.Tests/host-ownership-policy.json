@@ -39,7 +39,7 @@
     "Key": "game/scripts/OBPGame.Rac1Checkpoints.cs::OBPGame.TickRac1CheckpointTriggers()",
     "Kind": "adapter",
     "Reason": "Recovered source-world checkpoint trigger admission; checkpoint identity belongs to the R&C1 campaign adapter. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected. #361 routes the existing presence reset through the owned enemy query/command port. The checkpoint player-selection rejection regression retains the source-campaign boundary.",
-    "Hash": "dd0731c4f94baf168c7e4e7b81b6c6d95cd5697a0598db5775a222a34b7335cb"
+    "Hash": "64888c781188e6843fb7018bdc132f8a24197cf3ea667ebd8cdc3fe3630f1a26"
   },
   {
     "Key": "game/scripts/Rac1EnemyHost.cs::Rac1EnemyHost.TickNativeActors()",
@@ -54,6 +54,11 @@
     "Hash": "bcee12d3fce2c52446debae2cf982904e248d9eda6a77cbed843e5b35bd7e094"
   },
   {
+    "Key": "game/scripts/Rac1LootPresentation.GoldBolts.cs::Rac1LootPresentation.TickRac1GoldBolts()",
+    "Kind": "adapter",
+    "Reason": "#365 relocates R&C1 source-authored gold-bolt placement and contact to the Rac1WorldModule lease presenter. The persistent collected-set and wallet stay with the campaign/player authority, with the same native admission and persistence; no player provider is selected by world origin. Gold-bolt, loot and lease ownership regressions protect this boundary.",
+    "Hash": "29c7aff517b82dd84b1a1778efc7ecfb06a95970c63b1519447f484bcde017fb"
+  },  {
     "Key": "game/scripts/OBPGame.Rac1Lifecycle.cs::OBPGame.TickRac1VeldinEnvironmentalDeath()",
     "Kind": "adapter",
     "Reason": "Recovered Veldin death-plane context; #270 adapts its consequence to the selected player health policy. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
@@ -75,7 +80,7 @@
     "Key": "game/scripts/OBPGame.Rac1NovalisCranks.cs::OBPGame.TryTurnRac1NovalisCrank(bool,Vector2)",
     "Kind": "adapter",
     "Reason": "Source-authored Novalis crank/door interaction context; not universal traversal ownership. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "334dec274369b93ed36076a20d55da53789b8ba1f6ccd90d7f5c4cd48c7753ab"
+    "Hash": "82ed296b74889bec898ac74cd2e064a2348f13aa596390aeb2cb42ee031d47cd"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1NovalisMusic.cs::OBPGame.ConfigureRac1NovalisMusic(RuntimeWorld)",
@@ -180,10 +185,15 @@
     "Hash": "2c8da8008a0c42ce0524e0c356df47aa384dd8eb9698ccb3559f7b5934d5adfe"
   },
   {
-    "Key": "game/scripts/Rac2WorldModule.cs::Rac2WorldModule.Rac2WorldModule(RuntimeWorld,RuntimeWorldScene.Result,GodotWorldResources,Rac2WorldPorts)",
+    "Key": "game/scripts/Rac2CrateBoltPresentation.cs::Rac2CrateBoltPresentation.Spawn(Vector3,Rac2Class500Payout)",
     "Kind": "adapter",
-    "Reason": "Constructor qualifies authored R&C2 objects to own native opening context only. The player provider and inventory remain independent of world origin. #373 source-world lease tests protect this boundary.",
-    "Hash": "4ea417c594f4ac8a53f86b400da08bb9f590ca6e0eb4bef865d7957d14de0133"
+    "Reason": "#365 only admits R&C2 physical class-500 payouts for this world lease. Exact payout identity and denominations remain in the native Rac2CrateBolts session; permanent player credits are delegated to the persistent player-life grant port and discarded on retired leases. It cannot select player services from source game.",
+    "Hash": "e73bade9c3050aef534840679154215b4da2cf11cf29acfe8eb444e0314b72cc"
+  },  {
+    "Key": "game/scripts/Rac2WorldModule.cs::Rac2WorldModule.Rac2WorldModule(RuntimeWorld,RuntimeWorldScene.Result,GodotWorldResources,Rac2WorldPorts,Rac2CrateBoltPorts)",
+    "Kind": "adapter",
+    "Reason": "Constructor qualifies authored R&C2 objects to own native opening context only. The player provider and inventory remain independent of world origin. #373 source-world lease tests protect this boundary. #365 also composes the separate R&C2 class-500 receipt/visual owner without selecting a player capability.",
+    "Hash": "4de44749a11a59947f2e753ecc851303148d3cd081dfb022dbd2856d264223d2"
   },
   {
     "Key": "game/scripts/Rac2WorldModule.cs::Rac2WorldModule.Tick(double)",
