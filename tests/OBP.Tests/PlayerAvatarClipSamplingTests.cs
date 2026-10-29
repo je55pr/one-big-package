@@ -1,3 +1,5 @@
+using System.Numerics;
+using OBP.Core;
 using OBP.RAC1.Player;
 using OBP.Runtime.Player;
 
@@ -55,6 +57,22 @@ public sealed class PlayerAvatarClipSamplingTests
         Assert.Throws<InvalidDataException>(() => Clip().SampleAt(0, true));
     }
 
+    [Fact]
+    public void InvalidSkeletalSampleReportsSourceAndOffendingFrameValues()
+    {
+        var skeleton = new PlayerSkeleton([new(-1, Vector3.Zero, Matrix4x4.Identity)],
+            new Dictionary<int, PlayerSkeletonAttachment>());
+        var sampler = new PlayerSkeletalSampler(skeleton);
+        var clip = new PlayerSkeletalClip(ObpSourceGame.Rac1, "retail-fixture", 0, 51, [0],
+            [new PlayerSkeletalFrame([new PlayerJointChannels(Quaternion.Identity)], .1, 0)]);
+
+        var error = Assert.Throws<ArgumentException>(() =>
+            sampler.Apply(clip, new PlayerSkeletalSample(1, 0, -.125f), .75f));
+        foreach (string field in new[] { "source=Rac1", "sequence=51", "frames=1", "frame=1",
+            "next=0", "fraction=-0.125", "weight=0.75" })
+            Assert.Contains(field, error.Message);
+    }
+
     [SkippableFact]
     public void RetailTaunterFrameBoundaryDoesNotSubmitInvalidSkeletalSample()
     {
@@ -73,5 +91,24 @@ public sealed class PlayerAvatarClipSamplingTests
         var presented = controller.ApplyEquipmentPose(51, phase, loop: true, fullBody: true);
         Assert.NotNull(presented.SampledPose);
         Assert.All(presented.SampledPose!.LocalPositions, value => Assert.True(double.IsFinite(value)));
+
+        // Compare the controller's actual output against an independent sampler
+        // configured with the expected source frame pair and equipment weight.
+        // A finite pose alone could still use the wrong frame or interpolation.
+        var asset = Assert.IsType<PlayerSkeletalAsset>(avatar.Skeletal);
+        var independent = new PlayerSkeletalSampler(asset.Skeleton, asset.Skin);
+        independent.Reset(asset.Clips[0], new PlayerSkeletalSample(0, 1, 0));
+        independent.Apply(asset.Clips[51], new PlayerSkeletalSample(1, 2, 0), .2f);
+        Assert.Equal(independent.Skin(), presented.SampledPose.LocalPositions);
+
+        // Also exercise a positive fraction so the selected NextFrame matters.
+        double midway = clip.FrameDurationsSeconds[0] + clip.FrameDurationsSeconds[1] * .25;
+        var middleController = Assert.IsType<Rac1PlayerAnimationPresentationController>(
+            Rac1PlayerAvatarProvider.Instance.CreateAnimationController(avatar));
+        var middle = middleController.ApplyEquipmentPose(51, midway, loop: true, fullBody: true);
+        independent.Reset(asset.Clips[0], new PlayerSkeletalSample(0, 1, 0));
+        independent.Apply(asset.Clips[51], new PlayerSkeletalSample(1, 2, .25f), .2f);
+        Assert.All(independent.Skin().Zip(middle.SampledPose!.LocalPositions),
+            pair => Assert.InRange(Math.Abs(pair.First - pair.Second), 0, .00001));
     }
 }
