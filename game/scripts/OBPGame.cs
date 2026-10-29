@@ -963,7 +963,11 @@ public partial class OBPGame : Node3D
         _inspector?.QueueFree();
         _inspector = null;
         ResetRac2GameplayHost();
-        if (_worldScenes?.Current?.Resources is { } rac3Resources) { rac3Resources.Rac3Gameplay?.Dispose(); rac3Resources.Rac3Gameplay = null; }
+        if (_worldScenes?.Current?.Resources is { } rac3Resources)
+        {
+            try { rac3Resources.Rac3Gameplay?.Dispose(); }
+            finally { rac3Resources.Rac3Gameplay = null; }
+        }
     }
 
     /// <summary>

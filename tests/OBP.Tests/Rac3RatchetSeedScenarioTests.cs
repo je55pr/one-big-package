@@ -55,7 +55,7 @@ public sealed class Rac3RatchetSeedScenarioTests
     }
 
     [SkippableFact]
-    public void OriginalTable1AuditDoesNotMutateTheWorldAndIsDeterministic()
+    public void OriginalTable1AuditRetainsAuthoredObjectCountAndProducesDeterministicSnapshots()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
