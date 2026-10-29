@@ -269,7 +269,7 @@ public static partial class Rac3WorldImport
         }
     }
 
-    private static void PlaceStatics(string kind, IReadOnlyList<Rac3Gameplay.MatrixInstance> instances, IReadOnlyDictionary<int, Rac3Assets.StaticClass> classes,
+    internal static void PlaceStatics(string kind, IReadOnlyList<Rac3Gameplay.MatrixInstance> instances, IReadOnlyDictionary<int, Rac3Assets.StaticClass> classes,
         int textureCount, List<RuntimeMesh> meshes, Action<double, double, double> grow)
     {
         var groups = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), (List<double> P, List<float> U, List<int> I)>();
@@ -285,7 +285,7 @@ public static partial class Rac3WorldImport
                 double z = inst.Matrix[2] * cls.Positions[v] + inst.Matrix[6] * cls.Positions[v + 1] + inst.Matrix[10] * cls.Positions[v + 2] + inst.Matrix[14];
                 world[v] = x; world[v + 1] = z; world[v + 2] = y; grow(x, z, y);
             }
-            var localRemaps = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), Dictionary<int, int>>();
+            var localRemaps = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), Dictionary<(int Vertex, bool UnwrapS, bool UnwrapT), int>>();
             for (int f = 0; f < cls.TriangleTextureIds.Length; f++)
             {
                 int tex = cls.TriangleTextureIds[f];
@@ -295,10 +295,30 @@ public static partial class Rac3WorldImport
                 var surface = (tex, presentation);
                 if (!groups.TryGetValue(surface, out var g)) groups[surface] = g = ([], [], []);
                 if (!localRemaps.TryGetValue(surface, out var remap)) localRemaps[surface] = remap = [];
+                bool unwrapS = false, unwrapT = false;
+                if (kind == "tie")
+                {
+                    int a = cls.Indices[f * 3], b = cls.Indices[f * 3 + 1], c = cls.Indices[f * 3 + 2];
+                    unwrapS = RcTieUvSeam.CrossesPackedBoundary(
+                        cls.Uvs[a * 2], cls.Uvs[b * 2], cls.Uvs[c * 2], presentation?.WrapS);
+                    unwrapT = RcTieUvSeam.CrossesPackedBoundary(
+                        cls.Uvs[a * 2 + 1], cls.Uvs[b * 2 + 1], cls.Uvs[c * 2 + 1], presentation?.WrapT);
+                }
+
                 for (int k = 0; k < 3; k++)
                 {
                     int v = cls.Indices[f * 3 + k];
-                    if (!remap.TryGetValue(v, out int nv)) { nv = g.P.Count / 3; remap[v] = nv; g.P.Add(world[v * 3]); g.P.Add(world[v * 3 + 1]); g.P.Add(world[v * 3 + 2]); g.U.Add(cls.Uvs[v * 2]); g.U.Add(cls.Uvs[v * 2 + 1]); }
+                    // The same native vertex can be unwrapped on one face and
+                    // untouched on its neighbour. Do not weld those UV variants.
+                    var key = (v, unwrapS, unwrapT);
+                    if (!remap.TryGetValue(key, out int nv))
+                    {
+                        nv = g.P.Count / 3;
+                        remap[key] = nv;
+                        g.P.Add(world[v * 3]); g.P.Add(world[v * 3 + 1]); g.P.Add(world[v * 3 + 2]);
+                        g.U.Add((float)RcTieUvSeam.Unwrap(cls.Uvs[v * 2], unwrapS));
+                        g.U.Add((float)RcTieUvSeam.Unwrap(cls.Uvs[v * 2 + 1], unwrapT));
+                    }
                     g.I.Add(nv);
                 }
             }

@@ -31,7 +31,7 @@ namespace OBP.RAC2;
 /// </para>
 public static partial class Rac2WorldImport
 {
-    private static void PlaceMatrixInstances(
+    internal static void PlaceMatrixInstances(
         string kind,
         IReadOnlyList<Rac2Instances.MatrixInstance> instances,
         Func<int, (double[] Positions, float[] Uvs, int[] Indices, int[] TriTexIds, RuntimeMaterialPresentation?[] TriPresentations)?> lookup,
@@ -76,12 +76,25 @@ public static partial class Rac2WorldImport
                     bySurface[surface] = g = ([], [], [], new Dictionary<(double, double, double, double, double), int>());
                 }
 
+                // TIE S/T is unsigned 16-bit fixed point with a period of 16.
+                // Only seam-crossing faces need separate presentation UVs;
+                // preserve authored positions, texture slots and winding.
+                bool unwrapS = false, unwrapT = false;
+                if (kind == "tie")
+                {
+                    int a = c.Indices[f * 3], b = c.Indices[f * 3 + 1], cIndex = c.Indices[f * 3 + 2];
+                    unwrapS = RcTieUvSeam.CrossesPackedBoundary(
+                        c.Uvs[a * 2], c.Uvs[b * 2], c.Uvs[cIndex * 2], presentation?.WrapS);
+                    unwrapT = RcTieUvSeam.CrossesPackedBoundary(
+                        c.Uvs[a * 2 + 1], c.Uvs[b * 2 + 1], c.Uvs[cIndex * 2 + 1], presentation?.WrapT);
+                }
+
                 for (int k = 0; k < 3; k++)
                 {
                     int vi = c.Indices[f * 3 + k];
                     double px = worldPos[vi * 3], py = worldPos[vi * 3 + 1], pz = worldPos[vi * 3 + 2];
                     float s = c.Uvs[vi * 2], t = c.Uvs[vi * 2 + 1];
-                    double rs = R4(s), rt = R4(t);
+                    double rs = RcTieUvSeam.Unwrap(R4(s), unwrapS), rt = RcTieUvSeam.Unwrap(R4(t), unwrapT);
                     var key = (px, py, pz, rs, rt);
                     if (!g.Weld.TryGetValue(key, out int idx))
                     {

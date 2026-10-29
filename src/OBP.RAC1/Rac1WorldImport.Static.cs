@@ -159,26 +159,14 @@ public static partial class Rac1WorldImport
         return result;
     }
 
-    // TIE UVs are stored as unsigned 16-bit / 4096, giving a period of 16.
-    // At a native 16 -> 0 seam, interpolation of the decoded 15.5 -> 0
-    // endpoints stretches a texture across 15.5 tiles inside one tiny face.
-    // Only recognise triangles whose *all* corners are near that packed seam;
-    // other authored repeats and the native class data are left untouched.
+    // Keep the established importer-facing seam API for existing regression
+    // tests; the underlying PS2 TIE rule is shared by all three games.
     internal static bool CrossesPackedTieUvSeam(
-        float a, float b, float c, RuntimeTextureWrap? wrap)
-    {
-        if (wrap == RuntimeTextureWrap.Clamp)
-            return false;
-
-        static bool NearBoundary(float value) => value is >= 0f and <= 1f or >= 15f and < 16f;
-        return NearBoundary(a) && NearBoundary(b) && NearBoundary(c) &&
-            (a <= 1f || b <= 1f || c <= 1f) &&
-            (a >= 15f || b >= 15f || c >= 15f);
-    }
+        float a, float b, float c, RuntimeTextureWrap? wrap) =>
+        OBP.PS2.Presentation.RcTieUvSeam.CrossesPackedBoundary(a, b, c, wrap);
 
     internal static double UnwrapPackedTieUv(double value, bool crossesSeam) =>
-        crossesSeam && value <= 1d ? value + 16d : value;
-
+        OBP.PS2.Presentation.RcTieUvSeam.Unwrap(value, crossesSeam);
     internal static void PlaceMatrixInstances(
         string kind,
         IEnumerable<(int OClass, float[] Matrix)> instances,
