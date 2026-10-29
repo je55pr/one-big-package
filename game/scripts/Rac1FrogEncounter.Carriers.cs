@@ -67,10 +67,9 @@ internal sealed partial class Rac1FrogEncounter
 
     private void EmitRac1FrogCarrierBurst(Vector3 parentPosition)
     {
-        if (!_ports.HasFragmentAssets()) return;
         foreach (var piece in Rac1FrogCarrierBurst.Create(ToEffectNative(parentPosition), Rac1EffectRandom))
         {
-            if (!_ports.HasFragmentModel(piece.NativeClassId))
+            if (!_host.Combat.HasFragment(piece.NativeClassId))
                 continue; // Never invent a missing level-specific fragment.
             var visual = _ports.CreateFragmentNode(piece.NativeClassId,
                 $"FrogCarrierDebris_retail_class{piece.NativeClassId}");

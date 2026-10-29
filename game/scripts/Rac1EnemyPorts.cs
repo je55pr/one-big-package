@@ -49,13 +49,11 @@ internal sealed record Rac1EnemyPorts(Func<string> SourcePath, Func<Rac1PickupRa
 internal sealed record Rac1FrogEncounterPorts(
     Func<Viewport> Viewport,
     Func<Camera3D?> ActiveCamera,
-    Action<Camera3D?> SetActiveCamera,
-    Func<Camera3D?> FallbackCamera,
+    Action<Camera3D> SetActiveCamera,
+    Func<Camera3D> FallbackCamera,
     Func<Camera3D?> GuidedCamera,
     Func<Rac1MobyRuntimeKey, bool> HasWrenchContact,
     Action<Rac1MobyRuntimeKey> AddWrenchContact,
-    Func<bool> HasFragmentAssets,
-    Func<int, bool> HasFragmentModel,
     Func<int, string, Node3D> CreateFragmentNode,
     Action<Node3D, Rac1CrateDebris> TrackFragment,
     Func<System.Numerics.Quaternion, Quaternion> FromEffectOrientation);

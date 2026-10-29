@@ -126,7 +126,7 @@ internal sealed partial class Rac1FrogEncounter
             var node = Rac1WorldPresentation.FindPresentedDynamic(result, authored)
                 ?? throw new InvalidDataException("Original Frog mesh unavailable.");
             var forward = ToEffectNative(Rac1EnemyHost.EnemyForward(node));
-            var frame = _rac1Frogs.Register(authored, node.State,
+            _rac1Frogs.Register(authored, node.State,
                 ToEffectNative(node.Root.GlobalPosition), MathF.Atan2(forward.Y, forward.X));
             node.ApplyState(_host.Context.MobyRuntime.Require(authored).EntityState);
             nodes.Add(node);

@@ -23,8 +23,11 @@ public sealed class DiagnosticRegistryTests
     [Fact]
     public void EveryLegacyWorldAliasSelectsExactlyItsOriginalFlagAndSourceGate()
     {
-        Assert.Equal(21, WorldSmokeHarness.Registry.Registrations.Length);
-        foreach (var registration in WorldSmokeHarness.Registry.Registrations)
+        var legacy = WorldSmokeHarness.Registry.Registrations
+            .Where(registration => registration.Id != "rac3-target-seed-audit").ToArray();
+        Assert.Equal(21, legacy.Length);
+        Assert.Equal(22, WorldSmokeHarness.Registry.Registrations.Length);
+        foreach (var registration in legacy)
         {
             var args = CommandLineArgs.Parse([Assert.Single(registration.Aliases)]);
             Assert.True(WorldSmokeHarness.IsRequested(args));

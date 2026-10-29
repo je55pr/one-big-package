@@ -18,8 +18,7 @@ internal sealed record Rac1NativeActorPorts(Func<Rac1EnemyHost?> Enemies,
     Action<Rac1PickupAssets.Catalogue, WorldMaterialFactory> AttachPickupBank,
     Action<double> TickPickups);
 internal sealed record Rac2NativeActorPorts(Func<Rac2WorldModule?> World);
-internal sealed record Rac3NativeActorPorts(Func<IEnumerable<RuntimeWorldScene.DynamicObjectNode>> OriginalTargets,
-    Func<Rac3MobyRuntimeSession> Runtime);
+internal sealed record Rac3NativeActorPorts(Func<Rac3WorldModule?> World);
 internal sealed record ActorNativePorts(Rac1NativeActorPorts Rac1, Rac2NativeActorPorts Rac2, Rac3NativeActorPorts Rac3);
 internal sealed record ActorNativeCounts(int Rac1Enemies, int Rac1Hostiles);
 
@@ -86,8 +85,10 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
                         intent => rac2.IsLiveHostile(node, hostile) ? ApplyRac2(node, hostile, intent) :
                             new(false, false, "The R&C2 encounter has retired."));
             }
-        foreach (var node in ports.Rac3.OriginalTargets())
-            register(node, () => ObserveRac3(node, ports.Rac3.Runtime()), intent => ApplyRac3(node, ports.Rac3.Runtime(), intent));
+        if (ports.Rac3.World() is { } rac3)
+            foreach (var node in rac3.OriginalTargets)
+                register(node, () => rac3.Observe(node), intent => rac3.Apply(node, intent,
+                    () => disableBody(ActorWorldHost.Target(node))));
     }
 
     private static ActorObservation ObserveRac1(RuntimeWorldScene.DynamicObjectNode node, Rac1EnemyHost owner)
@@ -108,11 +109,6 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
     private static ActorObservation ObserveRac2(RuntimeWorldScene.DynamicObjectNode node, Rac2Class2827HostileSession native) =>
         new(new(node.Root.GlobalPosition.X, node.Root.GlobalPosition.Y, node.Root.GlobalPosition.Z), !native.IsTerminal, native.IsTerminal,
             native.Health, native.NativeState?.CurrentState ?? 0, null);
-
-    private static ActorObservation ObserveRac3(RuntimeWorldScene.DynamicObjectNode node, Rac3MobyRuntimeSession native) =>
-        new(new(node.Root.GlobalPosition.X, node.Root.GlobalPosition.Y, node.Root.GlobalPosition.Z), native.Require(node.Source).IsActive,
-            !native.Require(node.Source).IsActive, null, native.Require(node.Source).IsActive
-                ? Rac3Class500Destructible.ActiveNativeState : Rac3Class500Destructible.BreakTransitionNativeState, null);
 
     private ActorHitResult ApplyRac1(RuntimeWorldScene.DynamicObjectNode node, WeaponDamageIntent intent, Rac1EnemyHost owner)
     {
@@ -135,13 +131,5 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
         return new(result.Admitted, result.Terminal, result.Admitted ? null : "Native GC damage cooldown or terminal state.");
     }
 
-    private ActorHitResult ApplyRac3(RuntimeWorldScene.DynamicObjectNode node, Rac3MobyRuntimeSession native, WeaponDamageIntent intent)
-    {
-        var damage = new Rac3GameplayDamageEvent(Rac3GameplayEntityRef.Player,
-            Rac3GameplayEntityRef.Moby(new(node.Source.NativeClassId, node.Source.InstanceIndex)), intent.SourceDamage, 1);
-        if (!native.TryDispatchDamage<Rac3Class500BreakResult>(damage, out var result) || result is null)
-            return new(false, false, "Native UYA class-500 receiver rejected this contact.");
-        node.ApplyState(result.EntityState); disableBody(ActorWorldHost.Target(node));
-        return new(true, true);
-    }
+
 }
