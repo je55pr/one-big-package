@@ -2752,9 +2752,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateModalCoordinator():UiModalCoordinator:private",
       "Owner": "#348",
-      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #371 routes Metropolis taxi world ownership, passenger and hull presentation through the lease-owned taxi host; native session rules and diagnostic compatibility remain separately observed.",
       "ExpiresWith": "#376",
-      "Hash": "92bf430787c3c14b5d23c840f0dc26e4953d78e70eea8b0f659b091bf1844323"
+      "Hash": "3cde9ac788447def7f98335b2a5e02e47bf6c0190e6a0cd9dd6b4fcfce8f8af6"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateMovementDiagnosticHarness():MovementDiagnosticHarness:private",
@@ -2850,16 +2850,16 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1TaxiDiagnosticFixture():IRac1TaxiDiagnosticFixture:private",
       "Owner": "#343",
-      "Rationale": "Invocation-only Novalis music/mechanism, taxi and lease-retirement fixture composition. Source-native sessions, source attachment paths, scene nodes and collision/audio resources stay behind scoped adapters; assertions and test control flow are standalone.",
-      "ExpiresWith": "#371",
-      "Hash": "5ecd0612e31283bfd87d3b78e89344a89c0ce6006b85bcc1fb9f67a7e0de4ae3"
+      "Rationale": "Invocation-only Novalis music/mechanism, taxi and lease-retirement fixture composition. Source-native sessions, source attachment paths, scene nodes and collision/audio resources stay behind scoped adapters; assertions and test control flow are standalone. #371 routes Metropolis taxi world ownership, passenger and hull presentation through the lease-owned taxi host; native session rules and diagnostic compatibility remain separately observed. The remaining root diagnostic fixture composition is deferred to final root composition cleanup in #376.",
+      "ExpiresWith": "#376",
+      "Hash": "e382b001673ae756f63ffd121d04a905f3751be5761e8b368114f046a00fb46b"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1WorldRouteDiagnosticHarness():Rac1WorldRouteDiagnosticHarness:private",
       "Owner": "#343",
-      "Rationale": "Invocation-only Novalis music/mechanism, taxi and lease-retirement fixture composition. Source-native sessions, source attachment paths, scene nodes and collision/audio resources stay behind scoped adapters; assertions and test control flow are standalone. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
+      "Rationale": "Invocation-only Novalis music/mechanism, taxi and lease-retirement fixture composition. Source-native sessions, source attachment paths, scene nodes and collision/audio resources stay behind scoped adapters; assertions and test control flow are standalone. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #371 routes Metropolis taxi world ownership, passenger and hull presentation through the lease-owned taxi host; native session rules and diagnostic compatibility remain separately observed.",
       "ExpiresWith": "#370",
-      "Hash": "bb2cb94128255c3380dc727937219b06ccce26703afb5bfa9f99b97a79b945e8"
+      "Hash": "55e10980e0f4f1586e0a9ced0f8697d1c6e21a7358c831c84454302772a8125d"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateShotListCliService():ShotListCliService:private",
@@ -3634,9 +3634,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1WorldModule(:RuntimeWorld,:RuntimeWorldScene . Result):Rac1WorldModule:private",
       "Owner": "#360",
-      "Rationale": "Temporary composition binding to the lease-owned R&C1 module or existing persistent player owner. No collection or native gameplay policy lives in the root; Rac1WorldContextTests and world/player lifecycle reconciliation cover isolation. Reconciled #351 equipment delegations with #360 lease-owned R&C1 state; only existing owner ports are wired, with no added state or native formulas. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged.",
+      "Rationale": "Temporary composition binding to the lease-owned R&C1 module or existing persistent player owner. No collection or native gameplay policy lives in the root; Rac1WorldContextTests and world/player lifecycle reconciliation cover isolation. Reconciled #351 equipment delegations with #360 lease-owned R&C1 state; only existing owner ports are wired, with no added state or native formulas. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #371 routes Metropolis taxi world ownership, passenger and hull presentation through the lease-owned taxi host; native session rules and diagnostic compatibility remain separately observed.",
       "ExpiresWith": "#376",
-      "Hash": "ce8c18455582df0201ecc750df22d152c2a409b356d4836e9569914d6777bc10"
+      "Hash": "e4159ad4b227edb9191091e6385fd9f4642f86e890fa6b38d7b01a2a469b6abe"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RefreshRac1HudState(params:HudFeedbackDraft [  ]):void:private",
@@ -4860,7 +4860,38 @@
     "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::method:ResetRac3Gameplay():void:private",
     "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::method:SelectRac3Class500HostContact():RuntimeWorldScene . DynamicObjectNode ?:private",
     "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::method:TickRac3Gameplay(:double):void:private",
-    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::method:TryAuditRac3RatchetSeed(:Rac3Class5821AuditSource,:Rac3NativePoint,:byte,out:bool):bool:private"
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::method:TryAuditRac3RatchetSeed(:Rac3Class5821AuditSource,:Rac3NativePoint,:byte,out:bool):bool:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::field:_rac1FlyingTaxi:RuntimeWorldScene . DynamicObjectNode ?:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::field:_rac1FlyingTaxiOrigin:Vector3:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::field:_rac1MetropolisTaxis:Rac1MetropolisTaxiSession ?:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::field:_rac1TaxiBoardingPosition:Vector3:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::field:_rac1TaxiCameraWorldOffset:Vector3:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::field:_rac1TaxiCameraWorldOwned:bool:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::field:_rac1TaxiCollisionBodies:Dictionary < int , StaticBody3D >:private,readonly",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::field:_rac1TaxiHeroTarget:Rac1TaxiHeroTargetSession ?:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::field:_rac1TaxiHovers:Dictionary < int , Rac1TaxiNativeHover >:private,readonly",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::field:_rac1TaxiNodes:Dictionary < int , RuntimeWorldScene . DynamicObjectNode >:private,readonly",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::field:_rac1TaxiPendingStop:Rac1MetropolisTaxiStop ?:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::field:_rac1TaxiPreviousPlayerMode:Node . ProcessModeEnum:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::field:_rac1TaxiRiderFrame:Rac1TaxiPassengerFrame ?:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::field:_rac1TaxiWalkElapsed:double:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::field:_rac1TaxiYawSeeks:Dictionary < int , Rac1TaxiNativeYawSeek >:private,readonly",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:AbortRac1MetropolisTaxiRide():void:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:AttachRac1MetropolisTaxiPassenger(:Rac1MetropolisTaxiSession,:PlayerHost):void:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:ConfigureRac1MetropolisTaxis(:RuntimeWorld,:RuntimeWorldScene . Result):void:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:FromTaxiPoint(:Rac1TaxiPoint):Vector3:private,static",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:GetRac1MetropolisTaxiHudLine():string:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:OrientRac1Taxi(:int,:Node3D,:Vector3,:double):void:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:PresentRac1Taxi(:int,:Node3D,:Vector3,:double):Vector3:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:ReleaseRac1MetropolisTaxiHulls():void:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:ResetRac1MetropolisTaxis():void:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:TickRac1MetropolisTaxis(:double):void:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:TickRac1TaxiTargetWalk(:double,:Rac1MetropolisTaxiSession,:PlayerHost):void:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:ToTaxiCabBasis(:Basis):Rac1TaxiCabBasis:private,static",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:ToTaxiPoint(:Vector3):Rac1TaxiPoint:private,static",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:TryHandleRac1MetropolisTaxiInput(:InputEvent):bool:private",
+    "game/scripts/OBPGame.Rac1MetropolisTaxis.cs::OBPGame::method:TryResolveRac1TaxiLanding(:PlayerHost,:Vector3,out:Vector3):bool:private"
   ],
   "RetiredAccess": [
     "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()"
