@@ -40,8 +40,9 @@ public class HostCoordinatorArchitectureTests
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac1Enemies.cs")));
         Assert.Contains("internal void TickRac1Hostiles(",
             File.ReadAllText(Path.Combine(scripts, "Rac1EnemyHost.cs")), StringComparison.Ordinal);
-        Assert.Contains("private void TickRac1Pickups(",
-            File.ReadAllText(Path.Combine(scripts, "OBPGame.Rac1Pickups.cs")), StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac1Pickups.cs")));
+        Assert.Contains("internal void TickRac1Pickups(",
+            File.ReadAllText(Path.Combine(scripts, "Rac1LootPresentation.Pickups.cs")), StringComparison.Ordinal);
     }
 
     [Fact]

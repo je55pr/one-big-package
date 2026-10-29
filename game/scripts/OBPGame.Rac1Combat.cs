@@ -151,13 +151,13 @@ public partial class OBPGame
             selectedTotal: SelectRac1CrateReward(authored.RewardCentre));
 
         Vector3 rewardOrigin = target.Root.GlobalPosition;
-        PlayRac1PickupSound(Rac1CrateAudio.BreakSoundClass(target.Source.NativeClassId),
+        Rac1World.Loot.PlayRac1PickupSound(Rac1CrateAudio.BreakSoundClass(target.Source.NativeClassId),
             Rac1CrateAudio.BreakLocalSound, rewardOrigin);
-        SpawnRac1CrateDebris(target);
-        DisableRac1CrateCollider(target.Source.InstanceIndex);
+        Rac1World.Loot.SpawnRac1CrateDebris(target);
+        Rac1World.Loot.DisableRac1CrateCollider(target.Source.InstanceIndex);
         target.ApplyState(broken.EntityState);
-        SpawnRac1BoltPickups(rewardOrigin, broken.Pickups);
-        SpawnRac1CrateSupply(target, rewardOrigin);
+        Rac1World.Loot.SpawnRac1BoltPickups(rewardOrigin, broken.Pickups);
+        Rac1World.Loot.SpawnRac1CrateSupply(target, rewardOrigin);
         Rac1World.Context.CombatStatus =
             $"crate {target.Source.InstanceIndex} broke via host contact policy: +{broken.PhysicalValue} bolts emitted";
         GD.Print($"[rac1-gameplay] {Rac1World.Context.CombatStatus}");
@@ -166,7 +166,7 @@ public partial class OBPGame
     private int SelectRac1CrateReward(int centre)
     {
         var range = Rac1BoltCrate.RewardRange(centre);
-        return range.Maximum == 0 ? 0 : Rac1EffectRandom.Inclusive(range.Minimum, range.Maximum);
+        return range.Maximum == 0 ? 0 : _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Inclusive(range.Minimum, range.Maximum);
     }
 
     private bool TryStrikeRac1Hostile(RuntimeWorldScene.DynamicObjectNode hostile, Rac1WrenchDamageResult? nativeDamage = null)

@@ -5,12 +5,12 @@ using NVector3 = System.Numerics.Vector3;
 
 namespace OBP.Game;
 
-public partial class OBPGame
+internal sealed partial class Rac1LootPresentation
 {
     private readonly List<(Node3D Node, Rac1AmmoPickupSession Motion)> _rac1AmmoPickups = [];
     private readonly List<Rac1HostedNanotechCloud> _rac1NanotechClouds = [];
 
-    private void ResetRac1CrateSupply()
+    internal void ResetRac1CrateSupply()
     {
         foreach (var node in _rac1AmmoPickups.Select(pickup => pickup.Node).Concat(_rac1NanotechClouds.Select(cloud => cloud.Node)))
             if (IsInstanceValid(node)) node.QueueFree();
@@ -18,7 +18,7 @@ public partial class OBPGame
         _rac1NanotechClouds.Clear();
     }
 
-    private void SpawnRac1CrateSupply(RuntimeWorldScene.DynamicObjectNode crate, Vector3 origin)
+    internal void SpawnRac1CrateSupply(RuntimeWorldScene.DynamicObjectNode crate, Vector3 origin)
     {
         if (_sceneResult is null) return;
         if (crate.Source.NativeClassId == Rac1ClassIds.NanotechCrate)
@@ -58,7 +58,7 @@ public partial class OBPGame
         }
     }
 
-    private void TickRac1CrateSupply(NVector3 root, NVector3 socket)
+    internal void TickRac1CrateSupply(NVector3 root, NVector3 socket)
     {
         for (int i = _rac1AmmoPickups.Count - 1; i >= 0; i--)
         {
@@ -97,7 +97,7 @@ public partial class OBPGame
         }
     }
 
-    private sealed class Rac1HostedNanotechCloud(Node3D node, Rac1NanotechCloudSession motion)
+    internal sealed class Rac1HostedNanotechCloud(Node3D node, Rac1NanotechCloudSession motion)
     {
         public Node3D Node { get; } = node;
         public Rac1NanotechCloudSession Motion { get; } = motion;

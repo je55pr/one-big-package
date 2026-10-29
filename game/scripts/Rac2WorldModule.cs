@@ -19,11 +19,12 @@ internal sealed partial class Rac2WorldModule : IDisposable
     private readonly Rac2WorldPorts _ports;
     private PlayerHost? _player;
     private bool _configured;
+    private bool _activatingCrateStrike;
     private bool _disposed;
     private readonly Rac2WorldLeaseClock _clock;
 
     internal Rac2WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene, GodotWorldResources resources,
-        Rac2WorldPorts ports)
+        Rac2WorldPorts ports, Rac2CrateBoltPorts boltPorts)
     {
         _world = world;
         _scene = scene;
@@ -31,8 +32,10 @@ internal sealed partial class Rac2WorldModule : IDisposable
         _ports = ports;
         _clock = new(ports.Current, ports.SourceValid, world.Game == ObpSourceGame.Rac2 ||
             scene.DynamicObjectNodes?.Any(node => node.Source.SourceGame == ObpSourceGame.Rac2) == true);
+        CrateBolts = new(world, scene, resources, boltPorts, () => _clock.CanSpawnCrateBolts(_activatingCrateStrike));
     }
 
+    internal Rac2CrateBoltPresentation CrateBolts { get; }
     internal bool Current => _clock.Current;
 
     internal IDictionary<int, Rac2Class2827HostileSession> Hostiles => _rac2Class2827Hostiles;
@@ -55,6 +58,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
         if (_disposed) return;
         _disposed = true;
         _clock.Retire();
+        CrateBolts.Dispose();
         if (_player is not null && GodotObject.IsInstanceValid(_player))
             _player.CrateStrikeRequested -= OnRac2PrimaryAttackRequested;
         _player = null;
@@ -132,7 +136,10 @@ internal sealed partial class Rac2WorldModule : IDisposable
             _scene.DynamicObjectNodes.FirstOrDefault(node => node.Source.SourceGame == ObpSourceGame.Rac2 &&
                 node.Source.NativeClassId == 500 && node.Source.InstanceIndex == index) is { } target)
         {
-            ApplyRac2Class500Strike(target, "auto");
+            // The lease is source-validated but is not yet published as Current.
+            _activatingCrateStrike = true;
+            try { ApplyRac2Class500Strike(target, "auto"); }
+            finally { _activatingCrateStrike = false; }
         }
     }
     private void OnRac2PrimaryAttackRequested()

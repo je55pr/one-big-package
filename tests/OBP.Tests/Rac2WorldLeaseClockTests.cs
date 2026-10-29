@@ -75,6 +75,31 @@ public sealed class Rac2WorldLeaseClockTests
     }
 
     [Fact]
+    public void CrateSpawnsAdmitValidatedActivationAndMixedSourceActorsButRejectStaleLeases()
+    {
+        bool published = false;
+        bool sourceValid = true;
+        // This is the source-required lease used for R&C2 actors in either a
+        // native R&C2 world or the mixed-source Fusion Lab.
+        foreach (bool mixedSourceWorld in new[] { false, true })
+        {
+            var lease = new Rac2WorldLeaseClock(() => published, () => sourceValid, sourceRequired: true);
+            Assert.False(lease.CanSpawnCrateBolts(activating: false));
+            Assert.True(lease.CanSpawnCrateBolts(activating: true));
+            published = true;
+            Assert.True(lease.CanSpawnCrateBolts(activating: false));
+            sourceValid = false;
+            Assert.False(lease.CanSpawnCrateBolts(activating: false));
+            Assert.False(lease.CanSpawnCrateBolts(activating: true));
+            sourceValid = true;
+            Assert.False(lease.CanSpawnCrateBolts(activating: true));
+            lease.Retire();
+            Assert.False(lease.CanSpawnCrateBolts(activating: true));
+            published = false;
+        }
+    }
+
+    [Fact]
     public void NativeTicksPreserveFractionAndDoNotDoubleTickOrdinaryActors()
     {
         bool ordinary = true;

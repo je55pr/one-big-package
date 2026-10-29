@@ -14,6 +14,13 @@ namespace OBP.Game;
 /// </summary>
 internal sealed class PlayerSessionHost
 {
+    // Original shared native effect RNG continues across world leases and replay resets.
+    private Rac1PickupRandom? _rac1EffectRandom;
+    internal Rac1PickupRandom Rac1EffectRandom(int? seed) => _rac1EffectRandom ??=
+        Rac1PickupRandom.FromSeed(unchecked((uint)(seed ?? Environment.TickCount)));
+    internal void ResetRac1EffectRandom(int seed) =>
+        _rac1EffectRandom = Rac1PickupRandom.FromSeed(unchecked((uint)seed));
+
     private PlayerEquipmentFacade? _equipment;
     internal PlayerEquipmentFacade Equipment => _equipment ?? throw new InvalidOperationException("Player equipment ports are not bound.");
 

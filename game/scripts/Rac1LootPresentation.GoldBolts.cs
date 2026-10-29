@@ -7,7 +7,7 @@ using OBP.Runtime.Gameplay;
 
 namespace OBP.Game;
 
-public partial class OBPGame
+internal sealed partial class Rac1LootPresentation
 {
     // Pickup reach is an explicitly provisional Godot contact policy, not
     // recovered native collection geometry.
@@ -15,13 +15,13 @@ public partial class OBPGame
     private Rac1GoldBoltSession _rac1GoldBolts = new();
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1GoldBoltNodes = [];
 
-    private void ResetRac1GoldBolts()
+    internal void ResetRac1GoldBolts()
     {
-        _rac1GoldBolts = new(_rac1CollectedNovalisGoldBolts);
+        _rac1GoldBolts = new(_ports.CollectedGoldBolts());
         _rac1GoldBoltNodes.Clear();
     }
 
-    private void ConfigureRac1GoldBolts(RuntimeWorld world,
+    internal void ConfigureRac1GoldBolts(RuntimeWorld world,
         RuntimeWorldScene.Result result)
     {
         if (world.LevelId != Rac1GoldBoltSession.NovalisLevelId) return;
@@ -45,7 +45,7 @@ public partial class OBPGame
         else GD.Print("[rac1-gold] Novalis: 3 original gold bolts ready");
     }
 
-    private void TickRac1GoldBolts()
+    internal void TickRac1GoldBolts()
     {
         if (_world is not { Game.SourceGame: ObpSourceGame.Rac1, LevelId: Rac1GoldBoltSession.NovalisLevelId } ||
             _player is null || _rac1Nanotech.Probe().IsDead)
@@ -65,10 +65,10 @@ public partial class OBPGame
                 continue;
 
             node.ApplyState(node.State.WithPresence(RuntimeEntityPresence.Inactive));
-            _rac1CollectedNovalisGoldBolts.Add(pair.Key);
+            _ports.CollectedGoldBolts().Add(pair.Key);
             PersistRac1CampaignState("Novalis Gold Bolt collection");
-            Rac1World.Context.CombatStatus = $"Novalis gold bolts {_rac1GoldBolts.CollectedCount}/{Rac1GoldBoltSession.ExpectedNovalisBolts}";
-            GD.Print($"[rac1-gold] collected authored instance {pair.Key}: {Rac1World.Context.CombatStatus}");
+            _context.CombatStatus = $"Novalis gold bolts {_rac1GoldBolts.CollectedCount}/{Rac1GoldBoltSession.ExpectedNovalisBolts}";
+            GD.Print($"[rac1-gold] collected authored instance {pair.Key}: {_context.CombatStatus}");
             RefreshRac1HudState();
         }
     }

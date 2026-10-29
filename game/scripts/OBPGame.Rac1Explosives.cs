@@ -28,7 +28,7 @@ public partial class OBPGame
     private void ConfigureRac1ExplosiveCrates(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
         _rac1ExplosiveCrates = new Rac1ExplosiveCrateSession(Rac1World.Context.MobyRuntime,
-            (min, max) => Rac1EffectRandom.Inclusive(min, max));
+            (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Inclusive(min, max));
         foreach (var source in world.DynamicObjects ?? [])
         {
             if (source.NativeClassId != Rac1ExplosiveCrateSession.ClassId) continue;
@@ -37,7 +37,7 @@ public partial class OBPGame
             _rac1ExplosiveCrates.Register(source, node.State);
             _rac1ExplosiveNodes.Add(source.InstanceIndex, node);
             Rac1World.Presentation.CrateNodes.Add(node);
-            AddRac1CrateCollider(node);
+            Rac1World.Loot.AddRac1CrateCollider(node);
             _rac1ExplosiveMaterials.Add(source.InstanceIndex, node.Root.GetChildren()
                 .OfType<MeshInstance3D>().Where(mesh => mesh.MaterialOverride is StandardMaterial3D)
                 .Select(mesh =>
@@ -70,7 +70,7 @@ public partial class OBPGame
         {
             if (_player.GetSlideCollision(i).GetCollider() is not StaticBody3D body) continue;
             foreach (var pair in _rac1ExplosiveNodes)
-                if (_rac1CrateBodies.TryGetValue(pair.Key, out var crateBody) && crateBody == body)
+                if (Rac1World.Loot.CrateBodies.TryGetValue(pair.Key, out var crateBody) && crateBody == body)
                     _rac1ExplosiveCrates.TryTouch(pair.Key);
         }
 
@@ -90,18 +90,18 @@ public partial class OBPGame
                             ? new Color(.78f, .25f, .25f, original.A)
                             : original;
                 if (frame.WarningSound)
-                    PlayRac1PickupSound(Rac1ExplosiveCrateSession.ClassId, 0x20, node.Root.GlobalPosition);
+                    Rac1World.Loot.PlayRac1PickupSound(Rac1ExplosiveCrateSession.ClassId, 0x20, node.Root.GlobalPosition);
                 if (frame.Detonated)
                 {
                     _rac1ExplosiveHits.RemoveWhere(hit => hit.Source == pair.Key);
                     _rac1ExplosivePlayerHits.Remove(pair.Key);
-                    SpawnRac1CrateDebris(node);
-                    SpawnRac1BoltPickups(node.Root.GlobalPosition,
+                    Rac1World.Loot.SpawnRac1CrateDebris(node);
+                    Rac1World.Loot.SpawnRac1BoltPickups(node.Root.GlobalPosition,
                         Rac1World.Context.BoltPickups.Emit(SelectRac1CrateReward(
                             _rac1ExplosiveCrates.Authored(pair.Key).RewardCentre)));
-                    PlayRac1PickupSound(Rac1CrateAudio.BreakSoundClass(node.Source.NativeClassId),
+                    Rac1World.Loot.PlayRac1PickupSound(Rac1CrateAudio.BreakSoundClass(node.Source.NativeClassId),
                         Rac1CrateAudio.BreakLocalSound, node.Root.GlobalPosition);
-                    DisableRac1CrateCollider(pair.Key);
+                    Rac1World.Loot.DisableRac1CrateCollider(pair.Key);
                     // Retain the original native state-3 expanding blast.
                     node.Root.Visible = false;
                 }
@@ -110,7 +110,7 @@ public partial class OBPGame
                 if (frame.EntityState.Presentation.Presence != node.State.Presentation.Presence)
                 {
                     node.ApplyState(frame.EntityState);
-                    if (frame.Reappeared) AddRac1CrateCollider(node);
+                    if (frame.Reappeared) Rac1World.Loot.AddRac1CrateCollider(node);
                 }
             }
         }

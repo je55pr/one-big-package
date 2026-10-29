@@ -46,17 +46,17 @@ public partial class OBPGame
             _world is not { Game.SourceGame: ObpSourceGame.Rac1 } world ||
             _rac1Campaign.Session.LevelCheckpoint is not { } checkpoint)
             return;
-        NVector3 nativePlayer = ToEffectNative(_player.GlobalPosition);
+        NVector3 nativePlayer = Rac1LootPresentation.ToEffectNative(_player.GlobalPosition);
         foreach (var trigger in _rac1CheckpointTriggers.Step(nativePlayer))
         {
-            var pos = FromEffectNative(new NVector3(
+            var pos = Rac1LootPresentation.FromEffectNative(new NVector3(
                 (float)trigger.NativeX, (float)trigger.NativeY, (float)trigger.NativeZ));
             var query = PhysicsRayQueryParameters3D.Create(
                 pos + Vector3.Up * .5f, pos - Vector3.Up * 2.5f);
             // The authoring Moby is a checkpoint, not an ordinary walkable
             // crate. Do not snap to nearby active crates/enemies.
             query.Exclude = [_player.GetRid()];
-            foreach (var body in _rac1CrateBodies.Values)
+            foreach (var body in Rac1World.Loot.CrateBodies.Values)
                 if (IsInstanceValid(body)) query.Exclude.Add(body.GetRid());
             foreach (var enemy in Rac1World.Enemies.Roster.Values)
                 if (IsInstanceValid(enemy.Body)) query.Exclude.Add(enemy.Body.GetRid());

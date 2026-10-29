@@ -21,7 +21,7 @@ public partial class OBPGame
         GetViewport().GetCamera3D()?.GlobalPosition ?? _player?.GlobalPosition ?? fallback;
 
     private void SpawnRac1BombExplosion(Vector3 origin, bool playSound = true, Vector3? impactNormal = null, Vector3? reflectedPush = null)
-        => _equipmentPresentation.Explosions.SpawnBomb(origin, Rac1EffectCamera(origin), Rac1EffectRandom,
+        => _equipmentPresentation.Explosions.SpawnBomb(origin, Rac1EffectCamera(origin), _persistentPlayer.Rac1EffectRandom(_args.FixedSeed),
             FusionWeapons.CreateNativeEffect, point => FusionWeapons.PlayNativeSound(121, 0, point),
             SetBombOrientation, _rac1EquipmentAssets, _args.FixedSeed, playSound, impactNormal, reflectedPush);
 
@@ -30,11 +30,11 @@ public partial class OBPGame
         bool groundedMine = weapon == Rac1WeaponId.MineGlove &&
             EquipmentGround(origin, .5f, 2.5f) is { } ground && origin.Y - ground.Y <= 2;
         _equipmentPresentation.Explosions.SpawnWeapon(weapon, origin, Rac1EffectCamera(origin), groundedMine,
-            Rac1EffectRandom, FusionWeapons.CreateNativeEffect, SetBombOrientation, _rac1EquipmentAssets, _args.FixedSeed);
+            _persistentPlayer.Rac1EffectRandom(_args.FixedSeed), FusionWeapons.CreateNativeEffect, SetBombOrientation, _rac1EquipmentAssets, _args.FixedSeed);
     }
 
     private void SpawnRac1ExplosionBursts(Vector3 origin, IReadOnlyList<Rac1BombExplosion.Burst> bursts)
-        => _equipmentPresentation.Explosions.SpawnBursts(origin, bursts, Rac1EffectRandom, FusionWeapons.CreateNativeEffect);
+        => _equipmentPresentation.Explosions.SpawnBursts(origin, bursts, _persistentPlayer.Rac1EffectRandom(_args.FixedSeed), FusionWeapons.CreateNativeEffect);
 
     private void StepRac1BombEffectsPhysics()
         => _equipmentPresentation.Explosions.Step(_sceneResult?.Root, Rac1EffectCamera(Vector3.Zero),
@@ -70,7 +70,7 @@ public partial class OBPGame
 
     private void StepRac1AdditionalWeaponWorld()
     {
-        if (MovementReproduction.IsLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is null || _player is null) return;
+        if (MovementReproduction.IsLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is null || _player is null) return;
         _rac1WeaponWorldTick++;
         StepRac1ArsenalWorld();
         if (_rac1PyroEmitting && EnsureRac1Particles() is { } particles)
@@ -81,7 +81,7 @@ public partial class OBPGame
             ray.Exclude = Rac1DamageableRayExclusions();
             var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(ray);
             if (hit.TryGetValue("position", out var contact)) reach = Math.Max(0, nozzle.DistanceTo(contact.AsVector3()) - .75f);
-            var created = particles.Pyrocitor(ToEffectNative(nozzle), ToEffectNative(EquipmentForward), reach);
+            var created = particles.Pyrocitor(Rac1LootPresentation.ToEffectNative(nozzle), Rac1LootPresentation.ToEffectNative(EquipmentForward), reach);
             // 0x2b8438 owns fifteen tracked slots. Only emitter index2 on every
             // fourth update is kept for the travelling damage-volume queries.
             if ((_rac1WeaponWorldTick & 3) == 0 && created.Count > 2)
@@ -103,7 +103,7 @@ public partial class OBPGame
                 if (shot.Motion is { } motion)
                 {
                     motion.Step(shot.AimPoint, 1.5f * MathF.PI);
-                    next = FromEffectNative(motion.Position);
+                    next = Rac1LootPresentation.FromEffectNative(motion.Position);
                 }
                 int lifetime = shot.Weapon == Rac1WeaponId.Blaster ? Rac1WeaponProfiles.BlasterCarrierTicks : Rac1WeaponReconstructionPolicy.SuckProjectileLifetimeTicks;
                 if (shot.Age > lifetime)
@@ -216,7 +216,7 @@ public partial class OBPGame
             var p = flame.Motion;
             if (!particles.IsLive(p) || p.Remaining < 2) { _rac1NativeFlames.Remove(flame); continue; }
             particles.FlameSecondary(p);
-            Vector3 point = FromEffectNative(p.Position);
+            Vector3 point = Rac1LootPresentation.FromEffectNative(p.Position);
             float radius = p.Size * .5f;
             foreach (var (victim, bounds) in EquipmentGeometry)
             {
@@ -262,7 +262,7 @@ public partial class OBPGame
         Vector3 offset = new(MathF.Cos(direction) * .3f, 0, MathF.Sin(direction) * .3f);
         body.GlobalPosition = EquipmentGround(canister.Position + offset, 1, 2) ?? canister.Position;
         var bot = new HostedDoomAgent(canister.Id * 4 + index + 1, body, view);
-        bot.Motion.Wander = ToEffectNative(offset.Normalized());
+        bot.Motion.Wander = Rac1LootPresentation.ToEffectNative(offset.Normalized());
         _rac1DoomAgents.Add(bot);
     }
 
@@ -276,9 +276,9 @@ public partial class OBPGame
                 Rac1WeaponReconstructionPolicy.DoomSearchRange * Rac1WeaponReconstructionPolicy.DoomSearchRange &&
                 BombHasLineOfSight(origin + Vector3.Up * .3f, node.Root.GlobalPosition + Vector3.Up * .3f))
                 .OrderBy(node => node.Root.GlobalPosition.DistanceSquaredTo(origin)).FirstOrDefault();
-            System.Numerics.Vector3? targetPoint = target is null ? null : ToEffectNative(target.Root.GlobalPosition);
-            Vector3 direction = FromEffectNative(bot.Motion.Direction(ToEffectNative(origin), targetPoint));
-            if (bot.Motion.Step(ToEffectNative(origin), targetPoint))
+            System.Numerics.Vector3? targetPoint = target is null ? null : Rac1LootPresentation.ToEffectNative(target.Root.GlobalPosition);
+            Vector3 direction = Rac1LootPresentation.FromEffectNative(bot.Motion.Direction(Rac1LootPresentation.ToEffectNative(origin), targetPoint));
+            if (bot.Motion.Step(Rac1LootPresentation.ToEffectNative(origin), targetPoint))
             {
                 ResolveEquipmentBlast(Rac1WeaponId.GloveOfDoom, bot.Id, 186, origin + Vector3.Up * .3f, 1, 3, Rac1WeaponProfiles.DoomFlags);
                 SpawnRac1WeaponExplosion(Rac1WeaponId.GloveOfDoom, origin + Vector3.Up * .2f);
@@ -300,7 +300,7 @@ public partial class OBPGame
             if (target is null)
                 for (int collision = 0; collision < bot.Body.GetSlideCollisionCount(); collision++)
                     if (bot.Body.GetSlideCollision(collision).GetNormal().Y < .7f)
-                    { bot.Motion.Wander = ToEffectNative(FromEffectNative(bot.Motion.Wander).Rotated(Vector3.Up, .3f)); break; }
+                    { bot.Motion.Wander = Rac1LootPresentation.ToEffectNative(Rac1LootPresentation.FromEffectNative(bot.Motion.Wander).Rotated(Vector3.Up, .3f)); break; }
         }
     }
 

@@ -126,7 +126,6 @@ public partial class OBPGame
         entry.Resources.EffectScope = entry.Plan.Request;
         ClearBootstrapSceneArtifacts();
         entry.Resources.PlayerLife = PlayerLife.BindWorld(entry.Plan.Request.WorldInstanceId, entry.Plan.Request.Generation, entry.Resources.Scene.Root);
-        _playerEmittedRewardIndex = 0;
         _navigation.RetireMenuPages();
         Sources.RetireView();
         entry.Resources.Rac1Gameplay = CreateRac1WorldModule(entry.Plan.Prepared.World, entry.Resources.Scene);
@@ -338,7 +337,7 @@ public partial class OBPGame
         var (view, controller) = _avatarPresentation.CreateWorldVisual(player, _playerAnimationProfile!, materials);
         if (selected.SourceGame == ObpSourceGame.Rac1)
         {
-            if (_equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is not null)
+            if (_equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is not null)
                 _avatarPresentation.InstallStagedBomb(FusionWeapons.CreateNativeEffect(121, "Rac1RetailStagedBomb_Class121"));
             AttachRac1EquipmentViews(view);
         }

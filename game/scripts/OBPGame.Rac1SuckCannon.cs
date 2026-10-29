@@ -19,7 +19,7 @@ public partial class OBPGame
                 var mote = EquipmentParticle(27, new(.25f, .7f, 1, .6f), .12f);
                 _sceneResult!.Root.AddChild(mote);
                 mote.GlobalPosition = muzzle + EquipmentForward * 3 + new Vector3(
-                    Rac1EffectRandom.Signed(0, .8f), Rac1EffectRandom.Signed(0, .6f), Rac1EffectRandom.Signed(0, .8f));
+                    _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(0, .8f), _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(0, .6f), _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(0, .8f));
                 _rac1WeaponMotes.Add(new(mote, (muzzle - mote.GlobalPosition) / 18));
             }
             // Bounded OBP eligibility adapter for opening Veldin. Full native
@@ -49,8 +49,8 @@ public partial class OBPGame
                     enemy.RewardEmitted = enemy.DeathPresented = true;
                     enemy.Body.CollisionLayer = enemy.Body.CollisionMask = 0; Rac1World.Enemies.SetRac1EnemyFlame(enemy, false);
                 }
-                else DisableRac1CrateCollider(target.Source.InstanceIndex);
-                PlayRac1PickupSound(849, 5, point); RefreshRac1HudState();
+                else Rac1World.Loot.DisableRac1CrateCollider(target.Source.InstanceIndex);
+                Rac1World.Loot.PlayRac1PickupSound(849, 5, point); RefreshRac1HudState();
             }
         }
         foreach (var capture in _rac1Captures.ToArray())

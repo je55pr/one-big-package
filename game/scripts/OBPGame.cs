@@ -55,14 +55,8 @@ public partial class OBPGame : Node3D
             .Concat(_rac1ChickenCargo).Distinct().ToArray(),
         ChickenCargo: _rac1ChickenCargo, RetireCapturedCargoPresentation: RetireRac1CapturedCargoPresentation,
         HeldItemId: () => _rac1HeldItem.NativeItemId,
-        MorphEnemy: MorphArsenalEnemy, DisableCrateCollider: DisableRac1CrateCollider,
-        RemovePlacedBolt: id =>
-        {
-            _rac1PendingPlacedBolts.RemoveAll(pending => pending.Registration.PickupId == id);
-            _rac1PlacedBoltNodes.Remove(id);
-            Rac1World.Presentation.PickupNodes.Remove(id);
-            _rac1PickupMotion.Remove(id);
-        }));
+        MorphEnemy: MorphArsenalEnemy, DisableCrateCollider: id => Rac1World.Loot.DisableRac1CrateCollider(id),
+        RemovePlacedBolt: id => Rac1World.Loot.RemovePlacedBolt(id)));
     private MovementReproductionService? _movementReproduction;
     private MovementReproductionService MovementReproduction => _movementReproduction ??= new(new(
         Owner: this, HostOperations: _hostOperations, Args: () => _args,
@@ -232,14 +226,14 @@ public partial class OBPGame : Node3D
                     node.Source.NativeClassId == intent.Target.NativeClassId && node.Source.InstanceIndex == intent.Target.InstanceIndex);
                 return target is not null && FusionDamagePolicy.Translate(intent) is { } damage && ApplyRac1AdditionalDamage(target, damage);
             }, Rac1DamageableRayExclusions, BombHasLineOfSight)), () => _avatarPresentation.View,
-        new((nativeClass, name) => CreateRac1EffectNode(nativeClass, name, playerEquipment: true),
+        new((nativeClass, name) => Rac1World.Loot.CreateRac1EffectNode(nativeClass, name, playerEquipment: true),
             (nativeClass, localSound, position) =>
             {
                 if (_playerAudio?.PlayEquipmentSound(nativeClass, localSound, new(-position.X, position.Y, position.Z)) == true)
                     RecordRac1WeaponSound(nativeClass, localSound);
             }, world =>
             {
-                var assets = _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets);
+                var assets = _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets);
                 _equipmentPresentation.ConfigureWorld(world, assets);
                 var source = Sources.Setup.Library.Get(ObpSourceGame.Rac1);
                 _playerAudio!.Bind(new(new(ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId, "player-audio"),
@@ -266,13 +260,35 @@ public partial class OBPGame : Node3D
             HasNativePlayer: () => _playerNative is not null,
             Actors: () => ActorHost,
             Audio: node => _worldHost.PlayRepresentativeAudioOneShot(node.Source),
-            CrateReward: SpawnCrateBoltPickups,
+            CrateReward: (centre, payout) => resources.Rac2Gameplay?.CrateBolts.Spawn(centre, payout),
             PlayerDamage: (node, hit, amount, mask) => PlayerLife.ApplySourceDamage(node, OBP.RAC2.Rac2Authority.Primary.BuildId,
                 PlayerSessionNativeState.Rac2DamageAdapter, PlayerSessionNativeState.Rac2DamageDescriptor,
                 hit, amount, mask).Applied,
-            CrateFocus: _args.CrateFocus, CrateAutoStrike: _args.CrateAutoStrike));
+            CrateFocus: _args.CrateFocus, CrateAutoStrike: _args.CrateAutoStrike),
+        new Rac2CrateBoltPorts(
+            () => _player, () => PlayerLife.Alive, () => ReferenceEquals(_worldScenes?.Current?.Resources, resources),
+            () => _playerNative is not null, () => _playerNative?.Wallet.Balance ?? 0,
+            index => new(PlayerLife.WorldId!, PlayerLife.Generation, new(ObpSourceGame.Rac2, 500, index)),
+            actor => actor.WorldInstanceId == PlayerLife.WorldId && actor.Generation == PlayerLife.Generation,
+            (actor, source, provenance, isActive) => _playerNative!.Life.RegisterActor(new(actor,
+                new(ObpSourceGame.Rac2, OBP.RAC2.Rac2Authority.Primary.BuildId, source),
+                "rac2/collected-class500-bolt/v1", provenance, []), isActive),
+            (actor, pickupId, denomination) =>
+            {
+                var result = _playerNative!.Life.Credit(new(actor, OBP.RAC2.Rac2Authority.Primary.BuildId,
+                    pickupId, "obp/bolts", denomination),
+                    value => _playerNative.Wallet.Credit(checked((int)value)));
+                return result.Applied ? null : result.Reason;
+            }, () => RefreshRac1HudState(), () => _worldHost.PlayRepresentativeAudioOneShot()));
 
-    private Rac1WorldModule CreateRac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene) => new(world, scene, Rac1EffectRandom,
+    private Rac1WorldModule CreateRac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene) => new(world, scene, _persistentPlayer.Rac1EffectRandom(_args.FixedSeed),
+        new Rac1LootPorts(() => _player, () => _world, () => _rac1Weapons, () => _rac1Nanotech,
+            () => _rac1BoltWallet, () => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed), () => _rac1WrenchThrow.Active,
+            WrenchWorldPosition, () => OrdinaryPlayerSession, () => _equipmentPresentation,
+            () => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path, _worldHost.PlayEffect,
+            () => _playerAudio?.RetireWorld(), PersistRac1CampaignState,
+            () => RefreshRac1HudState(), value => RefreshRac1HudState(Rac1HudProjection.CollectedBoltFeedback(value)),
+            (nativeClass, localSound) => RecordRac1WeaponSound(nativeClass, localSound), () => _rac1CollectedNovalisGoldBolts),
         new Rac1WorldResetPorts(
             Player: () =>
             {
@@ -283,16 +299,19 @@ public partial class OBPGame : Node3D
             Wheel: () => { _lastQuickSelectTap = 0; _previousSelectedWeapon = null; },
             Explosives: ResetRac1ExplosiveCrates, Checkpoints: ResetRac1CheckpointTriggers,
             Missions: ResetRac1Missions, MetalDetector: ResetRac1MetalDetector, Wrench: ResetRac1WrenchHost,
-            Retry: ResetRac1CombatRetry, Pickups: ResetRac1PickupPresentation,
-            GoldBolts: ResetRac1GoldBolts, Breakables: ResetRac1NovalisBreakables,
+            Retry: ResetRac1CombatRetry, Pickups: () => Rac1World.Loot.ResetRac1PickupPresentation(),
+            GoldBolts: () => Rac1World.Loot.ResetRac1GoldBolts(), Breakables: ResetRac1NovalisBreakables,
             AdditionalWeapons: ResetRac1AdditionalWeapons,
+
             BombPresentation: ResetRac1BombPresentation),
-        new Rac1WorldActorPorts(ConfigureRac1PickupPresentation, AddRac1CrateCollider,
+        new Rac1WorldActorPorts(world => Rac1World.Loot.ConfigureRac1PickupPresentation(world), node => Rac1World.Loot.AddRac1CrateCollider(node),
             ConfigureRac1ExplosiveCrates, ConfigureRac1CheckpointTriggers, ConfigureRac1Missions, ConfigureRac1MetalDetector,
-            ConfigureRac1PlacedBolts, ConfigureRac1GoldBolts, ConfigureRac1NovalisBreakables),
+            (world, result) => Rac1World.Loot.ConfigureRac1PlacedBolts(world, result),
+            (world, result) => Rac1World.Loot.ConfigureRac1GoldBolts(world, result), ConfigureRac1NovalisBreakables),
         new Rac1WorldTickPorts(() => MovementReproduction.IsLoading,
             TickRac1Swing, TickRac1ExplosiveCrates, TickRac1CheckpointTriggers, TickRac1MetalDetector,
-            TickRac1Pickups, TickRac1GoldBolts, TickRac1Missions),
+            delta => Rac1World.Loot.TickRac1Pickups(delta), () => Rac1World.Loot.TickRac1GoldBolts(), TickRac1Missions),
+
         new Rac1PlayerGameplayPorts(() => OrdinaryPlayerSession, () => _playerNative is not null, () => PlayerLife.Alive,
             () => _rac1Nanotech, () => _rac1Weapons, _persistentPlayer.Equipment.RefreshMovementEquipment,
             OnRac1PrimaryAttackRequested, OnRac1WeaponSelectionRequested, OnRac1WeaponCycleRequested,
@@ -315,7 +334,7 @@ public partial class OBPGame : Node3D
         }, sound => _playerAudio?.Play(new(0, sound))),
         new Rac1AuthoredMechanismPorts(
             () => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path,
-            PlayRac1PickupSound,
+            (nativeClass, sound, position) => Rac1World.Loot.PlayRac1PickupSound(nativeClass, sound, position),
             intent => _worldHost.StartLevelAudio([intent]),
             _worldHost.StopLevelAudio,
             status => Rac1World.Context.CombatStatus = status),
@@ -333,7 +352,7 @@ public partial class OBPGame : Node3D
     private Rac1EnemyHost CreateRac1EnemyHost(RuntimeWorld world, RuntimeWorldScene.Result scene, Rac1WorldModule owner) => new(
         world, scene, owner.Context, owner.Presentation, new(
             () => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path ?? throw new InvalidOperationException("Enemy assets require the active R&C1 source."),
-            () => Rac1EffectRandom,
+            () => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed),
             new(() => _player, () => PlayerLife.Alive, () => _playerNative is not null, () => _rac1Nanotech,
                 (attacker, tick, amount, flags) => PlayerLife.ApplySourceDamage(attacker, OBP.RAC1.Rac1Authority.Primary.BuildId,
                     PlayerSessionNativeState.Rac1DamageAdapter, PlayerSessionNativeState.Rac1DamageDescriptor, tick, amount, flags),
@@ -344,23 +363,23 @@ public partial class OBPGame : Node3D
                 enemy => _rac1Decoys.Any(decoy => decoy.Grounded && decoy.View.GlobalPosition.DistanceTo(enemy.Body.GlobalPosition) < 1.8f),
                 id => _rac1EquipmentShots.FirstOrDefault(shot => shot.Weapon == Rac1WeaponId.MineGlove && shot.Id == id)?.Position,
                 id => _rac1DoomAgents.FirstOrDefault(bot => bot.Id == id)?.Body.GlobalPosition,
-                SelectRac1CrateReward, SpawnRac1BoltPickups, (node, ids) => ActorHost.TrackPickups(node, ids),
-                nativeClass => _rac1PickupAssets?.Models.ContainsKey(nativeClass) == true,
+                SelectRac1CrateReward, owner.Loot.SpawnRac1BoltPickups, (node, ids) => ActorHost.TrackPickups(node, ids),
+                nativeClass => owner.Loot.HasPickupModel(nativeClass),
                 (nativeClass, motion) =>
                 {
-                    var node = CreateRac1EffectNode(nativeClass, $"rac1_enemy_fragment_{nativeClass}");
-                    node.GlobalPosition = FromEffectNative(motion.Position); _rac1Debris.Add((node, motion));
-                }, PlayRac1PickupSound, (node, sound) => ActorHost.PlayRac1Sound(node, sound), BombHasLineOfSight, origin => SpawnRac1BombExplosion(origin),
+                    var node = owner.Loot.CreateRac1EffectNode(nativeClass, $"rac1_enemy_fragment_{nativeClass}");
+                    node.GlobalPosition = Rac1LootPresentation.FromEffectNative(motion.Position); owner.Loot.AddDebris(node, motion);
+                }, owner.Loot.PlayRac1PickupSound, (node, sound) => ActorHost.PlayRac1Sound(node, sound), BombHasLineOfSight, origin => SpawnRac1BombExplosion(origin),
                 origin => SpawnRac1ExplosionBursts(origin, Rac1BombExplosion.Bursts(false).Take(1).ToArray()),
                 TryTriggerRac1ExplosiveDamage, CompleteRac1CrateDamage,
-                (id, presence) => { if (_rac1CrateBodies.TryGetValue(id, out var body) && IsInstanceValid(body)) body.CollisionLayer = presence == RuntimeEntityPresence.Active ? 1u : 0; },
+                (id, presence) => { if (owner.Loot.CrateBodies.TryGetValue(id, out var body) && IsInstanceValid(body)) body.CollisionLayer = presence == RuntimeEntityPresence.Active ? 1u : 0; },
                 id => _rac1Chickens.ContainsKey(id)),
             new(() => ReferenceEquals(_worldScenes?.Current?.Resources.Rac1Gameplay, owner)),
             new(GetViewport, () => _activeCamera, camera => _activeCamera = camera, () => _camera,
                 () => _rac1MissileCamera, _rac1WrenchHitTargets.Contains,
                 key => { _rac1WrenchHitTargets.Add(key); },
-                (nativeClass, name) => CreateRac1EffectNode(nativeClass, name),
-                (node, debris) => _rac1Debris.Add((node, debris)), FromEffectOrientation)));
+                (nativeClass, name) => owner.Loot.CreateRac1EffectNode(nativeClass, name),
+                (node, debris) => owner.Loot.AddDebris(node, debris), Rac1LootPresentation.FromEffectOrientation)));
 
     private void RefreshRac1HudState(params HudFeedbackDraft[] feedback)
     {
@@ -470,8 +489,8 @@ public partial class OBPGame : Node3D
                 v.Value.Animation.Position, v.Value.DeathTicks, v.Value.RewardEmitted, v.Value.Buried,
                 v.Value.Node.Source.NativeClassId == 1440 && Rac1World.Enemies.Class1440 is not null ? Rac1World.Enemies.Class1440.Get(v.Key).Health : null,
                 Rac1World.Presentation.HostileNodes.ContainsKey(v.Key) ? Rac1World.Context.Hostiles.Probe(v.Value.Node.Source).Health : null)).ToArray(),
-            [Rac1World.Presentation.Projectiles.Count, _rac1PickupMotion.Count, _rac1EquipmentShots.Count, _rac1DoomAgents.Count, _rac1AmmoPickups.Count, _rac1NanotechClouds.Count],
-            Rac1World.Presentation.Projectiles.Select(v => new CaptureBombCheckpoint(v.Key, ToNumerics(FromEffectNative(v.Value.Motion.Position)), ToNumerics(FromEffectNative(v.Value.Motion.Velocity)),
+            [Rac1World.Presentation.Projectiles.Count, Rac1World.Loot.PickupMotions.Count, _rac1EquipmentShots.Count, _rac1DoomAgents.Count, Rac1World.Loot.AmmoPickups.Count, Rac1World.Loot.NanotechClouds.Count],
+            Rac1World.Presentation.Projectiles.Select(v => new CaptureBombCheckpoint(v.Key, ToNumerics(Rac1LootPresentation.FromEffectNative(v.Value.Motion.Position)), ToNumerics(Rac1LootPresentation.FromEffectNative(v.Value.Motion.Velocity)),
                 v.Value.Motion.NativeState, v.Value.Motion.BlastAge)).ToArray(),
             _rac1EquipmentShots.Select(v => new CaptureShotCheckpoint(v.Id, ToNumerics(v.Position), ToNumerics(v.Step), (int)v.Weapon, v.Age, v.Grounded)).ToArray(),
             _rac1DoomAgents.Where(v => IsInstanceValid(v.Body)).Select(v => new CaptureBodyCheckpoint(v.Id, ToNumerics(v.Body.GlobalPosition), ToNumerics(v.Body.Velocity))).ToArray(),
@@ -613,9 +632,10 @@ public partial class OBPGame : Node3D
             Sources: () => Sources.Setup.Library.Attached.Values.ToDictionary(source => source.Game, source => source.Identity.BuildId),
             SelectedAvatar: () => _playerSession?.Capture().Configuration.Avatar,
             PresentedAvatar: () => _avatarPresentation.Avatar?.Identity,
-            Presentation: key => _equipmentPresentation.Observe(key, _equipmentPresentation.ModelAvailable(key, _avatarPresentation, _rac1EquipmentAssets, FusionWeapons.Sources.Assets), _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is not null),
+            Presentation: key => _equipmentPresentation.Observe(key, _equipmentPresentation.ModelAvailable(key, _avatarPresentation, _rac1EquipmentAssets, FusionWeapons.Sources.Assets), _equipmentPresentation.Assets(OrdinaryPlayerSession, _worldScenes?.Current?.Resources.Rac1Gameplay?.Loot.PickupAssets) is not null),
             Context: () => new(_player?.HasRac1SwingshotTargets == true,
                 _worldScenes?.Current?.Resources.Rac1Gameplay?.Mechanisms.HasWater == true),
+
             SelectWeapon: FusionWeapons.Select,
             ResetWeaponPresentation: () =>
             {
@@ -1534,29 +1554,29 @@ public partial class OBPGame : Node3D
     {
         var movement = CreateMovementDiagnosticHarness(); var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
         var targets = new GodotRac1WeaponTargetFixture(new(() => [.. Rac1World.Presentation.CrateNodes], () => [.. Rac1World.Enemies.Roster.Values], Rac1World.Enemies.IsRac1GameplayActive,
-            (node, position) => GodotRac1CrateStaging.Place(node, position, _rac1FallingCrates),
+            (node, position) => GodotRac1CrateStaging.Place(node, position, Rac1World.Loot.FallingCrates),
             id => Rac1World.Enemies.Class1440?.Get(id).Health ?? throw new DiagnosticUnavailableException("The robot health source is unavailable.")), worlds);
         var loot = new GodotRac1LootDiagnosticFixture(new()
         {
             Read = () => new(ObpSourceGame.Rac1, _rac1BoltWallet.Balance, Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet).Bolts?.Balance,
-                _rac1PickupSoundCount, _rac1Nanotech.Probe().Nanotech, _rac1Weapons.FirstRangedAmmo, Rac1World.Context.BoltCrates.OutstandingPickupCount,
-                [.. _rac1Debris.Select(piece => piece.Motion.NativeClassId)],
-                [.. _rac1PickupMotion.Select(pair => new Rac1LootMotionDiagnostic(pair.Key, pair.Value.NativeClassId, pair.Value.NativeState, pair.Value.Position,
-                    GodotMovementPlayer.Copy(FromEffectNative(pair.Value.Position))))],
-                [.. _rac1AmmoPickups.Select(pickup => new Rac1AmmoPickupDiagnostic(new(ObpSourceGame.Rac1, pickup.Motion.Definition.Item), pickup.Motion.Definition.Amount,
+                Rac1World.Loot.PickupSoundCount, _rac1Nanotech.Probe().Nanotech, _rac1Weapons.FirstRangedAmmo, Rac1World.Context.BoltCrates.OutstandingPickupCount,
+                [.. Rac1World.Loot.Debris.Select(piece => piece.Motion.NativeClassId)],
+                [.. Rac1World.Loot.PickupMotions.Select(pair => new Rac1LootMotionDiagnostic(pair.Key, pair.Value.NativeClassId, pair.Value.NativeState, pair.Value.Position,
+                    GodotMovementPlayer.Copy(Rac1LootPresentation.FromEffectNative(pair.Value.Position))))],
+                [.. Rac1World.Loot.AmmoPickups.Select(pickup => new Rac1AmmoPickupDiagnostic(new(ObpSourceGame.Rac1, pickup.Motion.Definition.Item), pickup.Motion.Definition.Amount,
                     pickup.Motion.Position, pickup.Motion.Velocity, pickup.Motion.DelayTicks, _rac1Weapons.GetAmmo(pickup.Motion.Definition.Item)))],
-                [.. _rac1NanotechClouds.Select(cloud => cloud.Motion.Attracting)]),
+                [.. Rac1World.Loot.NanotechClouds.Select(cloud => cloud.Motion.Attracting)]),
             OriginalPickupMeshes = () => Rac1World.Presentation.PickupNodes.Values.All(node => GodotWeaponModelFacts.Read(node).OriginalMeshes),
-            Pending = () => _rac1PendingPlacedBolts.Count,
+            Pending = () => Rac1World.Loot.PendingPlacedBolts.Count,
             Placed = () => Rac1World.Context.PlacedBolts,
-            PlacedNodes = () => _rac1PlacedBoltNodes,
-            Motions = () => _rac1PickupMotion,
+            PlacedNodes = () => Rac1World.Loot.PlacedBoltNodes,
+            Motions = () => Rac1World.Loot.PickupMotions,
             PickupNodes = () => Rac1World.Presentation.PickupNodes,
-            Random = () => Rac1EffectRandom,
-            ToNative = ToEffectNative,
-            FromNative = FromEffectNative,
-            Orientation = FromEffectOrientation,
-            CrateBody = id => _rac1CrateBodies.ContainsKey(id),
+            Random = () => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed),
+            ToNative = Rac1LootPresentation.ToEffectNative,
+            FromNative = Rac1LootPresentation.FromEffectNative,
+            Orientation = Rac1LootPresentation.FromEffectOrientation,
+            CrateBody = id => Rac1World.Loot.CrateBodies.ContainsKey(id),
             Strike = node => TryStrikeRac1Crate(node),
             Damage = () => _rac1Nanotech.ApplyDamage(Rac1DamageRuntime.FromClass749Attack(new(749, 149), new(34, 1))),
         }, targets, worlds);
@@ -1569,7 +1589,7 @@ public partial class OBPGame : Node3D
         var movement = CreateMovementDiagnosticHarness();
         var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
         var targets = new GodotRac1WeaponTargetFixture(new(() => [.. Rac1World.Presentation.CrateNodes], () => [.. Rac1World.Enemies.Roster.Values],
-            Rac1World.Enemies.IsRac1GameplayActive, (node, position) => GodotRac1CrateStaging.Place(node, position, _rac1FallingCrates),
+            Rac1World.Enemies.IsRac1GameplayActive, (node, position) => GodotRac1CrateStaging.Place(node, position, Rac1World.Loot.FallingCrates),
             id => Rac1World.Enemies.Class1440?.Get(id).Health ?? throw new DiagnosticUnavailableException("The robot health source is unavailable.")), worlds);
         var wrench = new GodotRac1WrenchDiagnosticFacts(new(() => _player, () => _avatarPresentation.WrenchView, () => _avatarPresentation.Avatar,
             () => _avatarPresentation.Controller, () => _rac1WrenchHostGeneration, () => _rac1WrenchThrow.Active,
@@ -1614,7 +1634,7 @@ public partial class OBPGame : Node3D
             GodotMovementPlayer.Copy(EquipmentForward), _player?.Rac1RemoteControlActive == true, _rac1MissileCamera is not null,
             _rac1MissileCamera?.Current == true, _player?.Camera.Current == true, _equipmentPresentation.Explosions.RenderedCount, _equipmentPresentation.Explosions.DrawCalls),
         weapon => _rac1EquipmentViews.GetValueOrDefault(weapon), weapon => EquipmentMuzzle(weapon), item => _rac1Weapons.GetAmmo(item),
-        (nativeClass, sound) => _rac1PickupAssets?.Sounds?.TryGetValue((nativeClass, sound), out var voice) == true && voice.Clip.InterleavedPcm16.Any(sample => sample != 0),
+        (nativeClass, sound) => Rac1World.Loot.PickupAssets?.Sounds?.TryGetValue((nativeClass, sound), out var voice) == true && voice.Clip.InterleavedPcm16.Any(sample => sample != 0),
         () => [.. _equipmentPresentation.WeaponAudio.Events.Select(cue => new Rac1WeaponAudioDiagnostic(ObpSourceGame.Rac1, cue.Tick, cue.Class, cue.Sound, cue.Loop))],
         () => [.. _rac1EquipmentShots.Select(shot => new GodotWeaponDiagnosticWitness<Rac1EquipmentShotDiagnostic>(new(worlds), () => new(
             new(ObpSourceGame.Rac1, (int)shot.Weapon), shot.Id, GodotMovementPlayer.Copy(shot.Position), shot.Grounded, GodotWeaponModelFacts.Read(shot.Node))))],
@@ -1655,9 +1675,9 @@ public partial class OBPGame : Node3D
             id => Rac1World.Enemies.HasBirdbotShot(id)), new GodotDiagnosticWorldObservations(WorldScenes));
         var movement = CreateMovementDiagnosticHarness();
         var loot = new GodotRac1EncounterLoot(() => new(_rac1BoltWallet.Balance, Rac1World.Context.BoltPickups.OutstandingCount,
-            [.. _rac1PickupMotion.Select(pair => new Rac1DiagnosticPickup(pair.Key, pair.Value.NativeClassId,
+            [.. Rac1World.Loot.PickupMotions.Select(pair => new Rac1DiagnosticPickup(pair.Key, pair.Value.NativeClassId,
                 pair.Value.Position, pair.Value.NativeState, pair.Value.CollectionStep))],
-            [.. _rac1Debris.Select(piece => piece.Motion.NativeClassId)]));
+            [.. Rac1World.Loot.Debris.Select(piece => piece.Motion.NativeClassId)]));
         var lifecycle = new GodotRac1EncounterLifecycle(() => _rac1Nanotech.Probe(), Rac1World.Enemies.ApplyRac1EnemyPlayerDamage, () => _rac1CombatRetry ?? PlayerLife.RetryPanel);
         var approach = new GodotRac1WrenchApproachFixture(() => _player, _persistentPlayer.Wrench.ResolveFirstSwingFacing, Rac1WorldPresentation.WrenchHostRootHeight);
         var combat = new Rac1CombatScenarioPorts(actors, actors, CreateRac1CombatDiagnosticFixture(actors), approach, movement.Equipment,
@@ -1729,8 +1749,8 @@ public partial class OBPGame : Node3D
                 Waves = () => encounter()?.Waves,
                 WaveControllers = () => encounter()?.WaveControllerIds ?? [],
                 Carriers = () => encounter()?.CarrierChildren ?? System.Collections.Immutable.ImmutableDictionary<int, Node3D>.Empty,
-                HasPickupModel = nativeClass => _rac1PickupAssets?.Models.ContainsKey(nativeClass) == true,
-                Counts = () => (Rac1World.Presentation.CrateNodes.Count, _rac1PickupMotion.Count, _rac1Debris.Count),
+                HasPickupModel = nativeClass => Rac1World.Loot.HasPickupModel(nativeClass),
+                Counts = () => (Rac1World.Presentation.CrateNodes.Count, Rac1World.Loot.PickupMotions.Count, Rac1World.Loot.Debris.Count),
                 TickFrog = enemy => encounter()?.TickRac1Frog(enemy),
                 TickCarrier = enemy => encounter()?.TickRac1FrogCarrier(enemy),
                 MeleeTouchesPlayer = Rac1World.Enemies.EnemyMeleeTouchesPlayer,
@@ -1845,8 +1865,8 @@ public partial class OBPGame : Node3D
         Read = () => new([.. Rac1World.Enemies.Roster.Values.Select(enemy => new MovementStateEnemyDiagnostic(new(ObpSourceGame.Rac1, enemy.Node.Source.NativeClassId,
                 enemy.Node.Source.InstanceIndex), Rac1World.Enemies.IsRac1GameplayActive(enemy.Node), enemy.Node.Root.Visible, enemy.Body.CollisionLayer, enemy.RewardEmitted))],
             [.. Rac1World.Presentation.CrateNodes.Select(node => new MovementStateCrateDiagnostic(new(ObpSourceGame.Rac1, node.Source.NativeClassId, node.Source.InstanceIndex),
-                Rac1World.Enemies.IsRac1GameplayActive(node), _rac1CrateBodies.ContainsKey(node.Source.InstanceIndex)))], Rac1World.Context.BoltCrates.DestroyedCrateCount,
-            _rac1Weapons.Equipped, _rac1Weapons.FirstRangedAmmo, _rac1BoltWallet.Balance, _rac1PickupMotion.Keys.Any(id => id > 0)),
+                Rac1World.Enemies.IsRac1GameplayActive(node), Rac1World.Loot.CrateBodies.ContainsKey(node.Source.InstanceIndex)))], Rac1World.Context.BoltCrates.DestroyedCrateCount,
+            _rac1Weapons.Equipped, _rac1Weapons.FirstRangedAmmo, _rac1BoltWallet.Balance, Rac1World.Loot.PickupMotions.Keys.Any(id => id > 0)),
         Consume = () => { OnRac1WeaponSelectionRequested(Rac1WeaponId.FirstRanged); return _rac1Weapons.TryUseEquipped(); },
         Credit = amount => _rac1BoltWallet.Credit(amount),
         Loading = () => MovementReproduction.IsLoading,
@@ -1867,7 +1887,7 @@ public partial class OBPGame : Node3D
         Session = () => _playerSession!,
         Player = () => _player,
         Scene = () => _sceneResult!.Root,
-        Read = () => new(OrdinaryPlayerSession, _playerNative is not null, _equipmentPresentation.Assets(OrdinaryPlayerSession, _rac1PickupAssets) is not null, _playerAudio?.Ready == true,
+        Read = () => new(OrdinaryPlayerSession, _playerNative is not null, _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is not null, _playerAudio?.Ready == true,
             _rac1HeldItem.Hand.WrenchHeld, _avatarPresentation.Clock?.Tick ?? 0, FusionWeapons.Session?.ShotsFired ?? 0, _pauseMenu?.UniversalEnabled == true,
             _pauseMenu?.RetailEnabled == true, _rac1PyroEmitting, _equipmentPresentation.Explosions.Particles?.Live.Any(particle => particle.Type == 12) == true,
             _equipmentPresentation.Explosions.RenderedCount, _playerNative?.Life.Capture().Current ?? 0, GodotMovementPlayer.Copy(_player?.GlobalPosition ?? Vector3.Zero),
@@ -1890,14 +1910,14 @@ public partial class OBPGame : Node3D
         PlayerLife.Contains, () => _rac1BombOcclusionFrame = ulong.MaxValue,
         id =>
         {
-            Rac1World.Context.BoltPickups.Discard(id); _rac1PickupMotion.Remove(id);
+            Rac1World.Context.BoltPickups.Discard(id); Rac1World.Loot.PickupMotions.Remove(id);
             if (Rac1World.Presentation.PickupNodes.Remove(id, out var node) && IsInstanceValid(node)) node.QueueFree();
         }, () => unchecked((uint)(_args.FixedSeed ?? System.Environment.TickCount))), new(
         new(() => _worldScenes?.Current?.Resources.Rac1Gameplay?.Enemies,
             () => Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes), ApplyRac1AdditionalDamage,
             key => _rac1Captures.RemoveAll(capture => capture.Key == key),
-            () => _rac1PickupAssets, () => _equipmentPresentation.SelectedAssets,
-            (assets, materials) => { _rac1PickupAssets = assets; _rac1PickupMaterials = materials; }, TickRac1Pickups),
+            () => Rac1World.Loot.PickupAssets, () => _equipmentPresentation.SelectedAssets,
+            (assets, materials) => { Rac1World.Loot.SetDiagnosticAssets(assets, materials); }, delta => Rac1World.Loot.TickRac1Pickups(delta)),
         new(() => _worldScenes?.Current?.Resources.Rac2Gameplay),
         new(() => _worldScenes?.Current?.Resources.Rac3Gameplay)), new(
         () => _player!.GetWorld3D().DirectSpaceState, Rac1DamageableRayExclusions, BombHasLineOfSight,
@@ -1909,7 +1929,7 @@ public partial class OBPGame : Node3D
     private ITrilogyActorDiagnosticFixture CreateTrilogyActorDiagnosticFixture() => new GodotTrilogyActorDiagnosticFixture(new()
     {
         Actors = () => ActorHost.Diagnostics,
-        ResetEncounter = () => { FusionWeapons.ClearTransients(); _rac1EffectRandom = Rac1PickupRandom.FromSeed(1440); },
+        ResetEncounter = () => { FusionWeapons.ClearTransients(); _persistentPlayer.ResetRac1EffectRandom(1440); },
         ResetSharedAssets = FusionWeapons.ResetSources,
     });
 
@@ -1976,7 +1996,7 @@ public partial class OBPGame : Node3D
             () => _playerAudio?.ReadVoices() ?? [],
             ClearMovementSmokeInput, SetAnalogueSmokeInput, SetRac1SmokeConditionedInput, TryHandleInteractiveBack,
             OnRac1WeaponSelectionRequested, SetRac1WeaponPreview, () => [.. Rac1World.Presentation.CrateNodes], Rac1World.Enemies.IsRac1GameplayActive,
-            (node, position) => GodotRac1CrateStaging.Place(node, position, _rac1FallingCrates), Rac1World.Enemies.ApplyRac1EnemyPlayerDamage));
+            (node, position) => GodotRac1CrateStaging.Place(node, position, Rac1World.Loot.FallingCrates), Rac1World.Enemies.ApplyRac1EnemyPlayerDamage));
         var ports = new PlayerSessionDiagnosticPorts(player,
             new GodotPlayerObservations(() => _player, () => _avatarPresentation.Avatar?.Identity,
                 () => _avatarPresentation.Clock?.Tick ?? throw new DiagnosticUnavailableException("The native player clock is unavailable."), () => _playerNative?.Life.Capture().Current),
