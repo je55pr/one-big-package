@@ -12,9 +12,14 @@ public sealed class PlayerLifecycleBridgeTests
     private sealed class Preferences : IPlayerSessionPreferencesAdapter
     {
         public IReadOnlyDictionary<string, string> Capture() => new Dictionary<string, string>();
-        public void ValidateRestore(IReadOnlyDictionary<string, string> preferences) { }
-        // This fixture has no preference state to restore; the native adapter restores gameplay state.
-        public void Restore(IReadOnlyDictionary<string, string> preferences) { }
+        public void ValidateRestore(IReadOnlyDictionary<string, string> preferences)
+        {
+            // No preference state belongs to this fixture.
+        }
+        public void Restore(IReadOnlyDictionary<string, string> preferences)
+        {
+            // No preference state to restore; the native adapter restores gameplay state.
+        }
     }
     private sealed class Fixture
     {
