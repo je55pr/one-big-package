@@ -15,13 +15,16 @@ internal static class EffectReplayScript
         throw new InvalidOperationException("OBP_EFFECT_REPLAY_STOP_FRAME must be between 65 and 600.");
     }
 
-    public static void Apply(int processFrame, Action<PlaytestCommand> command, Action stop)
+    public static void Apply(int processFrame, Action<PlaytestCommand> command, Action stop) =>
+        Apply(processFrame, command, stop, StopFrame);
+
+    internal static void Apply(int processFrame, Action<PlaytestCommand> command, Action stop, int stopFrame)
     {
         if (processFrame is 1 or 40) command(new("effects", "start"));
         if (processFrame == 30) command(new("effects", "reset"));
         // Two native windows of at least 20 ticks, matching the rendered samples.
         // The longer optional stop boundary also exercises grounded wall contact;
         // the separate rendered scenario verifies full drain and world re-entry.
-        if (processFrame == StopFrame) stop();
+        if (processFrame == stopFrame) stop();
     }
 }
