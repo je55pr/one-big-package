@@ -72,7 +72,7 @@ internal sealed class Rac1AmoeboidEnemyAdapter
         {
             var node = Rac1WorldPresentation.FindPresentedDynamic(result, candidate);
             if (node is null) continue; // No source-backed presented target.
-            var placement = RequirePlacement(instances, candidate);
+            var placement = Rac1Instances.RequirePlacement(instances, candidate.InstanceIndex, candidate.NativeClassId);
             int group = Rac1AmoeboidAuthored.ReadGroup(placement.RawRecord);
             // State 0 clears the targeting flag in authored state-12/15
             // gates; only the independent volume activation is hosted.
@@ -99,7 +99,7 @@ internal sealed class Rac1AmoeboidEnemyAdapter
         foreach (var source in (world.DynamicObjects ?? [])
             .Where(moby => Rac1AmoeboidAuthored.IsFamily(moby.NativeClassId)))
         {
-            var placement = RequirePlacement(instances, source);
+            var placement = Rac1Instances.RequirePlacement(instances, source.InstanceIndex, source.NativeClassId);
             var authored = Rac1AmoeboidAuthored.Read(placement.OClass,
                 placement.PVar ?? throw new InvalidDataException("Amoeboid has no authored PVar."));
             var node = Rac1WorldPresentation.FindPresentedDynamic(result, source)
@@ -116,16 +116,6 @@ internal sealed class Rac1AmoeboidEnemyAdapter
         GD.Print($"[rac1-amoeboids] L{world.LevelId}: {_rac1Amoeboids.RegisteredCount} authored, " +
             $"{_rac1Amoeboids.ActiveCount} active, {_rac1Amoeboids.GatedCount} gated, " +
             $"{_rac1Amoeboids.DormantCount} reserve");
-    }
-
-    private static Rac1Instances.MobyInstance RequirePlacement(
-        IReadOnlyList<Rac1Instances.MobyInstance> instances, RuntimeDynamicObject source)
-    {
-        int index = source.InstanceIndex;
-        if (index < 0 || index >= instances.Count || instances[index].Index != index ||
-            instances[index].OClass != source.NativeClassId)
-            throw new InvalidDataException($"Amoeboid source class/index mismatch: class{source.NativeClassId} i{index}.");
-        return instances[index];
     }
 
     internal void Initialize(Rac1HostedEnemy enemy)
