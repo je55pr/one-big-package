@@ -84,21 +84,30 @@ public static partial class RuntimeWorldScene
                 frames[f] = dst;
             }
 
-            var mat = mats.Instanced(am.AssetKind, am.TextureId, hasCol, am.MaterialPresentation);
-
+            bool canPresent = mats.CanPresentSurface(
+                am.AssetKind, am.TextureId, am.Uvs.Length == vc * 2,
+                hasCol && am.VertexColoursAreAuthored);
             var animMesh = new ArrayMesh();
             var mi = new MeshInstance3D
             {
                 Name = am.Name,
                 Mesh = animMesh,
-                MaterialOverride = mat,
+                Visible = canPresent,
+                MaterialOverride = canPresent
+                    ? mats.Instanced(am.AssetKind, am.TextureId, hasCol, am.MaterialPresentation)
+                    : null,
                 CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
             };
             root.AddChild(mi);
-            ambientBindings.Add(new(mi, am.AssetKind, am.TextureId, null));
+            if (canPresent) ambientBindings.Add(new(mi, am.AssetKind, am.TextureId, null));
+            // Keep source animation frames and the node alive even when no
+            // visible material is supported; later native recovery can use them.
             animatedPlayers.Add(new AnimatedMesh(mi, animMesh, frames, idx, uv, col, am.FramesPerSecond, am.Name));
-            animatedMeshInstances++;
-            triangles += am.TriangleCount;
+            if (canPresent)
+            {
+                animatedMeshInstances++;
+                triangles += am.TriangleCount;
+            }
         }
 
         return (animatedMeshInstances, triangles, animatedPlayers);

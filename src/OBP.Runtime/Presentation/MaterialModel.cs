@@ -115,6 +115,16 @@ public static class MaterialModel
             RuntimeBlendEquation.AdditiveFixedAlpha);
 
     /// <summary>
+    /// A native Moby with neither a decoded texture nor authored vertex colour
+    /// has no supported visible appearance. Do not invent an opaque beige
+    /// material for its geometry (including unresolved chrome/glass selectors).
+    /// Keep the source geometry and actor identity for future native recovery.
+    /// Other asset kinds retain their existing presentation fallbacks.
+    /// </summary>
+    public static bool CanPresentSurface(string assetKind, bool hasDecodedTexture, bool hasVertexColour) =>
+        assetKind != "moby" || hasDecodedTexture || hasVertexColour;
+
+    /// <summary>
     /// Whether a kind's geometry may be back-face culled. Currently <c>false</c>
     /// for everything: the decoded winding is not reliably outward-facing across
     /// terrain and built structure (whole regions — e.g. the Tabora desert

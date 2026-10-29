@@ -322,23 +322,32 @@ public static partial class RuntimeWorldScene
                         arrays[(int)Mesh.ArrayType.Color] = col;
                     }
 
+                    // Preserve the render node's index in the source surface list
+                    // (animation uses that index), but do not present untextured
+                    // Mobies as opaque fallback geometry.
+                    bool canPresent = mats.CanPresentSurface(
+                        m.AssetKind, m.TextureId, hasUv, hasColor && m.VertexColoursAreAuthored);
                     var mesh = new ArrayMesh();
                     mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
-                    var mat = mats.Instanced(m.AssetKind, m.TextureId, hasColor, m.MaterialPresentation);
-
                     var childMesh = new MeshInstance3D
                     {
                         Name = $"{m.AssetKind}_{m.TextureId}",
                         Mesh = mesh,
-                        MaterialOverride = mat,
+                        Visible = canPresent,
+                        MaterialOverride = canPresent
+                            ? mats.Instanced(m.AssetKind, m.TextureId, hasColor, m.MaterialPresentation)
+                            : null,
                         CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
                     };
                     objRoot.AddChild(childMesh);
-                    ambientBindings.Add(new(childMesh, m.AssetKind, m.TextureId, null));
+                    if (canPresent) ambientBindings.Add(new(childMesh, m.AssetKind, m.TextureId, null));
                     childMeshNodes.Add(childMesh);
                     childMeshes++;
-                    meshInstances++;
-                    triangles += m.TriangleCount;
+                    if (canPresent)
+                    {
+                        meshInstances++;
+                        triangles += m.TriangleCount;
+                    }
                 }
 
                 if (childMeshes > 0)

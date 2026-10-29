@@ -84,6 +84,11 @@ public sealed class WorldMaterialFactory
     public AlphaProfile? AlphaFor(string assetKind, int textureId) =>
         _alpha.TryGetValue((assetKind, textureId), out var p) ? p : null;
 
+    /// <summary>Whether an instanced surface has a supported visible material.</summary>
+    public bool CanPresentSurface(string assetKind, int textureId, bool hasUsableUvs, bool hasAuthoredVertexColour) =>
+        MaterialModel.CanPresentSurface(assetKind,
+            hasUsableUvs && TextureFor(assetKind, textureId) is not null, hasAuthoredVertexColour);
+
     /// <summary>
     /// Material for a welded static <see cref="RuntimeMesh"/>. Textured only when
     /// the mesh has UVs and a decoded texture exists. Includes the sky backdrop
