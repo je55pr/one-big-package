@@ -52,7 +52,7 @@ public sealed class Rac1TaxiHostOwnershipTests
     }
 
     [Fact]
-    public void SnapshotCountsOnlyLiveCollisionHullsAndHandlesRetiredCabs()
+    public void SnapshotSourceGuardsLiveCollisionHullsAndRetiredCabDiagnostics()
     {
         var cab = Source("Rac1HostedTaxiCab.cs");
         var host = Source("Rac1MetropolisTaxiHost.cs");
@@ -60,6 +60,9 @@ public sealed class Rac1TaxiHostOwnershipTests
             "GodotRac1TaxiDiagnosticFixture.cs"));
 
         Assert.Contains("GodotObject.IsInstanceValid(Hull) && !Hull.IsQueuedForDeletion()", cab, StringComparison.Ordinal);
+        Assert.Contains("get => HullValid ? Hull.CollisionLayer : _lastCollisionLayer", cab, StringComparison.Ordinal);
+        Assert.Contains("if (HullValid)", cab, StringComparison.Ordinal);
+        Assert.Contains("out var hull) && hull.HullValid", host, StringComparison.Ordinal);
         Assert.Contains("_cabs.Values.Count(cab => cab.HullValid)", host, StringComparison.Ordinal);
         Assert.Contains("_cabs.Values.Where(cab => cab.HullValid).Select", host, StringComparison.Ordinal);
         Assert.Contains("SingleOrDefault", diagnostics, StringComparison.Ordinal);
@@ -67,7 +70,7 @@ public sealed class Rac1TaxiHostOwnershipTests
     }
 
     [Fact]
-    public void DiagnosticsUseImmutableTaxiCabSnapshotsInsteadOfHostCollections()
+    public void DiagnosticSourceUsesImmutableCabSnapshotsInsteadOfHostCollections()
     {
         var diagnostic = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics",
             "GodotRac1TaxiDiagnosticFixture.cs"));

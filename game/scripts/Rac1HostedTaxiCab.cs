@@ -35,7 +35,17 @@ internal sealed class Rac1HostedTaxiCab : IDisposable
     internal Vector3 Position => Node.Root.GlobalPosition;
     internal bool Valid => !_disposed && GodotObject.IsInstanceValid(Node.Root);
     internal bool HullValid => Valid && GodotObject.IsInstanceValid(Hull) && !Hull.IsQueuedForDeletion();
-    internal uint CollisionLayer { get => Hull.CollisionLayer; set => Hull.CollisionLayer = value; }
+    private uint _lastCollisionLayer = 1;
+    internal uint CollisionLayer
+    {
+        get => HullValid ? Hull.CollisionLayer : _lastCollisionLayer;
+        set
+        {
+            _lastCollisionLayer = value;
+            if (HullValid)
+                Hull.CollisionLayer = value;
+        }
+    }
 
     internal static Rac1HostedTaxiCab? TryMount(Rac1MetropolisTaxiStop stop,
         RuntimeWorldScene.DynamicObjectNode node)

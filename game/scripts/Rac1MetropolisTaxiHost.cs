@@ -397,7 +397,7 @@ internal sealed class Rac1MetropolisTaxiHost : IDisposable
         foreach (var stop in _session?.Stops ?? [])
         {
             if (stop.OutboundPath.Count > 1 &&
-                _cabs.TryGetValue(stop.InstanceIndex, out var hull) && hull.Valid)
+                _cabs.TryGetValue(stop.InstanceIndex, out var hull) && hull.HullValid)
                 exclude.Add(hull.Hull.GetRid());
         }
         Vector2[] nearby =
