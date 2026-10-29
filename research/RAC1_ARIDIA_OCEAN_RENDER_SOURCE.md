@@ -43,16 +43,35 @@ unit supplies an 8-by-8 vertex lattice. Each 0x200-byte cell packet has a
 followed by 0x7c packed four-byte vertex values (496 bytes). All 231
 referenced cell packets validate, including reused packet ranges across
 records. These packed values are **not** plain float-UV coordinates.
-The packet decoder preserves original bytes for native colour/vertex
-reconstruction without inventing texture mapping.
+The source index strip is stored at **native 0x001cb400**, as 124
+little-endian 16-bit byte offsets into an 8-byte-stride 8x8 lattice.
+Its 124 entries form 98 nondegenerate triangles and include row-joining
+degenerate vertices. The 124 VIF V4-8 values per cell supply the original
+**RGB samples in exactly that strip order**; the fourth byte is zero in
+all 231 validated packets and must not be mistaken for an authored
+transparent material. `ReadStripLatticeIndices` and `DecodeCellStrip`
+preserve this topology and colour assignment without inventing UVs,
+alpha, wave geometry or a Godot material.
+
+A separate 248-float source table at **0x001cb510** contains 124
+paired local XY positions from -3 to +3. The original class-854 actor's
+initialisation calls `ocean_wave_scale_l2(1/6)`, producing local
+coordinates from -0.5 to +0.5. `ReadScaledStripCoordinates` recovers
+those original values; all 124 pairs match the indexed 8x8 strip lattice
+to within 0.001. Despite the original function's name, this table
+contains **static planar positions**, not evidence of animated wave
+height or authored texture UVs.
 
 The source record also has a **+0x38 pointer to one byte per native 7x7 cell**.
 All 231 bytes are 0 or 1, with 136 enabled across the seven records
 (57, 8, 31, 20, 17, 2, 1). The importer retains these masks independently
 of the draw packets; they are not collision-derived. The original class-854
 callback additionally selects *which records to draw* using the camera's
-level clip-volume membership: one record for the first region, five in the
-middle, one for the final region. Drawing all seven regions simultaneously
+level clip-volume membership. The retail class-854 actor i713 supplies
+**clip-volume indices 46, 48, 49** in its first three PVar words.
+These select records **[0]**, **[2, 3, 4, 5, 6]**, and **[1]** respectively.
+Existing `Rac1ClipVolumes` geometry provides the exact oriented-box
+containment test, including overlapping camera zones. Drawing all seven regions simultaneously
 is not original behaviour and produced overlapping geometry in the local
 experimental visual capture. No such preview is enabled in the game.
 
@@ -62,9 +81,10 @@ blend/alpha equation. The exact material stays unresolved.
 
 ## What remains to render correctly
 
-1. Decode each cell's VIF packet, position/height waveform, colour and UV
-   mapping. The real renderer runs VU0 macro / MMI cell visibility and builds
-   VU1 program 7 prim lists for 7-by-7 cells.
+1. Recover how the native VU0 / VU1 setup transforms the now-decoded
+   local strip XY, source RGB and per-cell placement into full world-space
+   vertices, animation height (if any), texture STQ and GS draw state.
+   The native index order, 124 XY pairs and colour values are now known.
 2. Recover source frame timing and the two-frame interpolation in the
    animated Fx 40..103 texture sequence. The frame-packet pointer is
    initially zero in the overlay; it is populated at runtime.

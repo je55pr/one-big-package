@@ -87,11 +87,48 @@ public sealed class Rac1LiquidSourceRecordsTests
         Assert.Equal(136, records.Sum(r => r.CellMask.Count(flag => flag == 1)));
         Assert.All(records, r => Assert.Equal(r.CellColumns * r.CellRows, r.CellMask.Length));
 
+        var cameraGroups = Rac1AridiaOceanSource.ReadCameraDrawGroups(
+            Rac1LevelSettings.ReadGameplay(disc, level));
+        Assert.Equal([46, 48, 49], cameraGroups.Select(g => g.ClipVolume.Index));
+        Assert.Equal([0], cameraGroups[0].SurfaceIndices);
+        Assert.Equal([2, 3, 4, 5, 6], cameraGroups[1].SurfaceIndices);
+        Assert.Equal([1], cameraGroups[2].SurfaceIndices);
+        Assert.Equal([0, 1], Rac1AridiaOceanSource.VisibleSurfaceIndices(cameraGroups,
+            new System.Numerics.Vector3(210.4f, 170.35f, 27.35f)));
+        Assert.Empty(Rac1AridiaOceanSource.VisibleSurfaceIndices(cameraGroups,
+            System.Numerics.Vector3.Zero));
+
         var overlay = Rac1LevelOverlay.Open(disc, level);
         var cellPackets = records.SelectMany(record =>
             Rac1AridiaOceanSource.ReadCellPackets(overlay, record)).ToArray();
+        var stripIndices = Rac1AridiaOceanSource.ReadStripLatticeIndices(overlay);
+        Assert.Equal(124, stripIndices.Length);
+        Assert.Equal(new byte[] { 0, 8, 1, 9, 2, 10, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15, 15, 8 },
+            stripIndices.Take(18));
+        Assert.Equal((byte)63, stripIndices.Max());
+        var stripPositions = Rac1AridiaOceanSource.ReadScaledStripCoordinates(overlay);
+        Assert.Equal(124, stripPositions.Length);
+        Assert.Equal(-0.5f, stripPositions[0].X);
+        Assert.Equal(-0.5f, stripPositions[0].Y);
+        for (int i = 0; i < stripPositions.Length; i++)
+        {
+            Assert.InRange(MathF.Abs(stripPositions[i].X -
+                ((stripIndices[i] % 8) / 7f - 0.5f)), 0, 0.001f);
+            Assert.InRange(MathF.Abs(stripPositions[i].Y -
+                ((stripIndices[i] / 8) / 7f - 0.5f)), 0, 0.001f);
+        }
+        Assert.Equal(98, Enumerable.Range(2, stripIndices.Length - 2).Count(i =>
+            stripIndices[i] != stripIndices[i - 1] &&
+            stripIndices[i] != stripIndices[i - 2] &&
+            stripIndices[i - 1] != stripIndices[i - 2]));
+        var firstVertex = Rac1AridiaOceanSource.DecodeCellStrip(cellPackets[0], stripIndices)[0];
+        Assert.Equal(new Rac1AridiaOceanSource.StripVertex(0, 0x1b, 0x1b, 0x1a), firstVertex);
         Assert.Equal(231, cellPackets.Length); // 120+24+36+30+18+2+1 native cells
         Assert.All(cellPackets, packet => Assert.Equal(0x7c * 4, packet.PackedValues.Length));
+        Assert.All(cellPackets, packet => Assert.True(Enumerable.Range(0, 124)
+            .All(i => packet.PackedValues[i * 4 + 3] == 0)));
+        Assert.All(cellPackets, packet => Assert.Equal(124,
+            Rac1AridiaOceanSource.DecodeCellStrip(packet, stripIndices).Length));
         Assert.Contains(cellPackets, packet => packet.PackedValues.Any(value => value != 0));
 
         var core = Rac1LevelCore.Open(disc, level);
