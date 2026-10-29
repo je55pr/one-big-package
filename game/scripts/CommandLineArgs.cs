@@ -26,6 +26,8 @@ public sealed record CommandLineArgs
     public bool FusionSmoke { get; init; }
     /// <summary>Explicit OBP-authored eight-class-5821 visual/contact diagnostic in Fusion Lab.</summary>
     public bool TyhrranoidTest { get; init; }
+    /// <summary>Optional 8-at-a-time source-sequence visual audition, not native AI.</summary>
+    public int? TyhrranoidAuditPage { get; init; }
     public bool EffectsSmoke { get; init; }
     public bool RetailParity { get; init; }
     public bool DiagnosticPlayer { get; init; }
@@ -226,6 +228,7 @@ public sealed record CommandLineArgs
                 "--fusion-test" => result with { FusionTest = true },
                 "--fusion-smoke" => result with { FusionTest = true, FusionSmoke = true },
                 "--tyhrranoid-test" => result with { TyhrranoidTest = true },
+                "--tyhrranoid-audit-page" => result with { TyhrranoidTest = true, TyhrranoidAuditPage = NextInt(0, 1) },
                 "--effects-smoke" => result with { EffectsSmoke = true },
                 "--record-effects" => result with { RecordEffects = true },
                 "--default-weapons-smoke" => result with { DefaultWeaponsSmoke = true },

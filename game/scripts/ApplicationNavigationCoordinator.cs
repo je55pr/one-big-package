@@ -279,6 +279,16 @@ internal sealed class ApplicationNavigationCoordinator
                 : "res://data/fusion_lab.json";
             var definition = FusionLabDefinition.Parse(
                 File.ReadAllText(ProjectSettings.GlobalizePath(layout)));
+            if (_ports.Args().TyhrranoidAuditPage is int page)
+            {
+                definition = definition with
+                {
+                    Actors = definition.Actors.Select(actor => actor with
+                    {
+                        ScenarioGroup = "obp-tyhrranoid-sequence-audit-page" + page
+                    }).ToArray()
+                };
+            }
             return _ports.EnterWorld(definition.Id,
                 () => FusionLabWorldFactory.Build(definition), null, null, definition);
         }

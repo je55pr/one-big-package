@@ -122,6 +122,31 @@ headless diagnostic loaded and registered all eight actors without errors.
 The follow-up visible manual test should check texture/ocular silhouette,
 animated skin fidelity and actual Pyrocitor hit registration.
 
+### Follow-up visual identification of original sequences
+
+The initial user-visible diagnostic confirmed eight rendered actors all playing
+the same sequence-12 attack-like/burp-like motion. This validates the ability
+to present all eight native models but is **not** evidence that the eight
+Tyhrranoids have awakened into native autonomous combat.
+
+An optional **separate** audition shows every other original TABLE1 sequence
+without giving it a guessed role:
+
+- `tools/start-tyhrranoid-test.ps1 -ActionAudit -Page 0`: eight actors,
+  original sequence IDs **0–7**.
+- `tools/start-tyhrranoid-test.ps1 -ActionAudit -Page 1`: original sequence
+  IDs **8–12**, plus 0–2 as visual comparison controls.
+
+Source IDs are displayed above each actor, not translated into unproven
+`idle`, `walk`, `chase` or `hit` names. The opt-in scenario remains
+damage-only, and the preview clock is still an OBP diagnostic, not the
+original enemy state machine. All 13 clips use the original TABLE1 frames,
+source-to-surface vertex remaps and per-sequence sphere bounds. A single
+source-version cache entry shares the clips across all eight visual actors.
+The original action-12 test remains available without `-ActionAudit`.
+The launcher now uses the **windowed** Godot executable rather than the
+console-wrapper process, avoiding the previously observed window-exit path.
+
 ## Live R&C1 Pyrocitor-to-source-qualified actor contact bridge
 
 The original R&C1 `StepRac1NativeFlameContacts` still uses the existing

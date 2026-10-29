@@ -23,6 +23,8 @@ public sealed class TyhrranoidDiagnosticLabTests
         Assert.Equal(12, OBP.RAC3.Rac3WorldImport.SampleClass5821Diagnostic(clip, 75).Frame);
         Assert.Equal(19, OBP.RAC3.Rac3WorldImport.SampleClass5821Diagnostic(clip, 130).Frame);
         Assert.Equal(0, OBP.RAC3.Rac3WorldImport.SampleClass5821Diagnostic(clip, 180).Frame);
+        var unidentified = clip with { Id = "uya-class5821-unassigned-sequence00" };
+        Assert.Equal(0, OBP.RAC3.Rac3WorldImport.SampleClass5821Diagnostic(unidentified, 0).Frame);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             OBP.RAC3.Rac3WorldImport.SampleClass5821Diagnostic(clip, -1));
         Assert.Throws<ArgumentException>(() =>

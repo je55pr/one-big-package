@@ -3,7 +3,7 @@
    Uses original game sources without changing user profiles, regular Fusion Lab or retail files.
    Class-5821 movement, native state scheduling, death and rewards are NOT recovered.
 #>
-param([string]$SourceConfig)
+param([string]$SourceConfig, [switch]$ActionAudit, [ValidateRange(0,1)][int]$Page = 0)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $evidence = Join-Path $root 'captures/tyhrranoid-test'
@@ -29,7 +29,10 @@ if (-not (Test-Path -LiteralPath $SourceConfig -PathType Leaf)) {
 }
 
 $toolchain = Get-Content (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | ConvertFrom-Json
+# Launch the windowed executable directly. The console wrapper has been
+# observed to terminate its GUI child unexpectedly on some Windows setups.
 $godot = Join-Path $root ".tools/godot/$($toolchain.godot.artifacts.win64.exe)"
+$godot = $godot -replace '_console\.exe$', '.exe'
 if (-not (Test-Path -LiteralPath $godot -PathType Leaf)) {
     throw 'The pinned Godot 4.7.2 build is missing. Run tools/bootstrap-godot.ps1 -Platform win64.'
 }
@@ -40,9 +43,15 @@ if (-not (Test-Path -LiteralPath (Join-Path $root 'game/.godot/mono/temp/bin/Deb
 $run = Get-Date -Format 'yyyyMMdd-HHmmss'
 $stdout = Join-Path $evidence "$run.log"
 $stderr = Join-Path $evidence "$run.err.log"
-$arguments = @('--path', (Join-Path $root 'game'), '--', '--source-config', $SourceConfig,
-    '--no-profile', '--skip-title', '--destination', 'obp:fusion-lab', '--tyhrranoid-test')
-$process = Start-Process -FilePath $godot -ArgumentList $arguments -WorkingDirectory $root -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
-Write-Host "[tyhrranoid-test] Visible Godot started (pid $($process.Id))."
-Write-Host '[tyhrranoid-test] Eight retail-model class-5821 receivers plus OBP-only action-12 visual preview.'
+$arguments = @('--path', (Join-Path $root 'game'), '--log-file', $stdout,
+    '--', '--source-config', $SourceConfig, '--no-profile', '--skip-title',
+    '--destination', 'obp:fusion-lab', '--tyhrranoid-test')
+if ($ActionAudit) { $arguments += @('--tyhrranoid-audit-page', "$Page") }
+$process = Start-Process -FilePath $godot -ArgumentList $arguments -WorkingDirectory $root -PassThru
+Write-Host "[tyhrranoid-test] Regular Godot window started (pid $($process.Id))."
+if ($ActionAudit) {
+    Write-Host "[tyhrranoid-test] Original action sequence audition page $Page. Numbers above enemies are source sequence IDs, not claimed AI states."
+} else {
+    Write-Host '[tyhrranoid-test] Eight original models and source-verified sequence 12, repeating on an OBP-only visual clock.'
+}
 Write-Host "[tyhrranoid-test] Output: $stdout"

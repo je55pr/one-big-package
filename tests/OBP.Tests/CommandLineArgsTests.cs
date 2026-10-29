@@ -13,6 +13,12 @@ public sealed class CommandLineArgsTests
         Assert.Equal("obp:fusion-lab", test.Destination);
         Assert.False(test.FusionSmoke);
         Assert.False(test.NativeParityRequested);
+        var firstPage = CommandLineArgs.Parse(["--tyhrranoid-audit-page", "0"]);
+        var nextPage = CommandLineArgs.Parse(["--tyhrranoid-audit-page", "1"]);
+        Assert.True(firstPage.TyhrranoidTest);
+        Assert.Equal(0, firstPage.TyhrranoidAuditPage);
+        Assert.Equal(1, nextPage.TyhrranoidAuditPage);
+        Assert.Throws<ArgumentException>(() => CommandLineArgs.Parse(["--tyhrranoid-audit-page", "2"]));
     }
 
     [Fact]

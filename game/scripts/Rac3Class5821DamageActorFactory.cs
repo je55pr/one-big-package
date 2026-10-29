@@ -49,13 +49,48 @@ internal sealed class Rac3Class5821DamageActorFactory(ActorSceneFactory scenes, 
             // The supported legacy-pose comparison mode intentionally lacks the
             // full native skin stream. Keep damage-only actors available there.
             bool nativePose = OBP.RAC3.Level.Rac3Assets.NativeMobyPoseEnabled;
+            int auditPage = placement.ScenarioGroup switch
+            {
+                "obp-tyhrranoid-sequence-audit-page0" => 0,
+                "obp-tyhrranoid-sequence-audit-page1" => 1,
+                _ => -1
+            };
+            int sequenceId = Rac3Class5821Actor.NativeState10SelectedAction;
             RuntimeObjectAnimationClip? clip = null;
             if (nativePose)
             {
-                clip = assets.Asset(source, placement.LevelId, placement.NativeClassId,
-                    "uya/class5821-state10-native-action12/v1",
-                    () => Rac3WorldImport.LoadClass5821State10Clip(source.Path, node.Source.Meshes));
-                node.ConfigureAnimations(new([clip]));
+                if (auditPage >= 0)
+                {
+                    const string prefix = "tyhrranoid-";
+                    if (!placement.Id.StartsWith(prefix, StringComparison.Ordinal) ||
+                        !int.TryParse(placement.Id.AsSpan(prefix.Length), out int slot) ||
+                        slot is < 1 or > 8)
+                        throw new InvalidDataException("Source-sequence audition requires a verified lab actor slot.");
+                    sequenceId = (auditPage * 8 + slot - 1) % 13;
+                    var clips = assets.Asset(source, placement.LevelId, placement.NativeClassId,
+                        "uya/class5821-unassigned-visual-audit/v1",
+                        () => Rac3WorldImport.LoadClass5821VisualAuditClips(source.Path, node.Source.Meshes));
+                    clip = clips[sequenceId];
+                    node.ConfigureAnimations(new(clips));
+                    // OBP-only identification sign. Source model/animation data
+                    // and native PVar state remain untouched.
+                    node.Root.AddChild(new Label3D
+                    {
+                        Text = $"SOURCE SEQ {sequenceId:D2}",
+                        Position = Vector3.Up * 2.6f,
+                        Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
+                        FontSize = 42,
+                        PixelSize = 0.012f,
+                        OutlineSize = 8,
+                    });
+                }
+                else
+                {
+                    clip = assets.Asset(source, placement.LevelId, placement.NativeClassId,
+                        "uya/class5821-state10-native-action12/v1",
+                        () => Rac3WorldImport.LoadClass5821State10Clip(source.Path, node.Source.Meshes));
+                    node.ConfigureAnimations(new([clip]));
+                }
             }
             var body = scene.AddBody();
             var registration = scene.Registration with
@@ -94,7 +129,8 @@ internal sealed class Rac3Class5821DamageActorFactory(ActorSceneFactory scenes, 
             // native state is advanced. It only exposes verified clip frames for
             // the eight-actor visual test, never ordinary UYA gameplay.
             Action<ActorTickFacts>? preview = null;
-            if (placement.ScenarioGroup == "obp-eighth-tyhrranoid-visual-and-pyrocitor-diagnostic" && clip is not null)
+            if ((placement.ScenarioGroup == "obp-eighth-tyhrranoid-visual-and-pyrocitor-diagnostic" ||
+                 auditPage >= 0) && clip is not null)
             {
                 long firstTick = -1;
                 preview = facts =>
@@ -103,7 +139,7 @@ internal sealed class Rac3Class5821DamageActorFactory(ActorSceneFactory scenes, 
                     if (firstTick == -1) firstTick = facts.Tick;
                     node.ApplyAnimationSample(Rac3WorldImport.SampleClass5821Diagnostic(clip, facts.Tick - firstTick));
                     if (facts.Tick == firstTick)
-                        GD.Print("[tyhrranoid-test] " + placement.Id + ": original action 12 playing on OBP-only diagnostic clock");
+                        GD.Print($"[tyhrranoid-test] {placement.Id}: original sequence {sequenceId} visual preview; no native controller");
                 };
             }
             return new(registration, node, Observe, Apply, tick: preview, resources: scene);
