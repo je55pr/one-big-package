@@ -2584,9 +2584,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateActorHost():ActorWorldHost:private",
       "Owner": "#359",
-      "Rationale": "Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings. #354 routes accepted cross-source wrench feedback to the player audio presenter. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Reads source availability or equipment order through the persistent PlayerEquipmentFacade. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #373 preserves this exact lease-scoped R&C2 owner binding, validated by the focused R&C2 world ownership and original actor regressions.",
+      "Rationale": "Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings. #354 routes accepted cross-source wrench feedback to the player audio presenter. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Reads source availability or equipment order through the persistent PlayerEquipmentFacade. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #374 binds the original R&C3 actor bridge to a lease-owned module instead of global runtime fields; existing native damage and player-global selection remain unchanged. #373 preserves this exact lease-scoped R&C2 owner binding, validated by the focused R&C2 world ownership and original actor regressions.",
       "ExpiresWith": "#376",
-      "Hash": "0c73ea252db0074191579517efde10cc95cdc209a4faab15242eef64bacae2a5"
+      "Hash": "c3b4a57de824a7a2cd4fc3f361b328fc94877d7d3f881bd11d07b88f2b4d076d"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ResetPlacedActor(:string):EquipmentChangeResult:public",
@@ -4774,7 +4774,40 @@
     "game/scripts/OBPGame.ReplayBookmarks.cs::OBPGame::field:_bookmarkReplayStep:int ?:private",
     "game/scripts/OBPGame.ReplayBookmarks.cs::OBPGame::method:InitializeReplayBookmark():bool:private",
     "game/scripts/OBPGame.ReplayBookmarks.cs::OBPGame::method:OpenReplayBookmark(:string,:MovementReproState):void:private",
-    "game/scripts/OBPGame.ReplayBookmarks.cs::OBPGame::method:ResolveReplayBookmark(:string,:MovementReproState):string:private,static"
+    "game/scripts/OBPGame.ReplayBookmarks.cs::OBPGame::method:ResolveReplayBookmark(:string,:MovementReproState):string:private,static",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame+Rac3Class5821AuditSource::declaration:RecordDeclaration:private,sealed:::( RuntimeDynamicObject Source , Rac3Class5821AuthoredState Authored , Rac3MobyPlacementFacts Placement )",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:Rac3Class500HostContactRadius:float:const,private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:Rac3Class500HostContactRange:float:const,private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:Rac3Class500HostDamageFlags:uint:const,private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:Rac3Class500HostDamageHp:double:const,private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:Rac3Class500HostVerticalTolerance:float:const,private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3AdmittedClass500:int:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3AdmittedClass5821:int:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3AuthoredClass500:int:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3AuthoredClass5821:int:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3Class500Nodes:List \u003c RuntimeWorldScene . DynamicObjectNode \u003e:private,readonly",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3Class5821AuditSources:List \u003c Rac3Class5821AuditSource \u003e:private,readonly",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3DamageTransport:Rac3DamageTransportSession:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3DestroyedClass500:int:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3GameplayContext:Rac3WorldGameplayContext ?:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3GameplayStatus:string:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3MobyRuntime:Rac3MobyRuntimeSession:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3PrimaryRatchetSeeded:int:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3PrimaryTargetAuditUnknown:int:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3SecondaryRatchetSeeded:int:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3SecondaryTargetAuditUnknown:int:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3TargetAudit:DiagnosticSnapshotGate:private,readonly",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3TargetAuditQueries:int:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::field:_rac3TargetAuditSnapshots:int:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::method:ArmRac3Gameplay(:PlayerHost):void:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::method:ConfigureRac3Gameplay(:RuntimeWorld,:RuntimeWorldScene . Result):void:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::method:GetRac3GameplayHudLine():string:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::method:OnRac3PrimaryActionRequested():void:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::method:ResetRac3Gameplay():void:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::method:SelectRac3Class500HostContact():RuntimeWorldScene . DynamicObjectNode ?:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::method:TickRac3Gameplay(:double):void:private",
+    "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame::method:TryAuditRac3RatchetSeed(:Rac3Class5821AuditSource,:Rac3NativePoint,:byte,out:bool):bool:private"
   ],
   "RetiredAccess": [
     "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()"

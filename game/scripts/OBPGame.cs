@@ -765,7 +765,7 @@ public partial class OBPGame : Node3D
             _worldScenes?.Current?.Resources.Effects?.Render();
             _worldScenes?.Current?.Resources.Rac2Gameplay?.Tick(delta);
             _worldScenes?.Current?.Resources.Rac1Gameplay?.Tick(delta);
-            TickRac3Gameplay(delta);
+            // R&C3 class-500 is an event-driven native consumer; no host frame tick.
             UpdatePlayerHud();
             UpdateWorldHud();
         }
@@ -825,7 +825,7 @@ public partial class OBPGame : Node3D
         else if (key.Keycode == Key.I)
         {
             _inspector?.Toggle();
-            if (_inspector?.IsOpen == true) _rac3TargetAudit.Request();
+            // Native R&C3 seed/pose diagnostics run only as explicit scenarios.
         }
         else if (_overlay is { } overlay && HandleOverlayKey(key.Keycode, overlay))
         {
@@ -1051,7 +1051,11 @@ public partial class OBPGame : Node3D
         _overlay = null; // its nodes live under the world sub-tree that was just freed
         _inspector?.QueueFree();
         _inspector = null;
-        ResetRac3Gameplay();
+        if (_worldScenes?.Current?.Resources is { } rac3Resources)
+        {
+            try { rac3Resources.Rac3Gameplay?.Dispose(); }
+            finally { rac3Resources.Rac3Gameplay = null; }
+        }
     }
 
     /// <summary>
@@ -1279,7 +1283,7 @@ public partial class OBPGame : Node3D
         player.DevelopmentControls.LoadMovementStateRequested += () => MovementReproduction.StartMovementStateLoad(MovementReproduction.MovementStatePath);
         AttachPlayerAvatarVisual(player);
         Rac1World.Arm(player);
-        ArmRac3Gameplay(player);
+        _worldScenes?.Current?.Resources.Rac3Gameplay?.Arm(player, OrdinaryPlayerSession);
     }
 
     // --- HUD ---------------------------------------------------------------
@@ -1355,7 +1359,7 @@ public partial class OBPGame : Node3D
         string crateDebug = resources?.CrateDiagnostics.HudLine(resources.Rac2CrateBolts) ?? string.Empty;
         string rac2Gameplay = resources?.Rac2Gameplay?.HudLine() ?? string.Empty;
         string rac1Gameplay = _worldScenes?.Current?.Resources.Rac1Gameplay?.Hud.Line() ?? string.Empty;
-        string rac3Gameplay = GetRac3GameplayHudLine();
+        string rac3Gameplay = resources?.Rac3Gameplay?.HudLine() ?? string.Empty;
 
         _worldHud.Text =
             $"Game: {gameLabel}   Build: {w.BuildId}\n" +
@@ -1874,7 +1878,7 @@ public partial class OBPGame : Node3D
             () => _rac1PickupAssets, () => _equipmentPresentation.SelectedAssets,
             (assets, materials) => { _rac1PickupAssets = assets; _rac1PickupMaterials = materials; }, TickRac1Pickups),
         new(() => _worldScenes?.Current?.Resources.Rac2Gameplay),
-        new(() => _rac3Class500Nodes, () => _rac3MobyRuntime)), new(
+        new(() => _worldScenes?.Current?.Resources.Rac3Gameplay)), new(
         () => _player!.GetWorld3D().DirectSpaceState, Rac1DamageableRayExclusions, BombHasLineOfSight,
         reason => Rac1World.Context.CombatStatus = reason, () => _player?.Rac1WrenchFrame.Generation,
         () => _playerAudio?.WrenchContact(false)));

@@ -134,7 +134,7 @@ public sealed class Rac3Class500DestructibleTests
             nativeDamage: hp,
             nativeDamageFlags: flags);
 
-    private static RuntimeDynamicObject Class500(
+    internal static RuntimeDynamicObject Class500(
         int instanceIndex,
         int uid,
         int authoredValue,
