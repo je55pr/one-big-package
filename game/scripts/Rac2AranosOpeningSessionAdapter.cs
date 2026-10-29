@@ -5,9 +5,8 @@ using OBP.Runtime;
 
 namespace OBP.Game;
 
-public partial class OBPGame
+internal sealed partial class Rac2WorldModule
 {
-    private const double Rac2NativeTickSeconds = 1d / Rac2Class2827ApproachSession.NativeTicksPerSecond;
     private const float Rac2OpeningMsr1WitnessActivationDistance = 10f;
     private const int Rac2OpeningMsr1SecondState3DelayTicks = 105;
     private const int Rac2OpeningMsr1State5Ticks = 24;
@@ -38,12 +37,12 @@ public partial class OBPGame
     private Rac2OpeningLiftHostSession? _rac2OpeningLift;
     private Rac2OpeningDoorHostSession? _rac2OpeningDoor;
     private Rac2RatchetNanotechSession _rac2RatchetNanotech = new();
-    private double _rac2NativeTickAccumulator;
     private void TickRac2OpeningLiftNativeTick()
     {
+        if (!Current) return;
         if (_rac2OpeningLift is not { } session ||
-            _player is null || !IsInstanceValid(_player) ||
-            !IsInstanceValid(session.Node.Root))
+            _player is null || !GodotObject.IsInstanceValid(_player) ||
+            !GodotObject.IsInstanceValid(session.Node.Root))
         {
             return;
         }
@@ -109,9 +108,10 @@ public partial class OBPGame
 
     private void TickRac2OpeningDoorNativeTick()
     {
+        if (!Current) return;
         if (_rac2OpeningDoor is not { } session ||
-            _player is null || !IsInstanceValid(_player) ||
-            !IsInstanceValid(session.Node.Root))
+            _player is null || !GodotObject.IsInstanceValid(_player) ||
+            !GodotObject.IsInstanceValid(session.Node.Root))
         {
             return;
         }
@@ -135,9 +135,16 @@ public partial class OBPGame
         }
     }
 
+    internal void TickOpeningMsr1FromActor()
+    {
+        if (!Current) return;
+        TickRac2OpeningMsr1NativeTick();
+    }
+
     private void TickRac2OpeningMsr1NativeTick()
     {
-        if (_player is null || !IsInstanceValid(_player) || !PlayerLife.Alive)
+        if (!Current) return;
+        if (_player is null || !GodotObject.IsInstanceValid(_player) || !_ports.Alive())
         {
             return;
         }
@@ -147,14 +154,14 @@ public partial class OBPGame
         foreach (var session in _rac2OpeningMsr1.Values.OrderBy(s => s.Hostile.InstanceIndex))
         {
             if (session.Hostile.IsTerminal ||
-                !IsInstanceValid(session.Node.Root) ||
+                !GodotObject.IsInstanceValid(session.Node.Root) ||
                 !session.Node.Root.Visible)
             {
                 continue;
             }
 
             Vector3 position = session.Node.Root.GlobalPosition;
-            if (ActorHost.HasContactBody(ActorWorldHost.Target(session.Node)) &&
+            if (_ports.Actors().HasContactBody(ActorWorldHost.Target(session.Node)) &&
                 (Math.Abs(position.Y - playerPosition.Y) > 3 || position.DistanceTo(playerPosition) > Rac2OpeningMsr1WitnessActivationDistance))
                 continue; // Explicit grounded-arena target context for relocated actors.
             switch (session.Phase)
@@ -261,7 +268,7 @@ public partial class OBPGame
                             playerPosition.X - position.X,
                             playerPosition.Z - position.Z).Length();
                         double facingError = 0;
-                        if (ActorHost.HasContactBody(ActorWorldHost.Target(session.Node)))
+                        if (_ports.Actors().HasContactBody(ActorWorldHost.Target(session.Node)))
                         {
                             Vector3 toward = playerPosition - position; toward.Y = 0;
                             if (toward.LengthSquared() > 1e-8f)
@@ -300,13 +307,11 @@ public partial class OBPGame
                                 var damage = session.AttackCycle.TryAggregatePlayerContact(probe.Contacts);
                                 if (damage is { } admittedDamage)
                                 {
-                                    if (_playerNative is not null)
+                                    if (_ports.HasNativePlayer())
                                     {
                                         var admitted = new Rac2RatchetNanotechSession().Apply(admittedDamage);
                                         if (admitted.Admitted)
-                                            playerDamageCommitted = PlayerLife.ApplySourceDamage(session.Node, OBP.RAC2.Rac2Authority.Primary.BuildId,
-                                                PlayerSessionNativeState.Rac2DamageAdapter, PlayerSessionNativeState.Rac2DamageDescriptor,
-                                                session.AttackCount, admitted.DamageNanotech, admittedDamage.QueryMask).Applied;
+                                            playerDamageCommitted = _ports.PlayerDamage(session.Node, session.AttackCount, admitted.DamageNanotech, admittedDamage.QueryMask);
                                         break;
                                     }
                                     var result = _rac2RatchetNanotech.Apply(admittedDamage);
@@ -337,7 +342,7 @@ public partial class OBPGame
                         session.PhaseTicks++;
                         if (session.PhaseTicks >= Rac2Class2827AttackCycleSession.ObservedRecoveryDurationTicks)
                         {
-                            if (_playerNative is null && _rac2RatchetNanotech.PendingHitResolution)
+                            if (!_ports.HasNativePlayer() && _rac2RatchetNanotech.PendingHitResolution)
                             {
                                 _rac2RatchetNanotech.ResolveHitReaction();
                             }
@@ -351,6 +356,10 @@ public partial class OBPGame
                         }
                         break;
                     }
+
+                default:
+                    throw new InvalidOperationException(
+                        $"Unsupported Aranos MSR1 encounter phase: {session.Phase}");
             }
         }
     }
@@ -381,9 +390,9 @@ public partial class OBPGame
         Rac2OpeningMsr1HostSession session,
         Vector3 position)
     {
-        if (ActorHost.TryMoveContactBody(ActorWorldHost.Target(session.Node), position, out var moved)) position = moved;
+        if (_ports.Actors().TryMoveContactBody(ActorWorldHost.Target(session.Node), position, out var moved)) position = moved;
         Transform3D sceneTransform = session.Node.Root.Transform;
-        if (ActorHost.HasContactBody(ActorWorldHost.Target(session.Node)) && _player is not null)
+        if (_ports.Actors().HasContactBody(ActorWorldHost.Target(session.Node)) && _player is not null)
         {
             Vector3 toward = _player.GlobalPosition - position; toward.Y = 0;
             if (toward.LengthSquared() > 1e-8f)

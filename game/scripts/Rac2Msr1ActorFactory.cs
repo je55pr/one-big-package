@@ -10,7 +10,7 @@ using OBP.Runtime.Gameplay;
 namespace OBP.Game;
 
 internal sealed record Rac2ActorBindings(IDictionary<int, Rac2Class2827HostileSession> Hostiles,
-    IDictionary<int, Rac2OpeningMsr1HostSession> Sessions,
+    IDictionary<int, Rac2OpeningMsr1HostSession> Sessions, Func<bool> Current,
     Func<RuntimeWorldScene.DynamicObjectNode, Rac2Class2827HostileSession, ActorObservation> Observe,
     Func<RuntimeWorldScene.DynamicObjectNode, Rac2Class2827HostileSession, WeaponDamageIntent, ActorHitResult> Damage,
     Action<ActorTickFacts> Tick);
@@ -25,13 +25,22 @@ internal sealed class Rac2Msr1ActorFactory(ActorSceneFactory scenes, ActorSource
 
     public HostedActor Create(ActorPlacement placement, RuntimeWorld library, ActorSourceVersion source)
     {
+        if (!native.Current()) throw new InvalidOperationException("R&C2 actor world lease has retired.");
         var scene = scenes.Create(placement, library, source => Rac2Class2827HostileSession.ReadAuthored(source) is
         { AuthoredMode: Rac2Class2827HostileSession.OpeningRoomAuthoredMode });
         var node = scene.Node;
-        void Retire() { native.Hostiles.Remove(node.Source.InstanceIndex); native.Sessions.Remove(node.Source.InstanceIndex); }
+        Rac2Class2827HostileSession? owned = null;
+        void Retire()
+        {
+            if (native.Hostiles.TryGetValue(node.Source.InstanceIndex, out var live) && ReferenceEquals(live, owned))
+                native.Hostiles.Remove(node.Source.InstanceIndex);
+            if (native.Sessions.TryGetValue(node.Source.InstanceIndex, out var session) && ReferenceEquals(session.Node, node))
+                native.Sessions.Remove(node.Source.InstanceIndex);
+        }
         try
         {
             var hostile = new Rac2Class2827HostileSession(node.Source, node.State);
+            owned = hostile;
             hostile.NativeState!.Transition(Rac2Class2827HostileSession.ChaseNativeState, 4);
             var hosted = new Rac2OpeningMsr1HostSession(node, hostile) { Phase = Rac2OpeningMsr1Phase.Chase, AttackCount = 1 };
             var registration = scene.Registration with
@@ -49,8 +58,13 @@ internal sealed class Rac2Msr1ActorFactory(ActorSceneFactory scenes, ActorSource
                     nativePosePreview: OBP.RAC2.Level.Rac2MobyClasses.NativePoseEnabledForLevel(placement.LevelId)));
             node.ConfigureAnimations(animation.Presentation);
             // Reuse the original source approach/attack cycle, starting at the admitted resumed chase.
-            return new(registration, node, () => native.Observe(node, hostile), intent => native.Damage(node, hostile, intent), tick: _ =>
+            return new(registration, node,
+                () => native.Current() && native.Hostiles.TryGetValue(node.Source.InstanceIndex, out var live) && ReferenceEquals(live, hostile)
+                    ? native.Observe(node, hostile) : new(System.Numerics.Vector3.Zero, false, true, null, 0, null),
+                intent => native.Current() && native.Hostiles.TryGetValue(node.Source.InstanceIndex, out var live) && ReferenceEquals(live, hostile)
+                    ? native.Damage(node, hostile, intent) : new(false, false, "The R&C2 encounter has retired."), tick: _ =>
             {
+                if (!native.Current()) return;
                 int sequence = hosted.Phase switch
                 {
                     Rac2OpeningMsr1Phase.Chase => Rac2Class2827HostileSession.ChaseSequence,

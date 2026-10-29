@@ -89,7 +89,7 @@ public partial class OBPGame : Node3D
         () => _ui, () => _world?.Environment?.DeathHeight,
         node => node.Source.SourceGame == ObpSourceGame.Rac1
             ? Rac1World.Context.MobyRuntime.TryGet(new(node.Source.NativeClassId, node.Source.InstanceIndex), out var native) && native!.IsActive
-            : _rac2OpeningMsr1.TryGetValue(node.Source.InstanceIndex, out var rac2) && !rac2.Hostile.IsTerminal,
+            : _worldScenes?.Current?.Resources.Rac2Gameplay?.IsLiveHostile(node) == true,
         () => _rac1CombatRetry is not null,
         () => { FusionWeapons.ClearOnDeath(); ResetRac1WrenchHost(); },
         (before, after) => _playerAudio?.NotifyDamage(before, after), () => RefreshRac1HudState(), _hudState,
@@ -183,6 +183,21 @@ public partial class OBPGame : Node3D
     private Rac1RatchetNanotechSession _rac1Nanotech => _persistentPlayer.Rac1Health;
     private Rac1WeaponInventory _rac1Weapons => _persistentPlayer.Rac1Weapons(FusionWeapons.Session, FusionWeapons.TestActive, _rac1Campaign.Session.Weapons);
     private Rac1HeldItemSession _rac1HeldItem => _persistentPlayer.Rac1Held;
+
+    private Rac2WorldModule CreateRac2WorldModule(RuntimeWorld world, GodotWorldResources resources) => new(
+        world, resources.Scene, resources, new Rac2WorldPorts(
+            Current: () => ReferenceEquals(_worldScenes?.Current?.Resources, resources),
+            SourceValid: () => Sources.Setup.Library.Get(ObpSourceGame.Rac2)?.Identity.BuildId == OBP.RAC2.Rac2Authority.Primary.BuildId,
+            Ordinary: () => OrdinaryPlayerSession,
+            Alive: () => PlayerLife.Alive,
+            HasNativePlayer: () => _playerNative is not null,
+            Actors: () => ActorHost,
+            Audio: node => _worldHost.PlayRepresentativeAudioOneShot(node.Source),
+            CrateReward: SpawnCrateBoltPickups,
+            PlayerDamage: (node, hit, amount, mask) => PlayerLife.ApplySourceDamage(node, OBP.RAC2.Rac2Authority.Primary.BuildId,
+                PlayerSessionNativeState.Rac2DamageAdapter, PlayerSessionNativeState.Rac2DamageDescriptor,
+                hit, amount, mask).Applied,
+            CrateFocus: _args.CrateFocus, CrateAutoStrike: _args.CrateAutoStrike));
 
     private Rac1WorldModule CreateRac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene) => new(world, scene, Rac1EffectRandom,
         new Rac1WorldResetPorts(
@@ -675,7 +690,7 @@ public partial class OBPGame : Node3D
             // Sky-follow, animated mobies and per-region hero light / fog.
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
             _worldScenes?.Current?.Resources.Effects?.Render();
-            TickRac2Gameplay(delta);
+            _worldScenes?.Current?.Resources.Rac2Gameplay?.Tick(delta);
             _worldScenes?.Current?.Resources.Rac1Gameplay?.Tick(delta);
             TickRac3Gameplay(delta);
             UpdatePlayerHud();
@@ -949,6 +964,8 @@ public partial class OBPGame : Node3D
         {
             try { resources.Rac1Gameplay?.Dispose(); }
             finally { resources.Rac1Gameplay = null; }
+            try { resources.Rac2Gameplay?.Dispose(); }
+            finally { resources.Rac2Gameplay = null; }
         }
         if (!OrdinaryPlayerSession) _hudState.ResetSession();
         _playerHud?.Render(_hudState.Current);
@@ -961,7 +978,6 @@ public partial class OBPGame : Node3D
         _overlay = null; // its nodes live under the world sub-tree that was just freed
         _inspector?.QueueFree();
         _inspector = null;
-        ResetRac2GameplayHost();
         ResetRac3Gameplay();
     }
 
@@ -1189,7 +1205,6 @@ public partial class OBPGame : Node3D
         player.DevelopmentControls.SaveMovementStateRequested += SaveMovementState;
         player.DevelopmentControls.LoadMovementStateRequested += () => StartMovementStateLoad(MovementStatePath);
         AttachPlayerAvatarVisual(player);
-        ArmRac2GameplayHost(player);
         Rac1World.Arm(player);
         ArmRac3Gameplay(player);
     }
@@ -1265,7 +1280,7 @@ public partial class OBPGame : Node3D
 
         var resources = _worldScenes?.Current?.Resources;
         string crateDebug = resources?.CrateDiagnostics.HudLine(resources.Rac2CrateBolts) ?? string.Empty;
-        string rac2Gameplay = GetRac2GameplayHudLine();
+        string rac2Gameplay = resources?.Rac2Gameplay?.HudLine() ?? string.Empty;
         string rac1Gameplay = _worldScenes?.Current?.Resources.Rac1Gameplay?.Hud.Line() ?? string.Empty;
         string rac3Gameplay = GetRac3GameplayHudLine();
 
@@ -1785,7 +1800,7 @@ public partial class OBPGame : Node3D
             key => _rac1Captures.RemoveAll(capture => capture.Key == key),
             () => _rac1PickupAssets, () => _equipmentPresentation.SelectedAssets,
             (assets, materials) => { _rac1PickupAssets = assets; _rac1PickupMaterials = materials; }, TickRac1Pickups),
-        new(_rac2Class2827Hostiles, _rac2OpeningMsr1, TickRac2OpeningMsr1NativeTick),
+        new(() => _worldScenes?.Current?.Resources.Rac2Gameplay),
         new(() => _rac3Class500Nodes, () => _rac3MobyRuntime)), new(
         () => _player!.GetWorld3D().DirectSpaceState, Rac1DamageableRayExclusions, BombHasLineOfSight,
         reason => Rac1World.Context.CombatStatus = reason, () => _player?.Rac1WrenchFrame.Generation,
@@ -1854,8 +1869,9 @@ public partial class OBPGame : Node3D
             FusionWeapons.Sources.Preparation is not null, _profileDocument?.Destination, _currentDestinationId, _profileDocument?.Sources.Count ?? 0), () => _playerNative);
         var samples = new GodotCapabilitySamples(new(() => _player, () => _avatarPresentation.Clock, () => PlayerLife.ServiceTick,
             () => _avatarPresentation.Controller, () => FusionWeapons.Session?.ShotsFired ?? 0));
-        var health = new GodotCapabilityHealthFixture(new(() => _playerNative, () => _player, () => _rac2RatchetNanotech.Current,
-            () => _hudState.Current.Health, () => [.. _rac2OpeningMsr1.Values.Select(session => (session.Hostile.InstanceIndex, session.Node.Root))], PlayerLife.Respawn));
+        var health = new GodotCapabilityHealthFixture(new(() => _playerNative, () => _player,
+            () => _worldScenes?.Current?.Resources.Rac2Gameplay?.ParityNanotech ?? 0,
+            () => _hudState.Current.Health, () => [.. (_worldScenes?.Current?.Resources.Rac2Gameplay?.OpeningHostileNodes() ?? [])], PlayerLife.Respawn));
         var audio = new GodotPlayerAudioFixture(this, new(() => _player,
             () => new(_playerAudio?.Ready == true, _world?.LevelId, _playerAudio?.PackSound, _playerAudio?.ThrownWrenchSound, _rac1WeaponLoop is not null,
                 _rac1WrenchThrow.Active, Rac1World.Context.BoltCrates.DestroyedCrateCount, _rac1Nanotech.Probe().Nanotech, _rac1Nanotech.Probe().IsDead),

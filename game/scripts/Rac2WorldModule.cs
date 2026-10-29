@@ -7,28 +7,70 @@ using OBP.Runtime;
 namespace OBP.Game;
 
 /// <summary>
-/// GC class-500 host integration. Ordinary primary attack input resolves an
-/// authored aimed crate, transports the recovered state-20 damage tuple, and
-/// delegates the native break/lifetime decision to the RAC2 gameplay runtime.
-/// Debug focus remains an optional development targeting aid only.
+/// One R&C2 world lease owns Aranos native opening sessions, lift and door clocks,
+/// class-2827 contacts and class-500 damage transport. The ordinary actor group
+/// retains its own native update phase; debug focus is an optional targeting aid.
 /// </summary>
-public partial class OBPGame
+internal sealed partial class Rac2WorldModule : IDisposable
 {
-    private Rac2DamageTransportSession _rac2DamageTransport = new();
-    private void ResetRac2GameplayHost()
+    private readonly RuntimeWorld _world;
+    private readonly RuntimeWorldScene.Result _scene;
+    private readonly GodotWorldResources _resources;
+    private readonly Rac2WorldPorts _ports;
+    private PlayerHost? _player;
+    private bool _configured;
+    private bool _disposed;
+    private readonly Rac2WorldLeaseClock _clock;
+
+    internal Rac2WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene, GodotWorldResources resources,
+        Rac2WorldPorts ports)
     {
-        _rac2DamageTransport = new Rac2DamageTransportSession();
+        _world = world;
+        _scene = scene;
+        _resources = resources;
+        _ports = ports;
+        _clock = new(ports.Current, ports.SourceValid, world.Game == ObpSourceGame.Rac2 ||
+            scene.DynamicObjectNodes?.Any(node => node.Source.SourceGame == ObpSourceGame.Rac2) == true);
+    }
+
+    internal bool Current => _clock.Current;
+
+    internal IDictionary<int, Rac2Class2827HostileSession> Hostiles => _rac2Class2827Hostiles;
+    internal IDictionary<int, Rac2OpeningMsr1HostSession> OpeningSessions => _rac2OpeningMsr1;
+    internal int ParityNanotech => Current ? _rac2RatchetNanotech.Current : 0;
+    internal IReadOnlyList<(int Instance, Node3D Root)> OpeningHostileNodes() =>
+        Current ? [.. _rac2OpeningMsr1.Values.Select(s => (s.Hostile.InstanceIndex, s.Node.Root))] : [];
+
+    internal bool IsLiveHostile(RuntimeWorldScene.DynamicObjectNode node) =>
+        Current && _rac2Class2827Hostiles.TryGetValue(node.Source.InstanceIndex, out var hostile) &&
+        !hostile.IsTerminal && GodotObject.IsInstanceValid(node.Root) &&
+        (!_rac2OpeningMsr1.TryGetValue(node.Source.InstanceIndex, out var hosted) || ReferenceEquals(hosted.Node, node));
+
+    internal bool IsLiveHostile(RuntimeWorldScene.DynamicObjectNode node, Rac2Class2827HostileSession hostile) =>
+        Current && _rac2Class2827Hostiles.TryGetValue(node.Source.InstanceIndex, out var live) &&
+        ReferenceEquals(live, hostile) && !hostile.IsTerminal && GodotObject.IsInstanceValid(node.Root);
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _clock.Retire();
+        if (_player is not null && GodotObject.IsInstanceValid(_player))
+            _player.CrateStrikeRequested -= OnRac2PrimaryAttackRequested;
+        _player = null;
         _rac2Class2827Hostiles.Clear();
         _rac2OpeningMsr1.Clear();
         _rac2OpeningLift = null;
         _rac2OpeningDoor = null;
-        _rac2RatchetNanotech = new Rac2RatchetNanotechSession();
-        _rac2NativeTickAccumulator = 0d;
     }
-    private void ConfigureRac2GameplayHost()
+
+    private readonly Rac2DamageTransportSession _rac2DamageTransport = new();
+    internal void Configure()
     {
-        ResetRac2GameplayHost();
-        if (_sceneResult?.DynamicObjectNodes is not { } nodes)
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (_configured) throw new InvalidOperationException("R&C2 world gameplay is already configured.");
+        _configured = true;
+        if (_scene.DynamicObjectNodes is not { } nodes)
         {
             return;
         }
@@ -68,19 +110,26 @@ public partial class OBPGame
             }
         }
 
-        _worldScenes!.Current!.Resources.CrateDiagnostics.Configure(_args.CrateFocus, _args.CrateAutoStrike);
+        _resources.CrateDiagnostics.Configure(_ports.CrateFocus, _ports.CrateAutoStrike);
     }
 
-    private void ArmRac2GameplayHost(PlayerHost player)
+    internal void Arm(PlayerHost player)
     {
-        if (OrdinaryPlayerSession || _sceneResult?.DynamicObjectNodes?.Any(node => node.Source.SourceGame == ObpSourceGame.Rac2) != true)
-        {
+        if (_disposed) return;
+        // The activating scene is not globally current until after player creation.
+        // Bind directly to its owned resources rather than the global lease lookup.
+        if (_player is not null && GodotObject.IsInstanceValid(_player))
+            _player.CrateStrikeRequested -= OnRac2PrimaryAttackRequested;
+        _player = player;
+        if (_ports.Ordinary() || _scene.DynamicObjectNodes?.Any(node => node.Source.SourceGame == ObpSourceGame.Rac2) != true)
             return;
-        }
-
+        // During ActivateOwnedWorld this lease has not been published as Current.
+        // Check source admission independently so diagnostics cannot auto-strike
+        // an R&C2 target after the source has been invalidated or detached.
+        if (!_clock.SourceReadyForActivation) return;
         player.CrateStrikeRequested += OnRac2PrimaryAttackRequested;
-        if (_worldScenes?.Current?.Resources.CrateDiagnostics.Probe is { AutoStrike: true, TargetIndex: { } index } &&
-            _sceneResult.DynamicObjectNodes.FirstOrDefault(node => node.Source.SourceGame == ObpSourceGame.Rac2 &&
+        if (_resources.CrateDiagnostics.Probe is { AutoStrike: true, TargetIndex: { } index } &&
+            _scene.DynamicObjectNodes.FirstOrDefault(node => node.Source.SourceGame == ObpSourceGame.Rac2 &&
                 node.Source.NativeClassId == 500 && node.Source.InstanceIndex == index) is { } target)
         {
             ApplyRac2Class500Strike(target, "auto");
@@ -88,10 +137,11 @@ public partial class OBPGame
     }
     private void OnRac2PrimaryAttackRequested()
     {
+        if (!Current || _player is null || !GodotObject.IsInstanceValid(_player)) return;
         var target = SelectRac2PrimaryTargetFromAim();
         if (target is null)
         {
-            if (_worldScenes?.Current?.Resources.CrateDiagnostics.Probe is { } probe)
+            if (_resources.CrateDiagnostics.Probe is { } probe)
                 probe.Status = "strike: no aimed GC gameplay target";
             GD.Print("[gc-damage] strike ignored: no aimed GC gameplay target");
             return;
@@ -108,15 +158,15 @@ public partial class OBPGame
 
     private RuntimeWorldScene.DynamicObjectNode? SelectRac2PrimaryTargetFromAim()
     {
-        if (_worldScenes?.Current?.Resources.CrateDiagnostics.Probe is { FocusRequested: true, TargetIndex: { } index } &&
-            _sceneResult?.DynamicObjectNodes?.FirstOrDefault(node => node.Source.SourceGame == ObpSourceGame.Rac2 &&
+        if (_resources.CrateDiagnostics.Probe is { FocusRequested: true, TargetIndex: { } index } &&
+            _scene.DynamicObjectNodes?.FirstOrDefault(node => node.Source.SourceGame == ObpSourceGame.Rac2 &&
                 node.Source.NativeClassId == 500 && node.Source.InstanceIndex == index) is { } focused
-            && IsInstanceValid(focused.Root) && focused.Root.Visible)
+            && GodotObject.IsInstanceValid(focused.Root) && focused.Root.Visible)
         {
             return focused;
         }
 
-        if (_sceneResult?.DynamicObjectNodes is not { } nodes || _player?.Camera is not { } camera)
+        if (!Current || _scene.DynamicObjectNodes is not { } nodes || _player?.Camera is not { } camera)
         {
             return null;
         }
@@ -130,7 +180,7 @@ public partial class OBPGame
             bool gameplayTarget = node.Source.NativeClassId == 500 ||
                 node.Source.NativeClassId == Rac2Class2827HostileSession.NativeClassId;
             if (node.Source.SourceGame != ObpSourceGame.Rac2 || !gameplayTarget
-                || !IsInstanceValid(node.Root) || !node.Root.Visible)
+                || !GodotObject.IsInstanceValid(node.Root) || !node.Root.Visible)
             {
                 continue;
             }
@@ -179,7 +229,7 @@ public partial class OBPGame
         target.ApplyState(result.EntityState);
         if (result.Terminal)
         {
-            _worldHost.PlayRepresentativeAudioOneShot(target.Source);
+            _ports.Audio(target);
         }
 
         GD.Print($"[gc-damage] seq={dispatch.Sequence} {target.Source.InteractionId} " +
@@ -188,7 +238,7 @@ public partial class OBPGame
 
     private void ApplyRac2Class500Strike(RuntimeWorldScene.DynamicObjectNode target, string source)
     {
-        var resources = _worldScenes!.Current!.Resources;
+        var resources = _resources;
         var probe = resources.CrateDiagnostics.Probe;
         var damageEvent = Rac2DamageRuntime.FromPlayerState20(target.Source);
         var dispatch = _rac2DamageTransport.Publish(damageEvent);
@@ -237,8 +287,8 @@ public partial class OBPGame
             return;
         }
 
-        SpawnCrateBoltPickups(target.Root.GlobalPosition, payout);
-        _worldHost.PlayRepresentativeAudioOneShot(target.Source);
+        _ports.CrateReward(target.Root.GlobalPosition, payout);
+        _ports.Audio(target);
         probe.RewardStatus = $"fresh selector {payout.Selector}: centre {payout.RewardCentreValue} => " +
             $"{string.Join("+", payout.PhysicalPickups.Select(p => p.Denomination))} physical, {payout.DeferredValue} deferred";
 
@@ -255,40 +305,28 @@ public partial class OBPGame
                  $"PVar+C8={c8} => state {Rac2CrateInteraction.BreakTransitionState} -> {route}");
     }
 
-    private void TickRac2Gameplay(double delta)
+    internal void Tick(double delta)
     {
-        if (_world?.Game != ObpSourceGame.Rac2 || _player is null ||
+        if (!Current || _world.Game != ObpSourceGame.Rac2 || _player is null || !GodotObject.IsInstanceValid(_player) ||
             (_rac2Class2827Hostiles.Count == 0 && _rac2OpeningLift is null && _rac2OpeningDoor is null))
         {
             return;
         }
 
-        _rac2NativeTickAccumulator += Math.Clamp(delta, 0d, 0.25d);
-        int ticks = Math.Min(12, (int)Math.Floor(_rac2NativeTickAccumulator / Rac2NativeTickSeconds));
-        if (ticks <= 0)
-        {
-            return;
-        }
-
-        _rac2NativeTickAccumulator -= ticks * Rac2NativeTickSeconds;
-        for (int tick = 0; tick < ticks; tick++)
-        {
-            TickRac2OpeningLiftNativeTick();
-            TickRac2OpeningDoorNativeTick();
-
-            if (OrdinaryPlayerSession) continue; // Registered source actor clock owns these updates.
-            foreach (var hostile in _rac2Class2827Hostiles.Values)
-            {
-                hostile.TickCooldown();
-            }
-
-            TickRac2OpeningMsr1NativeTick();
-        }
+        _clock.Advance(delta, _ports.Ordinary, TickRac2OpeningLiftNativeTick,
+            TickRac2OpeningDoorNativeTick, TickRac2Hostiles);
     }
 
-    private string GetRac2GameplayHudLine()
+    private void TickRac2Hostiles()
     {
-        if (_world?.Game != ObpSourceGame.Rac2 || _rac2OpeningMsr1.Count == 0)
+        foreach (var hostile in _rac2Class2827Hostiles.Values)
+            hostile.TickCooldown();
+        TickRac2OpeningMsr1NativeTick();
+    }
+
+    internal string HudLine()
+    {
+        if (!Current || _world.Game != ObpSourceGame.Rac2 || _rac2OpeningMsr1.Count == 0)
         {
             return string.Empty;
         }

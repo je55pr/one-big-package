@@ -2584,9 +2584,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateActorHost():ActorWorldHost:private",
       "Owner": "#359",
-      "Rationale": "Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings. #354 routes accepted cross-source wrench feedback to the player audio presenter. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Reads source availability or equipment order through the persistent PlayerEquipmentFacade. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged.",
+      "Rationale": "Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings. #354 routes accepted cross-source wrench feedback to the player audio presenter. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Reads source availability or equipment order through the persistent PlayerEquipmentFacade. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #373 preserves this exact lease-scoped R&C2 owner binding, validated by the focused R&C2 world ownership and original actor regressions.",
       "ExpiresWith": "#376",
-      "Hash": "11177fc1823656c1422d8db02cc8973575140aca5b25e21225abf968473d916a"
+      "Hash": "0c73ea252db0074191579517efde10cc95cdc209a4faab15242eef64bacae2a5"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ResetPlacedActor(:string):EquipmentChangeResult:public",
@@ -2780,9 +2780,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlayerDiagnosticHarness():PlayerSessionDiagnosticHarness:private",
       "Owner": "#338",
-      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376. #354 binds the owned native player audio presenter and its copied observations. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged.",
+      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376. #354 binds the owned native player audio presenter and its copied observations. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #373 preserves this exact lease-scoped R&C2 owner binding, validated by the focused R&C2 world ownership and original actor regressions.",
       "ExpiresWith": "#376",
-      "Hash": "ab672d1657f0176793995f795b50373103237713b375c91917bb372fee1856fd"
+      "Hash": "96802b9993f3a084cca19430598c60d9a8c6021e5b4c40a5ea3101ec47e02056"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AdditionalWeaponDiagnosticFixture(:IDiagnosticWorldObservations):GodotRac1AdditionalWeaponDiagnosticFixture:private",
@@ -3725,9 +3725,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlayerLifecycle():GodotPlayerLifecycleHost:private",
       "Owner": "#353",
-      "Rationale": "Composes existing persistent health/session services, authored hazard facts, source actor liveness, typed presentation events, HUD and existing world-entry actions; native parity restart stays with its source campaign adapters.",
+      "Rationale": "Composes existing persistent health/session services, authored hazard facts, source actor liveness, typed presentation events, HUD and existing world-entry actions; native parity restart stays with its source campaign adapters. #373 preserves this exact lease-scoped R&C2 owner binding, validated by the focused R&C2 world ownership and original actor regressions.",
       "ExpiresWith": "#376",
-      "Hash": "ec19b36c2240fb8677c951af4b613a8341b97ef7aed6706f53b66a540bc4ca71"
+      "Hash": "41905fd5896db76b14fec05330cb44b4d392f73aaa87ebd083453f4b35d156a8"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:PlayerLife:GodotPlayerLifecycleHost:get/:private",
@@ -3742,6 +3742,13 @@
       "Rationale": "Exact scene enemy composition: source path/random, current player contact facts, existing combat/reward presentation and bounded frog/Aridia neighbor callbacks. #364 moves amoeboid gates, contacts and family state into the world-scoped enemy adapter; existing native family and replay regressions guard its semantics. The world module owns the host and contacts; native controllers remain source-owned. Existing neighbor reset/state bindings expire as #362/#363/#368 migrate those owners; final composition removes this factory. No root reference or native algorithm escapes to the host.",
       "ExpiresWith": "#376",
       "Hash": "dfec1e11b79c875796cbffd776eeb7bf3fb1909255e81788548f815e0bb57f24"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac2WorldModule(:RuntimeWorld,:GodotWorldResources):Rac2WorldModule:private",
+      "Owner": "#373",
+      "Rationale": "Lease-scoped source-world factory selects the existing scene resource, authentic R&C2 build and narrowly typed presentation/player damage ports. Native actor state remains source-owned; no player provider is selected. #373 native opening/actor tests and mixed-source acceptance protect this composition. #373 follow-up labels the individual port callbacks to prevent silent boolean delegate order mistakes; regression and mixed-source native smoke verified.",
+      "ExpiresWith": "#376",
+      "Hash": "e9f3c8ca5745b83cfb400d81c514f7b79e2ecc5c1f9669bad2a8a4965aace1bd"
     }
   ],
   "RetiredMembers": [
@@ -4619,7 +4626,47 @@
     "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::method:InitializeRac1AmoeboidPresentation(:Rac1HostedEnemy):void:private",
     "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::method:ResetRac1Amoeboids():void:private",
     "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::method:TickRac1Amoeboid(:Rac1HostedEnemy):void:private",
-    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::method:TickRac1AmoeboidGates():void:private"
+    "game/scripts/OBPGame.Rac1Amoeboids.cs::OBPGame::method:TickRac1AmoeboidGates():void:private",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame+Rac2OpeningDoorHostSession::declaration:ClassDeclaration:private,sealed:::( RuntimeWorldScene . DynamicObjectNode node , Rac2AranosOpeningDoorSession door )",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame+Rac2OpeningDoorHostSession::property:Door:Rac2AranosOpeningDoorSession:get/:public",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame+Rac2OpeningDoorHostSession::property:Node:RuntimeWorldScene . DynamicObjectNode:get/:public",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame+Rac2OpeningLiftHostSession::declaration:ClassDeclaration:private,sealed:::( RuntimeWorldScene . DynamicObjectNode node , Rac2AranosOpeningLiftSession lift )",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame+Rac2OpeningLiftHostSession::property:CarryingPlayer:bool:get/,set/:public",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame+Rac2OpeningLiftHostSession::property:Lift:Rac2AranosOpeningLiftSession:get/:public",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame+Rac2OpeningLiftHostSession::property:Node:RuntimeWorldScene . DynamicObjectNode:get/:public",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame+Rac2OpeningLiftHostSession::property:ReachedUpperLogged:bool:get/,set/:public",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame+Rac2OpeningLiftHostSession::property:RiderOffsetY:float:get/,set/:public",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::field:Rac2NativeTickSeconds:double:const,private",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::field:Rac2OpeningMsr1SecondState3DelayTicks:int:const,private",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::field:Rac2OpeningMsr1State4Ticks:int:const,private",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::field:Rac2OpeningMsr1State5Ticks:int:const,private",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::field:Rac2OpeningMsr1State8Ticks:int:const,private",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::field:Rac2OpeningMsr1WitnessActivationDistance:float:const,private",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::field:_rac2Class2827Hostiles:Dictionary < int , Rac2Class2827HostileSession >:private,readonly",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::field:_rac2NativeTickAccumulator:double:private",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::field:_rac2OpeningDoor:Rac2OpeningDoorHostSession ?:private",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::field:_rac2OpeningLift:Rac2OpeningLiftHostSession ?:private",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::field:_rac2OpeningMsr1:Dictionary < int , Rac2OpeningMsr1HostSession >:private,readonly",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::field:_rac2RatchetNanotech:Rac2RatchetNanotechSession:private",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::method:ApplyRac2Class2827Position(:Rac2OpeningMsr1HostSession,:Vector3):void:private",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::method:EnterRac2OpeningMsr1Stage(:Rac2OpeningMsr1HostSession,:int,:Rac2OpeningMsr1Phase,:int):void:private,static",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::method:IsRac2OpeningLiftRiderOnPlatform(:Vector3):bool:private,static",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::method:SettleRac2OpeningMsr1Vertical(:Rac2OpeningMsr1HostSession,:float,:int):void:private",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::method:TickRac2OpeningDoorNativeTick():void:private",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::method:TickRac2OpeningLiftNativeTick():void:private",
+    "game/scripts/OBPGame.Rac2AranosOpeningHost.cs::OBPGame::method:TickRac2OpeningMsr1NativeTick():void:private",
+    "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::field:_rac2DamageTransport:Rac2DamageTransportSession:private",
+    "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::method:ApplyRac2Class2827Strike(:RuntimeWorldScene . DynamicObjectNode):void:private",
+    "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::method:ApplyRac2Class500Strike(:RuntimeWorldScene . DynamicObjectNode,:string):void:private",
+    "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::method:ArmRac2GameplayHost(:PlayerHost):void:private",
+    "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::method:ConfigureRac2GameplayHost():void:private",
+    "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::method:GetRac2GameplayHudLine():string:private",
+    "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::method:OnRac2PrimaryAttackRequested():void:private",
+    "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::method:ResetRac2GameplayHost():void:private",
+    "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::method:SelectRac2PrimaryTargetFromAim():RuntimeWorldScene . DynamicObjectNode ?:private",
+    "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame::method:TickRac2Gameplay(:double):void:private"
   ],
   "RetiredAccess": [
     "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()"
