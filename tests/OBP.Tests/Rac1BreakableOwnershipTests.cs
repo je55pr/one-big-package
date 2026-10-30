@@ -53,6 +53,26 @@ public sealed class Rac1BreakableOwnershipTests
     }
 
     [Fact]
+    public void RetirementRestoresBorrowedNodesAndReleasesContactBodies()
+    {
+        string explosive = Script("Rac1ExplosiveCrateAdapter.cs");
+        string novalis = Script("Rac1NovalisBreakableAdapter.cs");
+        string loot = Script("Rac1LootPresentation.Pickups.cs");
+        string module = Script("Rac1WorldModule.cs");
+        Assert.Contains("_originalStates.Add(source.InstanceIndex, (node.State, node.Root.Visible))", explosive, StringComparison.Ordinal);
+        Assert.Contains("_originalStates.Add(source.InstanceIndex, (node.State, node.Root.Visible))", novalis, StringComparison.Ordinal);
+        Assert.Contains("node.ApplyState(original.State);", explosive, StringComparison.Ordinal);
+        Assert.Contains("node.ApplyState(original.State);", novalis, StringComparison.Ordinal);
+        Assert.Contains("node.Root.Visible = original.Visible;", explosive, StringComparison.Ordinal);
+        Assert.Contains("node.Root.Visible = original.Visible;", novalis, StringComparison.Ordinal);
+        Assert.Contains("loot.DisableRac1CrateCollider(id);", explosive, StringComparison.Ordinal);
+        Assert.Contains("flash.Dispose();", explosive, StringComparison.Ordinal);
+        Assert.Contains("foreach (int instance in _rac1CrateBodies.Keys.ToArray()) DisableRac1CrateCollider(instance);", loot, StringComparison.Ordinal);
+        Assert.Contains("if (_configured) throw new InvalidOperationException", module, StringComparison.Ordinal);
+        Assert.Contains("ResetBindings(retiring: true);", module, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void RewardPresentationAndCrateFixtureUseBoundedPorts()
     {
         string explosive = Script("Rac1ExplosiveCrateAdapter.cs");

@@ -905,7 +905,12 @@ typed pickup facts reach the existing `Rac1LootPresentation`. Crate bodies and
 falling support remain in that lease-owned presenter, with explicit idempotent
 release and bounded contact lookup rather than an adapter reading private
 mutable dictionaries. Temporary material copies are restored/released by the
-breakable adapter. The module's disposal chain releases all owners even if an
+breakable adapter. Both adapters also snapshot each imported node's original
+entity state and visibility and restore them before retirement; the explosive
+adapter drops any remaining owned contact body. The world module is strictly
+single-configuration (a second Configure throws), so a retired lease never
+re-registers colliders; the loot presenter frees all remaining bodies during
+world teardown. The module's disposal chain releases all owners even if an
 earlier owner's disposal throws.
 
 The existing crate acceptance scenario has an optional, explicitly

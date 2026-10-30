@@ -19,6 +19,7 @@ internal sealed class Rac1ExplosiveCrateAdapter(
 {
     private Rac1ExplosiveCrateSession? _session;
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _nodes = [];
+    private readonly Dictionary<int, (RuntimeEntityState State, bool Visible)> _originalStates = [];
     private readonly Dictionary<int, (MeshInstance3D Mesh, Material Original, StandardMaterial3D Flash, Color Colour)[]> _materials = [];
     private readonly HashSet<(int Source, int Target)> _hits = [];
     private readonly HashSet<int> _playerHits = [];
@@ -34,6 +35,17 @@ internal sealed class Rac1ExplosiveCrateAdapter(
                     mesh.MaterialOverride = original;
                 if (GodotObject.IsInstanceValid(flash)) flash.Dispose();
             }
+        // Return source presentation to its original state before this lease retires.
+        // The loot owner releases the bodies; no retired lease can be configured again.
+        foreach (var (id, node) in _nodes)
+        {
+            loot.DisableRac1CrateCollider(id);
+            if (!GodotObject.IsInstanceValid(node.Root) || node.Root.IsQueuedForDeletion() ||
+                !_originalStates.TryGetValue(id, out var original)) continue;
+            node.ApplyState(original.State);
+            node.Root.Visible = original.Visible;
+        }
+        _originalStates.Clear();
         _session = null;
         _nodes.Clear();
         _materials.Clear();
@@ -53,6 +65,7 @@ internal sealed class Rac1ExplosiveCrateAdapter(
             var node = Rac1WorldPresentation.FindPresentedDynamic(scene, source)
                 ?? throw new InvalidDataException($"Native class-505 explosive {source.InstanceIndex} has no original model.");
             _session.Register(source, node.State);
+            _originalStates.Add(source.InstanceIndex, (node.State, node.Root.Visible));
             _nodes.Add(source.InstanceIndex, node);
             presentation.CrateNodes.Add(node);
             loot.AddRac1CrateCollider(node);

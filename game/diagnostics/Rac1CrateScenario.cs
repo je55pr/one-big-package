@@ -95,6 +95,9 @@ public sealed class Rac1CrateScenario(MovementDiagnosticContext context, Rac1Loo
                 Log("[crate-smoke] metal rejects wrench/Bomb Glove input and projectile/metal fragments PASS");
             }
             await PhysicsFramesAsync(600); Require(Loot.Read().DebrisClasses.Length == 0, "debris failed to expire");
+            int? levelId = World.Read().LevelId;
+            Require(levelId != Rac1NovalisBreakableSession.NovalisLevelId || ports.Breakables is not null,
+                "Novalis breakable diagnostic fixture is unavailable.");
             if (ports.Breakables is { } breakables)
             {
                 var start = breakables.Read();
@@ -106,8 +109,19 @@ public sealed class Rac1CrateScenario(MovementDiagnosticContext context, Rac1Loo
                         entry.Actor.Target.NativeClassId == Rac1ExplosiveCrateSession.ClassId),
                     "explosive adapter admitted an unrelated source/native class");
                 Require(start.Novalis.All(entry => entry.Actor.Target.SourceGame == ObpSourceGame.Rac1 &&
-                        entry.Actor.Target.NativeClassId is 704 or 754),
+                        entry.Actor.Target.NativeClassId is Rac1NovalisBreakableSession.MushroomClass
+                            or Rac1NovalisBreakableSession.RockFormationClass),
                     "Novalis adapter admitted an unrelated source/native class");
+
+                if (levelId == Rac1NovalisBreakableSession.NovalisLevelId)
+                {
+                    Require(start.Explosives.Any(entry => entry.Presence == RuntimeEntityPresence.Active && entry.HasCollider),
+                        "Novalis is missing its admitted live class-505 explosive fixture.");
+                    Require(start.Novalis.Any(entry => entry.Actor.Target.NativeClassId == Rac1NovalisBreakableSession.MushroomClass &&
+                        entry.Presence == RuntimeEntityPresence.Active), "Novalis is missing its live class-754 mushroom fixture.");
+                    Require(start.Novalis.Any(entry => entry.Actor.Target.NativeClassId == Rac1NovalisBreakableSession.RockFormationClass &&
+                        entry.Presence == RuntimeEntityPresence.Active), "Novalis is missing its live class-704 rock fixture.");
+                }
 
                 var explosive = start.Explosives.FirstOrDefault(entry =>
                     entry.Presence == RuntimeEntityPresence.Active && entry.HasCollider);

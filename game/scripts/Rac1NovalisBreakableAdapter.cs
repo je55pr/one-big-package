@@ -17,6 +17,7 @@ internal sealed class Rac1NovalisBreakableAdapter(
 {
     private Rac1NovalisBreakableSession _session = new();
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _nodes = [];
+    private readonly Dictionary<int, (RuntimeEntityState State, bool Visible)> _originalStates = [];
 
     internal IEnumerable<RuntimeWorldScene.DynamicObjectNode> Nodes => _nodes.Values;
     internal int DestroyedCount => _session.DestroyedCount;
@@ -30,6 +31,14 @@ internal sealed class Rac1NovalisBreakableAdapter(
 
     internal void Reset()
     {
+        foreach (var (id, node) in _nodes)
+        {
+            if (!GodotObject.IsInstanceValid(node.Root) || node.Root.IsQueuedForDeletion() ||
+                !_originalStates.TryGetValue(id, out var original)) continue;
+            node.ApplyState(original.State);
+            node.Root.Visible = original.Visible;
+        }
+        _originalStates.Clear();
         _session = new();
         _nodes.Clear();
     }
@@ -46,6 +55,7 @@ internal sealed class Rac1NovalisBreakableAdapter(
             var node = Rac1WorldPresentation.FindPresentedDynamic(scene, source)
                 ?? throw new InvalidDataException("Novalis mushroom/rock lacks its imported visual.");
             _session.Register(world.LevelId, source.NativeClassId, source.InstanceIndex);
+            _originalStates.Add(source.InstanceIndex, (node.State, node.Root.Visible));
             _nodes.Add(source.InstanceIndex, node);
         }
         GD.Print($"[rac1-novalis] {_session.RegisteredCount} mushroom/rock props admitted");
