@@ -12,7 +12,6 @@ namespace OBP.Game;
 internal sealed record Rac1TeslaPorts(
     Func<Vector3, float, float, IEnumerable<int>?, RuntimeWorldScene.DynamicObjectNode?> FindTarget,
     Func<ulong> WorldTick,
-    Action<int, Vector3, Vector3> DrawBeam,
     Func<RuntimeWorldScene.DynamicObjectNode, Rac1GameplayDamageEvent, bool> Damage,
     Action<int, int, Vector3> Sound);
 
@@ -21,7 +20,7 @@ internal sealed record Rac1TeslaPorts(
 /// new-lock audio and ten-tick native damage cadence. Visual ribbon and ammo
 /// handling stay with their existing owners.
 /// </summary>
-internal sealed class Rac1TeslaHost(Rac1TeslaPorts ports, Rac1WeaponContactHost contacts) : IDisposable
+internal sealed class Rac1TeslaHost(Rac1TeslaPorts ports, Rac1WeaponContactHost contacts, Rac1ArsenalBeamPresenter beams) : IDisposable
 {
     private readonly HashSet<int> _locked = [];
     private bool _disposed;
@@ -37,7 +36,7 @@ internal sealed class Rac1TeslaHost(Rac1TeslaPorts ports, Rac1WeaponContactHost 
             Release();
             var end = from + forward * .55f;
             var hit = contacts.Contact(from, end, .01f);
-            ports.DrawBeam(0, from, hit?.Point ?? end);
+            beams.DrawTesla(0, from, hit?.Point ?? end);
             return;
         }
 
@@ -53,7 +52,7 @@ internal sealed class Rac1TeslaHost(Rac1TeslaPorts ports, Rac1WeaponContactHost 
         for (int i = 0; i < targets.Count; i++)
         {
             var target = targets[i];
-            ports.DrawBeam(i, from, target.Root.GlobalPosition + Vector3.Up * .5f);
+            beams.DrawTesla(i, from, target.Root.GlobalPosition + Vector3.Up * .5f);
             if (ports.WorldTick() % 10 == 0)
                 ports.Damage(target, Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.TeslaClaw,
                     new(target.Source.NativeClassId, target.Source.InstanceIndex),

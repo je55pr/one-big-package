@@ -20,15 +20,14 @@ internal sealed record Rac1MorphPorts(
     Func<Vector3, float, float, Vector3?> Ground,
     Action<Vector3, int, Color, float, int> Flash,
     Func<Vector3, float, float, RuntimeWorldScene.DynamicObjectNode?> FindTarget,
-    Func<Vector3, Vector3, float, (Vector3 Point, RuntimeWorldScene.DynamicObjectNode? Target)?> Contact,
-    Action<int, Vector3, Vector3> DrawBeam);
+    Func<Vector3, Vector3, float, (Vector3 Point, RuntimeWorldScene.DynamicObjectNode? Target)?> Contact);
 
 /// <summary>
 /// R&C1 Morph-o-Ray exposure, transformed Moby identity, movement, replacement
 /// collision and restoration belong to the same world lease. Consumers receive
 /// read-only observations, never the live chicken dictionary.
 /// </summary>
-internal sealed class Rac1MorphHost(Rac1MorphPorts ports) : IDisposable
+internal sealed class Rac1MorphHost(Rac1MorphPorts ports, Rac1ArsenalBeamPresenter beams) : IDisposable
 {
     private sealed record Chicken(Rac1HostedEnemy Enemy, Rac1EquipmentView View, Shape3D OriginalShape,
         Vector3 OriginalShapePosition)
@@ -70,10 +69,10 @@ internal sealed class Rac1MorphHost(Rac1MorphPorts ports) : IDisposable
         {
             var end = from + forward * 3;
             var hit = ports.Contact(from, end, .01f);
-            ports.DrawBeam(0, from, hit?.Point ?? end);
+            beams.DrawMorph(0, from, hit?.Point ?? end);
             return;
         }
-        ports.DrawBeam(0, from, target.Root.GlobalPosition + Vector3.Up * .5f);
+        beams.DrawMorph(0, from, target.Root.GlobalPosition + Vector3.Up * .5f);
         int progress = _exposure.GetValueOrDefault(target.Source.InstanceIndex) + 2;
         _exposure[target.Source.InstanceIndex] = progress;
         if (progress >= Rac1ArsenalHostPolicy.MorphExposureTicks) Morph(target);

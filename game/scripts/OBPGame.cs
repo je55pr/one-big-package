@@ -450,7 +450,6 @@ public partial class OBPGame : Node3D
         new Rac1TeslaPorts(
             (origin, range, cone, excluded) => FindArsenalTarget(origin, range, cone, excluded),
             () => _rac1WeaponWorldTick,
-            (slot, from, to) => DrawArsenalBeam(slot, from, to, new(.3f, .6f, 1)),
             (node, damage) => ApplyRac1AdditionalDamage(node, damage),
             (cls, sound, origin) => FusionWeapons.PlayNativeSound(cls, sound, origin)),
         new Rac1MorphPorts(
@@ -463,8 +462,11 @@ public partial class OBPGame : Node3D
             (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(min, max),
             EquipmentGround, SpawnEquipmentFlash,
             (origin, range, cone) => FindArsenalTarget(origin, range, cone),
-            (from, to, radius) => Rac1World.Weapons.Contacts.Contact(from, to, radius),
-            (slot, from, to) => DrawArsenalBeam(slot, from, to, new(.4f, 1, .25f))),
+            (from, to, radius) => Rac1World.Weapons.Contacts.Contact(from, to, radius)),
+        new Rac1ArsenalBeamPorts(
+            () => GetViewport().GetCamera3D(), () => _rac1EquipmentAssets?.Effects,
+            () => _rac1Weapons.Equipped, () => _args.FixedSeed,
+            (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(min, max)),
         new Rac1TaxiHostPorts(
             () => _player is { } player && IsInstanceValid(player) ? new Rac1TaxiPlayerController(player) : null,
             () => _mode == Mode.World && !GetTree().Paused &&
@@ -1772,7 +1774,7 @@ public partial class OBPGame : Node3D
 
     private GodotRac1ArsenalDiagnosticFixture CreateRac1ArsenalDiagnosticFixture(IDiagnosticWorldObservations worlds, GodotRac1WeaponTargetFixture targets) => new(new(
         () => new(Rac1World.Weapons.Missiles.SalvoRemaining, Rac1World.Weapons.LastArsenalId, Rac1World.Weapons.Deployables.DroneCount, Rac1World.Weapons.SuckCannon.ChickenCargoCount,
-            [.. _rac1ArsenalBeams.Select(beam => beam.Visible)], [.. _rac1ArsenalBeams.Select(beam => beam.MaterialOverride is ShaderMaterial)]),
+            [.. Rac1World.Weapons.Beams.VisibleSlots()], [.. Rac1World.Weapons.Beams.ShaderSlots()]),
         () => [.. Rac1World.Weapons.Missiles.Project((weapon, id, view) =>
             new GodotWeaponDiagnosticWitness<Rac1ArsenalMissileDiagnostic>(new(worlds), () => new(
                 new(ObpSourceGame.Rac1, (int)weapon), id, GodotWeaponModelFacts.Read(view))))],

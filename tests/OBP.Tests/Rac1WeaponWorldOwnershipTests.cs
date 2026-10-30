@@ -186,7 +186,7 @@ public sealed class Rac1WeaponWorldOwnershipTests
         string parent = Script("Rac1WeaponHost.cs");
         string world = Script("OBPGame.cs");
         string arsenal = Script("OBPGame.Rac1Arsenal.cs");
-        Assert.Contains("Morph = new(morph)", parent, StringComparison.Ordinal);
+        Assert.Contains("Morph = new(morph, Beams)", parent, StringComparison.Ordinal);
         Assert.Contains("Morph.Reset()", parent, StringComparison.Ordinal);
         Assert.Contains("Morph.Dispose()", parent, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Weapons.Morph.TickChickens()", arsenal, StringComparison.Ordinal);
@@ -245,6 +245,87 @@ public sealed class Rac1WeaponWorldOwnershipTests
     }
 
     [Fact]
+    public void BeamNodesMaterialsAndVisualRandomBelongToWorldWeaponLease()
+    {
+        var compilation = HostOwnershipAudit.Host.Value;
+        var root = compilation.GetTypeByMetadataName("OBP.Game.OBPGame")!;
+        foreach (string member in new[]
+        {
+            "_rac1ArsenalBeams", "_rac1TeslaPresentation", "_rac1TeslaMaterials",
+            "_rac1TeslaEffectRandom", "_rac1PlainBeamMaterial",
+            "DrawArsenalBeam", "DrawRac1TeslaRibbons"
+        })
+            Assert.Empty(root.GetMembers(member));
+
+        var weapon = compilation.GetTypeByMetadataName("OBP.Game.Rac1WeaponHost")!;
+        Assert.Equal("Rac1ArsenalBeamPresenter",
+            Assert.Single(weapon.GetMembers("Beams").OfType<IPropertySymbol>()).Type.Name);
+
+        string presenter = Script("Rac1ArsenalBeamPresenter.cs");
+        string parent = Script("Rac1WeaponHost.cs");
+        string module = Script("Rac1WorldModule.cs");
+        string arsenal = Script("OBPGame.Rac1Arsenal.cs");
+        string application = Script("OBPGame.cs");
+
+        Assert.Contains("Beams = new(sceneRoot, beams)", parent, StringComparison.Ordinal);
+        Assert.Contains("Beams.Reset()", parent, StringComparison.Ordinal);
+        Assert.Contains("Beams.Dispose()", parent, StringComparison.Ordinal);
+        Assert.Contains("Weapons = new(scene.Root, detector", module, StringComparison.Ordinal);
+        Assert.Contains("new Rac1ArsenalBeamPorts(", application, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Beams.Reset()", arsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Beams.BeginFrame()", arsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Beams.AdvanceTesla()", arsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1TeslaPresentation _teslaPresentation = new()", presenter, StringComparison.Ordinal);
+        Assert.DoesNotContain("OBPGame", presenter, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BeamFamiliesShareWorldPresenterWithoutRootDrawCallbacks()
+    {
+        string tesla = Script("Rac1TeslaHost.cs");
+        string morph = Script("Rac1MorphHost.cs");
+        string parent = Script("Rac1WeaponHost.cs");
+        string application = Script("OBPGame.cs");
+        string presenter = Script("Rac1ArsenalBeamPresenter.cs");
+
+        Assert.Contains("Tesla = new(tesla, Contacts, Beams)", parent, StringComparison.Ordinal);
+        Assert.Contains("Morph = new(morph, Beams)", parent, StringComparison.Ordinal);
+        Assert.Contains("beams.DrawTesla(", tesla, StringComparison.Ordinal);
+        Assert.Contains("beams.DrawMorph(", morph, StringComparison.Ordinal);
+        Assert.DoesNotContain("DrawBeam", tesla, StringComparison.Ordinal);
+        Assert.DoesNotContain("DrawBeam", morph, StringComparison.Ordinal);
+        Assert.Contains("Draw(index, from, to, new(.3f, .6f, 1))", presenter, StringComparison.Ordinal);
+        Assert.Contains("Draw(index, from, to, new(.4f, 1, .25f))", presenter, StringComparison.Ordinal);
+        Assert.DoesNotContain("DrawArsenalBeam", application, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Beams.VisibleSlots()", application, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Beams.ShaderSlots()", application, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BeamPresenterPreservesNativeRibbonsMeshGeometryAndSeparateRandomStreams()
+    {
+        string presenter = Script("Rac1ArsenalBeamPresenter.cs");
+        Assert.Contains("ports.Equipped() == Rac1WeaponId.TeslaClaw && ports.Effects() is { } effects", presenter, StringComparison.Ordinal);
+        Assert.Contains("Rac1PickupRandom.FromSeed(unchecked((uint)(ports.FixedSeed() ?? System.Environment.TickCount)))", presenter, StringComparison.Ordinal);
+        Assert.Contains("ports.SignedRandom(0, .13f)", presenter, StringComparison.Ordinal);
+        Assert.Contains("_teslaPresentation.Advance()", presenter, StringComparison.Ordinal);
+        Assert.Contains("_teslaPresentation.ProjectTargetLine(", presenter, StringComparison.Ordinal);
+        Assert.Contains("Rac1LootPresentation.ToEffectNative(from)", presenter, StringComparison.Ordinal);
+        Assert.Contains("ports.Camera()?.GlobalPosition ?? from + Vector3.Up * 5", presenter, StringComparison.Ordinal);
+        Assert.Contains("render_mode unshaded, blend_add, cull_disabled, depth_draw_never, fog_disabled", presenter, StringComparison.Ordinal);
+        Assert.Contains("material.SetShaderParameter(\"art\"", presenter, StringComparison.Ordinal);
+        Assert.Contains("Vector3 extension = (pb - pa) * ribbon.EndExtension", presenter, StringComparison.Ordinal);
+        Assert.Contains("float a = _teslaPresentation.TexturePhase, b = a + 1", presenter, StringComparison.Ordinal);
+        Assert.Contains("EffectMeshSceneView.Upload(mesh, new(", presenter, StringComparison.Ordinal);
+        Assert.Contains("mesh.ClearSurfaces()", presenter, StringComparison.Ordinal);
+        Assert.Contains("beam.Visible = false", presenter, StringComparison.Ordinal);
+        Assert.Contains("GodotObject.IsInstanceValid(beam)", presenter, StringComparison.Ordinal);
+        Assert.Contains("_teslaMaterials.Clear()", presenter, StringComparison.Ordinal);
+        Assert.Contains("_teslaEffectRandom = null", presenter, StringComparison.Ordinal);
+        Assert.Contains("Reset()", Method("Rac1ArsenalBeamPresenter.cs", "Dispose"), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void TeslaTargetLockAndDamageCadenceBelongToWorldWeaponLease()
     {
         var compilation = HostOwnershipAudit.Host.Value;
@@ -260,7 +341,7 @@ public sealed class Rac1WeaponWorldOwnershipTests
         string arsenal = Script("OBPGame.Rac1Arsenal.cs");
         string rootComposition = Script("OBPGame.cs");
 
-        Assert.Contains("Tesla = new(tesla, Contacts)", parent, StringComparison.Ordinal);
+        Assert.Contains("Tesla = new(tesla, Contacts, Beams)", parent, StringComparison.Ordinal);
         Assert.Contains("Tesla.Reset()", parent, StringComparison.Ordinal);
         Assert.Contains("Tesla.Dispose()", parent, StringComparison.Ordinal);
         Assert.Contains("new Rac1TeslaPorts(", rootComposition, StringComparison.Ordinal);
@@ -285,12 +366,12 @@ public sealed class Rac1WeaponWorldOwnershipTests
         Assert.Contains("Rac1ArsenalRules.TeslaDamage", family, StringComparison.Ordinal);
         Assert.Contains("Rac1ArsenalRules.TeslaDamageFlags", family, StringComparison.Ordinal);
         Assert.Contains("contacts.Contact(from, end, .01f)", family, StringComparison.Ordinal);
-        Assert.Contains("ports.DrawBeam(0, from, hit?.Point ?? end)", family, StringComparison.Ordinal);
+        Assert.Contains("beams.DrawTesla(0, from, hit?.Point ?? end)", family, StringComparison.Ordinal);
         Assert.Contains("internal void Release() => _locked.Clear()", family, StringComparison.Ordinal);
         Assert.Contains("internal void Reset() => _locked.Clear()", family, StringComparison.Ordinal);
-        Assert.Contains("_rac1TeslaPresentation.Advance()", arsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Beams.AdvanceTesla()", arsenal, StringComparison.Ordinal);
         Assert.Contains("if (weapon == Rac1WeaponId.TeslaClaw && _rac1Weapons.GetAmmo(19) <= 0) return", arsenal, StringComparison.Ordinal);
-        Assert.Contains("DrawArsenalBeam(slot, from, to, new(.3f, .6f, 1))", Script("OBPGame.cs"), StringComparison.Ordinal);
+        Assert.Contains("Draw(index, from, to, new(.3f, .6f, 1))", Script("Rac1ArsenalBeamPresenter.cs"), StringComparison.Ordinal);
     }
 
     [Fact]
