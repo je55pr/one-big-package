@@ -1,12 +1,18 @@
 [
   {
     "Owner": "shared-ps2-evidence",
-    "Rationale": "Exact historical GC/UYA shared geometry/pose codec vocabulary and its named regression tests. These are established PS2 formats with retail evidence, not source-specific gameplay aliases; new neutral APIs receive neutral names.",
+    "Rationale": "Exact historical GC/UYA shared geometry/pose codec vocabulary and named regressions. #488 splits the existing shared GcUyaMoby decoder into private partial stages without adding a new public codec or source-specific alias; new neutral APIs retain neutral names.",
     "Declarations": [
       "src/OBP.PS2/Geometry/GcUyaGadgetPose.cs::OBP.PS2.Geometry.GcUyaGadgetPose",
       "src/OBP.PS2/Geometry/GcUyaMoby.cs::OBP.PS2.Geometry.GcUyaMoby",
+      "src/OBP.PS2/Geometry/GcUyaMoby.DecodeAssembly.cs::OBP.PS2.Geometry.GcUyaMoby",
+      "src/OBP.PS2/Geometry/GcUyaMoby.DecodePackets.cs::OBP.PS2.Geometry.GcUyaMoby",
+      "src/OBP.PS2/Geometry/GcUyaMoby.DecodeSkin.cs::OBP.PS2.Geometry.GcUyaMoby",
+      "src/OBP.PS2/Geometry/GcUyaMoby.DecodeVertices.cs::OBP.PS2.Geometry.GcUyaMoby",
+      "src/OBP.PS2/Geometry/GcUyaMoby.Decoder.cs::OBP.PS2.Geometry.GcUyaMoby",
       "src/OBP.PS2/Geometry/GcUyaMobyPose.cs::OBP.PS2.Geometry.GcUyaMobyPose",
-      "tests/OBP.Tests/GcUyaGadgetPoseTests.cs::OBP.Tests.GcUyaGadgetPoseTests"
+      "tests/OBP.Tests/GcUyaGadgetPoseTests.cs::OBP.Tests.GcUyaGadgetPoseTests",
+      "tests/OBP.Tests/GcUyaMobyDecodeCharacterizationTests.cs::OBP.Tests.GcUyaMobyDecodeCharacterizationTests"
     ]
   }
 ]
