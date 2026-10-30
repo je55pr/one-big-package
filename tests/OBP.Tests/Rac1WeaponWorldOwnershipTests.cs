@@ -170,6 +170,64 @@ public sealed class Rac1WeaponWorldOwnershipTests
     }
 
     [Fact]
+    public void ArsenalMissileRuntimeAndRynoSessionBelongToWorldLease()
+    {
+        var compilation = HostOwnershipAudit.Host.Value;
+        var root = compilation.GetTypeByMetadataName("OBP.Game.OBPGame")!;
+        foreach (var member in new[]
+        {
+            "ArsenalMissile", "_rac1ArsenalMissiles", "_rac1RynoSalvo",
+            "_rac1RynoTargets", "_rac1ArsenalId", "SpawnArsenalMissile",
+            "OrientArsenalView"
+        })
+            Assert.Empty(root.GetMembers(member));
+
+        var owner = compilation.GetTypeByMetadataName("OBP.Game.Rac1WeaponHost")!;
+        Assert.Equal("Rac1ArsenalMissileHost",
+            Assert.Single(owner.GetMembers("Missiles").OfType<IPropertySymbol>()).Type.Name);
+        string host = Script("Rac1ArsenalMissileHost.cs");
+        string world = Script("Rac1WeaponHost.cs");
+        string rootArsenal = Script("OBPGame.Rac1Arsenal.cs");
+        Assert.Contains("Rac1RynoSalvoSession _ryno = new()", host, StringComparison.Ordinal);
+        Assert.Contains("_ryno.Step(ports.Alive() && ports.Equipped() == Rac1WeaponId.Ryno)", host, StringComparison.Ordinal);
+        Assert.Contains("_rynoTargets.Add(target.Source.InstanceIndex)", host, StringComparison.Ordinal);
+        Assert.Contains("Rac1ArsenalProjectile(", host, StringComparison.Ordinal);
+        Assert.Contains("ports.Contact(from, to, .15f)", host, StringComparison.Ordinal);
+        Assert.Contains("ports.Blast(missile.Weapon, position,", host, StringComparison.Ordinal);
+        Assert.Contains("Missiles.Reset()", world, StringComparison.Ordinal);
+        Assert.Contains("Missiles.Dispose()", world, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Missiles.Tick()", rootArsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.NextArsenalId()", rootArsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1ArsenalViewPose.Orient(", rootArsenal, StringComparison.Ordinal);
+        Assert.Contains("view.Rotation = new(0, MathF.Atan2(direction.Z, -direction.X)",
+            Script("Rac1ArsenalViewPose.cs"), StringComparison.Ordinal);
+        Assert.Contains("Rac1ArsenalViewPose.Orient(missile.View", host, StringComparison.Ordinal);
+        Assert.Contains("Missiles = new(missiles, GuidedCamera, NextArsenalId)", world, StringComparison.Ordinal);
+        Assert.Contains("internal long LastArsenalId => _arsenalId", world, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ArsenalMissileCameraIsPassedDirectlyAndDiagnosticsProjectWitnesses()
+    {
+        string family = Script("Rac1ArsenalMissileHost.cs");
+        string owner = Script("Rac1WeaponHost.cs");
+        string application = Script("OBPGame.cs");
+        Assert.Contains("Missiles = new(missiles, GuidedCamera, NextArsenalId)", owner, StringComparison.Ordinal);
+        Assert.Contains("camera.Begin(ports.SceneRoot(), player)", family, StringComparison.Ordinal);
+        Assert.Contains("camera.Step(to,", family, StringComparison.Ordinal);
+        Assert.Contains("camera.End()", Method("Rac1ArsenalMissileHost.cs", "Reset"), StringComparison.Ordinal);
+        Assert.Contains("if (guided) camera.End()", Method("Rac1ArsenalMissileHost.cs", "Tick"), StringComparison.Ordinal);
+        Assert.DoesNotContain("Func<Rac1GuidedWeaponCamera>", family, StringComparison.Ordinal);
+        Assert.Contains("new Rac1ArsenalMissilePorts(", application, StringComparison.Ordinal);
+        Assert.Contains("(cls, sound, position) => FusionWeapons.PlayNativeSound(cls, sound, position)",
+            application, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Missiles.Project((weapon, id, view)", application, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Missiles.SalvoRemaining", application, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.LastArsenalId", application, StringComparison.Ordinal);
+        Assert.DoesNotContain("OBPGame", family, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ContactCallbacksDoNotResolveTheWorldDuringHostConstruction()
     {
         var tree = HostOwnershipAudit.Host.Value.SyntaxTrees

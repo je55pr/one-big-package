@@ -407,6 +407,16 @@ public partial class OBPGame : Node3D
             },
             (cls, sound, position) => Rac1World.Loot.PlayRac1PickupSound(cls, sound, position),
             () => RefreshRac1HudState()),
+        new Rac1ArsenalMissilePorts(
+            (weapon, barrel) => EquipmentMuzzle(weapon, barrel),
+            () => EquipmentForward, CreateEquipmentWorldView,
+            (origin, range, cone, excluded) => FindArsenalTarget(origin, range, cone, excluded),
+            node => Rac1World.Weapons.Contacts.IsAimTarget(node),
+            (from, to, radius) => Rac1World.Weapons.Contacts.Contact(from, to, radius),
+            () => _player, () => PlayerLife.Alive, () => _rac1Weapons.Equipped,
+            () => _rac1WeaponWorldTick, SpawnEquipmentFlash, ApplyArsenalBlast,
+            SpawnRac1WeaponExplosion, (cls, sound, position) => FusionWeapons.PlayNativeSound(cls, sound, position),
+            () => _sceneResult!.Root),
         new Rac1TaxiHostPorts(
             () => _player is { } player && IsInstanceValid(player) ? new Rac1TaxiPlayerController(player) : null,
             () => _mode == Mode.World && !GetTree().Paused &&
@@ -1709,10 +1719,11 @@ public partial class OBPGame : Node3D
             GodotWeaponModelFacts.Read(agent.View))))], () => _persistentPlayer.WeaponPreview is not null, SetRac1WeaponPreview));
 
     private GodotRac1ArsenalDiagnosticFixture CreateRac1ArsenalDiagnosticFixture(IDiagnosticWorldObservations worlds, GodotRac1WeaponTargetFixture targets) => new(new(
-        () => new(_rac1RynoSalvo.Remaining, _rac1ArsenalId, _rac1Drones.Count, Rac1World.Weapons.SuckCannon.ChickenCargoCount,
+        () => new(Rac1World.Weapons.Missiles.SalvoRemaining, Rac1World.Weapons.LastArsenalId, _rac1Drones.Count, Rac1World.Weapons.SuckCannon.ChickenCargoCount,
             [.. _rac1ArsenalBeams.Select(beam => beam.Visible)], [.. _rac1ArsenalBeams.Select(beam => beam.MaterialOverride is ShaderMaterial)]),
-        () => [.. _rac1ArsenalMissiles.Select(missile => new GodotWeaponDiagnosticWitness<Rac1ArsenalMissileDiagnostic>(new(worlds), () => new(
-            new(ObpSourceGame.Rac1, (int)missile.Weapon), missile.Id, GodotWeaponModelFacts.Read(missile.View))))],
+        () => [.. Rac1World.Weapons.Missiles.Project((weapon, id, view) =>
+            new GodotWeaponDiagnosticWitness<Rac1ArsenalMissileDiagnostic>(new(worlds), () => new(
+                new(ObpSourceGame.Rac1, (int)weapon), id, GodotWeaponModelFacts.Read(view))))],
         () => [.. _rac1Decoys.Select(decoy => new GodotRac1DecoyDiagnosticFixture(new(worlds), () => new(new(ObpSourceGame.Rac1, (int)Rac1WeaponId.DecoyGlove),
             GodotWeaponModelFacts.Read(decoy.View), decoy.Grounded, decoy.RetiringTicks), () => decoy.GroundTicks = Rac1ArsenalRules.DecoyLifetime - 1))],
         () => [.. _rac1Chickens.Values.Select(chicken => new Rac1ChickenDiagnostic(targets.Key(chicken.Enemy.Node), Rac1World.Enemies.IsRac1GameplayActive(chicken.Enemy.Node),

@@ -8,8 +8,6 @@ namespace OBP.Game;
 
 public partial class OBPGame
 {
-    private sealed record ArsenalMissile(Rac1WeaponId Weapon, long Id, Rac1EquipmentView View,
-        Rac1ArsenalProjectile Motion, RuntimeWorldScene.DynamicObjectNode? Target);
     private sealed record ArsenalDecoy(Rac1EquipmentView View)
     {
         public Vector3 Velocity;
@@ -33,7 +31,6 @@ public partial class OBPGame
         public Vector3 Direction;
     }
 
-    private readonly List<ArsenalMissile> _rac1ArsenalMissiles = [];
     private readonly List<ArsenalDecoy> _rac1Decoys = [];
     private readonly List<ArsenalDrone> _rac1Drones = [];
     private readonly Dictionary<int, ArsenalChicken> _rac1Chickens = [];
@@ -45,18 +42,14 @@ public partial class OBPGame
     private StandardMaterial3D? _rac1PlainBeamMaterial;
     private readonly Dictionary<int, ulong> _rac1Taunts = [];
     private bool _rac1ArsenalHeld;
-    private Rac1RynoSalvoSession _rac1RynoSalvo = new();
     private int _rac1WalloperAge;
-    private long _rac1ArsenalId;
-    private readonly HashSet<int> _rac1RynoTargets = [];
     private readonly HashSet<int> _rac1WalloperVictims = [];
     private readonly HashSet<int> _rac1TeslaSoundTargets = [];
 
     private void ResetRac1Arsenal()
     {
-        Rac1World.Weapons.GuidedCamera.End();
-        foreach (var node in _rac1ArsenalMissiles.Select(item => (Node)item.View)
-            .Concat(_rac1Decoys.Select(item => (Node)item.View)).Concat(_rac1Drones.Select(item => (Node)item.View))
+        Rac1World.Weapons.Missiles.Reset();
+        foreach (var node in _rac1Decoys.Select(item => (Node)item.View).Concat(_rac1Drones.Select(item => (Node)item.View))
             .Concat(_rac1Chickens.Values.Select(item => (Node)item.View)).Concat(_rac1ArsenalBeams))
             if (IsInstanceValid(node)) node.QueueFree();
         foreach (var chicken in _rac1Chickens.Values.Where(chicken => IsInstanceValid(chicken.Enemy.Node.Root) && IsInstanceValid(chicken.Enemy.Body)))
@@ -68,21 +61,20 @@ public partial class OBPGame
             var collider = chicken.Enemy.Body.GetChild<CollisionShape3D>(0);
             collider.Shape = chicken.OriginalShape; collider.Position = chicken.OriginalShapePosition;
         }
-        _rac1ArsenalMissiles.Clear(); _rac1Decoys.Clear(); _rac1Drones.Clear(); _rac1Chickens.Clear();
+        _rac1Decoys.Clear(); _rac1Drones.Clear(); _rac1Chickens.Clear();
         _rac1MorphExposure.Clear(); _rac1ArsenalBeams.Clear(); _rac1Taunts.Clear();
         _rac1TeslaPresentation.Reset(); _rac1TeslaMaterials.Clear(); _rac1TeslaEffectRandom = null;
-        _rac1RynoSalvo = new(); _rac1WalloperAge = 0;
+        _rac1WalloperAge = 0;
         _rac1ArsenalHeld = false; _rac1WalloperVictims.Clear();
-        _rac1RynoTargets.Clear();
         _rac1TeslaSoundTargets.Clear();
         if (_player is not null) { _player.Rac1EquipmentActionActive = false; _player.Rac1EquipmentLungeVelocity = Vector3.Zero; }
     }
 
     private bool AdmitRac1ArsenalUse() => _rac1Weapons.Equipped switch
     {
-        Rac1WeaponId.VisibombGun => !_rac1ArsenalMissiles.Any(item => item.Weapon == Rac1WeaponId.VisibombGun),
+        Rac1WeaponId.VisibombGun => !Rac1World.Weapons.Missiles.GuidedActive,
         Rac1WeaponId.DroneDevice => _rac1Drones.Count < Rac1ArsenalRules.DroneCapacity,
-        Rac1WeaponId.Ryno => _rac1RynoSalvo.Remaining == 0,
+        Rac1WeaponId.Ryno => Rac1World.Weapons.Missiles.CanBeginRyno,
         Rac1WeaponId.DecoyGlove => _rac1Decoys.Count < Rac1ArsenalHostPolicy.DecoyCapacity,
         _ => true,
     };
@@ -105,11 +97,9 @@ public partial class OBPGame
     {
         switch (shot.Weapon)
         {
-            case Rac1WeaponId.Devastator: SpawnArsenalMissile(shot.Weapon, FindArsenalTarget(EquipmentMuzzle(shot.Weapon), 70, .85f)); break;
-            case Rac1WeaponId.VisibombGun:
-                SpawnArsenalMissile(shot.Weapon, null); Rac1World.Weapons.GuidedCamera.Begin(_sceneResult!.Root, _player!); break;
-            case Rac1WeaponId.Ryno:
-                _rac1RynoSalvo.Begin(); _rac1RynoTargets.Clear(); break;
+            case Rac1WeaponId.Devastator: Rac1World.Weapons.Missiles.Fire(shot.Weapon); break;
+            case Rac1WeaponId.VisibombGun: Rac1World.Weapons.Missiles.Fire(shot.Weapon); break;
+            case Rac1WeaponId.Ryno: Rac1World.Weapons.Missiles.Fire(shot.Weapon); break;
             case Rac1WeaponId.DroneDevice:
                 while (_rac1Drones.Count < Rac1ArsenalRules.DroneCapacity)
                 {
@@ -128,75 +118,11 @@ public partial class OBPGame
         }
     }
 
-    private void SpawnArsenalMissile(Rac1WeaponId weapon, RuntimeWorldScene.DynamicObjectNode? target, int barrel = 0)
-    {
-        var origin = EquipmentMuzzle(weapon, barrel);
-        Vector3 direction = target is null ? EquipmentForward : (target.Root.GlobalPosition + Vector3.Up * .5f - origin).Normalized();
-        int cls = weapon switch { Rac1WeaponId.VisibombGun => 172, Rac1WeaponId.Ryno => 457, _ => 153 };
-        var view = CreateEquipmentWorldView(cls); view.Play(0); view.GlobalPosition = origin;
-        if (weapon == Rac1WeaponId.Ryno) view.Scale = Vector3.One * Rac1ArsenalRules.RynoRocketScale;
-        var motion = new Rac1ArsenalProjectile(Rac1LootPresentation.ToEffectNative(origin), Rac1LootPresentation.ToEffectNative(direction),
-            weapon switch { Rac1WeaponId.VisibombGun => Rac1ArsenalHostPolicy.VisibombSpeed, Rac1WeaponId.Ryno => Rac1ArsenalRules.RynoInitialSpeed, _ => Rac1ArsenalRules.RocketSpeed },
-            weapon switch { Rac1WeaponId.VisibombGun => Rac1ArsenalRules.VisibombLifetime, Rac1WeaponId.Ryno => Rac1ArsenalRules.RynoRocketLifetime, _ => Rac1ArsenalRules.RocketLifetime });
-        _rac1ArsenalMissiles.Add(new(weapon, ++_rac1ArsenalId, view, motion, target));
-        SpawnEquipmentFlash(origin, 27, new(1, .7f, .25f), .55f, 6);
-        FusionWeapons.PlayNativeSound(weapon == Rac1WeaponId.Ryno ? 457 : Rac1WeaponProfiles.Get(weapon).ModelClass,
-            weapon == Rac1WeaponId.Ryno ? 1 : 0, origin);
-    }
-
     private void StepRac1ArsenalWorld()
     {
         if (_player is null) return;
-        if (_rac1RynoSalvo.Step(PlayerLife.Alive && _rac1Weapons.Equipped == Rac1WeaponId.Ryno) is { } barrel)
-        {
-            var target = FindArsenalTarget(EquipmentMuzzle(Rac1WeaponId.Ryno), 100, .1f, _rac1RynoTargets) ??
-                FindArsenalTarget(EquipmentMuzzle(Rac1WeaponId.Ryno), 100, .1f);
-            if (target is not null) _rac1RynoTargets.Add(target.Source.InstanceIndex);
-            SpawnArsenalMissile(Rac1WeaponId.Ryno, target, barrel);
-        }
-        foreach (var missile in _rac1ArsenalMissiles.ToArray())
-        {
-            var from = Rac1LootPresentation.FromEffectNative(missile.Motion.Position);
-            bool guided = missile.Weapon == Rac1WeaponId.VisibombGun;
-            NVector3? target = missile.Target is { } victim && Rac1World.Weapons.Contacts.IsAimTarget(victim)
-                ? Rac1LootPresentation.ToEffectNative(victim.Root.GlobalPosition + Vector3.Up * .5f) : null;
-            if (guided)
-            {
-                var steering = _player.Rac1RemoteSteering;
-                var direction = Rac1LootPresentation.FromEffectNative(missile.Motion.Direction);
-                var right = direction.Cross(Vector3.Up).Normalized();
-                var desired = (direction + right * steering.X * .15f - Vector3.Up * steering.Y * .15f).Normalized();
-                target = Rac1LootPresentation.ToEffectNative(from + desired * 30);
-            }
-            bool ended = missile.Motion.Step(target, guided ? Rac1ArsenalHostPolicy.GuidedTurnRate : 3.5f,
-                guided ? 0 : 30, guided ? Rac1ArsenalHostPolicy.VisibombSpeed :
-                    missile.Weapon == Rac1WeaponId.Ryno ? Rac1ArsenalRules.RynoMaximumSpeed : Rac1ArsenalRules.RocketMaximumSpeed);
-            var to = Rac1LootPresentation.FromEffectNative(missile.Motion.Position);
-            var hit = Rac1World.Weapons.Contacts.Contact(from, to, .15f);
-            if (hit is not null || ended || guided && (_player.Rac1RemoteDetonate ||
-                _rac1Weapons.Equipped != Rac1WeaponId.VisibombGun || !PlayerLife.Alive))
-            {
-                var position = hit?.Point ?? to;
-                ApplyArsenalBlast(missile.Weapon, position, guided ? Rac1ArsenalHostPolicy.VisibombBlastRadius : Rac1ArsenalHostPolicy.RocketBlastRadius,
-                    guided ? 6 : 3, 0x830000);
-                SpawnRac1WeaponExplosion(missile.Weapon, position);
-                FusionWeapons.PlayNativeSound(guided ? 172 : missile.Weapon == Rac1WeaponId.Ryno ? 457 : 153, 0, position);
-                missile.View.QueueFree(); _rac1ArsenalMissiles.Remove(missile);
-                if (guided) Rac1World.Weapons.GuidedCamera.End();
-                continue;
-            }
-            missile.View.GlobalPosition = to; OrientArsenalView(missile.View, Rac1LootPresentation.FromEffectNative(missile.Motion.Direction));
-            missile.View.Step();
-            if (_rac1WeaponWorldTick % 3 == 0) SpawnEquipmentFlash(from, 25, new(.7f, .65f, .6f, .45f), .3f, 18);
-            if (guided) Rac1World.Weapons.GuidedCamera.Step(to, Rac1LootPresentation.FromEffectNative(missile.Motion.Direction));
-        }
+        Rac1World.Weapons.Missiles.Tick();
         StepRac1ArsenalDeployables(); StepRac1ArsenalBeams(); StepRac1Walloper();
-    }
-
-    private static void OrientArsenalView(Node3D view, Vector3 direction)
-    {
-        view.Rotation = new(0, MathF.Atan2(direction.Z, -direction.X),
-            -MathF.Atan2(direction.Y, new Vector2(direction.X, direction.Z).Length()));
     }
 
     private void ApplyArsenalBlast(Rac1WeaponId weapon, Vector3 position, float radius, double damage, uint flags)
@@ -235,7 +161,7 @@ public partial class OBPGame
                 {
                     decoy.GroundHeight = hit.Point.Y;
                     decoy.View.GlobalPosition = hit.Point + Vector3.Up * decoy.View.FootOffset;
-                    decoy.Grounded = true; decoy.View.Play(1, false, ++_rac1ArsenalId, 2);
+                    decoy.Grounded = true; decoy.View.Play(1, false, Rac1World.Weapons.NextArsenalId(), 2);
                 }
                 else decoy.View.GlobalPosition = next;
             }
@@ -248,7 +174,7 @@ public partial class OBPGame
             if (decoy.GroundTicks >= Rac1ArsenalRules.DecoyLifetime || decoy.Hits >= 3)
             {
                 decoy.RetiringTicks = 0;
-                decoy.View.BlendTo(0, 60, ++_rac1ArsenalId); // 0x2c50d0..2c5108, fold over60 ticks.
+                decoy.View.BlendTo(0, 60, Rac1World.Weapons.NextArsenalId()); // 0x2c50d0..2c5108, fold over60 ticks.
             }
             else if (decoy.View.GlobalPosition.Y < -100)
             {
@@ -273,7 +199,7 @@ public partial class OBPGame
                     FusionWeapons.PlayNativeSound(479, 1, hit?.Point ?? next);
                     drone.View.QueueFree(); _rac1Drones.Remove(drone); continue;
                 }
-                drone.View.GlobalPosition = next; OrientArsenalView(drone.View, next - from);
+                drone.View.GlobalPosition = next; Rac1ArsenalViewPose.Orient(drone.View, next - from);
             }
             else
             {
@@ -281,7 +207,7 @@ public partial class OBPGame
                 var goal = _player!.GlobalPosition + new Vector3(MathF.Cos(phase) * Rac1ArsenalHostPolicy.DroneOrbitRadius,
                     1 + MathF.Sin(phase * 2) * .15f, MathF.Sin(phase) * Rac1ArsenalHostPolicy.DroneOrbitRadius);
                 drone.View.GlobalPosition = from.MoveToward(goal, Rac1ArsenalHostPolicy.DroneSpeed / 60);
-                OrientArsenalView(drone.View, goal - from);
+                Rac1ArsenalViewPose.Orient(drone.View, goal - from);
             }
             drone.View.Step();
         }
@@ -300,7 +226,7 @@ public partial class OBPGame
             bool supported = EquipmentGround(body.GlobalPosition + chicken.Direction * .5f, .4f, .8f) is not null;
             body.Velocity = (supported ? chicken.Direction : Vector3.Zero) * .8f + Vector3.Down * 2;
             body.MoveAndSlide(); chicken.Enemy.Node.Root.GlobalPosition = body.GlobalPosition;
-            chicken.View.Play(1); OrientArsenalView(chicken.View, chicken.Direction);
+            chicken.View.Play(1); Rac1ArsenalViewPose.Orient(chicken.View, chicken.Direction);
             chicken.View.Rotation -= new Vector3(0, chicken.Enemy.Node.Root.Rotation.Y, 0); chicken.View.Step();
         }
     }
