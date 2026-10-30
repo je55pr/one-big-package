@@ -1,4 +1,5 @@
 ﻿using Godot;
+using System.Diagnostics;
 using OBP.Runtime.Player;
 using OBP.Runtime.Presentation;
 
@@ -79,10 +80,16 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
     private readonly PlayerAvatar _avatar;
     private readonly IReadOnlyDictionary<string, Vector3[][]> _framesByClipId;
     private readonly List<SurfaceState> _surfaces = [];
+    private readonly Vector3[] _sampledPoseVertices;
     private readonly Playback _playback;
     private string? _currentClipId;
     private int _currentFrame = -1;
     private PlayerAvatarSampledPose? _currentSampledPose;
+    private readonly bool _profileMeshUpdates = System.Environment.GetEnvironmentVariable("OBP_AVATAR_MESH_PROFILE") == "1";
+    private long _profileTicks;
+    private long _profileAllocatedBytes;
+    private long _profileRebuiltSurfaces;
+    private int _profileSamples;
 
     public PlayerAvatarView(
         PlayerAvatar avatar,
@@ -91,6 +98,7 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
     {
         Validate(avatar);
         _avatar = avatar;
+        _sampledPoseVertices = new Vector3[avatar.AnimationClips[0].LocalFrames[0].Length / 3];
         AlignGeometricBase = alignGeometricBase;
         _playback = new Playback(avatar, initialPresentation);
         _framesByClipId = avatar.AnimationClips.ToDictionary(
@@ -101,6 +109,7 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
             StringComparer.Ordinal);
 
         Name = $"PlayerAvatar_{avatar.Identity.AvatarId}";
+        if (_profileMeshUpdates) GD.Print("[avatar-mesh-profile] enabled");
         BuildSurfaces();
         ApplyPresentation();
     }
@@ -165,6 +174,16 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
             throw new InvalidDataException("Player avatar frame is not a non-empty XYZ stream.");
 
         var result = new Vector3[xyz.Length / 3];
+        ConvertFrameInto(xyz, axes, baseHeight, alignGeometricBase, result);
+        return result;
+    }
+
+    /// <summary>Convert an animated XYZ stream into caller-owned storage without per-pose allocation.</summary>
+    public static void ConvertFrameInto(
+        double[] xyz, PlayerAvatarAxes axes, double baseHeight, bool alignGeometricBase, Vector3[] result)
+    {
+        if (xyz.Length == 0 || xyz.Length != result.Length * 3)
+            throw new InvalidDataException("Sampled avatar coordinates do not match the vertex stream.");
         for (int i = 0, vertex = 0; i < xyz.Length; i += 3, vertex++)
         {
             result[vertex] = ToGodotLocal(
@@ -173,7 +192,6 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
                 baseHeight,
                 alignGeometricBase);
         }
-        return result;
     }
 
     public static void Validate(PlayerAvatar avatar)
@@ -278,8 +296,16 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
         _currentClipId = clipId;
         _currentFrame = frame;
         _currentSampledPose = pose;
-        Vector3[] vertices = pose is null ? _framesByClipId[clipId][frame] :
-            ConvertFrame(pose.LocalPositions, _avatar.Axes, _avatar.BaseHeight, AlignGeometricBase);
+        long startTicks = _profileMeshUpdates ? Stopwatch.GetTimestamp() : 0;
+        long startAllocation = _profileMeshUpdates ? GC.GetAllocatedBytesForCurrentThread() : 0;
+        Vector3[] vertices;
+        if (pose is null)
+            vertices = _framesByClipId[clipId][frame];
+        else
+        {
+            ConvertFrameInto(pose.LocalPositions, _avatar.Axes, _avatar.BaseHeight, AlignGeometricBase, _sampledPoseVertices);
+            vertices = _sampledPoseVertices;
+        }
         foreach (var surface in _surfaces)
         {
             var arrays = new global::Godot.Collections.Array();
@@ -290,6 +316,28 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
             surface.Mesh.ClearSurfaces();
             surface.Mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
         }
+        if (_profileMeshUpdates)
+        {
+            _profileTicks += Stopwatch.GetTimestamp() - startTicks;
+            _profileAllocatedBytes += GC.GetAllocatedBytesForCurrentThread() - startAllocation;
+            _profileRebuiltSurfaces += _surfaces.Count;
+            _profileSamples++;
+            if (_profileSamples % 250 == 0) PrintProfile();
+        }
+    }
+
+    private void PrintProfile()
+    {
+        GD.Print($"[avatar-mesh-profile] source={Identity.SourceGame} updates={_profileSamples} " +
+            $"surfaceRebuilds={_profileRebuiltSurfaces} " +
+            $"avgUpdateUs={_profileTicks * 1_000_000d / Stopwatch.Frequency / _profileSamples:0.000} " +
+            $"avgManagedBytes={_profileAllocatedBytes / (double)_profileSamples:0.0} " +
+            $"gc0={GC.CollectionCount(0)} gc1={GC.CollectionCount(1)} gc2={GC.CollectionCount(2)}");
+    }
+
+    public override void _ExitTree()
+    {
+        if (_profileMeshUpdates && _profileSamples > 0) PrintProfile();
     }
 
     private static Vector2[] ToUvs(float[] uv)
