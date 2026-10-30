@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Numerics;
 using OBP.Core;
 using OBP.Fusion;
+using OBP.RAC1.Gameplay;
 using OBP.Runtime.Gameplay;
 
 namespace OBP.Game.Diagnostics;
@@ -31,5 +32,19 @@ public interface IRac1LootDiagnosticFixture
     void InjectRetainedClass749Damage();
 }
 public interface IRac1LootDiagnosticCapture { Task CaptureAsync(string name, Vector3 focus, CancellationToken token); }
+public sealed record Rac1BreakableDiagnosticEntry(ActorInstanceKey Actor, int? NativeState,
+    RuntimeEntityPresence Presence, bool HasCollider);
+public sealed record Rac1BreakableDiagnosticState(ImmutableArray<Rac1BreakableDiagnosticEntry> Explosives,
+    ImmutableArray<Rac1BreakableDiagnosticEntry> Novalis, int NovalisDestroyed);
+
+/// <summary>Deliberately bounded actions, available only through an explicit crate scenario.</summary>
+public interface IRac1BreakableDiagnosticFixture
+{
+    Rac1BreakableDiagnosticState Read();
+    bool TouchExplosive(ActorInstanceKey actor);
+    bool BreakNovalis(ActorInstanceKey actor, Rac1NovalisBreakableSession.ContactKind contact);
+}
+
 public sealed record Rac1LootScenarioPorts(IRac1LootDiagnosticFixture Loot, IRac1WeaponTargetFixture Targets,
-    IDiagnosticControllerEquipment Equipment, IRac1LootDiagnosticCapture Capture);
+    IDiagnosticControllerEquipment Equipment, IRac1LootDiagnosticCapture Capture,
+    IRac1BreakableDiagnosticFixture? Breakables = null);

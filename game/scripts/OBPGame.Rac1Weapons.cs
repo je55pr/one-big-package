@@ -289,7 +289,7 @@ public partial class OBPGame
             applied = true;
         }
         else if (target.Source.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
-            applied = TryTriggerRac1ExplosiveDamage(target, damage);
+            applied = Rac1World.Breakables.TryTriggerExplosiveDamage(target, damage);
         else applied = Rac1World.Enemies.ApplyRac1EnemyWeaponDamage(target, damage);
         if (applied) Rac1World.Context.DamageTransport.Publish(damage);
         return applied;

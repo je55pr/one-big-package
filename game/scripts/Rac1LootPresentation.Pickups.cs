@@ -33,7 +33,7 @@ internal sealed partial class Rac1LootPresentation
         _rac1Debris.Clear();
         _rac1EffectMeshes.Clear();
         _equipmentPresentation.RetireWorld();
-        _rac1CrateBodies.Clear();
+        foreach (int instance in _rac1CrateBodies.Keys.ToArray()) DisableRac1CrateCollider(instance);
         _rac1FallingCrates.Clear();
         _rac1PickupTickAccumulator = 0;
         _rac1BoltSoundDelay = 0;
@@ -222,6 +222,13 @@ internal sealed partial class Rac1LootPresentation
 
     internal void AddRac1CrateCollider(RuntimeWorldScene.DynamicObjectNode node)
     {
+        int instance = node.Source.InstanceIndex;
+        if (_rac1CrateBodies.TryGetValue(instance, out var existing))
+        {
+            if (IsInstanceValid(existing)) return;
+            _rac1CrateBodies.Remove(instance);
+            _rac1FallingCrates.Remove(instance);
+        }
         var meshes = node.Root.GetChildren().OfType<MeshInstance3D>().ToArray();
         if (meshes.Length == 0) return;
         Aabb bounds = meshes[0].GetAabb();
