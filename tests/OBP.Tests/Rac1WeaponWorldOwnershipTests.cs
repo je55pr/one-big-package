@@ -114,6 +114,31 @@ public sealed class Rac1WeaponWorldOwnershipTests
     }
 
     [Fact]
+    public void ContactCallbacksDoNotResolveTheWorldDuringHostConstruction()
+    {
+        var tree = HostOwnershipAudit.Host.Value.SyntaxTrees
+            .Single(tree => tree.FilePath == "game/scripts/OBPGame.cs");
+        foreach (string name in new[]
+        {
+            "CreateFusionWeaponHost", "CreateRac1WorldModule",
+            "CreateRac1EnemyHost", "CreateActorHost", "CreateWeaponDiagnosticHarness"
+        })
+        {
+            var factory = tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
+                .Single(method => method.Identifier.ValueText == name);
+            var contacts = factory.DescendantNodes().OfType<MemberAccessExpressionSyntax>()
+                .Where(access => access.ToString().StartsWith("Rac1World.Weapons.Contacts.", StringComparison.Ordinal));
+            Assert.All(contacts, access => Assert.Contains(access.Ancestors(),
+                ancestor => ancestor is AnonymousFunctionExpressionSyntax));
+        }
+        string composition = Script("OBPGame.cs");
+        Assert.Contains("node => Rac1World.Enemies.IsRac1GameplayActive(node)", composition, StringComparison.Ordinal);
+        Assert.Contains("node => Rac1World.Enemies.Frogs.IsQueenNode(node)", composition, StringComparison.Ordinal);
+        Assert.DoesNotContain("Rac1World.Weapons.Contacts.RayExclusions,", composition, StringComparison.Ordinal);
+        Assert.DoesNotContain("Rac1World.Weapons.Contacts.HasLineOfSight,", composition, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void GuidedCameraRestoresFocusOnlyWhenItStillOwnsTheCamera()
     {
         var compilation = HostOwnershipAudit.Host.Value;

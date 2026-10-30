@@ -225,7 +225,7 @@ public partial class OBPGame : Node3D
                 var target = Rac1World.Weapons.Contacts.Targets.FirstOrDefault(node => node.Source.SourceGame == intent.Target.SourceGame &&
                     node.Source.NativeClassId == intent.Target.NativeClassId && node.Source.InstanceIndex == intent.Target.InstanceIndex);
                 return target is not null && FusionDamagePolicy.Translate(intent) is { } damage && ApplyRac1AdditionalDamage(target, damage);
-            }, Rac1World.Weapons.Contacts.RayExclusions, Rac1World.Weapons.Contacts.HasLineOfSight)), () => _avatarPresentation.View,
+            }, () => Rac1World.Weapons.Contacts.RayExclusions(), (from, to) => Rac1World.Weapons.Contacts.HasLineOfSight(from, to))), () => _avatarPresentation.View,
         new((nativeClass, name) => Rac1World.Loot.CreateRac1EffectNode(nativeClass, name, playerEquipment: true),
             (nativeClass, localSound, position) =>
             {
@@ -357,8 +357,8 @@ public partial class OBPGame : Node3D
             () => Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes),
             () => Rac1World.Enemies.Frogs.Rac1QueenDamageTargets,
             id => _rac1Chickens.TryGetValue(id, out var chicken) ? chicken.View : null,
-            Rac1World.Enemies.IsRac1GameplayActive,
-            Rac1World.Enemies.Frogs.IsQueenNode,
+            node => Rac1World.Enemies.IsRac1GameplayActive(node),
+            node => Rac1World.Enemies.Frogs.IsQueenNode(node),
             () => Rac1World.Enemies.Frogs.QueenDamageAdmitted,
             id => Rac1World.Enemies.Roster.TryGetValue(id, out var enemy) && enemy.RewardEmitted),
         new Rac1WeaponContactPhysicsPorts(
@@ -393,7 +393,7 @@ public partial class OBPGame : Node3D
                 {
                     var node = owner.Loot.CreateRac1EffectNode(nativeClass, $"rac1_enemy_fragment_{nativeClass}");
                     node.GlobalPosition = Rac1LootPresentation.FromEffectNative(motion.Position); owner.Loot.AddDebris(node, motion);
-                }, owner.Loot.PlayRac1PickupSound, (node, sound) => ActorHost.PlayRac1Sound(node, sound), Rac1World.Weapons.Contacts.HasLineOfSight, origin => SpawnRac1BombExplosion(origin),
+                }, owner.Loot.PlayRac1PickupSound, (node, sound) => ActorHost.PlayRac1Sound(node, sound), (from, to) => Rac1World.Weapons.Contacts.HasLineOfSight(from, to), origin => SpawnRac1BombExplosion(origin),
                 origin => SpawnRac1ExplosionBursts(origin, Rac1BombExplosion.Bursts(false).Take(1).ToArray()),
                 TryTriggerRac1ExplosiveDamage, CompleteRac1CrateDamage,
                 (id, presence) => { if (owner.Loot.CrateBodies.TryGetValue(id, out var body) && IsInstanceValid(body)) body.CollisionLayer = presence == RuntimeEntityPresence.Active ? 1u : 0; },
@@ -1639,7 +1639,7 @@ public partial class OBPGame : Node3D
                 bool originalModel = GodotWeaponModelFacts.Read(shot.Value.Node).OriginalMeshes;
                 return new GodotRac1BombAcceptanceWitness(new(worlds), () => new(shot.Key, FusionWeaponSession.BombGlove,
                     shot.Value.Motion.Position, shot.Value.Motion.Velocity, shot.Value.Motion.NativeState, shot.Value.Motion.Flying, originalModel));
-            }, Rac1World.Weapons.Contacts.HasLineOfSight, Rac1World.Weapons.Contacts.ProbeBombWorldContact,
+            }, (from, to) => Rac1World.Weapons.Contacts.HasLineOfSight(from, to), (from, to) => Rac1World.Weapons.Contacts.ProbeBombWorldContact(from, to),
             amount => _rac1Weapons.TryConsumeAmmo((int)Rac1WeaponId.FirstRanged, amount), () => _player));
         var transients = new GodotWeaponDiagnosticTransientFixture(worlds, () => DiagnosticCleanup.Run("Weapon fixture transient cleanup",
             () => { foreach (var (id, projectile) in Rac1World.Presentation.Projectiles.ToArray()) RetireBomb(id, projectile); },
@@ -1944,7 +1944,7 @@ public partial class OBPGame : Node3D
             (assets, materials) => { Rac1World.Loot.SetDiagnosticAssets(assets, materials); }, delta => Rac1World.Loot.TickRac1Pickups(delta)),
         new(() => _worldScenes?.Current?.Resources.Rac2Gameplay),
         new(() => _worldScenes?.Current?.Resources.Rac3Gameplay)), new(
-        () => _player!.GetWorld3D().DirectSpaceState, Rac1World.Weapons.Contacts.RayExclusions, Rac1World.Weapons.Contacts.HasLineOfSight,
+        () => _player!.GetWorld3D().DirectSpaceState, () => Rac1World.Weapons.Contacts.RayExclusions(), (from, to) => Rac1World.Weapons.Contacts.HasLineOfSight(from, to),
         reason => Rac1World.Context.CombatStatus = reason, () => _player?.Rac1WrenchFrame.Generation,
         () => _playerAudio?.WrenchContact(false)));
 
