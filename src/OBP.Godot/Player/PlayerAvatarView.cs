@@ -335,11 +335,6 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
             $"gc0={GC.CollectionCount(0)} gc1={GC.CollectionCount(1)} gc2={GC.CollectionCount(2)}");
     }
 
-    public override void _ExitTree()
-    {
-        if (_profileMeshUpdates && _profileSamples > 0) PrintProfile();
-    }
-
     private static Vector2[] ToUvs(float[] uv)
     {
         var result = new Vector2[uv.Length / 2];

@@ -50,9 +50,66 @@ GC collections are **process cumulative**, not attributable to this method.
 valuable. The rebuilt-surface path with that buffer used approximately 96%
 less managed memory per update than the original while taking around 9% less
 calling-thread time in this specific run. Persistent surface updates nearly
-eliminated allocations in the measured method, but consumed **more** CPU time
+eliminated allocations in the measured method, but showed **longer elapsed update time**
 in this headless environment. Do not equate fewer resource rebuilds with an
 established end-to-end performance win.
+
+## Rendered cross-check (same workload)
+
+A separate isolated-worktree experiment used a **windowed** Godot GL
+Compatibility renderer at 960 x 540, moved offscreen (not headless), with the
+same fixed 60-FPS R&C1 LEVEL0 movement smoke, 5,750 avatar updates and four
+avatar surfaces. After 120 warm-up frames, a temporary host-only probe sampled
+`RenderingServer.ViewportGetMeasuredRenderTimeCpu/Gpu` and
+`GetFrameSetupTimeCpu` each process frame (5,630 samples). These are
+**whole-viewport rendering times**, not avatar-only GPU costs. The probe was not
+added to production code.
+
+| Strategy/run | Avatar ApplyFrame elapsed (µs) | Managed B/update | Viewport CPU render (ms) | Viewport GPU render (ms) | Frame setup CPU (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Rebuild + reused conversion, run A1 | 663.212 | 2,647.5 | 1.568 | 1.592 | 0.125 |
+| Persistent vertex regions + reused conversion, run B1 | 669.155 | 0.0 | 1.617 | 0.917 | 0.125 |
+| Rebuild + reused conversion, repeat A2 | 715.922 | 2,646.8 | 1.657 | 0.835 | 0.131 |
+
+All three smokes passed. The apparent large GPU advantage of B1 **did not
+reproduce**: rebuilding surfaces in A2 was faster on the measured GPU while
+still performing 23,000 surface reconstructions. The elapsed avatar-update
+measurements likewise vary. This may reflect graphics clock changes or other
+system activity; the absolute GPU differences cannot be assigned to one avatar.
+The dynamic prototype therefore remains **experimental**, not a demonstrated
+net performance improvement.
+
+The experimental persistent updater keeps a fixed resource/UV/index layout
+and updates per-frame bounds. It is feasible for the avatar, wrench and bomb
+glove, but adding it now would expand rendering infrastructure without clear
+performance evidence. Keep the proven reusable pose conversion buffer and
+revisit surface updates only after controlled GPU-clock/power conditions,
+repeatable rendered timings and visual/resource-lifetime comparisons.
+
+## Rendered pose comparison
+
+Using the repository's fixed-seed, 960 x 540 rendered Bomb Glove smoke,
+captures from the retained rebuild implementation were compared with an
+isolated **fully shared** dynamic-surface prototype for avatar, wrench and
+glove. The held-glove and throw PNG frames were **pixel-identical**
+(zero changed RGB pixels across 518,400 pixels per shot). Both smoke runs
+passed. Later floor-impact and expanding-blast frames did not match between
+separate runs, including a comparison against the original revision; effect
+timing and transient particles make those shots unsuitable as exact mesh-pose
+oracles without tighter capture synchronization.
+
+This establishes compatibility for the matched static/throw shots, not
+equivalence for every skeletal transition, renderer or GPU resource lifetime.
+
+## World-change lifetime check
+
+The retained buffer-only implementation also passed a source-backed
+`--stress-switch rac1:LEVEL0,rac2:LEVEL1,rac3:TABLE1,rac1:LEVEL0` host
+regression. It reported zero orphan nodes after each transition. On returning
+to R&C1 LEVEL0, measured process memory was 96.8 MB versus 94.1 MB at
+initial entry (+2.7 MB). These are overall process snapshots, not dedicated
+avatar resource-leak measurements, but no unbounded growth was observed in
+this single round trip.
 
 ## Shared updater assessment
 
@@ -66,7 +123,7 @@ the avatar's shared vertex stream. Forcing all of these into a new universal
 rendering abstraction would be premature.
 
 The experimental dynamic-surface implementation passed the source-backed
-movement smoke and focused portable tests, but its CPU cost was higher. It was
+movement smoke and focused portable tests, but its measured update elapsed time was higher. It was
 **not retained in the proposed production change**. The reusable pose conversion
 buffer is shared by the avatar, wrench and bomb glove without changing the
 existing mesh or material upload behaviour. This reduces a large source of
