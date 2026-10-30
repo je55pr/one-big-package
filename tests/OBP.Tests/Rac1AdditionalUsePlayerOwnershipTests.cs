@@ -91,7 +91,7 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
     {
         string root = Script("OBPGame.Rac1Weapons.cs");
         int start = root.IndexOf("private void StepRac1AdditionalWeapons()", StringComparison.Ordinal);
-        int end = root.IndexOf("private long _rac1WeaponPoseGeneration", StringComparison.Ordinal);
+        int end = root.IndexOf("private void StepRac1EquipmentViews(", StringComparison.Ordinal);
         Assert.True(start >= 0 && end > start);
         string step = root[start..end];
 
@@ -99,10 +99,10 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
             "MovementReproduction.IsLoading",
             "var frame = use.BeginFrame(",
             "if (frame.PyroChanged",
-            "pyroView.Play(frame.Pyro ? 3 : 5",
+            "_equipmentPresentation.NativeViews.PlayPyrocitor(frame.Pyro)",
             "if (frame.Shot is { } shot)",
             "use.RecordShot(shot)",
-            "view.Play(Rac1ArsenalRules.HandFireSequence(shot.Weapon)",
+            "_equipmentPresentation.NativeViews.PlayShot(shot)",
             "Rac1World.Weapons.Projectiles.Throw(shot)",
             "Rac1World.Weapons.Projectiles.FireBlaster(shot)",
             "Rac1World.Weapons.SuckCannon.Fire(shot)",
@@ -116,8 +116,11 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
         Assert.Contains("Rac1World.Weapons.Arsenal.AdmitUse", step, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1AdditionalWeaponSession(", step, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1WeaponInventory(", step, StringComparison.Ordinal);
-        Assert.Contains("_persistentPlayer.Rac1Use.UseTicks > 0 ? 4 : 1", root, StringComparison.Ordinal);
-        Assert.Contains("_persistentPlayer.Rac1Use.Session?.Vacuuming == true", root, StringComparison.Ordinal);
+        Assert.Contains("_persistentPlayer.Rac1Use.UseTicks", root, StringComparison.Ordinal);
+        Assert.Contains("_persistentPlayer.Rac1Use.Session", root, StringComparison.Ordinal);
+        string views = Script("Rac1EquipmentViewPresentation.cs");
+        Assert.Contains("view.Play(useTicks > 0 ? 4 : 1)", views, StringComparison.Ordinal);
+        Assert.Contains("if (native?.Vacuuming == true) view.Play(3)", views, StringComparison.Ordinal);
     }
 
     [Fact]

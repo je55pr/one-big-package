@@ -118,8 +118,6 @@ public partial class OBPGame
         if (_avatarPresentation.HasPrepared && _avatarPresentation.ApplyPrepared())
         {
             _equipmentPresentation.InvalidateSource();
-            _rac1EquipmentAssets = null;
-            _rac1EquipmentSource = null;
         }
         _avatarSourceStamp = _avatarPresentation.CommittedSourceStamp;
         if (OrdinaryPlayerSession) _equipmentPresentation.ApplyPreparedBank();
@@ -346,7 +344,7 @@ public partial class OBPGame
         player.VisualRoot.ReplaceVisual(view);
         player.ConfigureAvatarPresentation((float)avatar.AnimationBounds.Height);
         _avatarPresentation.Subscribe(player, StepPlayerAvatarPhysics, ResetPlayerAvatarPhysics);
-        _equipmentPresentation.BindSelected(_avatarPresentation, _persistentPlayer.Equipment.Sources, _rac1EquipmentAssets, FusionWeapons.Sources.Assets);
+        _equipmentPresentation.BindSelected(_avatarPresentation, _persistentPlayer.Equipment.Sources, _equipmentPresentation.NativeViews.Assets, FusionWeapons.Sources.Assets);
         RefreshRac1WrenchPresentationVisibility();
         HideAuthoredWorldRatchetPresentation();
         GD.Print($"[player-avatar] attached selected {avatar.Identity.ModelId}: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
@@ -426,8 +424,7 @@ public partial class OBPGame
     {
         _playerAudio?.Reset();
         _avatarPresentation.Retire();
-        _rac1EquipmentViews.Clear();
-        _rac1StagedEquipment.Clear();
+        _equipmentPresentation.NativeViews.ClearViews();
         _equipmentPresentation.ClearBindings();
     }
 
@@ -442,15 +439,8 @@ public partial class OBPGame
     private void RefreshRac1HeldItem(int? previous)
     {
         if (previous != _rac1HeldItem.NativeItemId &&
-            _rac1EquipmentViews.TryGetValue(_rac1Weapons.Equipped, out var view) &&
             _avatarPresentation.Controller is Rac1PlayerAnimationPresentationController controller)
-        {
-            // A hidden weapon has not been stepping. Refresh its attachment
-            // before the first shot reads its muzzle, without advancing its clock.
-            var profile = OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped);
-            view.RefreshAttachment(controller.CurrentAttachmentPose(
-                OBP.RAC1.Gameplay.Rac1WeaponProfiles.HandSocket(profile.HandSemantic)));
-        }
+            _equipmentPresentation.NativeViews.RefreshAttachment(_rac1Weapons.Equipped, controller);
         RefreshRac1WrenchPresentationVisibility();
     }
 
@@ -462,8 +452,7 @@ public partial class OBPGame
 
     private void RefreshRac1WrenchPresentationVisibility()
     {
-        foreach (var pair in _rac1EquipmentViews)
-            if (IsInstanceValid(pair.Value)) pair.Value.Visible = IsRac1HandEquipmentVisible(pair.Key);
+        _equipmentPresentation.NativeViews.RefreshVisibility(IsRac1HandEquipmentVisible);
         bool bombVisible = IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.FirstRanged);
         if (_avatarPresentation.GloveView is not null && IsInstanceValid(_avatarPresentation.GloveView))
             _avatarPresentation.GloveView.Visible = bombVisible;

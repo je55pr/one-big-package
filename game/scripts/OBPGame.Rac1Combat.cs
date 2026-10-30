@@ -72,8 +72,7 @@ public partial class OBPGame
             if (previousKey.SourceGame != ObpSourceGame.Rac1) _previousSelectedWeapon = previousKey;
             Rac1World.Context.CombatStatus = $"equipped {Rac1WeaponProfiles.Name(weapon)}";
             RefreshRac1HudState();
-            if (_rac1EquipmentViews.TryGetValue(weapon, out var view))
-                view.Play(0, false, ++_rac1WeaponPoseGeneration, 1);
+            _equipmentPresentation.NativeViews.PlaySelection(weapon);
             HoldSelectedRac1HandItem();
             _persistentPlayer.Equipment.RefreshAvailability();
             GD.Print($"[rac1-gameplay] {Rac1World.Context.CombatStatus}");

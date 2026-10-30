@@ -33,12 +33,6 @@ public partial class OBPGame
         FusionWeapons.SetPaused(paused);
     }
 
-    private Rac1EquipmentAssets.Catalogue? _rac1EquipmentAssets;
-    private string? _rac1EquipmentSource;
-    private WorldMaterialFactory? _rac1EquipmentMaterials;
-    private readonly Dictionary<Rac1WeaponId, Rac1EquipmentView> _rac1EquipmentViews = [];
-    private readonly Dictionary<Rac1WeaponId, Rac1EquipmentView> _rac1StagedEquipment = [];
-
     private void ResetRac1AdditionalWeapons()
     {
         ResetRac1WeaponAudio();
@@ -100,29 +94,8 @@ public partial class OBPGame
     }
 
     private void AttachRac1EquipmentViews(Node3D avatarView)
-    {
-        var source = Sources.Setup.Library.Get(OBP.Core.ObpSourceGame.Rac1)!;
-        if (_rac1EquipmentAssets is null || _rac1EquipmentSource != source.Path)
-        {
-            _rac1EquipmentAssets = Rac1EquipmentAssets.Load(source.Path);
-            _rac1EquipmentSource = source.Path;
-        }
-        _rac1EquipmentMaterials = new(_world! with { Textures = _rac1EquipmentAssets.Textures });
-        _rac1EquipmentViews.Clear(); _rac1StagedEquipment.Clear();
-        foreach (var profile in Rac1WeaponProfiles.Additional)
-        {
-            var view = new Rac1EquipmentView(_rac1EquipmentAssets.Models[profile.ModelClass], _rac1EquipmentMaterials, _avatarPresentation.Avatar);
-            avatarView.AddChild(view); view.Visible = false; _rac1EquipmentViews.Add(profile.Item, view);
-            if (profile.Item is Rac1WeaponId.MineGlove or Rac1WeaponId.GloveOfDoom)
-            {
-                var staged = new Rac1EquipmentView(_rac1EquipmentAssets.Models[profile.Item == Rac1WeaponId.MineGlove ? 74 : 230], _rac1EquipmentMaterials);
-                view.AddChild(staged); staged.Rotation = new(0, MathF.PI, 0);
-                if (profile.Item == Rac1WeaponId.GloveOfDoom) staged.Scale = Vector3.One * Rac1ArsenalRules.DoomCanisterHeldScale;
-                if (profile.Item == Rac1WeaponId.MineGlove) staged.Play(0);
-                _rac1StagedEquipment.Add(profile.Item, staged);
-            }
-        }
-    }
+        => _equipmentPresentation.NativeViews.Attach(Sources.Setup.Library.Get(ObpSourceGame.Rac1)!.Path,
+            _world!, avatarView, _avatarPresentation.Avatar);
 
     private void StepRac1AdditionalWeapons()
     {
@@ -133,14 +106,11 @@ public partial class OBPGame
             !(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true);
         var frame = use.BeginFrame(eligible, () => Rac1World.Weapons.Detector.Equipped, _rac1Weapons,
             Rac1World.Weapons.Arsenal.SetHeld, Rac1World.Weapons.Arsenal.AdmitUse);
-        if (frame.PyroChanged && _rac1EquipmentViews.TryGetValue(Rac1WeaponId.Pyrocitor, out var pyroView))
-            pyroView.Play(frame.Pyro ? 3 : 5, false, ++_rac1WeaponPoseGeneration, frame.Pyro ? 4 : 1);
+        if (frame.PyroChanged) _equipmentPresentation.NativeViews.PlayPyrocitor(frame.Pyro);
         if (frame.Shot is { } shot)
         {
             use.RecordShot(shot);
-            if (shot.Weapon is not (Rac1WeaponId.Pyrocitor or Rac1WeaponId.Blaster) && _rac1EquipmentViews.TryGetValue(shot.Weapon, out var view) &&
-                shot.Weapon is not (Rac1WeaponId.MorphORay or Rac1WeaponId.Taunter or Rac1WeaponId.TeslaClaw))
-                view.Play(Rac1ArsenalRules.HandFireSequence(shot.Weapon), false, shot.Generation);
+            _equipmentPresentation.NativeViews.PlayShot(shot);
             if (shot.Weapon is Rac1WeaponId.MineGlove or Rac1WeaponId.GloveOfDoom)
             {
                 Rac1World.Weapons.ThrownAnimation.Begin();
@@ -158,57 +128,21 @@ public partial class OBPGame
         use.CompleteFrame(frame, _rac1Weapons);
         StepRac1WeaponAudio();
     }
-    private long _rac1WeaponPoseGeneration;
-
     private void StepRac1EquipmentViews(Rac1PlayerAnimationPresentationController controller)
-    {
-        foreach (var profile in Rac1WeaponProfiles.Additional)
-        {
-            if (!_rac1EquipmentViews.TryGetValue(profile.Item, out var view) || !IsInstanceValid(view)) continue;
-            bool visible = IsRac1HandEquipmentVisible(profile.Item);
-            view.Visible = visible;
-            if (!visible) continue;
-            if (profile.Item == Rac1WeaponId.Blaster)
-                view.Play(_persistentPlayer.Rac1Use.UseTicks > 0 ? 4 : 1);
-            if (profile.Item is Rac1WeaponId.Taunter or Rac1WeaponId.MorphORay or Rac1WeaponId.TeslaClaw)
-                view.Play(_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Arsenal.Held == true ? 3 : 1);
-            if (profile.Item == Rac1WeaponId.SuckCannon)
-            {
-                if (_persistentPlayer.Rac1Use.Session?.Vacuuming == true) view.Play(3);
-                else if (view.Sequence != 5)
-                    view.Play(_persistentPlayer.Rac1Use.Session?.Cargo.Count > 0 ? 6 : 1);
-            }
-            foreach (int sound in view.Step(controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(profile.HandSemantic))))
-                if (_equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets)?.Sounds?.TryGetValue((profile.ModelClass, sound), out var voice) != true || voice?.Loop != true)
-                    FusionWeapons.PlayNativeSound(profile.ModelClass, sound, _player!.GlobalPosition);
-            if (_rac1StagedEquipment.TryGetValue(profile.Item, out var staged))
-            {
-                staged.Position = view.MuzzleLocal; staged.Step();
-                staged.Visible = _rac1Weapons.GetAmmo((int)profile.Item) > 0 &&
-                    (profile.Item != Rac1WeaponId.MineGlove || _persistentPlayer.Rac1Use.Session?.MineRearmTicks == 0);
-            }
-        }
-    }
+        => _equipmentPresentation.NativeViews.Step(controller, IsRac1HandEquipmentVisible,
+            _persistentPlayer.Rac1Use.UseTicks,
+            _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Arsenal.Held == true,
+            _persistentPlayer.Rac1Use.Session, _rac1Weapons,
+            _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets),
+            _player!, FusionWeapons.PlayNativeSound);
 
     private Vector3 EquipmentForward => _player is null ? Vector3.Forward :
         new(-MathF.Cos((float)_player.Rac1CurrentYaw), 0, MathF.Sin((float)_player.Rac1CurrentYaw));
 
     private Vector3 EquipmentMuzzle(Rac1WeaponId weapon, int socket = 0)
-    {
-        if (_rac1EquipmentViews.TryGetValue(weapon, out var view) &&
-            _avatarPresentation.TryEquipmentMuzzle(view, socket, out var muzzle))
-        {
-            var start = _player!.GlobalPosition + Vector3.Up * .8f;
-            var ray = PhysicsRayQueryParameters3D.Create(start, muzzle); ray.Exclude = [_player.GetRid()];
-            var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(ray);
-            return hit.TryGetValue("position", out var point) ? point.AsVector3() - (muzzle - start).Normalized() * .02f : muzzle;
-        }
-        return _player!.GlobalPosition + Vector3.Up * .9f + EquipmentForward * .7f;
-    }
+        => _equipmentPresentation.NativeViews.Muzzle(weapon, socket, _avatarPresentation, _player!, EquipmentForward);
 
     private Rac1EquipmentView CreateEquipmentWorldView(int nativeClass)
-    {
-        var view = new Rac1EquipmentView(_rac1EquipmentAssets!.Models[nativeClass], _rac1EquipmentMaterials!);
-        _sceneResult!.Root.AddChild(view); return view;
-    }
+        => _equipmentPresentation.NativeViews.CreateWorldView(nativeClass, _sceneResult!.Root);
+
 }

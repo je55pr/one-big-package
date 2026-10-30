@@ -9,7 +9,7 @@ namespace OBP.Game;
 public partial class OBPGame
 {
     private Rac1ParticleSession? EnsureRac1Particles()
-        => _equipmentPresentation.Explosions.EnsureParticles(_rac1EquipmentAssets, _args.FixedSeed);
+        => _equipmentPresentation.Explosions.EnsureParticles(_equipmentPresentation.NativeViews.Assets, _args.FixedSeed);
 
     private void ResetRac1BombPresentation()
     {
@@ -24,14 +24,14 @@ public partial class OBPGame
     private void SpawnRac1BombExplosion(Vector3 origin, bool playSound = true, Vector3? impactNormal = null, Vector3? reflectedPush = null)
         => _equipmentPresentation.Explosions.SpawnBomb(origin, Rac1EffectCamera(origin), _persistentPlayer.Rac1EffectRandom(_args.FixedSeed),
             FusionWeapons.CreateNativeEffect, point => FusionWeapons.PlayNativeSound(121, 0, point),
-            SetBombOrientation, _rac1EquipmentAssets, _args.FixedSeed, playSound, impactNormal, reflectedPush);
+            SetBombOrientation, _equipmentPresentation.NativeViews.Assets, _args.FixedSeed, playSound, impactNormal, reflectedPush);
 
     private void SpawnRac1WeaponExplosion(Rac1WeaponId weapon, Vector3 origin)
     {
         bool groundedMine = weapon == Rac1WeaponId.MineGlove &&
             EquipmentGround(origin, .5f, 2.5f) is { } ground && origin.Y - ground.Y <= 2;
         _equipmentPresentation.Explosions.SpawnWeapon(weapon, origin, Rac1EffectCamera(origin), groundedMine,
-            _persistentPlayer.Rac1EffectRandom(_args.FixedSeed), FusionWeapons.CreateNativeEffect, SetBombOrientation, _rac1EquipmentAssets, _args.FixedSeed);
+            _persistentPlayer.Rac1EffectRandom(_args.FixedSeed), FusionWeapons.CreateNativeEffect, SetBombOrientation, _equipmentPresentation.NativeViews.Assets, _args.FixedSeed);
     }
 
     private void SpawnRac1ExplosionBursts(Vector3 origin, IReadOnlyList<Rac1BombExplosion.Burst> bursts)
@@ -39,11 +39,11 @@ public partial class OBPGame
 
     private void StepRac1BombEffectsPhysics()
         => _equipmentPresentation.Explosions.Step(_sceneResult?.Root, Rac1EffectCamera(Vector3.Zero),
-            _rac1EquipmentAssets, _args.FixedSeed,
+            _equipmentPresentation.NativeViews.Assets, _args.FixedSeed,
             !OrdinaryPlayerSession && !_args.Rac1WeaponsSmoke && !_args.Rac1BombGloveSmoke, SetBombOrientation);
 
     private QuadMesh GetRac1ParticleMesh(int poolType)
-        => _equipmentPresentation.Explosions.GetParticleMesh(poolType, _rac1EquipmentAssets?.ParticleTextures,
+        => _equipmentPresentation.Explosions.GetParticleMesh(poolType, _equipmentPresentation.NativeViews.Assets?.ParticleTextures,
             _avatarPresentation.GloveAsset?.ParticleTexturesByPoolType);
 
     private ulong _rac1WeaponWorldTick;
