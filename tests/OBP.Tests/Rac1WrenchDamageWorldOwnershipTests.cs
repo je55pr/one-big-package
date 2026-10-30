@@ -28,7 +28,7 @@ public sealed class Rac1WrenchDamageWorldOwnershipTests
 
         Assert.Contains("WrenchDamage = new(Context, Breakables, Enemies, Loot, wrenchDamage)", module, StringComparison.Ordinal);
         Assert.Contains("internal Rac1WrenchDamageHost WrenchDamage { get; }", module, StringComparison.Ordinal);
-        Assert.Contains("if (retiring) WrenchDamage.Dispose()", module, StringComparison.Ordinal);
+        Assert.Matches(@"(?s)if \(retiring\)\s*\{\s*WeaponDamage\.Dispose\(\);\s*WrenchDamage\.Dispose\(\);\s*Enemies\.Dispose\(\);\s*\}", module);
         Assert.Contains("new Rac1WrenchDamagePorts(() => _persistentPlayer.Wrench, SelectRac1CrateReward)", rootFactory, StringComparison.Ordinal);
         Assert.Contains("Rac1World.WrenchDamage.TryStrikeCrate(target, result)", rootFactory, StringComparison.Ordinal);
         Assert.Contains("Rac1World.WrenchDamage.TryStrikeHostile(target, result)", rootFactory, StringComparison.Ordinal);
@@ -87,7 +87,10 @@ public sealed class Rac1WrenchDamageWorldOwnershipTests
         Assert.Contains("if (_disposed) return false;", host, StringComparison.Ordinal);
         Assert.Contains("if (_disposed) return;", host, StringComparison.Ordinal);
         Assert.Contains("public void Dispose() => _disposed = true;", host, StringComparison.Ordinal);
-        Assert.True(module.IndexOf("if (retiring) WrenchDamage.Dispose()", StringComparison.Ordinal)
-            < module.IndexOf("if (retiring) Enemies.Dispose()", StringComparison.Ordinal));
+        int guarded = module.IndexOf("if (retiring)", StringComparison.Ordinal);
+        Assert.True(guarded >= 0);
+        int wrench = module.IndexOf("WrenchDamage.Dispose()", guarded, StringComparison.Ordinal);
+        int enemies = module.IndexOf("Enemies.Dispose()", guarded, StringComparison.Ordinal);
+        Assert.True(wrench > guarded && enemies > wrench);
     }
 }

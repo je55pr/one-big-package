@@ -120,8 +120,8 @@ public partial class OBPGame
             _persistentPlayer.Rac1Use.UseTicks,
             _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Arsenal.Held == true,
             _persistentPlayer.Rac1Use.Session, _rac1Weapons,
-            _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets),
-            _player!, FusionWeapons.PlayNativeSound);
+            new(_equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets),
+                _player!, FusionWeapons.PlayNativeSound));
 
     private Vector3 EquipmentForward => _player is null ? Vector3.Forward :
         new(-MathF.Cos((float)_player.Rac1CurrentYaw), 0, MathF.Sin((float)_player.Rac1CurrentYaw));

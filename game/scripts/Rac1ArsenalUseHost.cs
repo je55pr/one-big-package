@@ -68,6 +68,7 @@ internal sealed class Rac1ArsenalUseHost(Rac1WeaponHost weapons, Rac1ArsenalUseP
             case Rac1WeaponId.DroneDevice: weapons.Deployables.FireDrones(); break;
             case Rac1WeaponId.DecoyGlove: weapons.Deployables.FireDecoy(); break;
             case Rac1WeaponId.Walloper: weapons.Walloper.Begin(); break;
+            default: break; // Unhandled equipment has no arsenal dispatch.
         }
     }
 

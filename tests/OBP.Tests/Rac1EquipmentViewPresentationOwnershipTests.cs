@@ -100,8 +100,8 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
             "view.Play(arsenalHeld ? 3 : 1)",
             "if (native?.Vacuuming == true) view.Play(3)",
             "view.Step(controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(profile.HandSemantic)))",
-            "bank?.Sounds?.TryGetValue((profile.ModelClass, sound), out var voice)",
-            "playNativeSound(profile.ModelClass, sound, player.GlobalPosition)",
+            "audio.Bank?.Sounds?.TryGetValue((profile.ModelClass, sound), out var voice)",
+            "audio.PlaySound(profile.ModelClass, sound, audio.Player.GlobalPosition)",
             "staged.Position = view.MuzzleLocal; staged.Step()",
             "staged.Visible = inventory.GetAmmo((int)profile.Item) > 0");
         Assert.Contains("native?.MineRearmTicks == 0", step, StringComparison.Ordinal);

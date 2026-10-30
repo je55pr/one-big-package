@@ -34,10 +34,10 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
         string weapons = Script("Rac1WeaponHost.cs");
         string projectile = Script("Rac1EquipmentProjectileHost.cs");
 
-        Assert.Contains("Projectiles = new(Contacts, projectiles)", weapons, StringComparison.Ordinal);
+        Assert.Contains("Projectiles = new(Contacts, contacts.Projectiles)", weapons, StringComparison.Ordinal);
         Assert.Contains("Projectiles.Reset()", weapons, StringComparison.Ordinal);
         Assert.Contains("Projectiles.Dispose()", weapons, StringComparison.Ordinal);
-        Assert.Contains("beamPresentation, arsenal, projectiles, flames)", world, StringComparison.Ordinal);
+        Assert.Contains("new(weaponTargets, contactPhysics, suckCannon, projectiles, flames)", world, StringComparison.Ordinal);
         Assert.Contains("new Rac1EquipmentProjectilePorts(", composition, StringComparison.Ordinal);
         Assert.Contains("internal IReadOnlyList<Rac1HostedEquipmentShot> Shots", projectile, StringComparison.Ordinal);
         Assert.Contains("internal IReadOnlyList<Rac1HostedDoomAgent> DoomAgents", projectile, StringComparison.Ordinal);

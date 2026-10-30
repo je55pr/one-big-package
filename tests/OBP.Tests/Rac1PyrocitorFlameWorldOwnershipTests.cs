@@ -32,10 +32,10 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
         string composition = Script("OBPGame.cs");
         string flame = Script("Rac1PyrocitorFlameHost.cs");
 
-        Assert.Contains("Flames = new(Contacts, flames)", weapons, StringComparison.Ordinal);
+        Assert.Contains("Flames = new(Contacts, contacts.Flames)", weapons, StringComparison.Ordinal);
         Assert.Contains("Flames.Reset()", weapons, StringComparison.Ordinal);
         Assert.Contains("Flames.Dispose()", weapons, StringComparison.Ordinal);
-        Assert.Contains("beamPresentation, arsenal, projectiles, flames)", module, StringComparison.Ordinal);
+        Assert.Contains("new(weaponTargets, contactPhysics, suckCannon, projectiles, flames)", module, StringComparison.Ordinal);
         Assert.Contains("new Rac1PyrocitorFlamePorts(", composition, StringComparison.Ordinal);
         Assert.Contains("EnsureRac1Particles,", composition, StringComparison.Ordinal);
         Assert.Contains("() => _equipmentPresentation.Explosions.Particles,", composition, StringComparison.Ordinal);

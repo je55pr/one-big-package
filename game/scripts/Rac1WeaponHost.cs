@@ -3,10 +3,22 @@ using Godot;
 
 namespace OBP.Game;
 
+// Small immutable groups keep world contacts and arsenal families explicit at composition.
+internal sealed record Rac1WeaponContactDependencies(
+    Rac1WeaponTargetPorts Targets, Rac1WeaponContactPhysicsPorts Physics,
+    Rac1SuckCannonPorts SuckCannon, Rac1EquipmentProjectilePorts Projectiles,
+    Rac1PyrocitorFlamePorts Flames);
+
+internal sealed record Rac1WeaponArsenalDependencies(
+    Rac1ArsenalMissilePorts Missiles, Rac1ArsenalDeployablePorts Deployables,
+    Rac1WalloperPorts Walloper, Rac1TaunterPorts Taunter,
+    Rac1TeslaPorts Tesla, Rac1MorphPorts Morph, Rac1ArsenalBeamPorts Beams,
+    Rac1ArsenalUsePorts Use);
+
 /// <summary>
 /// Per-R&C1-world weapon and gadget composition. Persistent inventory is
 /// borrowed through player equipment ports, not owned or reset here.
-/// Combat contact/arsenal family migration (#367/#368) joins this host next.
+/// Contact and arsenal families share this lease; native inventory remains player-owned.
 /// </summary>
 internal sealed class Rac1WeaponHost : IDisposable
 {
@@ -14,28 +26,24 @@ internal sealed class Rac1WeaponHost : IDisposable
     private long _arsenalId;
     private ulong _worldTick;
 
-    internal Rac1WeaponHost(Node3D sceneRoot, Rac1MetalDetectorPorts detector, Rac1WeaponTargetPorts targets,
-        Rac1WeaponContactPhysicsPorts physics, Rac1SuckCannonPorts suckCannon,
-        Rac1ArsenalMissilePorts missiles, Rac1ArsenalDeployablePorts deployables,
-        Rac1WalloperPorts walloper, Rac1TaunterPorts taunter,
-        Rac1TeslaPorts tesla, Rac1MorphPorts morph, Rac1ArsenalBeamPorts beams, Rac1ArsenalUsePorts arsenal,
-        Rac1EquipmentProjectilePorts projectiles, Rac1PyrocitorFlamePorts flames)
+    internal Rac1WeaponHost(Node3D sceneRoot, Rac1MetalDetectorPorts detector,
+        Rac1WeaponContactDependencies contacts, Rac1WeaponArsenalDependencies arsenal)
     {
         GuidedCamera = new();
         ThrownAnimation = new();
         Detector = new(detector);
-        Contacts = new(targets, physics);
-        Projectiles = new(Contacts, projectiles);
-        Flames = new(Contacts, flames);
-        SuckCannon = new(suckCannon);
-        Missiles = new(missiles, GuidedCamera, NextArsenalId);
-        Taunter = new(taunter, Contacts);
-        Beams = new(sceneRoot, beams);
-        Tesla = new(tesla, Contacts, Beams);
-        Morph = new(morph, Beams);
-        Deployables = new(deployables, NextArsenalId, Taunter);
-        Walloper = new(walloper, Contacts);
-        Arsenal = new(this, arsenal);
+        Contacts = new(contacts.Targets, contacts.Physics);
+        Projectiles = new(Contacts, contacts.Projectiles);
+        Flames = new(Contacts, contacts.Flames);
+        SuckCannon = new(contacts.SuckCannon);
+        Missiles = new(arsenal.Missiles, GuidedCamera, NextArsenalId);
+        Taunter = new(arsenal.Taunter, Contacts);
+        Beams = new(sceneRoot, arsenal.Beams);
+        Tesla = new(arsenal.Tesla, Contacts, Beams);
+        Morph = new(arsenal.Morph, Beams);
+        Deployables = new(arsenal.Deployables, NextArsenalId, Taunter);
+        Walloper = new(arsenal.Walloper, Contacts);
+        Arsenal = new(this, arsenal.Use);
     }
 
     internal Rac1MetalDetectorHost Detector { get; }

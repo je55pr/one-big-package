@@ -14,6 +14,11 @@ namespace OBP.Game;
 /// one avatar world. Player inventory, native weapon cadence, audio playback
 /// and world damage remain with their existing owners.
 /// </summary>
+// Playback, authored sound metadata and player position form one output port.
+internal readonly record struct Rac1EquipmentAudioPorts(
+    Rac1PickupAssets.Catalogue? Bank, PlayerHost Player,
+    Action<int, int, Vector3> PlaySound);
+
 internal sealed class Rac1EquipmentViewPresentation
 {
     private Rac1EquipmentAssets.Catalogue? _assets;
@@ -109,8 +114,7 @@ internal sealed class Rac1EquipmentViewPresentation
         Func<Rac1WeaponId, bool> visible,
         int useTicks, bool arsenalHeld,
         Rac1AdditionalWeaponSession? native, Rac1WeaponInventory inventory,
-        Rac1PickupAssets.Catalogue? bank, PlayerHost player,
-        Action<int, int, Vector3> playNativeSound)
+        Rac1EquipmentAudioPorts audio)
     {
         foreach (var profile in Rac1WeaponProfiles.Additional)
         {
@@ -129,8 +133,8 @@ internal sealed class Rac1EquipmentViewPresentation
                     view.Play(native?.Cargo.Count > 0 ? 6 : 1);
             }
             foreach (int sound in view.Step(controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(profile.HandSemantic))))
-                if (bank?.Sounds?.TryGetValue((profile.ModelClass, sound), out var voice) != true || voice?.Loop != true)
-                    playNativeSound(profile.ModelClass, sound, player.GlobalPosition);
+                if (audio.Bank?.Sounds?.TryGetValue((profile.ModelClass, sound), out var voice) != true || voice?.Loop != true)
+                    audio.PlaySound(profile.ModelClass, sound, audio.Player.GlobalPosition);
             if (_staged.TryGetValue(profile.Item, out var staged))
             {
                 staged.Position = view.MuzzleLocal; staged.Step();

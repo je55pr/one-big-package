@@ -30,11 +30,11 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
         string module = Script("Rac1WorldModule.cs");
         Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1Arsenal.cs")));
 
-        Assert.Contains("Arsenal = new(this, arsenal)", parent, StringComparison.Ordinal);
+        Assert.Contains("Arsenal = new(this, arsenal.Use)", parent, StringComparison.Ordinal);
         Assert.Contains("internal Rac1ArsenalUseHost Arsenal { get; }", parent, StringComparison.Ordinal);
         Assert.Contains("Arsenal.ClearHeld()", parent, StringComparison.Ordinal);
         Assert.Contains("Arsenal.Dispose()", parent, StringComparison.Ordinal);
-        Assert.Contains("beamPresentation, arsenal, projectiles, flames)", module, StringComparison.Ordinal);
+        Assert.Contains("new(weaponTargets, contactPhysics, suckCannon, projectiles, flames)", module, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Weapons.Arsenal.Reset()", Script("OBPGame.Rac1Weapons.cs"), StringComparison.Ordinal);
         Assert.Contains("Arsenal.Tick()", parent, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", host, StringComparison.Ordinal);

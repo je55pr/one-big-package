@@ -26,7 +26,7 @@ public sealed class Rac1WeaponDamageWorldOwnershipTests
 
         Assert.Contains("WeaponDamage = new(Context, Enemies, Breakables, WrenchDamage, Weapons.Contacts)", module, StringComparison.Ordinal);
         Assert.Contains("internal Rac1WeaponDamageHost WeaponDamage { get; }", module, StringComparison.Ordinal);
-        Assert.Contains("if (retiring) WeaponDamage.Dispose()", module, StringComparison.Ordinal);
+        Assert.Matches(@"(?s)if \(retiring\)\s*\{\s*WeaponDamage\.Dispose\(\);\s*WrenchDamage\.Dispose\(\);\s*Enemies\.Dispose\(\);\s*\}\s*else Enemies\.ResetRac1Enemies\(\);", module);
         Assert.Contains("WeaponDamage.Dispose()", module, StringComparison.Ordinal);
         Assert.Contains("internal RuntimeWorldScene.DynamicObjectNode? FindArsenalTarget(", contact, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Weapons.Contacts.FindArsenalTarget(", application, StringComparison.Ordinal);

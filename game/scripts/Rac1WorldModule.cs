@@ -36,7 +36,9 @@ internal sealed class Rac1WorldModule : IDisposable
         Context = new(world.LevelId, random);
         Loot = new(scene, Context, Presentation, loot);
         Mechanisms = new(world, scene, authored);
-        Weapons = new(scene.Root, detector, weaponTargets, contactPhysics, suckCannon, missiles, deployables, walloper, taunter, tesla, morph, beamPresentation, arsenal, projectiles, flames);
+        Weapons = new(scene.Root, detector,
+            new(weaponTargets, contactPhysics, suckCannon, projectiles, flames),
+            new(missiles, deployables, walloper, taunter, tesla, morph, beamPresentation, arsenal));
         Wrench = new(wrenchFrame, wrenchContact);
         Taxis = new(taxis);
         Enemies = enemies(this);
@@ -96,9 +98,13 @@ internal sealed class Rac1WorldModule : IDisposable
         _reset.Missions();
         Wrench.Reset();
         _reset.Retry();
-        if (retiring) WeaponDamage.Dispose();
-        if (retiring) WrenchDamage.Dispose();
-        if (retiring) Enemies.Dispose(); else Enemies.ResetRac1Enemies();
+        if (retiring)
+        {
+            WeaponDamage.Dispose();
+            WrenchDamage.Dispose();
+            Enemies.Dispose();
+        }
+        else Enemies.ResetRac1Enemies();
         Loot.ResetRac1PickupPresentation();
         Loot.ResetRac1GoldBolts();
         if (retiring) Mechanisms.Dispose();
