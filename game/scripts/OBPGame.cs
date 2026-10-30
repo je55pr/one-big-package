@@ -118,7 +118,7 @@ public partial class OBPGame : Node3D
                 if (game == ObpSourceGame.Rac1)
                 {
                     _playerAudio?.RetireWorld();
-                    ResetRac1WeaponAudio();
+                    _equipmentPresentation.WeaponAudio.Reset();
                 }
             }, FusionWeapons.PrepareSources),
             message => GD.Print(message), message => GD.PrintErr(message));
@@ -177,7 +177,7 @@ public partial class OBPGame : Node3D
         SelectionChanged: previous =>
         {
             _previousSelectedWeapon = previous;
-            ResetRac1WeaponAudio();
+            _equipmentPresentation.WeaponAudio.Reset();
             Rac1World.Context.BombFireRequested = Rac1World.Context.EquipmentUsePressed = false;
             _persistentPlayer.Rac1Use.CancelFire();
             _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.ThrownAnimation.Stop();
@@ -231,7 +231,7 @@ public partial class OBPGame : Node3D
             (nativeClass, localSound, position) =>
             {
                 if (_playerAudio?.PlayEquipmentSound(nativeClass, localSound, new(-position.X, position.Y, position.Z)) == true)
-                    RecordRac1WeaponSound(nativeClass, localSound);
+                    _equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, _rac1WeaponWorldTick, _args.Rac1WeaponsSmoke);
             }, world =>
             {
                 var assets = _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets);
@@ -289,7 +289,7 @@ public partial class OBPGame : Node3D
             () => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path, _worldHost.PlayEffect,
             () => _playerAudio?.RetireWorld(), PersistRac1CampaignState,
             () => RefreshRac1HudState(), value => RefreshRac1HudState(Rac1HudProjection.CollectedBoltFeedback(value)),
-            (nativeClass, localSound) => RecordRac1WeaponSound(nativeClass, localSound), () => _rac1CollectedNovalisGoldBolts),
+            (nativeClass, localSound) => _equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, _rac1WeaponWorldTick, _args.Rac1WeaponsSmoke), () => _rac1CollectedNovalisGoldBolts),
         new Rac1BreakablePorts(() => _player,
             owner => ReferenceEquals(_worldScenes?.Current?.Resources.Rac1Gameplay, owner),
             (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Inclusive(min, max),
@@ -855,13 +855,13 @@ public partial class OBPGame : Node3D
                 _persistentPlayer.Rac1Use.ClearUseTicks();
                 _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Arsenal.SetHeld(false);
                 _persistentPlayer.Rac1Use.StopPyro();
-                ResetRac1WeaponAudio(); FusionWeapons.ResetHeldUse();
+                _equipmentPresentation.WeaponAudio.Reset(); FusionWeapons.ResetHeldUse();
                 RefreshRac1WrenchPresentationVisibility(); RefreshRac1HudState();
             },
             ApplyMovementEquipment: (movement, backpack) => _player?.ApplyPlayerEquipment(movement, backpack),
             Record: command => CaptureReplay.RecordCommand(command)));
         _playerAudio ??= new(new GodotRac1PlayerAudioPlayback(this, () => _player, intent => _worldHost.PlayEffect(intent)),
-            () => _avatarPresentation.Clock?.Tick ?? 0, () => ResetRac1WeaponAudio(),
+            () => _avatarPresentation.Clock?.Tick ?? 0, () => _equipmentPresentation.WeaponAudio.Reset(),
             reason => GD.Print("[player-audio] " + reason));
         if (!ReplayBookmarkNavigation.Initialize(ref _args)) return;
         if (_args.FusionTest && _args.Destination is null) _args = _args with { Destination = "rac1:LEVEL0" };
@@ -1146,7 +1146,7 @@ public partial class OBPGame : Node3D
         ActorHost.Reset();
         _worldHost.Unload(releaseAudioImmediately: true);
         _playerAudio?.Dispose();
-        ResetRac1WeaponAudio(freeImmediately: true);
+        _equipmentPresentation.WeaponAudio.Reset(freeImmediately: true);
         FusionWeapons.ResetWorld(freeImmediately: true);
         FusionWeapons.ResetSources();
         _worldScenes?.Dispose();

@@ -63,7 +63,7 @@ public partial class OBPGame
         int previous = _rac1Weapons.CurrentItemId;
         if (_rac1Weapons.TryEquip(weapon))
         {
-            if (previousKey != new SourceWeaponKey(ObpSourceGame.Rac1, (int)weapon)) ResetRac1WeaponAudio();
+            if (previousKey != new SourceWeaponKey(ObpSourceGame.Rac1, (int)weapon)) _equipmentPresentation.WeaponAudio.Reset();
             FusionWeapons.SynchronizeNativeSelection();
             if (_player?.Rac1DevelopmentSwingshotPreview == true) _player.ToggleRac1DevelopmentSwingshot();
             if (previous != (int)weapon && previous != (int)Rac1WeaponId.Wrench &&

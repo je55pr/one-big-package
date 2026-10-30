@@ -150,7 +150,7 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
             "_persistentPlayer.Rac1Use.ResetSession(_rac1Weapons)",
             "Rac1World.Weapons.Projectiles.ResetFlashes()",
             "_persistentPlayer.Rac1Use.ResetInputState()");
-        Assert.Contains("_persistentPlayer.Rac1Use.BoundInventory != _rac1Weapons", weapons, StringComparison.Ordinal);
+        Assert.Contains("return Rac1Use.BoundInventory != currentInventory()", Script("PlayerSessionHost.cs"), StringComparison.Ordinal);
         Assert.Contains("_persistentPlayer.Rac1Use.BindInventory(_rac1Weapons)", weapons, StringComparison.Ordinal);
         Assert.Contains("internal void ResetInputState()", host, StringComparison.Ordinal);
         Assert.Contains("UseTicks = UseAge = 0", host, StringComparison.Ordinal);

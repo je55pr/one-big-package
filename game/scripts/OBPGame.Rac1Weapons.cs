@@ -11,12 +11,6 @@ namespace OBP.Game;
 
 public partial class OBPGame
 {
-    private void ResetRac1WeaponAudio(bool freeImmediately = false)
-        => _equipmentPresentation.WeaponAudio.Reset(freeImmediately);
-
-    private void RecordRac1WeaponSound(int cls, int sound, bool loop = false)
-        => _equipmentPresentation.WeaponAudio.Record(cls, sound, _rac1WeaponWorldTick, _args.Rac1WeaponsSmoke, loop);
-
     private void StepRac1WeaponAudio()
         => _equipmentPresentation.WeaponAudio.Step(new(
             _player is not null && _playerAudio?.Ready == true && PlayerLife.Alive && !MovementReproduction.IsLoading &&
@@ -35,7 +29,7 @@ public partial class OBPGame
 
     private void ResetRac1AdditionalWeapons()
     {
-        ResetRac1WeaponAudio();
+        _equipmentPresentation.WeaponAudio.Reset();
         ResetRac1Arsenal();
         Rac1World.Weapons.Projectiles.RetireShotsAgentsMotes();
         Rac1World.Weapons.SuckCannon.Reset();
@@ -55,29 +49,12 @@ public partial class OBPGame
     private void SetRac1WeaponPreview(bool disable)
     {
         if (FusionWeapons.TestActive) { MovementReproduction.Report("Leave the fusion test before changing the R&C1 arsenal preview."); return; }
-        _playerNative?.SetEquipmentPreview(!disable);
-        if (disable)
+        bool resetWorld = _persistentPlayer.UpdateRac1WeaponPreview(disable, () => _rac1Weapons, _rac1Campaign.Session.Weapons);
+        if (resetWorld)
         {
-            _persistentPlayer.WeaponPreview = null;
             Rac1World.Context.BombGlove = new(_rac1Weapons); ResetRac1AdditionalWeapons();
-            MovementReproduction.Report("Weapon preview disabled; campaign equipment restored.");
         }
-        else
-        {
-            _persistentPlayer.WeaponPreview ??= _playerNative?.Inventory ?? new(_rac1Campaign.Session.Weapons.CapturePersistentState(), _rac1Weapons.CurrentItemId);
-            _rac1Weapons.AcquireNativeItem(Rac1MetalDetectorSession.NativeGadgetItem);
-            foreach (var weapon in Rac1WeaponProfiles.Additional.Select(profile => profile.Item).Append(Rac1WeaponId.FirstRanged))
-            {
-                _rac1Weapons.AcquireNativeItem((int)weapon);
-                _rac1Weapons.GrantAmmoClamped((int)weapon, Rac1ItemAmmoDescriptors.Get((int)weapon).MaxAmmo);
-            }
-            // Rebind once when entering preview; refilling does not erase live cargo.
-            if (_persistentPlayer.Rac1Use.BoundInventory != _rac1Weapons)
-            {
-                Rac1World.Context.BombGlove = new(_rac1Weapons); ResetRac1AdditionalWeapons();
-            }
-            MovementReproduction.Report("Full arsenal preview: hold Triangle to select, Circle to use. Refill or restore campaign equipment from Pause → Testing Equipment.");
-        }
+        MovementReproduction.Report(disable ? "Weapon preview disabled; campaign equipment restored." : "Full arsenal preview: hold Triangle to select, Circle to use. Refill or restore campaign equipment from Pause → Testing Equipment.");
         _persistentPlayer.Rac1Use.BindInventory(_rac1Weapons);
         FusionWeapons.SynchronizeNativeSelection();
         RefreshSourceEquipmentContext();
