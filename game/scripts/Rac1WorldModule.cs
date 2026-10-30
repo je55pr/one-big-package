@@ -25,7 +25,7 @@ internal sealed class Rac1WorldModule : IDisposable
     private bool _disposed;
 
     internal Rac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene, Rac1PickupRandom random, Rac1LootPorts loot,
-        Rac1WorldResetPorts reset, Rac1WorldActorPorts actors, Rac1WorldTickPorts ticks,
+        Rac1BreakablePorts breakables, Rac1WorldResetPorts reset, Rac1WorldActorPorts actors, Rac1WorldTickPorts ticks,
         Rac1PlayerGameplayPorts player, Rac1WorldContactPorts contacts, Rac1AuthoredMechanismPorts authored, Rac1GameplayHudPorts hud,
         Rac1TaxiHostPorts taxis, Func<Rac1WorldModule, Rac1EnemyHost> enemies)
     {
@@ -36,10 +36,12 @@ internal sealed class Rac1WorldModule : IDisposable
         Mechanisms = new(world, scene, authored);
         Taxis = new(taxis);
         Enemies = enemies(this);
+        Breakables = new(world, Context, Presentation, Loot, Enemies, () => breakables.Current(this), breakables);
         Hud = new(world, Context, Presentation, hud, () => _disposed);
     }
 
     internal Rac1LootPresentation Loot { get; }
+    internal Rac1BreakableHost Breakables { get; }
     internal Rac1WorldContext Context { get; }
     internal Rac1AuthoredMechanismRegistry Mechanisms { get; }
     internal Rac1WorldPresentation Presentation { get; } = new();
@@ -75,7 +77,7 @@ internal sealed class Rac1WorldModule : IDisposable
         _reset.Player();
         Context.EquipmentUsePressed = false;
         _reset.Wheel();
-        _reset.Explosives();
+        Breakables.Reset();
         _reset.Checkpoints();
         _reset.Missions();
         _reset.MetalDetector();
@@ -84,7 +86,6 @@ internal sealed class Rac1WorldModule : IDisposable
         if (retiring) Enemies.Dispose(); else Enemies.ResetRac1Enemies();
         Loot.ResetRac1PickupPresentation();
         Loot.ResetRac1GoldBolts();
-        _reset.Breakables();
         if (retiring) Mechanisms.Dispose();
         Presentation.Dispose();
     }
@@ -134,7 +135,7 @@ internal sealed class Rac1WorldModule : IDisposable
         _ticks.Swing(delta);
         if (!_playerPorts.Ordinary()) Enemies.TickRac1Hostiles(delta);
         Mechanisms.Tick(delta, Rac1AuthoredTickPhase.Visual);
-        _ticks.Explosives(delta);
+        Breakables.TickExplosives(delta);
         _ticks.Checkpoints();
         _ticks.MetalDetector(delta);
         Loot.TickRac1Pickups(delta);
@@ -171,13 +172,26 @@ internal sealed class Rac1WorldModule : IDisposable
             try { Enemies.Dispose(); }
             finally
             {
-                Taxis.Dispose();
-                try { Loot.Dispose(); }
-                finally { Presentation.Dispose(); }
-                Context.BombGlove = null;
-                Context.BombFireRequested = false;
-                Context.CombatStatus = "off";
-                _disposed = true;
+                try { Taxis.Dispose(); }
+                finally
+                {
+                    try { Breakables.Dispose(); }
+                    finally
+                    {
+                        try { Loot.Dispose(); }
+                        finally
+                        {
+                            try { Presentation.Dispose(); }
+                            finally
+                            {
+                                Context.BombGlove = null;
+                                Context.BombFireRequested = false;
+                                Context.CombatStatus = "off";
+                                _disposed = true;
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -220,14 +234,14 @@ internal sealed class Rac1WorldModule : IDisposable
             Loot.AddRac1CrateCollider(node);
         }
 
-        _actors.Explosives(world, result);
+        Breakables.ConfigureExplosives(world, result);
         _actors.Checkpoints(world);
         _actors.Missions(world, result);
         _actors.MetalDetector(world);
         Loot.ConfigureRac1PlacedBolts(world, result);
         Loot.ConfigureRac1GoldBolts(world, result);
         Mechanisms.Configure();
-        _actors.Breakables(world, result);
+        Breakables.ConfigureNovalis(world, result);
 
         int authoredClass749 = 0;
         int rejectedHostiles = 0;

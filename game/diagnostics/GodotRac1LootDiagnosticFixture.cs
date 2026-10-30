@@ -84,6 +84,46 @@ internal sealed class GodotRac1LootDiagnosticFixture(GodotRac1LootDiagnosticBind
     { public Rac1PlacedBoltDiagnostic Read() { scope.RequireCurrent(); return read(); } }
 }
 
+/// <summary>
+/// The crate smoke may observe and deliberately exercise only the current lease's
+/// admitted breakables. It cannot edit the host's internal collections or raw Godot nodes.
+/// </summary>
+internal sealed class GodotRac1BreakableDiagnosticFixture(
+    Func<Rac1BreakableSnapshot> observe, Func<int, bool> touchExplosive,
+    Func<int, Rac1NovalisBreakableSession.ContactKind, bool> breakNovalis,
+    IDiagnosticWorldObservations worlds) : IRac1BreakableDiagnosticFixture
+{
+    private readonly GodotRac1DiagnosticWorldScope _scope = new(worlds);
+
+    public Rac1BreakableDiagnosticState Read()
+    {
+        _scope.RequireCurrent();
+        var world = worlds.ReadWorld();
+        var status = observe();
+        Rac1BreakableDiagnosticEntry Copy(Rac1BreakableEntrySnapshot entry) =>
+            new(new(world.WorldInstanceId!, world.Generation,
+                new(ObpSourceGame.Rac1, entry.NativeClassId, entry.InstanceIndex)),
+                entry.NativeState, entry.Presence, entry.HasCollider);
+        return new([.. status.Explosives.Select(Copy)],
+            [.. status.Novalis.Select(Copy)], status.NovalisDestroyed);
+    }
+
+    public bool TouchExplosive(ActorInstanceKey actor)
+    {
+        Rac1DiagnosticActorScope.RequireCurrent(actor, worlds.ReadWorld());
+        if (actor.Target.NativeClassId != Rac1ExplosiveCrateSession.ClassId ||
+            !Read().Explosives.Any(entry => entry.Actor == actor)) return false;
+        return touchExplosive(actor.Target.InstanceIndex);
+    }
+
+    public bool BreakNovalis(ActorInstanceKey actor, Rac1NovalisBreakableSession.ContactKind contact)
+    {
+        Rac1DiagnosticActorScope.RequireCurrent(actor, worlds.ReadWorld());
+        if (!Read().Novalis.Any(entry => entry.Actor == actor)) return false;
+        return breakNovalis(actor.Target.InstanceIndex, contact);
+    }
+}
+
 /// <summary>Existing synthetic placement seam, shared with the earlier combat/weapon fixture bindings.</summary>
 internal static class GodotRac1CrateStaging
 {

@@ -67,6 +67,20 @@ internal sealed partial class Rac1LootPresentation : IDisposable
 
     internal Dictionary<int, Rac1BoltMotionSession> PickupMotions => _rac1PickupMotion;
     internal Dictionary<int, StaticBody3D> CrateBodies => _rac1CrateBodies;
+    internal bool HasRac1CrateCollider(int id) => _rac1CrateBodies.TryGetValue(id, out var body) && IsInstanceValid(body);
+    internal bool TryGetRac1CrateContact(StaticBody3D body, out int id)
+    {
+        var match = _rac1CrateBodies.FirstOrDefault(pair => ReferenceEquals(pair.Value, body));
+        id = match.Value is null ? -1 : match.Key;
+        return match.Value is not null;
+    }
+    internal void PresentRac1ExplosiveDetonation(RuntimeWorldScene.DynamicObjectNode node, IReadOnlyList<Rac1BoltPickup> pickups)
+    {
+        SpawnRac1BoltPickups(node.Root.GlobalPosition, pickups);
+        PlayRac1PickupSound(Rac1CrateAudio.BreakSoundClass(node.Source.NativeClassId),
+            Rac1CrateAudio.BreakLocalSound, node.Root.GlobalPosition);
+        DisableRac1CrateCollider(node.Source.InstanceIndex);
+    }
     internal Dictionary<int, (Node3D Node, Rac1CrateFallSession Motion, float FootOffset)> FallingCrates => _rac1FallingCrates;
     internal List<(Node3D Node, Rac1CrateDebris Motion)> Debris => _rac1Debris;
     internal List<(Node3D Node, Rac1AmmoPickupSession Motion)> AmmoPickups => _rac1AmmoPickups;
