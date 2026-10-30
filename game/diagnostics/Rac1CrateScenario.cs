@@ -122,6 +122,10 @@ public sealed class Rac1CrateScenario(MovementDiagnosticContext context, Rac1Loo
                     Require(!breakables.TouchExplosive(explosive.Actor), "spent explosive admitted repeated touch");
                     Log("[crate-smoke] lease-owned explosive touch/fuse/retirement PASS");
                 }
+                else
+                {
+                    Log("[crate-smoke] explosive touch/fuse checks SKIPPED (no active class-505 crate)");
+                }
 
                 var mushroom = start.Novalis.FirstOrDefault(entry =>
                     entry.Actor.Target.NativeClassId == Rac1NovalisBreakableSession.MushroomClass &&
@@ -134,6 +138,11 @@ public sealed class Rac1CrateScenario(MovementDiagnosticContext context, Rac1Loo
                         "destroyed Novalis mushroom admitted duplicate break/reward");
                     Require(breakables.Read().Novalis.Single(entry => entry.Actor == mushroom.Actor).Presence ==
                         RuntimeEntityPresence.Inactive, "Novalis mushroom retained active presentation");
+                    Log("[crate-smoke] Novalis mushroom contact and duplicate-break guards PASS");
+                }
+                else
+                {
+                    Log("[crate-smoke] Novalis mushroom checks SKIPPED (no active class-754 mushroom)");
                 }
 
                 var rock = start.Novalis.FirstOrDefault(entry =>
@@ -145,8 +154,12 @@ public sealed class Rac1CrateScenario(MovementDiagnosticContext context, Rac1Loo
                         "existing class-704 host policy admitted wrench");
                     Require(breakables.BreakNovalis(rock.Actor, Rac1NovalisBreakableSession.ContactKind.Explosion),
                         "admitted class-704 explosion failed");
+                    Log("[crate-smoke] Novalis rock contact guards PASS");
                 }
-                Log("[crate-smoke] lease-scoped Novalis admission and duplicate-contact guards PASS");
+                else
+                {
+                    Log("[crate-smoke] Novalis rock checks SKIPPED (no active class-704 rock)");
+                }
             }
             Log($"[crate-smoke] PASS level={World.Read().LevelId}");
         }
