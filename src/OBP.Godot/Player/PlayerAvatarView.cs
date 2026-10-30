@@ -86,11 +86,13 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
     private int _currentFrame = -1;
     private PlayerAvatarSampledPose? _currentSampledPose;
     private readonly bool _profileMeshUpdates = System.Environment.GetEnvironmentVariable("OBP_AVATAR_MESH_PROFILE") == "1";
+    private readonly bool _profileRenderTime = System.Environment.GetEnvironmentVariable("OBP_AVATAR_RENDER_PROFILE") == "1";
     private long _profileTicks;
     private long _profileAllocatedBytes;
     private long _profileRebuiltSurfaces;
     private int _profileSamples;
-    private bool _profileViewportEnabled;
+    private SceneTree? _profileSceneTree;
+    private int _profileRenderFrames;
     private long _profileViewportCpuSamples, _profileViewportGpuSamples;
     private double _profileViewportCpuMs, _profileViewportGpuMs, _profileFrameSetupMs;
 
@@ -112,7 +114,12 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
             StringComparer.Ordinal);
 
         Name = $"PlayerAvatar_{avatar.Identity.AvatarId}";
-        if (_profileMeshUpdates) GD.Print("[avatar-mesh-profile] enabled");
+        if (_profileMeshUpdates)
+        {
+            GD.Print("[avatar-mesh-profile] enabled");
+            if (_profileRenderTime) TreeEntered += OnProfileTreeEntered;
+            TreeExiting += OnProfileTreeExiting;
+        }
         BuildSurfaces();
         ApplyPresentation();
     }
@@ -325,27 +332,38 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
             _profileAllocatedBytes += GC.GetAllocatedBytesForCurrentThread() - startAllocation;
             _profileRebuiltSurfaces += _surfaces.Count;
             _profileSamples++;
-            SampleViewportProfile();
             if (_profileSamples % 250 == 0) PrintProfile();
         }
     }
 
-    /// <summary>
-    /// Optional whole-viewport render timing. This deliberately runs from the
-    /// existing presentation update, since the avatar owns no render-frame clock.
-    /// These numbers are not avatar-only GPU timings.
-    /// </summary>
-    private void SampleViewportProfile()
+    // Signal callbacks work for this engine-neutral view without turning it
+    // into a generated Godot script. The scene-tree subscription exists only
+    // while the view is attached, so world changes cannot retain the avatar.
+    private void OnProfileTreeEntered()
     {
-        if (!IsInsideTree()) return;
+        if (_profileSceneTree is not null) return;
         var viewport = GetViewport().GetViewportRid();
-        if (!_profileViewportEnabled)
+        RenderingServer.ViewportSetMeasureRenderTime(viewport, true);
+        _profileSceneTree = GetTree();
+        _profileSceneTree.ProcessFrame += OnProfileProcessFrame;
+    }
+
+    private void OnProfileTreeExiting()
+    {
+        if (_profileSceneTree is not null)
         {
-            RenderingServer.ViewportSetMeasureRenderTime(viewport, true);
-            _profileViewportEnabled = true;
-            return;
+            _profileSceneTree.ProcessFrame -= OnProfileProcessFrame;
+            _profileSceneTree = null;
+            RenderingServer.ViewportSetMeasureRenderTime(GetViewport().GetViewportRid(), false);
         }
-        if (_profileSamples <= 120) return;
+        if (_profileSamples > 0) PrintProfile();
+    }
+
+    /// <summary>Sample the prior rendered frame exactly once per scene-tree process tick.</summary>
+    private void OnProfileProcessFrame()
+    {
+        if (++_profileRenderFrames <= 120) return;
+        var viewport = GetViewport().GetViewportRid();
         double cpu = RenderingServer.ViewportGetMeasuredRenderTimeCpu(viewport);
         double gpu = RenderingServer.ViewportGetMeasuredRenderTimeGpu(viewport);
         if (cpu > 0)
@@ -370,7 +388,7 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
             $"viewportCpuMs={(_profileViewportCpuSamples > 0 ? _profileViewportCpuMs / _profileViewportCpuSamples : -1):0.000} " +
             $"viewportGpuMs={(_profileViewportGpuSamples > 0 ? _profileViewportGpuMs / _profileViewportGpuSamples : -1):0.000} " +
             $"renderSetupMs={(_profileViewportCpuSamples > 0 ? _profileFrameSetupMs / _profileViewportCpuSamples : -1):0.000} " +
-            $"renderSamples={_profileViewportCpuSamples} gpuSamples={_profileViewportGpuSamples} " +
+            $"renderFrames={_profileRenderFrames} renderSamples={_profileViewportCpuSamples} gpuSamples={_profileViewportGpuSamples} " +
             $"gc0={GC.CollectionCount(0)} gc1={GC.CollectionCount(1)} gc2={GC.CollectionCount(2)}");
     }
 

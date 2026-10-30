@@ -8,6 +8,7 @@ pinned toolchain, import the project once in the Godot editor, and run:
 
 ```powershell
 $env:OBP_AVATAR_MESH_PROFILE = '1'
+# Also set OBP_AVATAR_RENDER_PROFILE=1 for per-frame viewport CPU/GPU readings.
 $godot = '<pinned-Godot-.NET-console-executable>'
 & $godot --headless --fixed-fps 60 --path game --rendering-method gl_compatibility -- `
     --rac1-iso '<RAC1.iso>' --rac2-iso '<RAC2.iso>' --rac3-iso '<RAC3.iso>' `
@@ -27,13 +28,20 @@ GC collections are **process cumulative**, not attributable to this method.
 
 For a rendered comparison, use the same source flags and smoke with
 `--windowed --position -20000,-20000 --resolution 960x540` in place of
-`--headless`. In profiling mode, `PlayerAvatarView` enables Godot's
-per-viewport CPU/GPU timers once the view enters the scene tree. The
-`viewportCpuMs`, `viewportGpuMs`, `renderSetupMs`,
-`renderSamples` and `gpuSamples` fields are **whole-viewport**
-statistics (not avatar-only or render-thread queue timings). A value of
-`-1` means a positive sample was unavailable, as may happen in headless
-mode. The profiling flag is opt-in and does not change animation decisions.
+`--headless`. For frame-based renderer measurements, set **both**
+`OBP_AVATAR_MESH_PROFILE=1` and `OBP_AVATAR_RENDER_PROFILE=1`.
+The second flag is optional and off by default, so pose-only allocation/timing
+profiling does not subscribe to the scene-tree frame clock. When enabled,
+`PlayerAvatarView` turns on the viewport timer on tree entry and disables it
+on exit. It samples on each scene-tree
+`ProcessFrame` event, once per rendered frame rather than once per pose
+change, and unsubscribes when the view exits the tree. The `viewportCpuMs`
+and `viewportGpuMs` fields are **whole-viewport** timings, not avatar-only
+or render-thread queue timings. The separate `renderSetupMs` field is
+**CPU frame-setup time shared across viewports**, not a per-viewport value.
+`renderFrames` counts process ticks including 120 warm-up frames;
+`renderSamples` and `gpuSamples` count positive timing samples. A value
+of `-1` means no positive sample was available, as may happen headlessly. The profiling flag is opt-in and does not change animation decisions.
 A rendered fixed-seed Bomb Glove smoke verified that both viewport timing
 fields return nonzero measurements with the real GL Compatibility renderer.
 
@@ -73,9 +81,11 @@ Compatibility renderer at 960 x 540, moved offscreen (not headless), with the
 same fixed 60-FPS R&C1 LEVEL0 movement smoke, 5,750 avatar updates and four
 avatar surfaces. After 120 warm-up frames, a temporary host-only probe sampled
 `RenderingServer.ViewportGetMeasuredRenderTimeCpu/Gpu` and
-`GetFrameSetupTimeCpu` each process frame (5,630 samples). These are
-**whole-viewport rendering times**, not avatar-only GPU costs. The probe was not
-added to production code.
+`GetFrameSetupTimeCpu` each process frame (5,630 samples). The two
+viewport calls measure **whole-viewport render time** rather than avatar-only
+GPU cost. `GetFrameSetupTimeCpu` separately measures CPU setup time shared
+across viewports. That temporary host probe was not added to production code;
+the retained avatar profiling hook now samples render frames directly.
 
 | Strategy/run | Avatar ApplyFrame elapsed (µs) | Managed B/update | Viewport CPU render (ms) | Viewport GPU render (ms) | Frame setup CPU (ms) |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -119,9 +129,20 @@ The retained buffer-only implementation also passed a source-backed
 `--stress-switch rac1:LEVEL0,rac2:LEVEL1,rac3:TABLE1,rac1:LEVEL0` host
 regression. It reported zero orphan nodes after each transition. On returning
 to R&C1 LEVEL0, measured process memory was 96.8 MB versus 94.1 MB at
-initial entry (+2.7 MB). These are overall process snapshots, not dedicated
-avatar resource-leak measurements, but no unbounded growth was observed in
-this single round trip.
+initial entry (+2.7 MB).
+
+A six-stop stress comparison showed a higher intermediate return to R&C1
+with pose profiling enabled (121.4 MB and 7,068 engine objects), compared
+with the profiling-disabled control (95.6 MB and 6,423 objects). Disabling
+the viewport timer and its frame subscription did not change that result,
+and running **pose timing only** produced the same intermediate increase.
+However, a ten-stop pose-only stress sequence eventually returned to R&C1
+at **96.8 MB and 6,460 objects**, with zero orphan nodes across all ten
+stops. Intermediate values fluctuated substantially with content loading,
+including R&C3 and R&C2 snapshots. Thus these process-wide counts do not
+establish a persistent avatar leak or reliably measure per-mesh resource
+lifetime. Longer, steady-state captures or per-resource ownership counters
+would be required before claiming leak-free GPU resource behaviour.
 
 ## Shared updater assessment
 
