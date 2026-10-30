@@ -179,7 +179,7 @@ public partial class OBPGame : Node3D
             _previousSelectedWeapon = previous;
             ResetRac1WeaponAudio();
             Rac1World.Context.BombFireRequested = _rac1AdditionalFireRequested = Rac1World.Context.EquipmentUsePressed = false;
-            _rac1BombThrowActive = false;
+            _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.ThrownAnimation.Stop();
         },
         RefreshAvailability: () => _persistentPlayer.Equipment.RefreshAvailability(),
         RefreshHeldVisibility: RefreshRac1WrenchPresentationVisibility, RefreshHud: () => RefreshRac1HudState(),

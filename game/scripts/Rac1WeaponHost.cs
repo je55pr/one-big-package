@@ -20,6 +20,7 @@ internal sealed class Rac1WeaponHost : IDisposable
         Rac1TeslaPorts tesla, Rac1MorphPorts morph, Rac1ArsenalBeamPorts beams)
     {
         GuidedCamera = new();
+        ThrownAnimation = new();
         Detector = new(detector);
         Contacts = new(targets, physics);
         SuckCannon = new(suckCannon);
@@ -43,6 +44,7 @@ internal sealed class Rac1WeaponHost : IDisposable
     internal Rac1MorphHost Morph { get; }
     internal Rac1ArsenalBeamPresenter Beams { get; }
     internal Rac1GuidedWeaponCamera GuidedCamera { get; }
+    internal Rac1ThrownEquipmentAnimationHost ThrownAnimation { get; }
 
     // Shared, world-owned presentation generation for missile launches and
     // decoy fold/landing animation. It survives preview resets in this world.
@@ -71,6 +73,7 @@ internal sealed class Rac1WeaponHost : IDisposable
         if (_disposed) return;
         // Release camera/input before the player/world lease is retired.
         GuidedCamera.End();
+        ThrownAnimation.Reset();
         Detector.Reset();
         Contacts.Invalidate();
         SuckCannon.Reset();
@@ -95,6 +98,7 @@ internal sealed class Rac1WeaponHost : IDisposable
         Taunter.Dispose();
         Missiles.Dispose();
         GuidedCamera.Dispose();
+        ThrownAnimation.Dispose();
         Detector.Dispose();
         Contacts.Dispose();
         SuckCannon.Dispose();

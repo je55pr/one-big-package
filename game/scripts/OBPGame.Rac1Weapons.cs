@@ -211,14 +211,14 @@ public partial class OBPGame
                 view.Play(Rac1ArsenalRules.HandFireSequence(shot.Weapon), false, shot.Generation);
             if (shot.Weapon is Rac1WeaponId.MineGlove or Rac1WeaponId.GloveOfDoom)
             {
-                _rac1BombThrowGeneration++; _rac1BombThrowActive = true;
+                Rac1World.Weapons.ThrownAnimation.Begin();
                 SpawnRac1ThrownEquipment(shot);
             }
             else if (shot.Weapon == Rac1WeaponId.Blaster) FireRac1Blaster(shot);
             else if (shot.Weapon == Rac1WeaponId.SuckCannon) Rac1World.Weapons.SuckCannon.Fire(shot);
             else if (Rac1ArsenalRules.IsNew(shot.Weapon)) FireRac1Arsenal(shot);
             if (shot.Weapon is Rac1WeaponId.DecoyGlove or Rac1WeaponId.DroneDevice)
-            { _rac1BombThrowGeneration++; _rac1BombThrowActive = true; }
+                Rac1World.Weapons.ThrownAnimation.Begin();
             if (Rac1ItemAmmoDescriptors.Get((int)shot.Weapon).UsesAmmo)
                 PersistRac1CampaignState($"{shot.Weapon} ammo consumption");
             RefreshRac1HudState();

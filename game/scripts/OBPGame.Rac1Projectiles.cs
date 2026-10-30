@@ -8,8 +8,6 @@ namespace OBP.Game;
 
 public partial class OBPGame
 {
-    private long _rac1BombThrowGeneration;
-    private bool _rac1BombThrowActive;
     private int _rac1BombImpactCount;
 
     private void StepRac1BombWeaponPhysics()
@@ -21,8 +19,7 @@ public partial class OBPGame
         var probe = Rac1World.Context.BombGlove.Step(fire);
         if (probe.Shot is { } shot)
         {
-            _rac1BombThrowGeneration++;
-            _rac1BombThrowActive = true;
+            Rac1World.Weapons.ThrownAnimation.Begin();
             SpawnRac1BombProjectile(shot);
             FusionWeapons.PlayNativeSound(0, 26, _player.GlobalPosition); // 0x2c2.. hero throw, not the glove's equip cue.
             PersistRac1CampaignState("Bomb Glove ammo consumption");
@@ -36,26 +33,9 @@ public partial class OBPGame
 
     private Rac1LocomotionAnimationInput SelectRac1BombThrowAnimation(
         Rac1PlayerAnimationPresentationController controller, Rac1LocomotionAnimationInput input)
-    {
-        if (!_rac1BombThrowActive) return input;
-        if (!PlayerLife.Alive || _player?.Rac1WrenchFrame.Active == true || input.Traversal is not null)
-        {
-            _rac1BombThrowActive = false;
-            return input;
-        }
-        if (CurrentPlayerAvatarSourceSequence() == 44 &&
-            controller.TraversalAuthoredAnimationTime >= Rac1BombProjectileSession.ThrowFinishTime)
-        {
-            _rac1BombThrowActive = false;
-            return input with { GroundEntry = new(0, 0, _rac1BombThrowGeneration, BlendTicks: -1) };
-        }
-        return input with
-        {
-            GroundEntry = null,
-            Traversal = new(0x23, 44, _rac1BombThrowGeneration,
-                Rac1BombProjectileSession.ThrowEntryFrame, Rac1BombProjectileSession.ThrowBlendTicks)
-        };
-    }
+        => _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.ThrownAnimation.Select(input,
+            PlayerLife.Alive, _player?.Rac1WrenchFrame.Active == true,
+            CurrentPlayerAvatarSourceSequence(), controller.TraversalAuthoredAnimationTime) ?? input;
 
     private void SpawnRac1BombProjectile(Rac1BombGloveShot shot)
     {
@@ -87,7 +67,7 @@ public partial class OBPGame
         var node = FusionWeapons.CreateNativeEffect(121, $"Rac1RetailBomb_{shot.Projectile.ProjectileId}_Class121");
         node.GlobalPosition = Rac1LootPresentation.FromEffectNative(origin);
         SetBombOrientation(node, motion.Rotation);
-        var hosted = new Rac1HostedProjectile(node, motion, _rac1BombThrowGeneration);
+        var hosted = new Rac1HostedProjectile(node, motion, Rac1World.Weapons.ThrownAnimation.Generation);
         Rac1World.Presentation.Projectiles.Add(shot.Projectile.ProjectileId, hosted);
         // 2ad350..2ad390 checks the body-to-launch segment at launch height.
         // A clear muzzle endpoint alone would let a bomb spawn beyond a thin wall.

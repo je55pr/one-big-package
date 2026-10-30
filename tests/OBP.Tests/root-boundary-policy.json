@@ -3487,16 +3487,16 @@
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:ResetPlayerAvatarPhysics():void:private",
       "Owner": "#350",
-      "Rationale": "Existing 60Hz game/weapon callback order remains on the host until registered source-game tick scheduling; avatar clock, pose sampling and view lifetimes are owned by PlayerAvatarPresentationHost. #354 binds the owned native player audio presenter and its copied observations. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
+      "Rationale": "Existing 60Hz game/weapon callback order remains on the host until registered source-game tick scheduling; avatar clock, pose sampling and view lifetimes are owned by PlayerAvatarPresentationHost. #354 binds the owned native player audio presenter and its copied observations. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #367/#368: shared R&C1 thrown-equipment animation clock and generation are now reset/selected through the lease-owned Rac1ThrownEquipmentAnimationHost for Bomb, Mine, Doom, Decoy and Drone, rather than holding mutable throw state on OBPGame. Source-authored throw timing and the existing projectile/damage owners remain unchanged.",
       "ExpiresWith": "#375",
-      "Hash": "2b89be1ec998fbd8611907211676251f6b87a12ffa2d973e61228f7eb76c7e0d"
+      "Hash": "c29fccae6f19c3bd3d39e713cb8253d518b4e52d0429f40ff811e48a85f71540"
     },
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:StepPlayerAvatarPhysics(:double,:PlayerAnimationState,:Rac1LocomotionAnimationInput):void:private",
       "Owner": "#350",
-      "Rationale": "Existing 60Hz game/weapon callback order remains on the host until registered source-game tick scheduling; avatar clock, pose sampling and view lifetimes are owned by PlayerAvatarPresentationHost. #354 binds the owned native player audio presenter and its copied observations. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #367/#368 retires the Walloper swing/actor victim state into world-owned Rac1WalloperHost. Player-avatar equipment pose borrows only its read-only 60Hz swing age; original native lunge, damage contact and sound ordering are retained. #368: avatar animation/audio and equipment gating observe nullable world-scoped wrench throw state, preserving false/no-throw on unbound and cross-source screens.",
+      "Rationale": "Existing 60Hz game/weapon callback order remains on the host until registered source-game tick scheduling; avatar clock, pose sampling and view lifetimes are owned by PlayerAvatarPresentationHost. #354 binds the owned native player audio presenter and its copied observations. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #367/#368 retires the Walloper swing/actor victim state into world-owned Rac1WalloperHost. Player-avatar equipment pose borrows only its read-only 60Hz swing age; original native lunge, damage contact and sound ordering are retained. #368: avatar animation/audio and equipment gating observe nullable world-scoped wrench throw state, preserving false/no-throw on unbound and cross-source screens. #367/#368: shared R&C1 thrown-equipment animation clock and generation are now reset/selected through the lease-owned Rac1ThrownEquipmentAnimationHost for Bomb, Mine, Doom, Decoy and Drone, rather than holding mutable throw state on OBPGame. Source-authored throw timing and the existing projectile/damage owners remain unchanged.",
       "ExpiresWith": "#375",
-      "Hash": "453e425de34e48785b2786c8bf1e7775ee1ec1df93628e0d9b60e24f36851c59"
+      "Hash": "3b574f2c24f3e90d0586cdd4c7151de11e7b385a024173e2e2e658b05d952194"
     },
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:WorldOptions(:RuntimeWorld):WorldHost . Options:private",
@@ -3690,9 +3690,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateFusionWeaponHost():FusionWeaponHost:private",
       "Owner": "#352",
-      "Rationale": "Composes copied player/source observations and focused native equipment, collision, replay and renderer actions; existing native controllers retain rules and source authority. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #367/#368 now obtains R&C1 target geometry and occlusion through world-scoped Rac1WeaponContactHost with per-physics-frame caches, while preserving the original host contact/ray and damage semantics; native player/equipment authority and replay IDs remain unchanged. #367/#368 defers the world-owned contact/target delegates until their owning R&C1 lease exists; host construction must not resolve Rac1World eagerly. The new ContactCallbacksDoNotResolveTheWorldDuringHostConstruction guard covers each factory. #368: avatar animation/audio and equipment gating observe nullable world-scoped wrench throw state, preserving false/no-throw on unbound and cross-source screens.",
+      "Rationale": "Composes copied player/source observations and focused native equipment, collision, replay and renderer actions; existing native controllers retain rules and source authority. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #367/#368 now obtains R&C1 target geometry and occlusion through world-scoped Rac1WeaponContactHost with per-physics-frame caches, while preserving the original host contact/ray and damage semantics; native player/equipment authority and replay IDs remain unchanged. #367/#368 defers the world-owned contact/target delegates until their owning R&C1 lease exists; host construction must not resolve Rac1World eagerly. The new ContactCallbacksDoNotResolveTheWorldDuringHostConstruction guard covers each factory. #368: avatar animation/audio and equipment gating observe nullable world-scoped wrench throw state, preserving false/no-throw on unbound and cross-source screens. #367/#368: shared R&C1 thrown-equipment animation clock and generation are now reset/selected through the lease-owned Rac1ThrownEquipmentAnimationHost for Bomb, Mine, Doom, Decoy and Drone, rather than holding mutable throw state on OBPGame. Source-authored throw timing and the existing projectile/damage owners remain unchanged.",
       "ExpiresWith": "#376",
-      "Hash": "f9b472beb236aeaa1f90913feb2eaeb3cc2c29a7d740ac938f5763f3c89de408"
+      "Hash": "811a028a28b4215d101f8bd326ba91df632c2c1384491ff1416387bcb1115bb9"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ToNumerics(:Vector3):System . Numerics . Vector3:private,static",
@@ -3872,9 +3872,9 @@
     {
       "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame::method:ResetRac1BombPresentation():void:private",
       "Owner": "#369",
-      "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass.",
+      "Rationale": "Exact temporary root composition forwarding to the scoped R&C1 explosion or weapon-audio presenter; native timing, IDs and source assets stay with their owners. Retire this bridge in the final thin-root pass. #367/#368: shared R&C1 thrown-equipment animation clock and generation are now reset/selected through the lease-owned Rac1ThrownEquipmentAnimationHost for Bomb, Mine, Doom, Decoy and Drone, rather than holding mutable throw state on OBPGame. Source-authored throw timing and the existing projectile/damage owners remain unchanged.",
       "ExpiresWith": "#376",
-      "Hash": "c1bf71e6d548f61ea2f03ad2349d8998adc8eef5cf07d005bfa525608ec4454d"
+      "Hash": "e66318fd9fa1b941d892d3aa176fee890207fa6fad394c97c0c2bc851435f652"
     },
     {
       "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame::method:SpawnRac1BombExplosion(:Vector3,:bool,:Vector3 ?,:Vector3 ?):void:private",
@@ -5045,6 +5045,8 @@
     "game/scripts/OBPGame.Rac1Projectiles.cs::OBPGame::field:_rac1BombOcclusionExclusions:global :: Godot . Collections . Array < Rid >:private",
     "game/scripts/OBPGame.Rac1Projectiles.cs::OBPGame::field:_rac1BombOcclusionFrame:ulong:private",
     "game/scripts/OBPGame.Rac1Projectiles.cs::OBPGame::field:_rac1BombOcclusionPlayer:Rid:private",
+    "game/scripts/OBPGame.Rac1Projectiles.cs::OBPGame::field:_rac1BombThrowActive:bool:private",
+    "game/scripts/OBPGame.Rac1Projectiles.cs::OBPGame::field:_rac1BombThrowGeneration:long:private",
     "game/scripts/OBPGame.Rac1Projectiles.cs::OBPGame::method:BombHasLineOfSight(:Vector3,:Vector3):bool:private",
     "game/scripts/OBPGame.Rac1Projectiles.cs::OBPGame::method:ProbeBombWorldContact(:Vector3,:Vector3):Vector3 ?:private",
     "game/scripts/OBPGame.Rac1Projectiles.cs::OBPGame::method:Rac1DamageableRayExclusions():global :: Godot . Collections . Array < Rid >:private",

@@ -394,7 +394,8 @@ public partial class OBPGame
         if (_avatarPresentation.PhysicsPlayer is { } player)
         {
             _avatarPresentation.StepHandAttachments(controller, player.Rac1WrenchFrame,
-                (_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true), _rac1BombThrowGeneration);
+                (_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true),
+                _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.ThrownAnimation.Generation ?? 0);
             StepRac1EquipmentViews(controller);
             FusionWeapons.StepViews(controller, _avatarPresentation.Avatar);
         }
@@ -414,7 +415,7 @@ public partial class OBPGame
         FusionWeapons.ClearTransients();
         _playerAudio?.Reset();
         ResetRac1WrenchHost();
-        _rac1BombThrowActive = false;
+        _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.ThrownAnimation.Stop();
         _avatarPresentation.ResetClock();
     }
 
