@@ -23,8 +23,6 @@ public partial class OBPGame
     private StandardMaterial3D? _rac1PlainBeamMaterial;
     private readonly Dictionary<int, ulong> _rac1Taunts = [];
     private bool _rac1ArsenalHeld;
-    private int _rac1WalloperAge;
-    private readonly HashSet<int> _rac1WalloperVictims = [];
     private readonly HashSet<int> _rac1TeslaSoundTargets = [];
 
     private void ResetRac1Arsenal()
@@ -45,8 +43,8 @@ public partial class OBPGame
         _rac1Chickens.Clear();
         _rac1MorphExposure.Clear(); _rac1ArsenalBeams.Clear(); _rac1Taunts.Clear();
         _rac1TeslaPresentation.Reset(); _rac1TeslaMaterials.Clear(); _rac1TeslaEffectRandom = null;
-        _rac1WalloperAge = 0;
-        _rac1ArsenalHeld = false; _rac1WalloperVictims.Clear();
+        Rac1World.Weapons.Walloper.Reset();
+        _rac1ArsenalHeld = false;
         _rac1TeslaSoundTargets.Clear();
         if (_player is not null) { _player.Rac1EquipmentActionActive = false; _player.Rac1EquipmentLungeVelocity = Vector3.Zero; }
     }
@@ -83,8 +81,7 @@ public partial class OBPGame
             case Rac1WeaponId.Ryno: Rac1World.Weapons.Missiles.Fire(shot.Weapon); break;
             case Rac1WeaponId.DroneDevice: Rac1World.Weapons.Deployables.FireDrones(); break;
             case Rac1WeaponId.DecoyGlove: Rac1World.Weapons.Deployables.FireDecoy(); break;
-            case Rac1WeaponId.Walloper:
-                _rac1WalloperAge = 1; _rac1WalloperVictims.Clear(); break;
+            case Rac1WeaponId.Walloper: Rac1World.Weapons.Walloper.Begin(); break;
         }
     }
 
@@ -92,7 +89,7 @@ public partial class OBPGame
     {
         if (_player is null) return;
         Rac1World.Weapons.Missiles.Tick();
-        StepRac1ArsenalDeployables(); StepRac1ArsenalBeams(); StepRac1Walloper();
+        StepRac1ArsenalDeployables(); StepRac1ArsenalBeams(); Rac1World.Weapons.Walloper.Tick();
     }
 
     private void ApplyArsenalBlast(Rac1WeaponId weapon, Vector3 position, float radius, double damage, uint flags)
@@ -350,31 +347,5 @@ public partial class OBPGame
         _rac1Chickens.Add(target.Source.InstanceIndex, new(enemy, view, originalShape, originalPosition));
         _rac1MorphExposure.Remove(target.Source.InstanceIndex);
         SpawnEquipmentFlash(target.Root.GlobalPosition + Vector3.Up * .5f, 27, new(.4f, 1, .3f), 1, 12);
-    }
-
-    private void StepRac1Walloper()
-    {
-        _player!.Rac1EquipmentLungeVelocity = Vector3.Zero;
-        _player.Rac1EquipmentActionActive = false;
-        if (_rac1WalloperAge <= 0) return;
-        int age = _rac1WalloperAge++;
-        if (age >= Rac1ArsenalRules.WalloperDurationTicks || _rac1Weapons.Equipped != Rac1WeaponId.Walloper || !PlayerLife.Alive)
-        { _rac1WalloperAge = 0; return; }
-        if (age == 10) FusionWeapons.PlayNativeSound(0, 53, _player.GlobalPosition); // Ratchet seq103 cue2.5.
-        if (age == 16) FusionWeapons.PlayNativeSound(0, 30, _player.GlobalPosition); // Ratchet seq103 cue4.
-        _player.Rac1EquipmentActionActive = true;
-        if (age > Rac1ArsenalRules.WalloperLungeFrom && age < Rac1ArsenalRules.WalloperLungeTo)
-            _player.Rac1EquipmentLungeVelocity = EquipmentForward * Rac1ArsenalRules.WalloperLungeSpeed;
-        if (age <= Rac1ArsenalRules.WalloperLungeFrom || age >= Rac1ArsenalRules.WalloperContactTo) return;
-        var centre = _player!.GlobalPosition + EquipmentForward * .8f + Vector3.Up * .55f;
-        foreach (var (node, bounds) in Rac1World.Weapons.Contacts.Geometry)
-        {
-            if (_rac1WalloperVictims.Contains(node.Source.InstanceIndex) || centre.DistanceTo(centre.Clamp(bounds.Position, bounds.End)) > .8f ||
-                !Rac1World.Weapons.Contacts.HasLineOfSight(centre, bounds.GetCenter())) continue;
-            if (ApplyRac1AdditionalDamage(node, Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Walloper,
-                new(node.Source.NativeClassId, node.Source.InstanceIndex), 3, 0x30000)))
-                _rac1WalloperVictims.Add(node.Source.InstanceIndex);
-        }
-        SpawnEquipmentFlash(EquipmentMuzzle(Rac1WeaponId.Walloper), 27, new(.5f, .7f, 1, .7f), .55f, 3);
     }
 }

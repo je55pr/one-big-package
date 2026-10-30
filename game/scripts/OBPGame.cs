@@ -433,6 +433,12 @@ public partial class OBPGame : Node3D
             id => _rac1Taunts.GetValueOrDefault(id) > _rac1WeaponWorldTick,
             SpawnEquipmentFlash, ApplyArsenalBlast, SpawnRac1WeaponExplosion,
             (cls, sound, position) => FusionWeapons.PlayNativeSound(cls, sound, position)),
+        new Rac1WalloperPorts(
+            () => _player, () => _rac1Weapons.Equipped, () => PlayerLife.Alive,
+            () => EquipmentForward, () => EquipmentMuzzle(Rac1WeaponId.Walloper),
+            (node, damage) => ApplyRac1AdditionalDamage(node, damage),
+            (cls, sound, position) => FusionWeapons.PlayNativeSound(cls, sound, position),
+            SpawnEquipmentFlash),
         new Rac1TaxiHostPorts(
             () => _player is { } player && IsInstanceValid(player) ? new Rac1TaxiPlayerController(player) : null,
             () => _mode == Mode.World && !GetTree().Paused &&

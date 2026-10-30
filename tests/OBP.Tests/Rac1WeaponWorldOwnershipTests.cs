@@ -170,6 +170,53 @@ public sealed class Rac1WeaponWorldOwnershipTests
     }
 
     [Fact]
+    public void WalloperSwingAndVictimAdmissionBelongToTheWorldLease()
+    {
+        var compilation = HostOwnershipAudit.Host.Value;
+        var root = compilation.GetTypeByMetadataName("OBP.Game.OBPGame")!;
+        foreach (string member in new[] { "_rac1WalloperAge", "_rac1WalloperVictims", "StepRac1Walloper" })
+            Assert.Empty(root.GetMembers(member));
+
+        var weapon = compilation.GetTypeByMetadataName("OBP.Game.Rac1WeaponHost")!;
+        Assert.Equal("Rac1WalloperHost",
+            Assert.Single(weapon.GetMembers("Walloper").OfType<IPropertySymbol>()).Type.Name);
+
+        string host = Script("Rac1WalloperHost.cs");
+        string parent = Script("Rac1WeaponHost.cs");
+        string world = Script("OBPGame.cs");
+        string arsenal = Script("OBPGame.Rac1Arsenal.cs");
+        Assert.Contains("Walloper = new(walloper, Contacts)", parent, StringComparison.Ordinal);
+        Assert.Contains("Walloper.Reset()", parent, StringComparison.Ordinal);
+        Assert.Contains("Walloper.Dispose()", parent, StringComparison.Ordinal);
+        Assert.Contains("new Rac1WalloperPorts(", world, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Walloper.Begin()", arsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Walloper.Tick()", arsenal, StringComparison.Ordinal);
+        Assert.DoesNotContain("OBPGame", host, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WalloperPreservesNativeLungeContactTimingAndBodyPoseAge()
+    {
+        string host = Script("Rac1WalloperHost.cs");
+        string animation = Script("OBPGame.WorldEntry.cs");
+        Assert.Contains("Rac1ArsenalRules.WalloperDurationTicks", host, StringComparison.Ordinal);
+        Assert.Contains("Rac1ArsenalRules.WalloperLungeFrom", host, StringComparison.Ordinal);
+        Assert.Contains("Rac1ArsenalRules.WalloperLungeTo", host, StringComparison.Ordinal);
+        Assert.Contains("Rac1ArsenalRules.WalloperContactTo", host, StringComparison.Ordinal);
+        Assert.Contains("Rac1ArsenalRules.WalloperLungeSpeed", host, StringComparison.Ordinal);
+        Assert.Contains("age == 10", host, StringComparison.Ordinal);
+        Assert.Contains("age == 16", host, StringComparison.Ordinal);
+        Assert.Contains("new(node.Source.NativeClassId, node.Source.InstanceIndex), 3, 0x30000)", host, StringComparison.Ordinal);
+        Assert.Contains("_victims.Add(node.Source.InstanceIndex)", host, StringComparison.Ordinal);
+        Assert.Contains("contacts.Geometry", host, StringComparison.Ordinal);
+        Assert.Contains("contacts.HasLineOfSight(centre, bounds.GetCenter())", host, StringComparison.Ordinal);
+        Assert.Contains("internal int Age => _disposed ? 0 : _age", host, StringComparison.Ordinal);
+        Assert.Contains("Rac1Gameplay?.Weapons.Walloper.Age ?? 0", animation, StringComparison.Ordinal);
+        Assert.Contains("walloper ? walloperAge / 60d", animation, StringComparison.Ordinal);
+        Assert.DoesNotContain("_rac1WalloperAge", animation, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ArsenalDeployableModelsAndEnemyAiBelongToTheWorldLease()
     {
         var compilation = HostOwnershipAudit.Host.Value;

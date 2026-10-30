@@ -370,7 +370,8 @@ public partial class OBPGame
             OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence is > 0 and not 44 &&
             IsRac1HandEquipmentVisible(_rac1Weapons.Equipped) && input.Traversal is null &&
             PlayerLife.Alive;
-        bool walloper = IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.Walloper) && _rac1WalloperAge > 0;
+        int walloperAge = _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Walloper.Age ?? 0;
+        bool walloper = IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.Walloper) && walloperAge > 0;
         bool moving = input.Active || state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.JumpRise or PlayerAnimationState.Fall;
         int? equipmentPose = walloper ? OBP.RAC1.Gameplay.Rac1ArsenalRules.WalloperSequence :
             holdGun ? (moving ? OBP.RAC1.Gameplay.Rac1ArsenalRules.MovingBodySequence(_rac1Weapons.Equipped) :
@@ -387,7 +388,7 @@ public partial class OBPGame
         {
             controller.ClearSourceEquipment();
             _avatarPresentation.Sink?.SetAnimationPresentation(controller.ApplyEquipmentPose(equipmentPose,
-                walloper ? _rac1WalloperAge / 60d : _rac1EquipmentUseAge / 60d, !walloper, fullBody: walloper || !moving));
+                walloper ? walloperAge / 60d : _rac1EquipmentUseAge / 60d, !walloper, fullBody: walloper || !moving));
         }
 
         if (_avatarPresentation.PhysicsPlayer is { } player)
