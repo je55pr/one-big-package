@@ -49,8 +49,8 @@ fields return nonzero measurements with the real GL Compatibility renderer.
 
 ## Local baseline and experiments (2026-10-30)
 
-- PC: Windows, Intel Core i5-9600K (6 logical processors), 15.9 GiB RAM,
-  NVIDIA RTX 3070.
+- Environment: local Windows desktop with a discrete GPU. These numbers
+  document one test run, not hardware-independent performance expectations.
 - Godot: 4.7.2-stable Mono; GL Compatibility selected, **headless** output.
 - Build: Debug, .NET 8 target. The machine temporarily used SDK 10.0.402
   instead of the repository-pinned 10.0.403 because the latter was unavailable.
