@@ -217,6 +217,49 @@ each skin's binding. Further skins need extraction and measured admission.
 Head/face behavior and complete native held-gadget clip selection remain
 separate recovery work.
 
+## GC/UYA Ratchet skeletal reader mechanics (#484)
+
+The supported GC Oozla and UYA Veldin class-0 readers formerly duplicated
+111-joint skeleton projection, 256-entry body sequence decoding, two auxiliary
+arm banks, sparse scale/translation application, and frame timing conversion.
+`Ps2RatchetSkeletalDecoder` now owns those **format mechanics** in `OBP.PS2`;
+the native `Ps2Skeleton` and `Ps2SkeletalAnimation` decoders remain authoritative.
+
+Both source adapters retain the native carrier directory lookup and bounds
+validation, build/source qualification, avatar model identity, and authored
+equipment selection. No new animation policy, sampler or Godot dependency
+was introduced. The supported-carrier assumptions (111 joints, 256 body slots,
+two arm classes, semantic layers 12/13) remain intentionally specific to the
+verified retail Ratchet carriers, not a claim about arbitrary PS2 characters.
+
+| Retained source decision | GC / Lancer | UYA / Shock Cannon |
+|---|---|---|
+| Identity | `Rac2`, original GC build and model ID | `Rac3`, original UYA build and model ID |
+| Active arms | 1 | 2 |
+| Standing/crouching use sequence | 56 / 62 | 49 / 65 |
+| Sustained use | yes | no |
+| Entry blend updates | 5 | 2 |
+| Native diagnostic context | GC | UYA |
+
+The two adapters went from 92 to 46 lines each. A single 106-line
+shared reader replaces their identical decoding mechanics; carrier selection
+and policy remain explicit in the adapters. This is an intentional
+deduplication rather than a claim that total line count fell.
+
+`Ps2RatchetSkeletalDecoderTests` builds in-memory native-format carriers
+(no retail files) and checks rig topology, inverse binds, arm banks, sparse
+channels, provenance, duration/timeline conversion and malformed input.
+`TrilogySkeletalSnapshotTests` hashes every output joint, matrix, attachment,
+frame, arm sequence, source-qualified identity and equipment policy under
+the existing retail source gate. Golden SHA-256 baselines were captured from
+the two original readers on the supported NTSC-U sources before extraction:
+
+- GC: `4d423655da2f2dc5a9f427e16360bed333fb150430d0c56b3129fb370fe0465e`
+- UYA: `d003243475bf1b8b5478f8aa673b98798c169f007bebd7119944e7964de3db60`
+
+These fingerprints protect decoding outputs, **not** the downstream
+body/equipment pose composition being redesigned separately in #481.
+
 ## Reproduction
 
 Use supported sources identified by `Rac1Authority.Primary`,
