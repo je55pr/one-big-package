@@ -70,10 +70,9 @@ internal sealed partial class Rac1LootPresentation : IDisposable
     internal bool HasRac1CrateCollider(int id) => _rac1CrateBodies.TryGetValue(id, out var body) && IsInstanceValid(body);
     internal bool TryGetRac1CrateContact(StaticBody3D body, out int id)
     {
-        foreach (var pair in _rac1CrateBodies)
-            if (ReferenceEquals(pair.Value, body)) { id = pair.Key; return true; }
-        id = -1;
-        return false;
+        var match = _rac1CrateBodies.FirstOrDefault(pair => ReferenceEquals(pair.Value, body));
+        id = match.Value is null ? -1 : match.Key;
+        return match.Value is not null;
     }
     internal void PresentRac1ExplosiveDetonation(RuntimeWorldScene.DynamicObjectNode node, IReadOnlyList<Rac1BoltPickup> pickups)
     {

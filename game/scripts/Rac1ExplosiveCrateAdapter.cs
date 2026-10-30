@@ -95,56 +95,77 @@ internal sealed class Rac1ExplosiveCrateAdapter(
 
     internal void Tick(double delta)
     {
+        var session = _session;
         var player = ports.Player();
-        if (_session is null || _nodes.Count == 0 || player is null || !GodotObject.IsInstanceValid(player))
+        if (session is null || _nodes.Count == 0 || player is null || !GodotObject.IsInstanceValid(player))
             return;
 
-        // Native class 505 reacts to grounded/touched Moby contacts, not proximity.
-        for (int i = 0; i < player.GetSlideCollisionCount(); i++)
-        {
-            if (player.GetSlideCollision(i).GetCollider() is not StaticBody3D body ||
-                !loot.TryGetRac1CrateContact(body, out int id) || !_nodes.ContainsKey(id)) continue;
-            _session.TryTouch(id);
-        }
-
+        RegisterGroundedTouches(player, session);
         _tickCarry += Math.Max(0, delta) * Rac1RatchetMovementController.UpdateHz;
         while (_tickCarry >= 1)
         {
             _tickCarry--;
             foreach (var pair in _nodes)
             {
-                var node = pair.Value;
                 // Hidden crates cannot prove the native draw-range predicate.
-                var frame = _session.Step(pair.Key, beyondNativeDrawRange: false);
-                if (_materials.TryGetValue(pair.Key, out var materials))
-                    foreach (var (_, _, material, colour) in materials)
-                        material.AlbedoColor = frame.FlashRed
-                            ? new Color(.78f, .25f, .25f, colour.A)
-                            : colour;
-                if (frame.WarningSound)
-                    loot.PlayRac1PickupSound(Rac1ExplosiveCrateSession.ClassId, 0x20, node.Root.GlobalPosition);
-                if (frame.Detonated && _detonated.Add(pair.Key))
-                {
-                    _hits.RemoveWhere(hit => hit.Source == pair.Key);
-                    _playerHits.Remove(pair.Key);
-                    loot.SpawnRac1CrateDebris(node);
-                    var pickups = context.BoltPickups.Emit(ports.SelectCrateReward(_session.Authored(pair.Key).RewardCentre));
-                    loot.PresentRac1ExplosiveDetonation(node, pickups);
-                    node.Root.Visible = false;
-                }
-                if (frame.MobyBlastRadius > 0 || frame.PlayerBlastRadius > 0)
-                    ApplyBlast(node, frame, player);
-                if (frame.EntityState.Presentation.Presence != node.State.Presentation.Presence)
-                {
-                    node.ApplyState(frame.EntityState);
-                    if (frame.Reappeared)
-                    {
-                        _detonated.Remove(pair.Key);
-                        loot.AddRac1CrateCollider(node);
-                    }
-                }
+                var frame = session.Step(pair.Key, beyondNativeDrawRange: false);
+                PresentFrame(session, pair.Key, pair.Value, frame, player);
             }
         }
+    }
+
+    private void RegisterGroundedTouches(PlayerHost player, Rac1ExplosiveCrateSession session)
+    {
+        // Native class 505 reacts to grounded/touched Moby contacts, not proximity.
+        for (int i = 0; i < player.GetSlideCollisionCount(); i++)
+        {
+            if (player.GetSlideCollision(i).GetCollider() is not StaticBody3D body ||
+                !loot.TryGetRac1CrateContact(body, out int id) || !_nodes.ContainsKey(id)) continue;
+            session.TryTouch(id);
+        }
+    }
+
+    private void PresentFrame(Rac1ExplosiveCrateSession session, int id,
+        RuntimeWorldScene.DynamicObjectNode node, Rac1ExplosiveCrateFrame frame, PlayerHost player)
+    {
+        ApplyFlash(id, frame.FlashRed);
+        if (frame.WarningSound)
+            loot.PlayRac1PickupSound(Rac1ExplosiveCrateSession.ClassId, 0x20, node.Root.GlobalPosition);
+        if (frame.Detonated && _detonated.Add(id))
+            PresentDetonation(session, id, node);
+        if (frame.MobyBlastRadius > 0 || frame.PlayerBlastRadius > 0)
+            ApplyBlast(node, frame, player);
+        ApplyPresence(id, node, frame);
+    }
+
+    private void ApplyFlash(int id, bool flashRed)
+    {
+        if (!_materials.TryGetValue(id, out var materials)) return;
+        foreach (var (_, _, material, colour) in materials)
+            material.AlbedoColor = flashRed
+                ? new Color(.78f, .25f, .25f, colour.A)
+                : colour;
+    }
+
+    private void PresentDetonation(Rac1ExplosiveCrateSession session, int id,
+        RuntimeWorldScene.DynamicObjectNode node)
+    {
+        _hits.RemoveWhere(hit => hit.Source == id);
+        _playerHits.Remove(id);
+        // Debris consumes the shared RNG before the authored reward and its physical bolt motions.
+        loot.SpawnRac1CrateDebris(node);
+        var pickups = context.BoltPickups.Emit(ports.SelectCrateReward(session.Authored(id).RewardCentre));
+        loot.PresentRac1ExplosiveDetonation(node, pickups);
+        node.Root.Visible = false;
+    }
+
+    private void ApplyPresence(int id, RuntimeWorldScene.DynamicObjectNode node, Rac1ExplosiveCrateFrame frame)
+    {
+        if (frame.EntityState.Presentation.Presence == node.State.Presentation.Presence) return;
+        node.ApplyState(frame.EntityState);
+        if (!frame.Reappeared) return;
+        _detonated.Remove(id);
+        loot.AddRac1CrateCollider(node);
     }
 
     private void ApplyBlast(RuntimeWorldScene.DynamicObjectNode source,
@@ -170,23 +191,27 @@ internal sealed class Rac1ExplosiveCrateAdapter(
                 !ports.LineOfSight(origin, centre)) continue;
             var damage = Rac1ExplosiveCrateBlast.ToMoby(sourceIndex,
                 new(target.Source.NativeClassId, targetIndex));
-            bool accepted;
-            if (target.Source.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
-                accepted = TryTriggerDamage(target, damage);
-            else if (Rac1BoltCrate.IsCrateClass(target.Source.NativeClassId) &&
-                     context.MobyRuntime.CanDispatchDamage(damage))
-            {
-                ports.CompleteOrdinaryCrateDamage(target,
-                    context.MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage));
-                accepted = true;
-            }
-            else accepted = enemies.Roster.ContainsKey(targetIndex) &&
-                enemies.ApplyRac1EnemyWeaponDamage(target, damage);
-            if (accepted)
-            {
-                _hits.Add((sourceIndex, targetIndex));
-                context.DamageTransport.Publish(damage);
-            }
+            if (!ApplyMobyBlastDamage(target, damage)) continue;
+            _hits.Add((sourceIndex, targetIndex));
+            context.DamageTransport.Publish(damage);
         }
+    }
+
+    private bool ApplyMobyBlastDamage(RuntimeWorldScene.DynamicObjectNode target,
+        Rac1GameplayDamageEvent damage)
+    {
+        if (target.Source.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
+            return TryTriggerDamage(target, damage);
+
+        if (Rac1BoltCrate.IsCrateClass(target.Source.NativeClassId) &&
+            context.MobyRuntime.CanDispatchDamage(damage))
+        {
+            ports.CompleteOrdinaryCrateDamage(target,
+                context.MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage));
+            return true;
+        }
+
+        return enemies.Roster.ContainsKey(target.Source.InstanceIndex) &&
+            enemies.ApplyRac1EnemyWeaponDamage(target, damage);
     }
 }
