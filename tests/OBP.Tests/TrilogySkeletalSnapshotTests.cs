@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Security.Cryptography;
+using OBP.Core;
 using OBP.Runtime.Player;
 
 namespace OBP.Tests;
@@ -9,12 +10,17 @@ public sealed partial class TrilogySkeletalRetailTests
     // Exact post-conversion output golden data, recorded from the pre-refactor source readers.
     // These tests are source-gated: never commit retail payloads or reconstructed frames.
     [SkippableTheory]
-    [InlineData("gc", "4d423655da2f2dc5a9f427e16360bed333fb150430d0c56b3129fb370fe0465e")]
-    [InlineData("uya", "d003243475bf1b8b5478f8aa673b98798c169f007bebd7119944e7964de3db60")]
-    public void SkeletalReaderOutputMatchesOriginalAdapter(string game, string expected)
+    [InlineData(ObpSourceGame.Rac2, "4d423655da2f2dc5a9f427e16360bed333fb150430d0c56b3129fb370fe0465e")]
+    [InlineData(ObpSourceGame.Rac3, "d003243475bf1b8b5478f8aa673b98798c169f007bebd7119944e7964de3db60")]
+    public void SkeletalReaderOutputMatchesOriginalAdapter(ObpSourceGame game, string expected)
     {
         using var sources = new Sources();
-        var source = game == "gc" ? sources.Rac2 : sources.Rac3;
+        var source = game switch
+        {
+            ObpSourceGame.Rac2 => sources.Rac2,
+            ObpSourceGame.Rac3 => sources.Rac3,
+            _ => throw new ArgumentOutOfRangeException(nameof(game)),
+        };
         string actual = Fingerprint(source);
         _output.WriteLine($"{game}: {actual}");
         Assert.Equal(expected, actual);

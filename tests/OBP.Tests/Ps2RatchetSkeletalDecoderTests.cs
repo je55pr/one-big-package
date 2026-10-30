@@ -57,34 +57,58 @@ public sealed class Ps2RatchetSkeletalDecoderTests
     }
 
     [Theory]
-    [InlineData("GC")]
-    [InlineData("UYA")]
-    public void RejectsMalformedDirectoriesAndLayerMismatchWithGameSpecificDiagnostics(string label)
+    [InlineData(ObpSourceGame.Rac2, "GC")]
+    [InlineData(ObpSourceGame.Rac3, "UYA")]
+    public void RejectsMalformedDirectoriesAndLayerMismatchWithGameSpecificDiagnostics(ObpSourceGame game, string label)
     {
         var fixture = Fixture.Create();
         U32(fixture.Index, 0x100, unchecked((uint)-1));
         Assert.Equal($"{label} player sequence escapes its asset section.",
-            Assert.Throws<InvalidDataException>(() => fixture.Decode(ObpSourceGame.Rac2, label)).Message);
+            Assert.Throws<InvalidDataException>(() => fixture.Decode(game, label)).Message);
 
         fixture = Fixture.Create();
         fixture.Arms[0][0x64] = 51; // Valid joint, but not the original arm chain.
         Assert.Equal($"{label} arm channels disagree with the native layer list.",
-            Assert.Throws<InvalidDataException>(() => fixture.Decode(ObpSourceGame.Rac2, label)).Message);
+            Assert.Throws<InvalidDataException>(() => fixture.Decode(game, label)).Message);
 
         fixture = Fixture.Create();
         fixture.Index = new byte[0x100]; // First sequence-directory read is out of bounds.
         Assert.Equal($"{label} skeletal directory exceeds its source.",
-            Assert.Throws<InvalidDataException>(() => fixture.Decode(ObpSourceGame.Rac2, label)).Message);
+            Assert.Throws<InvalidDataException>(() => fixture.Decode(game, label)).Message);
 
         fixture = Fixture.Create();
         fixture.Arms[0][0x180 + 0x10 + 20 * 8 + 6] = 95; // Sparse scale targets a non-arm joint.
         Assert.Equal($"{label} scale escapes its layer.",
-            Assert.Throws<InvalidDataException>(() => fixture.Decode(ObpSourceGame.Rac2, label)).Message);
+            Assert.Throws<InvalidDataException>(() => fixture.Decode(game, label)).Message);
 
         fixture = Fixture.Create();
         fixture.Arms[0][0x180 + 0x10 + 21 * 8 + 6] = 95; // Sparse translation outside arm.
         Assert.Equal($"{label} translation escapes its layer.",
-            Assert.Throws<InvalidDataException>(() => fixture.Decode(ObpSourceGame.Rac2, label)).Message);
+            Assert.Throws<InvalidDataException>(() => fixture.Decode(game, label)).Message);
+    }
+
+    [Theory]
+    [InlineData(ObpSourceGame.Rac2, "GC", 12)]
+    [InlineData(ObpSourceGame.Rac2, "GC", 13)]
+    [InlineData(ObpSourceGame.Rac3, "UYA", 12)]
+    [InlineData(ObpSourceGame.Rac3, "UYA", 13)]
+    public void MissingArmAttachmentReportsInvalidNativeData(ObpSourceGame game, string label, int missing)
+    {
+        var fixture = Fixture.Create();
+        U32(fixture.Skeleton, 0x2400, (uint)missing);
+        Assert.Equal($"{label} arm attachment {missing} is missing.",
+            Assert.Throws<InvalidDataException>(() => fixture.Decode(game, label)).Message);
+    }
+
+    [Theory]
+    [InlineData(ObpSourceGame.Rac2, "GC")]
+    [InlineData(ObpSourceGame.Rac3, "UYA")]
+    public void RejectsRigWithUnsupportedJointCount(ObpSourceGame game, string label)
+    {
+        var fixture = Fixture.Create();
+        fixture.Skeleton[8] = 110;
+        Assert.Equal($"{label} player rig differs from the supported authority.",
+            Assert.Throws<InvalidDataException>(() => fixture.Decode(game, label)).Message);
     }
 
     [Fact]

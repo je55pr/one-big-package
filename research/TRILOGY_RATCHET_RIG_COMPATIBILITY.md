@@ -172,8 +172,9 @@ over the admitted R&C1 skin.
 
 `GcRatchetSkeletalSource` and `UyaRatchetSkeletalSource` prepare native channels,
 masks and equipment rules on the background preparation path. Godot consumes
-poses and attachments. Formats and selectors remain outside the host and the
-narrow material-presentation assembly.
+poses and attachments. Native format definitions and source selectors remain
+in their owning layers; the narrow presentation layer adapts supported PS2
+materials and skeletal assets to neutral runtime types.
 
 R&C1 movement still drives this demo. Where shared movement clips have different
 frame partitions, OBP preserves cycle phase when sampling source arms. That
@@ -241,10 +242,10 @@ verified retail Ratchet carriers, not a claim about arbitrary PS2 characters.
 | Entry blend updates | 5 | 2 |
 | Native diagnostic context | GC | UYA |
 
-The two adapters went from 92 to 46 lines each. A single 106-line
-shared reader replaces their identical decoding mechanics; carrier selection
-and policy remain explicit in the adapters. This is an intentional
-deduplication rather than a claim that total line count fell.
+Both source adapters are substantially shorter, with identical decoding
+mechanics moved to one shared reader. Carrier selection and equipment policy
+remain explicit in the adapters; the goal is to remove duplicated logic, not
+to optimise a physical line count.
 
 `Ps2RatchetSkeletalDecoderTests` builds in-memory native-format carriers
 (no retail files) and checks rig topology, inverse binds, arm banks, sparse

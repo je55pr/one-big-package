@@ -53,7 +53,9 @@ public static class Ps2RatchetSkeletalDecoder
         {
             byte[] bytes = loadCarrier(carrier);
             int[] map = Ps2Skeleton.ReadAnimationJointMap(bytes, 111);
-            if (!map.SequenceEqual(skeleton.Attachments[11 + carrier].LayerJoints))
+            if (!skeleton.Attachments.TryGetValue(11 + carrier, out var attachment))
+                throw new InvalidDataException($"{diagnosticName} arm attachment {11 + carrier} is missing.");
+            if (!map.SequenceEqual(attachment.LayerJoints))
                 throw new InvalidDataException($"{diagnosticName} arm channels disagree with the native layer list.");
             var clips = new Dictionary<int, PlayerSkeletalClip>();
             for (int id = 0; id < bytes[0xc]; id++)
