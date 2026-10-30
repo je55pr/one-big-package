@@ -186,7 +186,7 @@ public partial class OBPGame : Node3D
         ClearNativeTransients: _ =>
         {
             if (_worldScenes?.Current?.Resources.Rac1Gameplay is null) return;
-            foreach (var (id, projectile) in Rac1World.Presentation.Projectiles.ToArray()) RetireBomb(id, projectile);
+            Rac1World.Bombs.RetireAll();
             ResetRac1BombPresentation();
             Rac1World.Context.BombGlove = new(_rac1Weapons);
             Rac1World.Context.BombFireRequested = Rac1World.Context.EquipmentUsePressed = false;
@@ -515,6 +515,17 @@ public partial class OBPGame : Node3D
                 _ => false,
             },
             soft => _playerAudio?.WrenchContact(soft)),
+        new Rac1BombProjectilePorts(
+            () => _player, () => _sceneResult is not null,
+            () => (float)(_avatarPresentation.Avatar?.BaseHeight ?? -.7),
+            () => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Angle(),
+            () => ActorHost.Active,
+            () => ActorHost.Combat.ReadGeometry().Select(target => (target.Node, target.Bounds)),
+            FusionWeapons.CreateNativeEffect, SetBombOrientation,
+            (position, normal, push) => SpawnRac1BombExplosion(position, impactNormal: normal, reflectedPush: push),
+            (generation, id, origin, radius) => ActorHost.Combat.ResolveBlast(FusionWeaponSession.BombGlove,
+                generation, id, origin, radius, (float)Rac1BombGlove.NativeDamage, Rac1BombGlove.NativeDamageFlags),
+            CompleteRac1CrateDamage),
         new Rac1TaxiHostPorts(
             () => _player is { } player && IsInstanceValid(player) ? new Rac1TaxiPlayerController(player) : null,
             () => _mode == Mode.World && !GetTree().Paused &&
@@ -1785,7 +1796,7 @@ public partial class OBPGame : Node3D
                     stagedPresent ? GodotMovementPlayer.Copy(staged!.Position) : System.Numerics.Vector3.Zero,
                     glovePresent && stagedPresent && staged!.Position.IsEqualApprox(glove!.BombLocal));
             },
-            () => new(_equipmentPresentation.Explosions.FragmentCount, _equipmentPresentation.Explosions.BurstCount, _equipmentPresentation.Explosions.Particles?.Count ?? 0, _rac1BombImpactCount,
+            () => new(_equipmentPresentation.Explosions.FragmentCount, _equipmentPresentation.Explosions.BurstCount, _equipmentPresentation.Explosions.Particles?.Count ?? 0, Rac1World.Bombs.ImpactCount,
                 [.. _equipmentPresentation.Explosions.ParticleTypes]),
             () =>
             {
@@ -1796,7 +1807,7 @@ public partial class OBPGame : Node3D
             }, (from, to) => Rac1World.Weapons.Contacts.HasLineOfSight(from, to), (from, to) => Rac1World.Weapons.Contacts.ProbeBombWorldContact(from, to),
             amount => _rac1Weapons.TryConsumeAmmo((int)Rac1WeaponId.FirstRanged, amount), () => _player));
         var transients = new GodotWeaponDiagnosticTransientFixture(worlds, () => DiagnosticCleanup.Run("Weapon fixture transient cleanup",
-            () => { foreach (var (id, projectile) in Rac1World.Presentation.Projectiles.ToArray()) RetireBomb(id, projectile); },
+            () => Rac1World.Bombs.RetireAll(),
             ResetRac1BombPresentation, ResetRac1AdditionalWeapons, () => FusionWeapons.ClearTransients()));
         async Task<bool> LoadWeaponStateAsync(string path, CancellationToken token) => await MovementReproduction.LoadMovementStateAsync(path, cancellationToken: token) is not null;
         var reproduction = new GodotWeaponMovementStateFixture(() => MovementReproduction.IsLoading, () => MovementReproduction.CaptureMovementState(), LoadWeaponStateAsync,

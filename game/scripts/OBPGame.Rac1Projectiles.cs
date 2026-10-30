@@ -8,8 +8,6 @@ namespace OBP.Game;
 
 public partial class OBPGame
 {
-    private int _rac1BombImpactCount;
-
     private void StepRac1BombWeaponPhysics()
     {
         if (_equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is null || Rac1World.Context.BombGlove is null || _player is null || !PlayerLife.Alive) return;
@@ -20,7 +18,7 @@ public partial class OBPGame
         if (probe.Shot is { } shot)
         {
             Rac1World.Weapons.ThrownAnimation.Begin();
-            SpawnRac1BombProjectile(shot);
+            Rac1World.Bombs.Spawn(shot);
             FusionWeapons.PlayNativeSound(0, 26, _player.GlobalPosition); // 0x2c2.. hero throw, not the glove's equip cue.
             PersistRac1CampaignState("Bomb Glove ammo consumption");
             Rac1World.Context.CombatStatus = $"Bomb Glove fired: ammo {shot.AmmoBefore}->{shot.AmmoAfter}";
@@ -37,149 +35,10 @@ public partial class OBPGame
             PlayerLife.Alive, _player?.Rac1WrenchFrame.Active == true,
             CurrentPlayerAvatarSourceSequence(), controller.TraversalAuthoredAnimationTime) ?? input;
 
-    private void SpawnRac1BombProjectile(Rac1BombGloveShot shot)
-    {
-        if (_sceneResult is null || _player is null) return;
-        float yaw = (float)_player.Rac1CurrentYaw;
-        // Host feet-to-native body-origin mapping, shared with avatar alignment.
-        NVector3 body = Rac1LootPresentation.ToEffectNative(_player.GlobalPosition) + new NVector3(0, 0, (float)-(_avatarPresentation.Avatar?.BaseHeight ?? -.7));
-        NVector3 origin = Rac1BombProjectileSession.LaunchOrigin(body, yaw);
-        NVector3 forward = new(MathF.Cos(yaw), MathF.Sin(yaw), 0);
-        NVector3 target = origin + forward * 8.5f;
-        // OBP target discovery only; launch/elevation/clamping are source-owned.
-        // Prefer a nearby visible enemy in front, then a crate. The full native
-        // reticle/target-history selector and strafe aiming remain separate work.
-        var candidates = Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes)
-            .Where(node => IsInstanceValid(node.Root) && Rac1World.Enemies.IsRac1GameplayActive(node) && Rac1EnemyHost.HasRac1HostContactGeometry(node))
-            .Select(node => (Node: node, Point: Rac1LootPresentation.ToEffectNative(node.Root.GlobalPosition + Vector3.Up * .5f)));
-        if (ActorHost.Active)
-            candidates = ActorHost.Combat.ReadGeometry().Select(target => (target.Node, Rac1LootPresentation.ToEffectNative(target.Bounds.GetCenter())));
-        var aim = candidates
-            .Select(candidate => (candidate.Node, candidate.Point, Offset: candidate.Point - origin))
-            .Where(candidate => candidate.Offset.LengthSquared() is > .25f and < 225f &&
-                NVector3.Dot(NVector3.Normalize(candidate.Offset), forward) > .94f &&
-                Rac1World.Weapons.Contacts.HasLineOfSight(Rac1LootPresentation.FromEffectNative(origin), Rac1LootPresentation.FromEffectNative(candidate.Point)))
-            .OrderBy(candidate => Rac1World.Enemies.Roster.ContainsKey(candidate.Node.Source.InstanceIndex) ? 0 : 1)
-            .ThenBy(candidate => candidate.Offset.LengthSquared()).FirstOrDefault();
-        if (aim.Node is not null) target = aim.Point;
-        var motion = new Rac1BombProjectileSession(origin, Rac1BombProjectileSession.LaunchVelocity(origin, target, yaw),
-            new(_persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Angle(), _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Angle(), _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Angle()));
-        var node = FusionWeapons.CreateNativeEffect(121, $"Rac1RetailBomb_{shot.Projectile.ProjectileId}_Class121");
-        node.GlobalPosition = Rac1LootPresentation.FromEffectNative(origin);
-        SetBombOrientation(node, motion.Rotation);
-        var hosted = new Rac1HostedProjectile(node, motion, Rac1World.Weapons.ThrownAnimation.Generation);
-        Rac1World.Presentation.Projectiles.Add(shot.Projectile.ProjectileId, hosted);
-        // 2ad350..2ad390 checks the body-to-launch segment at launch height.
-        // A clear muzzle endpoint alone would let a bomb spawn beyond a thin wall.
-        var clearanceStart = Rac1LootPresentation.FromEffectNative(new(body.X, body.Y, origin.Z));
-        if (Rac1World.Weapons.Contacts.ProbeBombWorldContact(clearanceStart, Rac1LootPresentation.FromEffectNative(origin)) is { } obstruction)
-            ImpactRac1Bomb(hosted, obstruction);
-    }
-
+    // Player/campaign use admission remains in the existing persistent owner.
+    // The R&C1 world lease owns launched projectiles and damage routing.
     private void StepRac1BombProjectilesPhysics()
-    {
-        if (_player is null || Rac1World.Context.BombGlove is null) return;
-        foreach (var pair in Rac1World.Presentation.Projectiles.ToArray())
-        {
-            var projectile = pair.Value;
-            var motion = projectile.Motion;
-            if (!IsInstanceValid(projectile.Node)) { RetireBomb(pair.Key, projectile); continue; }
-            if (motion.Flying)
-            {
-                Vector3 from = Rac1LootPresentation.FromEffectNative(motion.Position);
-                Vector3 to = Rac1LootPresentation.FromEffectNative(motion.AdvanceFlight());
-                Vector3? contact = Rac1World.Weapons.Contacts.ProbeBombWorldContact(from, to);
-                float closest = contact is { } hit ? from.DistanceTo(hit) : float.PositiveInfinity;
-                foreach (var target in Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes))
-                {
-                    if (!IsInstanceValid(target.Root) || !Rac1World.Enemies.IsRac1GameplayActive(target) || !Rac1EnemyHost.HasRac1HostContactGeometry(target)) continue;
-                    Vector3 centre = target.Root.GlobalPosition + Vector3.Up * .5f;
-                    Vector3 segment = to - from;
-                    float t = segment.LengthSquared() > 1e-8f ? Mathf.Clamp((centre - from).Dot(segment) / segment.LengthSquared(), 0, 1) : 0;
-                    Vector3 point = from + segment * t;
-                    if (point.DistanceTo(centre) <= .55f && from.DistanceTo(point) < closest)
-                    {
-                        contact = point; closest = from.DistanceTo(point);
-                    }
-                }
-                if (contact is not null || motion.TickFlightCountdown())
-                    ImpactRac1Bomb(projectile, contact ?? to);
-                else
-                {
-                    projectile.Node.GlobalPosition = to;
-                    SetBombOrientation(projectile.Node, motion.Rotation);
-                }
-            }
-            if (motion.NativeState == 2)
-            {
-                ResolveRac1BombBlast(pair.Key, motion, projectile.Generation);
-                motion.AdvanceBlast();
-            }
-            if (motion.Finished) RetireBomb(pair.Key, projectile);
-        }
-    }
-
-    private void ImpactRac1Bomb(Rac1HostedProjectile projectile, Vector3 position)
-    {
-        if (!projectile.Motion.Flying) return;
-        projectile.Motion.Impact(Rac1LootPresentation.ToEffectNative(position));
-        projectile.Node.Visible = false;
-        _rac1BombImpactCount++;
-        // The sweep above supplies contact admission; resolve a terrain normal
-        // once at impact for the native reflected spray. Enemy-body contact
-        // and an expired flight retain the upward fallback.
-        Vector3 velocity = Rac1LootPresentation.FromEffectNative(projectile.Motion.Velocity);
-        Vector3 direction = velocity.LengthSquared() > .000001f ? velocity.Normalized() : Vector3.Down;
-        var ray = PhysicsRayQueryParameters3D.Create(position - direction * .4f, position + direction * .4f);
-        ray.Exclude = Rac1World.Weapons.Contacts.RayExclusions();
-        var hit = _player!.GetWorld3D().DirectSpaceState.IntersectRay(ray);
-        Vector3 normal = hit.TryGetValue("normal", out var result) && result.AsVector3().LengthSquared() > .5f
-            ? result.AsVector3().Normalized() : Vector3.Up;
-        Vector3 push = velocity.Bounce(normal);
-        push = push.LengthSquared() > .000001f ? push.Normalized() * (2f / 60) : normal * (2f / 60);
-        SpawnRac1BombExplosion(position, impactNormal: normal, reflectedPush: push);
-    }
-
-    private void ResolveRac1BombBlast(long id, Rac1BombProjectileSession motion, long generation)
-    {
-        Vector3 origin = Rac1LootPresentation.FromEffectNative(motion.Position);
-        Rac1World.Breakables.ResolveNovalisBombBreakables(origin, motion.BlastRadius);
-        var facts = Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes)
-            .Where(node => IsInstanceValid(node.Root) && Rac1World.Enemies.IsRac1GameplayActive(node) && Rac1EnemyHost.HasRac1HostContactGeometry(node))
-            .Where(node => origin.DistanceTo(node.Root.GlobalPosition + Vector3.Up * .5f) <= motion.BlastRadius + .35f &&
-                Rac1World.Weapons.Contacts.HasLineOfSight(origin, node.Root.GlobalPosition + Vector3.Up * .5f))
-            .OrderBy(node => node.Source.InstanceIndex)
-            .Select(node => Rac1MobyContactFacts.FromRuntime(Rac1World.Context.MobyRuntime.Require(node.Source), false)).ToArray();
-        var resolution = Rac1World.Context.BombGlove!.ResolveExplosionVolume(id, facts);
-        ActorHost.Combat.ResolveBlast(FusionWeaponSession.BombGlove, generation, id,
-            origin, motion.BlastRadius, (float)Rac1BombGlove.NativeDamage, Rac1BombGlove.NativeDamageFlags);
-        if (resolution.DamageResults.Count == 0) return;
-        Rac1World.Context.LastBombContactResolution = resolution;
-        foreach (var damage in resolution.DamageEvents)
-        {
-            Rac1World.Context.DamageTransport.Publish(damage);
-            if (!Rac1World.Context.MobyRuntime.CanDispatchDamage(damage) &&
-                !Rac1AridiaEnemies.IsEnemyClass(damage.Target.NativeClassId)) continue;
-            if (Rac1BoltCrate.IsCrateClass(damage.Target.NativeClassId))
-            {
-                var admission = Rac1World.Context.MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage);
-                CompleteRac1CrateDamage(Rac1World.Presentation.CrateNodes.Single(node => node.Source.InstanceIndex == damage.Target.RuntimeId), admission);
-            }
-            else if (damage.Target.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
-                Rac1World.Breakables.TryTriggerExplosiveDamage(damage);
-            else if (Rac1World.Enemies.Roster.TryGetValue((int)damage.Target.RuntimeId, out var enemy))
-                Rac1World.Enemies.ApplyRac1EnemyWeaponDamage(enemy.Node, damage);
-        }
-        Rac1World.Context.CombatStatus = $"Bomb Glove blast: {resolution.DamageEvents.Count} target(s)";
-        GD.Print($"[rac1-gameplay] {Rac1World.Context.CombatStatus}");
-    }
-
-    private void RetireBomb(long id, Rac1HostedProjectile projectile)
-    {
-        Rac1World.Context.BombGlove?.CompleteProjectile(id);
-        if (IsInstanceValid(projectile.Node)) projectile.Node.QueueFree();
-        Rac1World.Presentation.Projectiles.Remove(id);
-    }
+        => _worldScenes?.Current?.Resources.Rac1Gameplay?.Bombs.StepPhysics();
 
     private static void SetBombOrientation(Node3D node, NVector3 angles) =>
         node.Quaternion = Rac1LootPresentation.FromEffectOrientation(System.Numerics.Quaternion.CreateFromYawPitchRoll(angles.Y, angles.X, angles.Z));

@@ -15,7 +15,7 @@ public partial class OBPGame
     {
         _equipmentPresentation.Explosions.RetireWorld();
         _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.ThrownAnimation.Reset();
-        _rac1BombImpactCount = 0;
+        _worldScenes?.Current?.Resources.Rac1Gameplay?.Bombs.ResetImpactCount();
     }
 
     private Vector3 Rac1EffectCamera(Vector3 fallback) =>
