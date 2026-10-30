@@ -32,7 +32,7 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
         Assert.Contains("internal Rac1ArsenalUseHost Arsenal { get; }", parent, StringComparison.Ordinal);
         Assert.Contains("Arsenal.ClearHeld()", parent, StringComparison.Ordinal);
         Assert.Contains("Arsenal.Dispose()", parent, StringComparison.Ordinal);
-        Assert.Contains("beamPresentation, arsenal, projectiles)", module, StringComparison.Ordinal);
+        Assert.Contains("beamPresentation, arsenal, projectiles, flames)", module, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Weapons.Arsenal.Reset()", rootArsenal, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Weapons.Arsenal.Tick()", rootArsenal, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", host, StringComparison.Ordinal);

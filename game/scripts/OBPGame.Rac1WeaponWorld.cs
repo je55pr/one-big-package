@@ -73,25 +73,9 @@ public partial class OBPGame
         if (MovementReproduction.IsLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is null || _player is null) return;
         _rac1WeaponWorldTick++;
         StepRac1ArsenalWorld();
-        if (_rac1PyroEmitting && EnsureRac1Particles() is { } particles)
-        {
-            Vector3 nozzle = EquipmentMuzzle(Rac1WeaponId.Pyrocitor);
-            float reach = Rac1WeaponProfiles.PyrocitorReach;
-            var ray = PhysicsRayQueryParameters3D.Create(nozzle, nozzle + EquipmentForward * (reach + .75f));
-            ray.Exclude = Rac1World.Weapons.Contacts.RayExclusions();
-            var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(ray);
-            if (hit.TryGetValue("position", out var contact)) reach = Math.Max(0, nozzle.DistanceTo(contact.AsVector3()) - .75f);
-            var created = particles.Pyrocitor(Rac1LootPresentation.ToEffectNative(nozzle), Rac1LootPresentation.ToEffectNative(EquipmentForward), reach);
-            // 0x2b8438 owns fifteen tracked slots. Only emitter index2 on every
-            // fourth update is kept for the travelling damage-volume queries.
-            if ((_rac1WeaponWorldTick & 3) == 0 && created.Count > 2)
-            {
-                if (_rac1NativeFlames.Count == 15) _rac1NativeFlames.RemoveAt(0);
-                _rac1NativeFlames.Add(new(created[2]));
-            }
-        }
+        Rac1World.Weapons.Flames.Emit(_rac1PyroEmitting);
         Rac1World.Weapons.Projectiles.StepMotes();
-        StepRac1NativeFlameContacts();
+        Rac1World.Weapons.Flames.StepContacts();
         Rac1World.Weapons.SuckCannon.Step();
         Rac1World.Weapons.Projectiles.StepShots();
         Rac1World.Weapons.Projectiles.StepDoomAgents();
@@ -100,32 +84,4 @@ public partial class OBPGame
 
     private Vector3? EquipmentGround(Vector3 point, float up, float down)
         => Rac1World.Weapons.Projectiles.Ground(point, up, down);
-
-    private void StepRac1NativeFlameContacts()
-    {
-        if (_equipmentPresentation.Explosions.Particles is not { } particles) return;
-        foreach (var flame in _rac1NativeFlames.ToArray())
-        {
-            var p = flame.Motion;
-            if (!particles.IsLive(p) || p.Remaining < 2) { _rac1NativeFlames.Remove(flame); continue; }
-            particles.FlameSecondary(p);
-            Vector3 point = Rac1LootPresentation.FromEffectNative(p.Position);
-            float radius = p.Size * .5f;
-            foreach (var (victim, bounds) in Rac1World.Weapons.Contacts.Geometry)
-            {
-                var key = new Rac1MobyRuntimeKey(victim.Source.NativeClassId, victim.Source.InstanceIndex);
-                if (!Rac1World.Enemies.IsRac1GameplayActive(victim) || flame.Victims.Contains(key) || _rac1FlameHitTicks.GetValueOrDefault(key) > _rac1WeaponWorldTick) continue;
-                if (!bounds.Grow(radius).HasPoint(point) || !Rac1World.Weapons.Contacts.HasLineOfSight(point, victim.Root.GlobalPosition + Vector3.Up * .4f)) continue;
-                if (Rac1World.WeaponDamage.Apply(victim, Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Pyrocitor, key,
-                    Rac1WeaponProfiles.PyrocitorDamage, Rac1WeaponProfiles.PyrocitorFlags)))
-                {
-                    // Victim repetition remains the existing bounded damage
-                    // adapter; it is separate from the recovered particle life.
-                    flame.Victims.Add(key); _rac1FlameHitTicks[key] = _rac1WeaponWorldTick + Rac1WeaponReconstructionPolicy.FlameVictimRepeatTicks;
-                }
-            }
-        }
-    }
-
-
 }

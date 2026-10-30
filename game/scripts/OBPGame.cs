@@ -484,6 +484,13 @@ public partial class OBPGame : Node3D
             id => Rac1World.Enemies.Roster.ContainsKey(id),
             (node, damage) => Rac1World.WeaponDamage.Apply(node, damage),
             () => _sceneResult!.Root),
+        new Rac1PyrocitorFlamePorts(
+            EnsureRac1Particles,
+            () => _equipmentPresentation.Explosions.Particles,
+            weapon => EquipmentMuzzle(weapon), () => EquipmentForward,
+            () => _player, () => _rac1WeaponWorldTick,
+            node => Rac1World.Enemies.IsRac1GameplayActive(node),
+            (node, damage) => Rac1World.WeaponDamage.Apply(node, damage)),
         new Rac1WrenchFramePorts(
             () => _player,
             () => _avatarPresentation.TryWrenchContactPose(out var pose) ? (pose.Hand, pose.Tip) : null,

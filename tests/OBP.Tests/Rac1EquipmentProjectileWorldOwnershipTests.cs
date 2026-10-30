@@ -37,7 +37,7 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
         Assert.Contains("Projectiles = new(Contacts, projectiles)", weapons, StringComparison.Ordinal);
         Assert.Contains("Projectiles.Reset()", weapons, StringComparison.Ordinal);
         Assert.Contains("Projectiles.Dispose()", weapons, StringComparison.Ordinal);
-        Assert.Contains("beamPresentation, arsenal, projectiles)", world, StringComparison.Ordinal);
+        Assert.Contains("beamPresentation, arsenal, projectiles, flames)", world, StringComparison.Ordinal);
         Assert.Contains("new Rac1EquipmentProjectilePorts(", composition, StringComparison.Ordinal);
         Assert.Contains("internal IReadOnlyList<Rac1HostedEquipmentShot> Shots", projectile, StringComparison.Ordinal);
         Assert.Contains("internal IReadOnlyList<Rac1HostedDoomAgent> DoomAgents", projectile, StringComparison.Ordinal);
@@ -53,9 +53,9 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
         string[] ordered =
         [
             "StepRac1ArsenalWorld()",
-            "if (_rac1PyroEmitting && EnsureRac1Particles()",
+            "Rac1World.Weapons.Flames.Emit(_rac1PyroEmitting)",
             "Rac1World.Weapons.Projectiles.StepMotes()",
-            "StepRac1NativeFlameContacts()",
+            "Rac1World.Weapons.Flames.StepContacts()",
             "Rac1World.Weapons.SuckCannon.Step()",
             "Rac1World.Weapons.Projectiles.StepShots()",
             "Rac1World.Weapons.Projectiles.StepDoomAgents()",
@@ -69,9 +69,11 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
             previous = next;
         }
 
-        Assert.Contains("_rac1NativeFlames.Add(new(created[2]))", frame, StringComparison.Ordinal);
-        Assert.Contains("if ((_rac1WeaponWorldTick & 3) == 0 && created.Count > 2)", frame, StringComparison.Ordinal);
-        Assert.Contains("flame.Victims.Add(key); _rac1FlameHitTicks[key]", frame, StringComparison.Ordinal);
+        string flames = Script("Rac1PyrocitorFlameHost.cs");
+        Assert.Contains("_flames.Add(new(created[2]))", flames, StringComparison.Ordinal);
+        Assert.Contains("if ((ports.WorldTick() & 3) == 0 && created.Count > 2)", flames, StringComparison.Ordinal);
+        Assert.Contains("flame.Victims.Add(key)", flames, StringComparison.Ordinal);
+        Assert.Contains("_victimHitTicks[key] = ports.WorldTick() + Rac1WeaponReconstructionPolicy.FlameVictimRepeatTicks", flames, StringComparison.Ordinal);
         Assert.DoesNotContain("Pyrocitor(", projectile, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1ParticleSession(", projectile, StringComparison.Ordinal);
     }
@@ -113,7 +115,7 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
         int arsenal = root.IndexOf("ResetRac1Arsenal()", StringComparison.Ordinal);
         int retire = root.IndexOf("Rac1World.Weapons.Projectiles.RetireShotsAgentsMotes()", StringComparison.Ordinal);
         int suck = root.IndexOf("Rac1World.Weapons.SuckCannon.Reset()", StringComparison.Ordinal);
-        int particles = root.IndexOf("_rac1NativeFlames.Clear()", StringComparison.Ordinal);
+        int particles = root.IndexOf("Rac1World.Weapons.Flames.ClearTrackedFlames()", StringComparison.Ordinal);
         int flashes = root.IndexOf("Rac1World.Weapons.Projectiles.ResetFlashes()", StringComparison.Ordinal);
         Assert.True(arsenal >= 0 && arsenal < retire && retire < suck && suck < particles && particles < flashes);
 

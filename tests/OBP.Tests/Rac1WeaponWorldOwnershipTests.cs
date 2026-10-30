@@ -107,12 +107,12 @@ public sealed class Rac1WeaponWorldOwnershipTests
 
         string arsenal = Script("Rac1ArsenalUseHost.cs");
         string projectile = Script("OBPGame.Rac1Projectiles.cs");
-        string world = Script("OBPGame.Rac1WeaponWorld.cs");
+        string flames = Script("Rac1PyrocitorFlameHost.cs");
         Assert.Contains("weapons.Morph.Fire(from, ports.EquipmentForward())", arsenal, StringComparison.Ordinal);
         Assert.Contains("ports.Contact(from, end, .01f)", Script("Rac1MorphHost.cs"), StringComparison.Ordinal);
         Assert.Contains("Rac1World.Bombs.Spawn(shot)", projectile, StringComparison.Ordinal);
         Assert.Contains("_weapons.Contacts.HasLineOfSight(", Script("Rac1BombProjectileHost.cs"), StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Contacts.RayExclusions()", world, StringComparison.Ordinal);
+        Assert.Contains("contacts.RayExclusions()", flames, StringComparison.Ordinal);
     }
 
     [Fact]

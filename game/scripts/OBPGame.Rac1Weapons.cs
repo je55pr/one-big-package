@@ -39,8 +39,6 @@ public partial class OBPGame
     private Rac1AdditionalWeaponSession? _rac1AdditionalWeapons;
     private readonly Dictionary<Rac1WeaponId, Rac1EquipmentView> _rac1EquipmentViews = [];
     private readonly Dictionary<Rac1WeaponId, Rac1EquipmentView> _rac1StagedEquipment = [];
-    private readonly List<HostedNativeFlame> _rac1NativeFlames = [];
-    private readonly Dictionary<Rac1MobyRuntimeKey, ulong> _rac1FlameHitTicks = [];
     private readonly Dictionary<Rac1WeaponId, long> _rac1WeaponGenerations = [];
     private bool _rac1AdditionalFireRequested;
     private bool _rac1PyroEmitting;
@@ -48,19 +46,14 @@ public partial class OBPGame
     private int _rac1EquipmentUseTicks, _rac1EquipmentUseAge;
     private int _rac1WeaponShotsFired;
 
-    private sealed record HostedNativeFlame(Rac1ParticleSession.Particle Motion)
-    {
-        public HashSet<Rac1MobyRuntimeKey> Victims { get; } = [];
-    }
-
     private void ResetRac1AdditionalWeapons()
     {
         ResetRac1WeaponAudio();
         ResetRac1Arsenal();
         Rac1World.Weapons.Projectiles.RetireShotsAgentsMotes();
         Rac1World.Weapons.SuckCannon.Reset();
-        _rac1FlameHitTicks.Clear(); _rac1WeaponGenerations.Clear();
-        _rac1NativeFlames.Clear(); _equipmentPresentation.Explosions.Particles?.RemoveType(12); _equipmentPresentation.Explosions.Particles?.RemoveType(2);
+        Rac1World.Weapons.Flames.ClearCooldowns(); _rac1WeaponGenerations.Clear();
+        Rac1World.Weapons.Flames.ClearTrackedFlames(); _equipmentPresentation.Explosions.Particles?.RemoveType(12); _equipmentPresentation.Explosions.Particles?.RemoveType(2);
         _rac1AdditionalWeapons = new(_rac1Weapons);
         _rac1AdditionalWeaponsInventory = _rac1Weapons;
         Rac1World.Weapons.Projectiles.ResetFlashes(); _rac1WeaponWorldTick = 0;

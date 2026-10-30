@@ -22,7 +22,7 @@ public sealed class Rac1WeaponDamageWorldOwnershipTests
         string contact = Script("Rac1WeaponContactHost.cs");
         string damage = Script("Rac1WeaponDamageHost.cs");
         string application = Script("OBPGame.cs");
-        string weaponWorld = Script("OBPGame.Rac1WeaponWorld.cs");
+        string flames = Script("Rac1PyrocitorFlameHost.cs");
 
         Assert.Contains("WeaponDamage = new(Context, Enemies, Breakables, WrenchDamage, Weapons.Contacts)", module, StringComparison.Ordinal);
         Assert.Contains("internal Rac1WeaponDamageHost WeaponDamage { get; }", module, StringComparison.Ordinal);
@@ -32,7 +32,7 @@ public sealed class Rac1WeaponDamageWorldOwnershipTests
         Assert.Contains("Rac1World.Weapons.Contacts.FindArsenalTarget(", application, StringComparison.Ordinal);
         Assert.Contains("Rac1World.WeaponDamage.ApplyBlast(weapon, position, radius, damage, flags)", application, StringComparison.Ordinal);
         Assert.Contains("Rac1World.WeaponDamage.Apply(node, damage)", application, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.WeaponDamage.Apply(", weaponWorld, StringComparison.Ordinal);
+        Assert.Contains("ports.ApplyDamage(victim, Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Pyrocitor", flames, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", damage, StringComparison.Ordinal);
         Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1WeaponDamageHost.cs.uid")));
     }
