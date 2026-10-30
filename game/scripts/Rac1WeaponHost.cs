@@ -17,7 +17,7 @@ internal sealed class Rac1WeaponHost : IDisposable
         Rac1WeaponContactPhysicsPorts physics, Rac1SuckCannonPorts suckCannon,
         Rac1ArsenalMissilePorts missiles, Rac1ArsenalDeployablePorts deployables,
         Rac1WalloperPorts walloper, Rac1TaunterPorts taunter,
-        Rac1TeslaPorts tesla, Rac1MorphPorts morph, Rac1ArsenalBeamPorts beams)
+        Rac1TeslaPorts tesla, Rac1MorphPorts morph, Rac1ArsenalBeamPorts beams, Rac1ArsenalUsePorts arsenal)
     {
         GuidedCamera = new();
         ThrownAnimation = new();
@@ -31,6 +31,7 @@ internal sealed class Rac1WeaponHost : IDisposable
         Morph = new(morph, Beams);
         Deployables = new(deployables, NextArsenalId, Taunter);
         Walloper = new(walloper, Contacts);
+        Arsenal = new(this, arsenal);
     }
 
     internal Rac1MetalDetectorHost Detector { get; }
@@ -43,6 +44,7 @@ internal sealed class Rac1WeaponHost : IDisposable
     internal Rac1TeslaHost Tesla { get; }
     internal Rac1MorphHost Morph { get; }
     internal Rac1ArsenalBeamPresenter Beams { get; }
+    internal Rac1ArsenalUseHost Arsenal { get; }
     internal Rac1GuidedWeaponCamera GuidedCamera { get; }
     internal Rac1ThrownEquipmentAnimationHost ThrownAnimation { get; }
 
@@ -73,6 +75,7 @@ internal sealed class Rac1WeaponHost : IDisposable
         if (_disposed) return;
         // Release camera/input before the player/world lease is retired.
         GuidedCamera.End();
+        Arsenal.ClearHeld();
         ThrownAnimation.Reset();
         Detector.Reset();
         Contacts.Invalidate();
@@ -90,6 +93,7 @@ internal sealed class Rac1WeaponHost : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        Arsenal.Dispose();
         Walloper.Dispose();
         Deployables.Dispose();
         Beams.Dispose();

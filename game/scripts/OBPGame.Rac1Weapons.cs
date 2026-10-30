@@ -22,7 +22,7 @@ public partial class OBPGame
             _player is not null && _playerAudio?.Ready == true && PlayerLife.Alive && !MovementReproduction.IsLoading &&
                 !_player.Rac1WrenchFrame.Active && !(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true),
             _rac1Weapons.Equipped, _rac1EquipmentUseTicks, _rac1PyroEmitting,
-            _rac1AdditionalWeapons?.Vacuuming == true, _rac1ArsenalHeld, _rac1Weapons.GetAmmo(19) > 0,
+            _rac1AdditionalWeapons?.Vacuuming == true, Rac1World.Weapons.Arsenal.Held, _rac1Weapons.GetAmmo(19) > 0,
             _rac1WeaponWorldTick, _args.Rac1WeaponsSmoke), _player, _playerAudio?.Random,
             _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets)?.Sounds);
 
@@ -178,14 +178,14 @@ public partial class OBPGame
         bool held = PlayerLife.Alive && !_player.Rac1WrenchFrame.Active && !(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true) &&
             _rac1AdditionalFireRequested && !Rac1World.Weapons.Detector.Equipped;
         _rac1AdditionalFireRequested = false;
-        _rac1ArsenalHeld = held;
+        Rac1World.Weapons.Arsenal.SetHeld(held);
         if (_rac1EquipmentUseWeapon != _rac1Weapons.Equipped)
         {
             _rac1EquipmentUseWeapon = _rac1Weapons.Equipped;
             _rac1EquipmentUseTicks = _rac1EquipmentUseAge = 0;
         }
         if (_rac1EquipmentUseTicks > 0) { _rac1EquipmentUseTicks--; _rac1EquipmentUseAge++; }
-        var shot = _rac1AdditionalWeapons.Step(held, AdmitRac1ArsenalUse());
+        var shot = _rac1AdditionalWeapons.Step(held, Rac1World.Weapons.Arsenal.AdmitUse());
         bool pyro = held && _rac1Weapons.Equipped == Rac1WeaponId.Pyrocitor && (_rac1Weapons.GetAmmo(16) > 0 || shot is not null);
         if (pyro != _rac1PyroEmitting)
         {
@@ -216,7 +216,7 @@ public partial class OBPGame
             }
             else if (shot.Weapon == Rac1WeaponId.Blaster) FireRac1Blaster(shot);
             else if (shot.Weapon == Rac1WeaponId.SuckCannon) Rac1World.Weapons.SuckCannon.Fire(shot);
-            else if (Rac1ArsenalRules.IsNew(shot.Weapon)) FireRac1Arsenal(shot);
+            else if (Rac1ArsenalRules.IsNew(shot.Weapon)) Rac1World.Weapons.Arsenal.Fire(shot.Weapon);
             if (shot.Weapon is Rac1WeaponId.DecoyGlove or Rac1WeaponId.DroneDevice)
                 Rac1World.Weapons.ThrownAnimation.Begin();
             if (Rac1ItemAmmoDescriptors.Get((int)shot.Weapon).UsesAmmo)
@@ -242,7 +242,7 @@ public partial class OBPGame
             if (profile.Item == Rac1WeaponId.Blaster)
                 view.Play(_rac1EquipmentUseTicks > 0 ? 4 : 1);
             if (profile.Item is Rac1WeaponId.Taunter or Rac1WeaponId.MorphORay or Rac1WeaponId.TeslaClaw)
-                view.Play(_rac1ArsenalHeld ? 3 : 1);
+                view.Play(_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Arsenal.Held == true ? 3 : 1);
             if (profile.Item == Rac1WeaponId.SuckCannon)
             {
                 if (_rac1AdditionalWeapons?.Vacuuming == true) view.Play(3);

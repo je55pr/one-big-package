@@ -468,6 +468,10 @@ public partial class OBPGame : Node3D
             () => GetViewport().GetCamera3D(), () => _rac1EquipmentAssets?.Effects,
             () => _rac1Weapons.Equipped, () => _args.FixedSeed,
             (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(min, max)),
+        new Rac1ArsenalUsePorts(
+            () => _rac1Weapons.Equipped, () => _rac1Weapons.GetAmmo(19),
+            () => _rac1WeaponWorldTick, weapon => EquipmentMuzzle(weapon), () => EquipmentForward,
+            () => _player!.GlobalPosition, SpawnEquipmentFlash),
         new Rac1WrenchFramePorts(
             () => _player,
             () => _avatarPresentation.TryWrenchContactPose(out var pose) ? (pose.Hand, pose.Tip) : null,
@@ -828,7 +832,9 @@ public partial class OBPGame : Node3D
             SelectWeapon: FusionWeapons.Select,
             ResetWeaponPresentation: () =>
             {
-                _rac1EquipmentUseTicks = 0; _rac1ArsenalHeld = _rac1PyroEmitting = false;
+                _rac1EquipmentUseTicks = 0;
+                _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Arsenal.SetHeld(false);
+                _rac1PyroEmitting = false;
                 ResetRac1WeaponAudio(); FusionWeapons.ResetHeldUse();
                 RefreshRac1WrenchPresentationVisibility(); RefreshRac1HudState();
             },
