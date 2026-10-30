@@ -117,8 +117,8 @@ public partial class OBPGame
             if (_rac1WrenchHitTargets.Contains(key) || !IsInstanceValid(target.Root) ||
                 (isNovalisProp ? Rac1World.Breakables.IsNovalisDestroyed(key.InstanceIndex) : !Rac1World.Enemies.IsRac1GameplayActive(target)))
                 continue;
-            var meshes = _rac1Chickens.TryGetValue(target.Source.InstanceIndex, out var chicken)
-                ? chicken.View.GetChildren().OfType<MeshInstance3D>() : target.Root.GetChildren().OfType<MeshInstance3D>();
+            var meshes = Rac1World.Weapons.Morph.ViewFor(target.Source.InstanceIndex) is { } morphView
+                ? morphView.GetChildren().OfType<MeshInstance3D>() : target.Root.GetChildren().OfType<MeshInstance3D>();
             bool contact = meshes.Any(mesh =>
             {
                 Aabb bounds = (mesh.GlobalTransform * mesh.GetAabb()).Grow(radius);

@@ -49,15 +49,13 @@ public partial class OBPGame : Node3D
         World: () => Rac1World, Scene: () => _sceneResult, Weapons: () => _rac1Weapons,
         Wallet: () => _rac1BoltWallet, AdditionalWeapons: () => _rac1AdditionalWeapons,
         WeaponPreview: () => _persistentPlayer.WeaponPreview is not null,
-        MorphedMobies: () => _rac1Chickens.Values
-            .Where(chicken => Rac1World.Enemies.IsRac1GameplayActive(chicken.Enemy.Node) && !chicken.Enemy.RewardEmitted)
-            .Select(chicken => new Rac1MobyRuntimeKey(chicken.Enemy.Node.Source.NativeClassId, chicken.Enemy.Node.Source.InstanceIndex))
+        MorphedMobies: () => Rac1World.Weapons.Morph.ActiveKeys()
             .Concat(Rac1World.Weapons.SuckCannon.ChickenCargoKeys).Distinct().ToArray(),
         ClearChickenCargo: () => Rac1World.Weapons.SuckCannon.ClearChickenCargo(),
         RememberChickenCargo: key => Rac1World.Weapons.SuckCannon.RememberChickenCargo(key),
         RetireCapturedCargoPresentation: () => Rac1World.Weapons.SuckCannon.RetirePresentation(),
         HeldItemId: () => _rac1HeldItem.NativeItemId,
-        MorphEnemy: MorphArsenalEnemy, DisableCrateCollider: id => Rac1World.Loot.DisableRac1CrateCollider(id),
+        MorphEnemy: node => Rac1World.Weapons.Morph.Morph(node), DisableCrateCollider: id => Rac1World.Loot.DisableRac1CrateCollider(id),
         RemovePlacedBolt: id => Rac1World.Loot.RemovePlacedBolt(id)));
     private MovementReproductionService? _movementReproduction;
     private MovementReproductionService MovementReproduction => _movementReproduction ??= new(new(
@@ -364,7 +362,7 @@ public partial class OBPGame : Node3D
         new Rac1WeaponTargetPorts(
             () => Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes),
             () => Rac1World.Enemies.Frogs.Rac1QueenDamageTargets,
-            id => _rac1Chickens.TryGetValue(id, out var chicken) ? chicken.View : null,
+            id => Rac1World.Weapons.Morph.ViewFor(id),
             node => Rac1World.Enemies.IsRac1GameplayActive(node),
             node => Rac1World.Enemies.Frogs.IsQueenNode(node),
             () => Rac1World.Enemies.Frogs.QueenDamageAdmitted,
@@ -380,7 +378,7 @@ public partial class OBPGame : Node3D
             (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(min, max),
             () => Rac1World.Weapons.Contacts.Targets,
             () => Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes),
-            id => _rac1Chickens.TryGetValue(id, out var chicken) ? chicken.View : null,
+            id => Rac1World.Weapons.Morph.ViewFor(id),
             (from, to) => Rac1World.Weapons.Contacts.HasLineOfSight(from, to),
             EquipmentParticle,
             (mote, position, step) =>
@@ -455,6 +453,18 @@ public partial class OBPGame : Node3D
             (slot, from, to) => DrawArsenalBeam(slot, from, to, new(.3f, .6f, 1)),
             (node, damage) => ApplyRac1AdditionalDamage(node, damage),
             (cls, sound, origin) => FusionWeapons.PlayNativeSound(cls, sound, origin)),
+        new Rac1MorphPorts(
+            id => Rac1World.Enemies.Roster.TryGetValue(id, out var enemy) ? enemy : null,
+            CreateEquipmentWorldView,
+            enemy => Rac1World.Enemies.IsRac1GameplayActive(enemy.Node),
+            enemy => Rac1World.Enemies.TryGroundRac1Enemy(enemy, upwardReach: 1, downwardReach: 1),
+            enemy => Rac1World.Enemies.SetRac1EnemyFlame(enemy, false),
+            () => EquipmentForward,
+            (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(min, max),
+            EquipmentGround, SpawnEquipmentFlash,
+            (origin, range, cone) => FindArsenalTarget(origin, range, cone),
+            (from, to, radius) => Rac1World.Weapons.Contacts.Contact(from, to, radius),
+            (slot, from, to) => DrawArsenalBeam(slot, from, to, new(.4f, 1, .25f))),
         new Rac1TaxiHostPorts(
             () => _player is { } player && IsInstanceValid(player) ? new Rac1TaxiPlayerController(player) : null,
             () => _mode == Mode.World && !GetTree().Paused &&
@@ -488,7 +498,7 @@ public partial class OBPGame : Node3D
                 origin => SpawnRac1ExplosionBursts(origin, Rac1BombExplosion.Bursts(false).Take(1).ToArray()),
                 (node, damage) => owner.Breakables.TryTriggerExplosiveDamage(node, damage), CompleteRac1CrateDamage,
                 (id, presence) => { if (owner.Loot.CrateBodies.TryGetValue(id, out var body) && IsInstanceValid(body)) body.CollisionLayer = presence == RuntimeEntityPresence.Active ? 1u : 0; },
-                id => _rac1Chickens.ContainsKey(id)),
+                id => Rac1World.Weapons.Morph.Contains(id)),
             new(() => ReferenceEquals(_worldScenes?.Current?.Resources.Rac1Gameplay, owner)),
             new(GetViewport, () => _activeCamera, camera => _activeCamera = camera, () => _camera,
                 () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.GuidedCamera.Camera, _rac1WrenchHitTargets.Contains,
@@ -1773,8 +1783,8 @@ public partial class OBPGame : Node3D
                 return new(new(ObpSourceGame.Rac1, (int)Rac1WeaponId.DecoyGlove),
                     GodotWeaponModelFacts.Read(state.View), state.Grounded, state.RetiringTicks);
             }, forceExpire))],
-        () => [.. _rac1Chickens.Values.Select(chicken => new Rac1ChickenDiagnostic(targets.Key(chicken.Enemy.Node), Rac1World.Enemies.IsRac1GameplayActive(chicken.Enemy.Node),
-            chicken.Enemy.RewardEmitted, GodotWeaponModelFacts.Read(chicken.View)))],
+        () => [.. Rac1World.Weapons.Morph.Project((enemy, view) => new Rac1ChickenDiagnostic(targets.Key(enemy.Node), Rac1World.Enemies.IsRac1GameplayActive(enemy.Node),
+            enemy.RewardEmitted, GodotWeaponModelFacts.Read(view)))],
         () => Rac1World.Weapons.Deployables.RetireDrones(),
         () => _rac1WeaponWorldTick = 0,
         (actor, player) =>

@@ -8,14 +8,6 @@ namespace OBP.Game;
 
 public partial class OBPGame
 {
-    private sealed record ArsenalChicken(Rac1HostedEnemy Enemy, Rac1EquipmentView View, Shape3D OriginalShape, Vector3 OriginalShapePosition)
-    {
-        public int Age;
-        public Vector3 Direction;
-    }
-
-    private readonly Dictionary<int, ArsenalChicken> _rac1Chickens = [];
-    private readonly Dictionary<int, int> _rac1MorphExposure = [];
     private readonly List<MeshInstance3D> _rac1ArsenalBeams = [];
     private readonly Rac1TeslaPresentation _rac1TeslaPresentation = new();
     private readonly Dictionary<int, ShaderMaterial> _rac1TeslaMaterials = [];
@@ -27,19 +19,10 @@ public partial class OBPGame
     {
         Rac1World.Weapons.Missiles.Reset();
         Rac1World.Weapons.Deployables.Reset();
-        foreach (var node in _rac1Chickens.Values.Select(item => (Node)item.View).Concat(_rac1ArsenalBeams))
-            if (IsInstanceValid(node)) node.QueueFree();
-        foreach (var chicken in _rac1Chickens.Values.Where(chicken => IsInstanceValid(chicken.Enemy.Node.Root) && IsInstanceValid(chicken.Enemy.Body)))
-        {
-            // Restore only surfaces that had supported materials before morphing.
-            // Materialless Moby children must remain hidden after the chicken resets.
-            foreach (var mesh in chicken.Enemy.Node.Root.GetChildren().OfType<MeshInstance3D>())
-                mesh.Visible = mesh.MaterialOverride is not null;
-            var collider = chicken.Enemy.Body.GetChild<CollisionShape3D>(0);
-            collider.Shape = chicken.OriginalShape; collider.Position = chicken.OriginalShapePosition;
-        }
-        _rac1Chickens.Clear();
-        _rac1MorphExposure.Clear(); _rac1ArsenalBeams.Clear();
+        Rac1World.Weapons.Morph.Reset();
+        foreach (var beam in _rac1ArsenalBeams)
+            if (IsInstanceValid(beam)) beam.QueueFree();
+        _rac1ArsenalBeams.Clear();
         Rac1World.Weapons.Taunter.Reset();
         _rac1TeslaPresentation.Reset(); _rac1TeslaMaterials.Clear(); _rac1TeslaEffectRandom = null;
         Rac1World.Weapons.Walloper.Reset();
@@ -61,7 +44,7 @@ public partial class OBPGame
         IEnumerable<int>? excluded = null)
     {
         var skip = excluded?.ToHashSet();
-        return Rac1World.Enemies.Targets.Where(node => Rac1World.Weapons.Contacts.IsAimTarget(node) && !_rac1Chickens.ContainsKey(node.Source.InstanceIndex) &&
+        return Rac1World.Enemies.Targets.Where(node => Rac1World.Weapons.Contacts.IsAimTarget(node) && !Rac1World.Weapons.Morph.Contains(node.Source.InstanceIndex) &&
                 skip?.Contains(node.Source.InstanceIndex) != true)
             .Where(node =>
             {
@@ -106,31 +89,13 @@ public partial class OBPGame
     private void StepRac1ArsenalDeployables()
     {
         Rac1World.Weapons.Deployables.Tick();
-        foreach (var pair in _rac1Chickens.ToArray())
-        {
-            var chicken = pair.Value;
-            if (!Rac1World.Enemies.IsRac1GameplayActive(chicken.Enemy.Node) || chicken.Enemy.RewardEmitted)
-            { chicken.View.QueueFree(); _rac1Chickens.Remove(pair.Key); continue; }
-            if (chicken.Enemy.NeedsGroundPlacement)
-            {
-                if (!Rac1World.Enemies.TryGroundRac1Enemy(chicken.Enemy, upwardReach: 1, downwardReach: 1)) continue;
-                chicken.Enemy.NeedsGroundPlacement = false;
-            }
-            chicken.Age++; var body = chicken.Enemy.Body;
-            if (chicken.Age % 90 == 1) chicken.Direction = EquipmentForward.Rotated(Vector3.Up, _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(0, MathF.PI));
-            bool supported = EquipmentGround(body.GlobalPosition + chicken.Direction * .5f, .4f, .8f) is not null;
-            body.Velocity = (supported ? chicken.Direction : Vector3.Zero) * .8f + Vector3.Down * 2;
-            body.MoveAndSlide(); chicken.Enemy.Node.Root.GlobalPosition = body.GlobalPosition;
-            chicken.View.Play(1); Rac1ArsenalViewPose.Orient(chicken.View, chicken.Direction);
-            chicken.View.Rotation -= new Vector3(0, chicken.Enemy.Node.Root.Rotation.Y, 0); chicken.View.Step();
-        }
+        Rac1World.Weapons.Morph.TickChickens();
     }
 
     private void StepRac1ArsenalBeams()
     {
         foreach (var beam in _rac1ArsenalBeams) beam.Visible = false;
-        foreach (int key in _rac1MorphExposure.Keys.ToArray())
-            if (--_rac1MorphExposure[key] <= 0) _rac1MorphExposure.Remove(key);
+        Rac1World.Weapons.Morph.TickExposure();
         if (!_rac1ArsenalHeld) { Rac1World.Weapons.Tesla.Release(); return; }
         var weapon = _rac1Weapons.Equipped;
         if (weapon != Rac1WeaponId.TeslaClaw) Rac1World.Weapons.Tesla.Release();
@@ -151,18 +116,7 @@ public partial class OBPGame
             return;
         }
 
-        var target = FindArsenalTarget(from, Rac1ArsenalHostPolicy.MorphRange, .5f);
-        if (target is null)
-        {
-            var end = from + EquipmentForward * 3;
-            var hit = Rac1World.Weapons.Contacts.Contact(from, end, .01f);
-            DrawArsenalBeam(0, from, hit?.Point ?? end, new(.4f, 1, .25f));
-            return;
-        }
-        DrawArsenalBeam(0, from, target.Root.GlobalPosition + Vector3.Up * .5f, new(.4f, 1, .25f));
-        int progress = _rac1MorphExposure.GetValueOrDefault(target.Source.InstanceIndex) + 2;
-        _rac1MorphExposure[target.Source.InstanceIndex] = progress;
-        if (progress >= Rac1ArsenalHostPolicy.MorphExposureTicks) MorphArsenalEnemy(target);
+        Rac1World.Weapons.Morph.Fire(from, EquipmentForward);
     }
 
     private void DrawArsenalBeam(int index, Vector3 from, Vector3 to, Color color)
@@ -288,20 +242,5 @@ public partial class OBPGame
                 colors.AddRange([vertexColor.R, vertexColor.G, vertexColor.B, vertexColor.A]);
             }
         }
-    }
-
-    private void MorphArsenalEnemy(RuntimeWorldScene.DynamicObjectNode target)
-    {
-        if (_rac1Chickens.ContainsKey(target.Source.InstanceIndex) || !Rac1World.Enemies.Roster.TryGetValue(target.Source.InstanceIndex, out var enemy)) return;
-        var view = CreateEquipmentWorldView(270); view.Reparent(target.Root, false); view.Position = Vector3.Up * view.FootOffset;
-        view.Scale = Vector3.One / target.Root.Scale;
-        foreach (var mesh in target.Root.GetChildren().OfType<MeshInstance3D>()) mesh.Visible = false;
-        Rac1World.Enemies.SetRac1EnemyFlame(enemy, false); enemy.Reaction = null;
-        var collider = enemy.Body.GetChild<CollisionShape3D>(0);
-        var originalShape = collider.Shape; var originalPosition = collider.Position;
-        collider.Shape = new CapsuleShape3D { Radius = .24f, Height = .65f }; collider.Position = Vector3.Up * .325f;
-        _rac1Chickens.Add(target.Source.InstanceIndex, new(enemy, view, originalShape, originalPosition));
-        _rac1MorphExposure.Remove(target.Source.InstanceIndex);
-        SpawnEquipmentFlash(target.Root.GlobalPosition + Vector3.Up * .5f, 27, new(.4f, 1, .3f), 1, 12);
     }
 }

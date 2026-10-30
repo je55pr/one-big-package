@@ -108,7 +108,8 @@ public sealed class Rac1WeaponWorldOwnershipTests
         string arsenal = Script("OBPGame.Rac1Arsenal.cs");
         string projectile = Script("OBPGame.Rac1Projectiles.cs");
         string world = Script("OBPGame.Rac1WeaponWorld.cs");
-        Assert.Contains("Rac1World.Weapons.Contacts.Contact(", arsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Morph.Fire(from, EquipmentForward)", arsenal, StringComparison.Ordinal);
+        Assert.Contains("ports.Contact(from, end, .01f)", Script("Rac1MorphHost.cs"), StringComparison.Ordinal);
         Assert.Contains("Rac1World.Weapons.Contacts.HasLineOfSight(", projectile, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Weapons.Contacts.RayExclusions()", world, StringComparison.Ordinal);
     }
@@ -167,6 +168,80 @@ public sealed class Rac1WeaponWorldOwnershipTests
         Assert.Contains("ports.EligibleTargets()", host, StringComparison.Ordinal);
         Assert.Contains("ports.PresentedTargets()", fire, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", host, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MorphExposureChickenIdentityAndCollidersBelongToOneWorldLease()
+    {
+        var compilation = HostOwnershipAudit.Host.Value;
+        var root = compilation.GetTypeByMetadataName("OBP.Game.OBPGame")!;
+        foreach (var name in new[] { "ArsenalChicken", "_rac1Chickens", "_rac1MorphExposure", "MorphArsenalEnemy" })
+            Assert.Empty(root.GetMembers(name));
+
+        var weapon = compilation.GetTypeByMetadataName("OBP.Game.Rac1WeaponHost")!;
+        Assert.Equal("Rac1MorphHost",
+            Assert.Single(weapon.GetMembers("Morph").OfType<IPropertySymbol>()).Type.Name);
+
+        string host = Script("Rac1MorphHost.cs");
+        string parent = Script("Rac1WeaponHost.cs");
+        string world = Script("OBPGame.cs");
+        string arsenal = Script("OBPGame.Rac1Arsenal.cs");
+        Assert.Contains("Morph = new(morph)", parent, StringComparison.Ordinal);
+        Assert.Contains("Morph.Reset()", parent, StringComparison.Ordinal);
+        Assert.Contains("Morph.Dispose()", parent, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Morph.TickChickens()", arsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Morph.TickExposure()", arsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Morph.Fire(from, EquipmentForward)", arsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Morph.Reset()", arsenal, StringComparison.Ordinal);
+        Assert.Contains("!Rac1World.Weapons.Morph.Contains(node.Source.InstanceIndex)", arsenal, StringComparison.Ordinal);
+        Assert.Contains("new Rac1MorphPorts(", world, StringComparison.Ordinal);
+        Assert.DoesNotContain("_rac1Chickens", world, StringComparison.Ordinal);
+        Assert.DoesNotContain("OBPGame", host, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MorphRetainsNativeExposureChickenMotionAndColliderRestoration()
+    {
+        string host = Script("Rac1MorphHost.cs");
+        Assert.Contains("if (--_exposure[key] <= 0) _exposure.Remove(key)", host, StringComparison.Ordinal);
+        Assert.Contains("_exposure.GetValueOrDefault(target.Source.InstanceIndex) + 2", host, StringComparison.Ordinal);
+        Assert.Contains("Rac1ArsenalHostPolicy.MorphExposureTicks", host, StringComparison.Ordinal);
+        Assert.Contains("ports.FindTarget(from, Rac1ArsenalHostPolicy.MorphRange, .5f)", host, StringComparison.Ordinal);
+        Assert.Contains("ports.Contact(from, end, .01f)", host, StringComparison.Ordinal);
+        Assert.Contains("ports.CreateView(270)", host, StringComparison.Ordinal);
+        Assert.Contains("view.Scale = Vector3.One / target.Root.Scale", host, StringComparison.Ordinal);
+        Assert.Contains("collider.Shape = new CapsuleShape3D { Radius = .24f, Height = .65f }", host, StringComparison.Ordinal);
+        Assert.Contains("collider.Position = Vector3.Up * .325f", host, StringComparison.Ordinal);
+        Assert.Contains("chicken.Age % 90 == 1", host, StringComparison.Ordinal);
+        Assert.Contains("ports.SignedRandom(0, MathF.PI)", host, StringComparison.Ordinal);
+        Assert.Contains("ports.Ground(body.GlobalPosition + chicken.Direction * .5f, .4f, .8f)", host, StringComparison.Ordinal);
+        Assert.Contains("body.MoveAndSlide()", host, StringComparison.Ordinal);
+        Assert.Contains("mesh.Visible = mesh.MaterialOverride is not null", host, StringComparison.Ordinal);
+        Assert.Contains("collider.Shape = chicken.OriginalShape", host, StringComparison.Ordinal);
+        Assert.Contains("collider.Position = chicken.OriginalShapePosition", host, StringComparison.Ordinal);
+        Assert.Contains("_chickens.Clear()", host, StringComparison.Ordinal);
+        Assert.Contains("_exposure.Clear()", host, StringComparison.Ordinal);
+        Assert.Contains("Reset()", Method("Rac1MorphHost.cs", "Dispose"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MorphConsumersBorrowReadOnlyIdentitiesViewsAndDiagnostics()
+    {
+        string root = Script("OBPGame.cs");
+        string wrench = Script("OBPGame.Rac1Wrench.cs");
+        string host = Script("Rac1MorphHost.cs");
+        Assert.Contains("MorphedMobies: () => Rac1World.Weapons.Morph.ActiveKeys()", root, StringComparison.Ordinal);
+        Assert.Contains(".Concat(Rac1World.Weapons.SuckCannon.ChickenCargoKeys).Distinct().ToArray()", root, StringComparison.Ordinal);
+        Assert.Contains("MorphEnemy: node => Rac1World.Weapons.Morph.Morph(node)", root, StringComparison.Ordinal);
+        Assert.Contains("id => Rac1World.Weapons.Morph.ViewFor(id)", root, StringComparison.Ordinal);
+        Assert.Contains("id => Rac1World.Weapons.Morph.Contains(id)", root, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Morph.Project((enemy, view)", root, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Morph.ViewFor(target.Source.InstanceIndex)", wrench, StringComparison.Ordinal);
+        Assert.Contains("internal IReadOnlyList<Rac1MobyRuntimeKey> ActiveKeys()", host, StringComparison.Ordinal);
+        Assert.Contains("!chicken.Enemy.RewardEmitted", host, StringComparison.Ordinal);
+        Assert.Contains("internal Rac1EquipmentView? ViewFor(int instanceIndex)", host, StringComparison.Ordinal);
+        Assert.DoesNotContain("Dictionary<int, Chicken> _chickens", root, StringComparison.Ordinal);
+        Assert.DoesNotContain("Dictionary<int, int> _exposure", root, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -407,7 +482,8 @@ public sealed class Rac1WeaponWorldOwnershipTests
         Assert.Contains("Rac1World.Weapons.Missiles.Tick()", rootArsenal, StringComparison.Ordinal);
         Assert.Contains("nextId()", host, StringComparison.Ordinal);
         Assert.Contains("nextId()", Script("Rac1ArsenalDeployableHost.cs"), StringComparison.Ordinal);
-        Assert.Contains("Rac1ArsenalViewPose.Orient(", rootArsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1ArsenalViewPose.Orient(chicken.View, chicken.Direction)",
+            Script("Rac1MorphHost.cs"), StringComparison.Ordinal);
         Assert.Contains("view.Rotation = new(0, MathF.Atan2(direction.Z, -direction.X)",
             Script("Rac1ArsenalViewPose.cs"), StringComparison.Ordinal);
         Assert.Contains("Rac1ArsenalViewPose.Orient(missile.View", host, StringComparison.Ordinal);
