@@ -126,7 +126,9 @@ public static partial class GcUyaMoby
                 tw += w;
             }
 
-            if (tw == 0)
+            // The accumulated byte weights are non-negative integers, so
+            // <= 0 preserves the original zero-weight fallback exactly.
+            if (tw <= 0)
             {
                 var m0 = at.J0 >= 0 && at.J0 < globalBind.Length ? globalBind[at.J0] : AffineId;
                 var (qx, qy, qz) = AffineApply(m0, rawX[v], rawY[v], rawZ[v]);
