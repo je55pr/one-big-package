@@ -27,18 +27,12 @@ public static partial class GcUyaMoby
         int vertexTableOffset = packet.VertexTableOffset;
         var sts = packet.Sts;
         double k = state.K, skinCap = state.SkinCap;
-        int jointCount = state.JointCount;
         double[][]? globalBind = state.GlobalBind;
-        var skinState = state.SkinState;
         var vertexCache = state.VertexCache;
         bool recoverPersistentVertexCache = state.RecoverPersistentVertexCache;
         bool applySkin = globalBind is not null;
-        var legacySkinAttrs = applySkin
-            ? ReadPacketSkinLegacy(buf, vh, vbase, matrixTransferCount, twoWay, threeWay, inFileCount)
-            : null;
-        var animationSkinAttrs = applySkin
-            ? ReadPacketSkin(buf, vh, vbase, matrixTransferCount, twoWay, threeWay, inFileCount, jointCount, skinState)
-            : null;
+        var legacySkinAttrs = applySkin ? ReadPacketSkinLegacy(state, packet) : null;
+        var animationSkinAttrs = applySkin ? ReadPacketSkin(state, packet) : null;
 
         var rawX = new int[inFileCount];
         var rawY = new int[inFileCount];

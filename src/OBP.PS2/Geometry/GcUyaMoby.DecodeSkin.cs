@@ -9,9 +9,12 @@ public static partial class GcUyaMoby
     /// historical per-packet reset / seven-ahead upper-bit heuristic so this
     /// animation milestone does not silently rewrite established world geometry.
     /// </summary>
-    private static SkinAttr[] ReadPacketSkinLegacy(
-        byte[] buf, int vh, int vbase, int matrixTransferCount, int twoWay, int threeWay, int count)
+    private static SkinAttr[] ReadPacketSkinLegacy(DecodeState state, PacketData packet)
     {
+        byte[] buf = state.Buffer;
+        int vh = packet.HeaderOffset, vbase = packet.VertexBase;
+        int matrixTransferCount = packet.MatrixTransferCount;
+        int twoWay = packet.TwoWay, threeWay = packet.ThreeWay, count = packet.VertexCount;
         var blend = new SkinAttr?[64];
 
         void Set(int addr, SkinAttr a)
@@ -73,10 +76,14 @@ public static partial class GcUyaMoby
         return attrs;
     }
 
-    private static SkinAttr[] ReadPacketSkin(
-        byte[] buf, int vh, int vbase, int matrixTransferCount, int twoWay, int threeWay,
-        int count, int jointCount, SkinState state)
+    private static SkinAttr[] ReadPacketSkin(DecodeState decode, PacketData packet)
     {
+        byte[] buf = decode.Buffer;
+        int vh = packet.HeaderOffset, vbase = packet.VertexBase;
+        int matrixTransferCount = packet.MatrixTransferCount;
+        int twoWay = packet.TwoWay, threeWay = packet.ThreeWay, count = packet.VertexCount;
+        int jointCount = decode.JointCount;
+        SkinState state = decode.SkinState;
         void Reject() => state.FullyResolved = false;
         bool ValidAddress(int address)
         {

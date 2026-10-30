@@ -185,6 +185,15 @@ public sealed class GcUyaMobyDecodeCharacterizationTests
     {
         var mesh = GcUyaMoby.ReadClass(MaterialPacketClass(), recover);
         Assert.NotEmpty(mesh.Indices);
+        var inheritedTriangles = Enumerable.Range(0, mesh.Indices.Length / 3)
+            .Where(t => mesh.Indices.Skip(t * 3).Take(3).All(vertex => vertex >= 3))
+            .ToArray();
+        Assert.NotEmpty(inheritedTriangles);
+        Assert.All(inheritedTriangles, t =>
+        {
+            Assert.Equal(9, mesh.TriangleMaterialSlots[t]);
+            Assert.Equal(0, mesh.TriangleMaterialStateIndices[t]);
+        });
         Assert.Single(mesh.Materials);
         Assert.Equal(9, mesh.Materials[0].TextureId);
         Assert.All(mesh.TriangleMaterialSlots, id => Assert.Equal(9, id));
@@ -193,14 +202,74 @@ public sealed class GcUyaMobyDecodeCharacterizationTests
         Assert.True(expected == actual, $"Expected {expected}, actual {actual}");
     }
 
+
+    // A real triangle-bearing packet, rather than the empty strips used by
+    // cache tests, keeps ReadClass on the native skin path for validation.
+    private static byte[] SkinnedMaterialPacketClass()
+    {
+        var source = new byte[0x600];
+        MaterialPacketClass().CopyTo(source, 0);
+        source[8] = 1;
+        BinaryPrimitives.WriteInt32LittleEndian(source.AsSpan(0x14), 0x440);
+        BinaryPrimitives.WriteInt32LittleEndian(source.AsSpan(0x18), 0x4c0);
+        for (int packet = 0; packet < 2; packet++)
+        {
+            int vh = packet == 0 ? 0x220 : 0x320;
+            int vbase = vh + 0x20;
+            BinaryPrimitives.WriteUInt16LittleEndian(source.AsSpan(vh + 2), 1);
+            BinaryPrimitives.WriteUInt16LittleEndian(source.AsSpan(vh + 6), 2);
+            source[vbase + 4] = 128;
+            source[vbase + 5] = 128;
+        }
+        return source;
+    }
+
+    [Theory]
+    [InlineData(0, 0, true)]     // Both source slots are valid.
+    [InlineData(2, 3, false)]    // Native matrix addresses require alignment.
+    [InlineData(2, 12, false)]   // Referenced matrix slot was never written.
+    [InlineData(4, 127, false)]  // Two-weight sum is not 256.
+    [InlineData(1, 2, false)]    // Current-record upper bits select absent joint 1.
+    public void NativeSkinValidationFailsClosedWithoutLosingDrawableGeometry(
+        int byteOffset, byte value, bool expectedResolved)
+    {
+        var source = SkinnedMaterialPacketClass();
+        if (byteOffset != 0) source[0x240 + byteOffset] = value;
+        var mesh = GcUyaMoby.ReadClass(source, recoverPersistentVertexCache: true);
+        Assert.True(mesh.Skinned);
+        Assert.True(mesh.SkinningApplied);
+        Assert.NotEmpty(mesh.Indices);
+        Assert.Equal(expectedResolved, mesh.SkinStateFullyResolved);
+        Assert.Equal(mesh.Positions.Length, mesh.SkinLocalPositions.Length);
+        Assert.Equal(mesh.Positions.Length, mesh.VertexWeights.Length);
+    }
+
+    [Fact]
+    public void TwoPacketMaterialFixturePreservesAuthoredWindingAndDegenerateSkips()
+    {
+        var mesh = GcUyaMoby.ReadClass(MaterialPacketClass(), recoverPersistentVertexCache: true);
+        // This explicit vertex-index expectation protects the strip output
+        // independently of the whole-mesh SHA-256 fingerprint.
+        Assert.Equal(new[]
+        {
+            1, 0, 2, 1, 2, 0, 0, 2, 1, 0, 1, 2,
+            4, 3, 5, 4, 5, 3, 3, 5, 4, 3, 4, 5, 5, 4, 3, 5, 3, 4, 4, 3, 5,
+        }, mesh.Indices);
+    }
+
+    private static string RequireRetailIso(string name)
+    {
+        string? iso = Environment.GetEnvironmentVariable(name);
+        Skip.If(string.IsNullOrWhiteSpace(iso), $"{name} missing");
+        return iso!;
+    }
+
     [SkippableTheory]
     [InlineData(2466, "C8B409F9030096B74C6244CB59E9370BC05AD481A7ACCCE90DEF08B2C4E5A631")]
     [InlineData(2859, "05E6DFEA55DA003C907E85100A12E4770C540D771F0F2732DB8FA74850EEE47C")]
     public void GcRetailDecodedMeshIsPinned(int classId, string expected)
     {
-        string? iso = Environment.GetEnvironmentVariable("OBP_GC_ISO");
-        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_GC_ISO missing");
-        using var reader = new FileRandomAccessReader(iso!);
+        using var reader = new FileRandomAccessReader(RequireRetailIso("OBP_GC_ISO"));
         var fs = Iso9660Filesystem.Open(reader);
         var wad = fs.OpenFile("/G/LEVEL1.WAD")!;
         var header = Rac2LevelWad.ReadHeader(wad);
@@ -216,9 +285,7 @@ public sealed class GcUyaMobyDecodeCharacterizationTests
     [InlineData(5821, "F84C27696651DD102524FA7FDB6E59AD6BDDB7EE731F9E393CA19F56AF6709BF")]
     public void UyaRetailDecodedMeshIsPinned(int classId, string expected)
     {
-        string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
-        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_UYA_ISO missing");
-        using var reader = new FileRandomAccessReader(iso!);
+        using var reader = new FileRandomAccessReader(RequireRetailIso("OBP_UYA_ISO"));
         var core = Rac3LevelCore.Open(reader, 1).Core;
         int textureCount = OBP.RAC3.Level.Rac3Assets.ReadTextures(
             core, OBP.RAC3.Level.Rac3Assets.TextureTable.Moby).Count;
