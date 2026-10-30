@@ -33,15 +33,17 @@ For a rendered comparison, use the same source flags and smoke with
 The second flag is optional and off by default, so pose-only allocation/timing
 profiling does not subscribe to the scene-tree frame clock. When enabled,
 `PlayerAvatarView` turns on the viewport timer on tree entry and disables it
-on exit. It samples on each scene-tree
-`ProcessFrame` event, once per rendered frame rather than once per pose
-change, and unsubscribes when the view exits the tree. The `viewportCpuMs`
-and `viewportGpuMs` fields are **whole-viewport** timings, not avatar-only
+on exit. It samples once per scene-tree `ProcessFrame` tick rather than
+once per pose change. That signal fires before `Node._Process`, and the
+sampler reads the renderer's most recently reported timings; it is not a
+dedicated render-frame callback. The view unsubscribes on tree exit.
+The `viewportCpuMs` and `viewportGpuMs` fields are **whole-viewport** timings, not avatar-only
 or render-thread queue timings. The separate `renderSetupMs` field is
 **CPU frame-setup time shared across viewports**, not a per-viewport value.
-`renderFrames` counts process ticks including 120 warm-up frames;
+`renderFrames` counts process ticks including the first 120 warm-up ticks;
 `renderSamples` and `gpuSamples` count positive timing samples. A value
-of `-1` means no positive sample was available, as may happen headlessly. The profiling flag is opt-in and does not change animation decisions.
+of `-1` means no positive sample was available, as may happen headlessly.
+The profiling flags are opt-in and do not change animation decisions.
 A rendered fixed-seed Bomb Glove smoke verified that both viewport timing
 fields return nonzero measurements with the real GL Compatibility renderer.
 
@@ -85,7 +87,8 @@ avatar surfaces. After 120 warm-up frames, a temporary host-only probe sampled
 viewport calls measure **whole-viewport render time** rather than avatar-only
 GPU cost. `GetFrameSetupTimeCpu` separately measures CPU setup time shared
 across viewports. That temporary host probe was not added to production code;
-the retained avatar profiling hook now samples render frames directly.
+the retained avatar profiling hook now samples once per scene-tree process
+tick, independently of pose changes.
 
 | Strategy/run | Avatar ApplyFrame elapsed (µs) | Managed B/update | Viewport CPU render (ms) | Viewport GPU render (ms) | Frame setup CPU (ms) |
 | --- | ---: | ---: | ---: | ---: | ---: |
