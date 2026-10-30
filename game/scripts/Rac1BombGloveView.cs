@@ -14,6 +14,7 @@ public sealed partial class Rac1BombGloveView : Node3D
     private readonly Rac1BombGloveAssets.Asset _asset;
     private readonly List<(ArrayMesh Mesh, Vector2[] Uvs, int[] Indices)> _surfaces = [];
     private readonly Rac1AnimationFrameClock _clock;
+    private readonly Vector3[] _convertedPositions;
     private long _generation;
     private int _sequence = 1;
     public Vector3 BombLocal { get; private set; }
@@ -22,6 +23,7 @@ public sealed partial class Rac1BombGloveView : Node3D
     public Rac1BombGloveView(Rac1BombGloveAssets.Asset asset, PlayerAvatar avatar, WorldMaterialFactory materials)
     {
         _asset = asset; _avatar = avatar;
+        _convertedPositions = new Vector3[asset.Clips[1].Frames[0].Length / 3];
         Name = "Rac1RetailBombGlove_Joint54";
         _clock = new(asset.Clips.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<double>)pair.Value.Durations), 1, 0, 1);
         foreach (var surface in asset.Surfaces)
@@ -71,12 +73,12 @@ public sealed partial class Rac1BombGloveView : Node3D
         var origin = System.Numerics.Vector3.Lerp(clip.BombOrigins[sample.CurrentFrame], clip.BombOrigins[sample.NextFrame], sample.Fraction);
         BombLocal = PlayerAvatarView.ToGodotLocal(hand.Transform(new(origin.X, origin.Y, origin.Z)),
             _avatar.Axes, _avatar.BaseHeight, true);
-        var converted = PlayerAvatarView.ConvertFrame(vertices, _avatar.Axes, _avatar.BaseHeight, true);
+        PlayerAvatarView.ConvertFrameInto(vertices, _avatar.Axes, _avatar.BaseHeight, true, _convertedPositions);
         foreach (var surface in _surfaces)
         {
             var arrays = new global::Godot.Collections.Array();
             arrays.Resize((int)Mesh.ArrayType.Max);
-            arrays[(int)Mesh.ArrayType.Vertex] = converted;
+            arrays[(int)Mesh.ArrayType.Vertex] = _convertedPositions;
             arrays[(int)Mesh.ArrayType.TexUV] = surface.Uvs;
             arrays[(int)Mesh.ArrayType.Index] = surface.Indices;
             surface.Mesh.ClearSurfaces();

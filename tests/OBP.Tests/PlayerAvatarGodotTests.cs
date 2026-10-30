@@ -52,6 +52,26 @@ public sealed class PlayerAvatarGodotTests
         Assert.Equal(new global::Godot.Vector3(-4, 6, -5), mapped[1]);
     }
 
+    [Fact]
+    public void ConvertFrameIntoReusesBufferAndPreservesAxisMapping()
+    {
+        double[] source = [1, 2, 3, -4, 5, 6];
+        var converted = new global::Godot.Vector3[2];
+
+        PlayerAvatarView.ConvertFrameInto(source, Rac1Axes, 0.5, true, converted);
+
+        Assert.Equal(new global::Godot.Vector3(1, 2.5f, -2), converted[0]);
+        Assert.Equal(new global::Godot.Vector3(-4, 5.5f, -5), converted[1]);
+        Assert.Equal(PlayerAvatarView.ConvertFrame(source, Rac1Axes, 0.5, true), converted);
+
+        double[] next = [7, 8, 9, 10, 11, 12];
+        PlayerAvatarView.ConvertFrameInto(next, Rac1Axes, 0.5, true, converted);
+        Assert.Equal(new global::Godot.Vector3(7, 8.5f, -8), converted[0]);
+        Assert.Equal(new global::Godot.Vector3(10, 11.5f, -11), converted[1]);
+        Assert.Throws<InvalidDataException>(() =>
+            PlayerAvatarView.ConvertFrameInto(source, Rac1Axes, 0, false, new global::Godot.Vector3[1]));
+    }
+
     [Theory]
     [InlineData(0d, 1d)]
     [InlineData(1d, 0d)]

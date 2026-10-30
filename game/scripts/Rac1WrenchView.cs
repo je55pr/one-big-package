@@ -24,6 +24,7 @@ public sealed partial class Rac1WrenchView : Node3D
     private long _generation = -1;
     private int _sequence = 1;
     private double[] _localPositions;
+    private readonly Vector3[] _convertedPositions;
     public Vector3 HandLocal { get; private set; }
     public Vector3 TipLocal { get; private set; }
     public int NativeSequence => _sequence;
@@ -35,6 +36,7 @@ public sealed partial class Rac1WrenchView : Node3D
             sequence => Rac1WrenchAsset.DecodeAnimation(asset, sequence));
         _clock = new(_clips.ToDictionary(pair => pair.Key, pair => pair.Value.Durations), 1, 0, 1);
         _localPositions = _clips[1].Frames[0];
+        _convertedPositions = new Vector3[_localPositions.Length / 3];
         _tipBlendSource = _clips[1].TipFrames[0];
         Name = "Rac1RetailWrench_AnimatedHand";
         BuildSurfaces(asset, avatar.Axes);
@@ -68,14 +70,16 @@ public sealed partial class Rac1WrenchView : Node3D
         }
         HandLocal = Convert(hand.Origin, true);
         TipLocal = Convert(hand.Transform(localTip), true);
-        UpdateSurfaces(PlayerAvatarView.ConvertFrame(positions, _avatar.Axes, _avatar.BaseHeight, true));
+        PlayerAvatarView.ConvertFrameInto(positions, _avatar.Axes, _avatar.BaseHeight, true, _convertedPositions);
+        UpdateSurfaces(_convertedPositions);
     }
 
     public void StepThrown(Vector3 worldPosition, float spin)
     {
         GlobalTransform = new Transform3D(new Basis(Vector3.Up, spin), worldPosition);
         _localPositions = _clips[6].Frames[0];
-        UpdateSurfaces(PlayerAvatarView.ConvertFrame(_localPositions, _avatar.Axes));
+        PlayerAvatarView.ConvertFrameInto(_localPositions, _avatar.Axes, 0, false, _convertedPositions);
+        UpdateSurfaces(_convertedPositions);
         HandLocal = Vector3.Zero;
         TipLocal = Convert(_clips[6].TipFrames[0], false);
     }
@@ -120,7 +124,8 @@ public sealed partial class Rac1WrenchView : Node3D
 
     private void BuildSurfaces(Rac1WrenchAsset.Asset asset, PlayerAvatarAxes axes)
     {
-        Vector3[] vertices = PlayerAvatarView.ConvertFrame(_localPositions, axes);
+        PlayerAvatarView.ConvertFrameInto(_localPositions, axes, 0, false, _convertedPositions);
+        Vector3[] vertices = _convertedPositions;
         var textures = asset.Textures.ToDictionary(texture => texture.TextureId);
         foreach (var surface in asset.Surfaces)
         {
