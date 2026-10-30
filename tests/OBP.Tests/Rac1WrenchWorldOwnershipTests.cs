@@ -101,8 +101,8 @@ public sealed class Rac1WrenchWorldOwnershipTests
         Assert.Contains("Rac1World.Enemies.Frogs.ResolveRac1FrogCarrierWrenchContacts", factory, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Enemies.Frogs.ResolveRac1QueenWrenchContacts", factory, StringComparison.Ordinal);
         Assert.Contains("ActorHost.Combat.ResolveWrench", factory, StringComparison.Ordinal);
-        Assert.Contains("TryStrikeRac1Crate(target, result)", factory, StringComparison.Ordinal);
-        Assert.Contains("TryStrikeRac1Hostile(target, result)", factory, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.WrenchDamage.TryStrikeCrate(target, result)", factory, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.WrenchDamage.TryStrikeHostile(target, result)", factory, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Breakables.TryBreakNovalisProp(target", factory, StringComparison.Ordinal);
     }
 

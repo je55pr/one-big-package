@@ -77,7 +77,7 @@ public sealed class Rac1BombProjectileWorldOwnershipTests
         Assert.Contains("ports.ImpactFx(position, normal, push)", host, StringComparison.Ordinal);
         Assert.Contains("ports.Player()!.GetWorld3D().DirectSpaceState.IntersectRay(ray)", host, StringComparison.Ordinal);
         Assert.Contains("ActorHost.Combat.ResolveBlast(FusionWeaponSession.BombGlove", root, StringComparison.Ordinal);
-        Assert.Contains("CompleteRac1CrateDamage),", root, StringComparison.Ordinal);
+        Assert.Contains("(node, admission) => Rac1World.WrenchDamage.CompleteCrateDamage(node, admission)", root, StringComparison.Ordinal);
         Assert.DoesNotContain("Rac1BombProjectileSession _", root, StringComparison.Ordinal);
     }
 

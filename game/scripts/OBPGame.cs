@@ -294,7 +294,8 @@ public partial class OBPGame : Node3D
             (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Inclusive(min, max),
             SelectRac1CrateReward,
             (from, to) => Rac1World.Weapons.Contacts.HasLineOfSight(from, to),
-            damage => Rac1World.Enemies.ApplyRac1EnemyPlayerDamage(damage), CompleteRac1CrateDamage),
+            damage => Rac1World.Enemies.ApplyRac1EnemyPlayerDamage(damage),
+            (node, admission) => Rac1World.WrenchDamage.CompleteCrateDamage(node, admission)),
         new Rac1WorldResetPorts(
             Player: () =>
             {
@@ -505,16 +506,17 @@ public partial class OBPGame : Node3D
             (target, result) => target.Source.NativeClassId switch
             {
                 int nativeClass when Rac1BoltCrate.IsCrateClass(nativeClass) ||
-                    nativeClass == Rac1ExplosiveCrateSession.ClassId => TryStrikeRac1Crate(target, result),
+                    nativeClass == Rac1ExplosiveCrateSession.ClassId => Rac1World.WrenchDamage.TryStrikeCrate(target, result),
                 Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId or
                     Rac1AridiaEnemies.Sandshark or Rac1AridiaEnemies.Constructorbot or Rac1AridiaEnemies.Nest or
                     Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId or Rac1FrogAuthored.ClassId =>
-                    TryStrikeRac1Hostile(target, result),
+                    Rac1World.WrenchDamage.TryStrikeHostile(target, result),
                 Rac1NovalisBreakableSession.MushroomClass or Rac1NovalisBreakableSession.RockFormationClass =>
                     Rac1World.Breakables.TryBreakNovalisProp(target, Rac1NovalisBreakableSession.ContactKind.Wrench),
                 _ => false,
             },
             soft => _playerAudio?.WrenchContact(soft)),
+        new Rac1WrenchDamagePorts(() => _persistentPlayer.Wrench, SelectRac1CrateReward),
         new Rac1BombProjectilePorts(
             () => _player, () => _sceneResult is not null,
             () => (float)(_avatarPresentation.Avatar?.BaseHeight ?? -.7),
@@ -525,7 +527,7 @@ public partial class OBPGame : Node3D
             (position, normal, push) => SpawnRac1BombExplosion(position, impactNormal: normal, reflectedPush: push),
             (generation, id, origin, radius) => ActorHost.Combat.ResolveBlast(FusionWeaponSession.BombGlove,
                 generation, id, origin, radius, (float)Rac1BombGlove.NativeDamage, Rac1BombGlove.NativeDamageFlags),
-            CompleteRac1CrateDamage),
+            (node, admission) => Rac1World.WrenchDamage.CompleteCrateDamage(node, admission)),
         new Rac1TaxiHostPorts(
             () => _player is { } player && IsInstanceValid(player) ? new Rac1TaxiPlayerController(player) : null,
             () => _mode == Mode.World && !GetTree().Paused &&
@@ -557,7 +559,8 @@ public partial class OBPGame : Node3D
                     node.GlobalPosition = Rac1LootPresentation.FromEffectNative(motion.Position); owner.Loot.AddDebris(node, motion);
                 }, owner.Loot.PlayRac1PickupSound, (node, sound) => ActorHost.PlayRac1Sound(node, sound), (from, to) => Rac1World.Weapons.Contacts.HasLineOfSight(from, to), origin => SpawnRac1BombExplosion(origin),
                 origin => SpawnRac1ExplosionBursts(origin, Rac1BombExplosion.Bursts(false).Take(1).ToArray()),
-                (node, damage) => owner.Breakables.TryTriggerExplosiveDamage(node, damage), CompleteRac1CrateDamage,
+                (node, damage) => owner.Breakables.TryTriggerExplosiveDamage(node, damage),
+            (node, admission) => owner.WrenchDamage.CompleteCrateDamage(node, admission),
                 (id, presence) => { if (owner.Loot.CrateBodies.TryGetValue(id, out var body) && IsInstanceValid(body)) body.CollisionLayer = presence == RuntimeEntityPresence.Active ? 1u : 0; },
                 id => Rac1World.Weapons.Morph.Contains(id)),
             new(() => ReferenceEquals(_worldScenes?.Current?.Resources.Rac1Gameplay, owner)),
@@ -1763,7 +1766,7 @@ public partial class OBPGame : Node3D
             FromNative = Rac1LootPresentation.FromEffectNative,
             Orientation = Rac1LootPresentation.FromEffectOrientation,
             CrateBody = id => Rac1World.Loot.CrateBodies.ContainsKey(id),
-            Strike = node => TryStrikeRac1Crate(node),
+            Strike = node => Rac1World.WrenchDamage.TryStrikeCrate(node),
             Damage = () => _rac1Nanotech.ApplyDamage(Rac1DamageRuntime.FromClass749Attack(new(749, 149), new(34, 1))),
         }, targets, worlds);
         return new(movement.Ports, new(loot, targets, movement.Equipment, new GodotRac1LootDiagnosticCapture(this,
@@ -1861,7 +1864,7 @@ public partial class OBPGame : Node3D
             () => Rac1World.Enemies.Class1440, () => Rac1World.Enemies.Peckbots, () => Rac1World.Enemies.Birdbots, () => Rac1World.Context.Hostiles,
             () => new(Rac1World.Enemies.Roster.Count, Rac1World.Enemies.Class1440?.RegisteredCount ?? 0, Rac1World.Enemies.Peckbots?.RegisteredCount ?? 0,
                 Rac1World.Enemies.Birdbots?.RegisteredCount ?? 0, Rac1World.Enemies.BirdbotShotCount, _rac1Nanotech.Probe().Nanotech,
-                _worldSwitches, (_rac1CombatRetry ?? PlayerLife.RetryPanel)?.Visible == true), () => _player, node => TryStrikeRac1Hostile(node),
+                _worldSwitches, (_rac1CombatRetry ?? PlayerLife.RetryPanel)?.Visible == true), () => _player, node => Rac1World.WrenchDamage.TryStrikeHostile(node),
             Rac1World.Enemies.TryGroundRac1Enemy, Rac1EnemyHost.EnemyForward, Rac1World.Enemies.EnemySocket, Rac1World.Enemies.EnemyRayTouchesPlayer,
             id => Rac1World.Enemies.HasBirdbotShot(id)), new GodotDiagnosticWorldObservations(WorldScenes));
         var movement = CreateMovementDiagnosticHarness();
@@ -2053,7 +2056,7 @@ public partial class OBPGame : Node3D
         Crates = () => [.. Rac1World.Presentation.CrateNodes],
         Active = Rac1World.Enemies.IsRac1GameplayActive,
         Damage = Rac1World.Enemies.ApplyRac1EnemyWeaponDamage,
-        Strike = node => TryStrikeRac1Crate(node),
+        Strike = node => Rac1World.WrenchDamage.TryStrikeCrate(node),
         Read = () => new([.. Rac1World.Enemies.Roster.Values.Select(enemy => new MovementStateEnemyDiagnostic(new(ObpSourceGame.Rac1, enemy.Node.Source.NativeClassId,
                 enemy.Node.Source.InstanceIndex), Rac1World.Enemies.IsRac1GameplayActive(enemy.Node), enemy.Node.Root.Visible, enemy.Body.CollisionLayer, enemy.RewardEmitted))],
             [.. Rac1World.Presentation.CrateNodes.Select(node => new MovementStateCrateDiagnostic(new(ObpSourceGame.Rac1, node.Source.NativeClassId, node.Source.InstanceIndex),

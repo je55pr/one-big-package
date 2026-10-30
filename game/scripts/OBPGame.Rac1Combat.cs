@@ -105,86 +105,10 @@ public partial class OBPGame
         _ = delta;
     }
 
-    private bool TryStrikeRac1Crate(RuntimeWorldScene.DynamicObjectNode target, Rac1WrenchDamageResult? nativeDamage = null)
-    {
-        if (target.Source.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
-        {
-            var explosive = _persistentPlayer.Wrench.AdmitGoal1RuntimeTarget(target.Source);
-            if (explosive is null) return false;
-            var strike = nativeDamage ?? _persistentPlayer.Wrench.ResolveHostAdmittedDamage(explosive.Value);
-            if (strike is null) return false;
-            var key = new Rac1MobyRuntimeKey(target.Source.NativeClassId, target.Source.InstanceIndex);
-            var hit = Rac1DamageRuntime.FromWrench(key, strike);
-            if (!Rac1World.Breakables.TryTriggerExplosiveDamage(target, hit)) return false;
-            Rac1World.Context.DamageTransport.Publish(hit);
-            return true;
-        }
-        var authored = Rac1BoltCrate.ReadAuthored(target.Source);
-        if (authored is null)
-            return false;
-
-        var contactTarget = _persistentPlayer.Wrench.AdmitGoal1RuntimeTarget(target.Source)
-            ?? throw new InvalidOperationException(
-                "Admitted R&C1 Bolt Crate was rejected by the wrench target contract.");
-        var damage = nativeDamage ?? _persistentPlayer.Wrench.ResolveHostAdmittedDamage(contactTarget);
-        if (damage is null)
-            return false;
-
-        var targetKey = new Rac1MobyRuntimeKey(
-            target.Source.NativeClassId,
-            target.Source.InstanceIndex);
-        var damageEvent = Rac1DamageRuntime.FromWrench(targetKey, damage);
-        if (!Rac1World.Context.MobyRuntime.CanDispatchDamage(damageEvent)) return false;
-        Rac1World.Context.DamageTransport.Publish(damageEvent);
-        var admission =
-            Rac1World.Context.MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(
-                damageEvent);
-        CompleteRac1CrateDamage(target, admission);
-        return true;
-    }
-
-    private void CompleteRac1CrateDamage(RuntimeWorldScene.DynamicObjectNode target, Rac1BoltCrateDamageAdmission admission)
-    {
-        var authored = Rac1BoltCrate.ReadAuthored(target.Source)!;
-        var broken = Rac1World.Context.BoltCrates.CompleteDamage(
-            admission,
-            selectedTotal: SelectRac1CrateReward(authored.RewardCentre));
-
-        Vector3 rewardOrigin = target.Root.GlobalPosition;
-        Rac1World.Loot.PlayRac1PickupSound(Rac1CrateAudio.BreakSoundClass(target.Source.NativeClassId),
-            Rac1CrateAudio.BreakLocalSound, rewardOrigin);
-        Rac1World.Loot.SpawnRac1CrateDebris(target);
-        Rac1World.Loot.DisableRac1CrateCollider(target.Source.InstanceIndex);
-        target.ApplyState(broken.EntityState);
-        Rac1World.Loot.SpawnRac1BoltPickups(rewardOrigin, broken.Pickups);
-        Rac1World.Loot.SpawnRac1CrateSupply(target, rewardOrigin);
-        Rac1World.Context.CombatStatus =
-            $"crate {target.Source.InstanceIndex} broke via host contact policy: +{broken.PhysicalValue} bolts emitted";
-        GD.Print($"[rac1-gameplay] {Rac1World.Context.CombatStatus}");
-    }
-
     private int SelectRac1CrateReward(int centre)
     {
         var range = Rac1BoltCrate.RewardRange(centre);
         return range.Maximum == 0 ? 0 : _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Inclusive(range.Minimum, range.Maximum);
-    }
-
-    private bool TryStrikeRac1Hostile(RuntimeWorldScene.DynamicObjectNode hostile, Rac1WrenchDamageResult? nativeDamage = null)
-    {
-        var contactTarget = _persistentPlayer.Wrench.AdmitGoal1RuntimeTarget(hostile.Source)
-            ?? throw new InvalidOperationException(
-                "R&C1 class-749 hostile was rejected by the wrench target contract.");
-        var damage = nativeDamage ?? _persistentPlayer.Wrench.ResolveHostAdmittedDamage(contactTarget);
-        if (damage is null)
-            return false;
-
-        var targetKey = new Rac1MobyRuntimeKey(
-            hostile.Source.NativeClassId,
-            hostile.Source.InstanceIndex);
-        var damageEvent = Rac1DamageRuntime.FromWrench(targetKey, damage);
-        if (!Rac1World.Enemies.ApplyRac1EnemyWeaponDamage(hostile, damageEvent)) return false;
-        Rac1World.Context.DamageTransport.Publish(damageEvent);
-        return true;
     }
 
     private static bool Rac1WrenchHostPolicyAdmits(

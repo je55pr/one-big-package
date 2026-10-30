@@ -153,7 +153,12 @@ public sealed class Rac1HostArchitectureTests
             "CompleteRecoveredDamageReaction",
             combat,
             StringComparison.Ordinal);
-        Assert.Contains("ApplyRac1EnemyWeaponDamage", combat, StringComparison.Ordinal);
+        string wrenchDamage = File.ReadAllText(Path.Combine(
+            RepoPaths.Root, "game", "scripts", "Rac1WrenchDamageHost.cs"));
+        Assert.DoesNotContain("Rac1Class749Hostile.TerminalNativeStateFd", wrenchDamage, StringComparison.Ordinal);
+        Assert.DoesNotContain("Rac1Class749Hostile.TerminalNativeStateFe", wrenchDamage, StringComparison.Ordinal);
+        Assert.DoesNotContain("CompleteRecoveredDamageReaction", wrenchDamage, StringComparison.Ordinal);
+        Assert.Contains("ApplyRac1EnemyWeaponDamage", wrenchDamage, StringComparison.Ordinal);
     }
 
     [Fact]

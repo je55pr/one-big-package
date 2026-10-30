@@ -285,7 +285,7 @@ public partial class OBPGame
         bool applied;
         if (Rac1BoltCrate.IsCrateClass(target.Source.NativeClassId))
         {
-            CompleteRac1CrateDamage(target, Rac1World.Context.MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage));
+            Rac1World.WrenchDamage.CompleteCrateDamage(target, Rac1World.Context.MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage));
             applied = true;
         }
         else if (target.Source.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
