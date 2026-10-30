@@ -22,8 +22,20 @@ snapshot used below. Diagnostics measure `PlayerAvatarView.ApplyFrame` after
 clip/pose selection, including coordinate conversion and mesh submission.
 `Stopwatch.GetTimestamp` measures calling-thread elapsed time and
 `GC.GetAllocatedBytesForCurrentThread` measures its managed allocations.
-Counts of surface rebuilds/uploads are explicitly recorded. The counters for
+The number of surface rebuilds is explicitly recorded. The counters for
 GC collections are **process cumulative**, not attributable to this method.
+
+For a rendered comparison, use the same source flags and smoke with
+`--windowed --position -20000,-20000 --resolution 960x540` in place of
+`--headless`. In profiling mode, `PlayerAvatarView` enables Godot's
+per-viewport CPU/GPU timers once the view enters the scene tree. The
+`viewportCpuMs`, `viewportGpuMs`, `renderSetupMs`,
+`renderSamples` and `gpuSamples` fields are **whole-viewport**
+statistics (not avatar-only or render-thread queue timings). A value of
+`-1` means a positive sample was unavailable, as may happen in headless
+mode. The profiling flag is opt-in and does not change animation decisions.
+A rendered fixed-seed Bomb Glove smoke verified that both viewport timing
+fields return nonzero measurements with the real GL Compatibility renderer.
 
 ## Local baseline and experiments (2026-10-30)
 

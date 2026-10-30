@@ -90,6 +90,9 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
     private long _profileAllocatedBytes;
     private long _profileRebuiltSurfaces;
     private int _profileSamples;
+    private bool _profileViewportEnabled;
+    private long _profileViewportCpuSamples, _profileViewportGpuSamples;
+    private double _profileViewportCpuMs, _profileViewportGpuMs, _profileFrameSetupMs;
 
     public PlayerAvatarView(
         PlayerAvatar avatar,
@@ -322,7 +325,39 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
             _profileAllocatedBytes += GC.GetAllocatedBytesForCurrentThread() - startAllocation;
             _profileRebuiltSurfaces += _surfaces.Count;
             _profileSamples++;
+            SampleViewportProfile();
             if (_profileSamples % 250 == 0) PrintProfile();
+        }
+    }
+
+    /// <summary>
+    /// Optional whole-viewport render timing. This deliberately runs from the
+    /// existing presentation update, since the avatar owns no render-frame clock.
+    /// These numbers are not avatar-only GPU timings.
+    /// </summary>
+    private void SampleViewportProfile()
+    {
+        if (!IsInsideTree()) return;
+        var viewport = GetViewport().GetViewportRid();
+        if (!_profileViewportEnabled)
+        {
+            RenderingServer.ViewportSetMeasureRenderTime(viewport, true);
+            _profileViewportEnabled = true;
+            return;
+        }
+        if (_profileSamples <= 120) return;
+        double cpu = RenderingServer.ViewportGetMeasuredRenderTimeCpu(viewport);
+        double gpu = RenderingServer.ViewportGetMeasuredRenderTimeGpu(viewport);
+        if (cpu > 0)
+        {
+            _profileViewportCpuMs += cpu;
+            _profileFrameSetupMs += RenderingServer.GetFrameSetupTimeCpu();
+            _profileViewportCpuSamples++;
+        }
+        if (gpu > 0)
+        {
+            _profileViewportGpuMs += gpu;
+            _profileViewportGpuSamples++;
         }
     }
 
@@ -332,6 +367,10 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
             $"surfaceRebuilds={_profileRebuiltSurfaces} " +
             $"avgUpdateUs={_profileTicks * 1_000_000d / Stopwatch.Frequency / _profileSamples:0.000} " +
             $"avgManagedBytes={_profileAllocatedBytes / (double)_profileSamples:0.0} " +
+            $"viewportCpuMs={(_profileViewportCpuSamples > 0 ? _profileViewportCpuMs / _profileViewportCpuSamples : -1):0.000} " +
+            $"viewportGpuMs={(_profileViewportGpuSamples > 0 ? _profileViewportGpuMs / _profileViewportGpuSamples : -1):0.000} " +
+            $"renderSetupMs={(_profileViewportCpuSamples > 0 ? _profileFrameSetupMs / _profileViewportCpuSamples : -1):0.000} " +
+            $"renderSamples={_profileViewportCpuSamples} gpuSamples={_profileViewportGpuSamples} " +
             $"gc0={GC.CollectionCount(0)} gc1={GC.CollectionCount(1)} gc2={GC.CollectionCount(2)}");
     }
 
