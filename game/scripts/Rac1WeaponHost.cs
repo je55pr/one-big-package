@@ -12,6 +12,7 @@ internal sealed class Rac1WeaponHost : IDisposable
 {
     private bool _disposed;
     private long _arsenalId;
+    private ulong _worldTick;
 
     internal Rac1WeaponHost(Node3D sceneRoot, Rac1MetalDetectorPorts detector, Rac1WeaponTargetPorts targets,
         Rac1WeaponContactPhysicsPorts physics, Rac1SuckCannonPorts suckCannon,
@@ -57,6 +58,30 @@ internal sealed class Rac1WeaponHost : IDisposable
     // decoy fold/landing animation. It survives preview resets in this world.
     internal long LastArsenalId => _arsenalId;
 
+    // Clock belongs to this world lease, never to the persistent application root.
+    internal ulong WorldTick => _worldTick;
+
+    internal void ResetWorldTick()
+    {
+        if (_disposed) return;
+        _worldTick = 0;
+    }
+
+    // Preserve fixed-frame ordering across arsenal, emissions, contacts and projectiles.
+    internal void StepWorld(bool pyroEmitting)
+    {
+        if (_disposed) return;
+        _worldTick++;
+        Arsenal.Tick();
+        Flames.Emit(pyroEmitting);
+        Projectiles.StepMotes();
+        Flames.StepContacts();
+        SuckCannon.Step();
+        Projectiles.StepShots();
+        Projectiles.StepDoomAgents();
+        Projectiles.StepFlashes();
+    }
+
     internal long NextArsenalId()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -79,6 +104,7 @@ internal sealed class Rac1WeaponHost : IDisposable
     {
         if (_disposed) return;
         // Release camera/input before the player/world lease is retired.
+        ResetWorldTick();
         GuidedCamera.End();
         Arsenal.ClearHeld();
         ThrownAnimation.Reset();

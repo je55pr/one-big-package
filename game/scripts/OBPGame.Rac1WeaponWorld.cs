@@ -42,8 +42,6 @@ public partial class OBPGame
             _equipmentPresentation.NativeViews.Assets, _args.FixedSeed,
             !OrdinaryPlayerSession && !_args.Rac1WeaponsSmoke && !_args.Rac1BombGloveSmoke, SetBombOrientation);
 
-    private ulong _rac1WeaponWorldTick;
-
     private void SpawnEquipmentFlash(Vector3 origin, int type, Color color, float size, int ticks)
     {
         var node = _equipmentPresentation.Explosions.CreateEquipmentParticle(type, color, size,
@@ -55,15 +53,7 @@ public partial class OBPGame
     private void StepRac1AdditionalWeaponWorld()
     {
         if (MovementReproduction.IsLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is null || _player is null) return;
-        _rac1WeaponWorldTick++;
-        StepRac1ArsenalWorld();
-        Rac1World.Weapons.Flames.Emit(_persistentPlayer.Rac1Use.PyroEmitting);
-        Rac1World.Weapons.Projectiles.StepMotes();
-        Rac1World.Weapons.Flames.StepContacts();
-        Rac1World.Weapons.SuckCannon.Step();
-        Rac1World.Weapons.Projectiles.StepShots();
-        Rac1World.Weapons.Projectiles.StepDoomAgents();
-        Rac1World.Weapons.Projectiles.StepFlashes();
+        Rac1World.Weapons.StepWorld(_persistentPlayer.Rac1Use.PyroEmitting);
     }
 
     private Vector3? EquipmentGround(Vector3 point, float up, float down)

@@ -231,7 +231,7 @@ public partial class OBPGame : Node3D
             (nativeClass, localSound, position) =>
             {
                 if (_playerAudio?.PlayEquipmentSound(nativeClass, localSound, new(-position.X, position.Y, position.Z)) == true)
-                    _equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, _rac1WeaponWorldTick, _args.Rac1WeaponsSmoke);
+                    _equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), _args.Rac1WeaponsSmoke);
             }, world =>
             {
                 var assets = _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets);
@@ -289,7 +289,7 @@ public partial class OBPGame : Node3D
             () => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path, _worldHost.PlayEffect,
             () => _playerAudio?.RetireWorld(), PersistRac1CampaignState,
             () => RefreshRac1HudState(), value => RefreshRac1HudState(Rac1HudProjection.CollectedBoltFeedback(value)),
-            (nativeClass, localSound) => _equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, _rac1WeaponWorldTick, _args.Rac1WeaponsSmoke), () => _rac1CollectedNovalisGoldBolts),
+            (nativeClass, localSound) => _equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), _args.Rac1WeaponsSmoke), () => _rac1CollectedNovalisGoldBolts),
         new Rac1BreakablePorts(() => _player,
             owner => ReferenceEquals(_worldScenes?.Current?.Resources.Rac1Gameplay, owner),
             (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Inclusive(min, max),
@@ -378,7 +378,7 @@ public partial class OBPGame : Node3D
         new Rac1SuckCannonPorts(
             () => _persistentPlayer.Rac1Use.Session, () => _player is not null,
             () => EquipmentMuzzle(Rac1WeaponId.SuckCannon), () => EquipmentForward,
-            () => _rac1WeaponWorldTick,
+            () => (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0),
             (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(min, max),
             () => Rac1World.Weapons.Contacts.Targets,
             () => Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes),
@@ -423,12 +423,12 @@ public partial class OBPGame : Node3D
             node => Rac1World.Weapons.Contacts.IsAimTarget(node),
             (from, to, radius) => Rac1World.Weapons.Contacts.Contact(from, to, radius),
             () => _player, () => PlayerLife.Alive, () => _rac1Weapons.Equipped,
-            () => _rac1WeaponWorldTick, SpawnEquipmentFlash, (weapon, position, radius, damage, flags) => Rac1World.WeaponDamage.ApplyBlast(weapon, position, radius, damage, flags),
+            () => (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), SpawnEquipmentFlash, (weapon, position, radius, damage, flags) => Rac1World.WeaponDamage.ApplyBlast(weapon, position, radius, damage, flags),
             SpawnRac1WeaponExplosion, (cls, sound, position) => FusionWeapons.PlayNativeSound(cls, sound, position),
             () => _sceneResult!.Root),
         new Rac1ArsenalDeployablePorts(
             CreateEquipmentWorldView, weapon => EquipmentMuzzle(weapon),
-            () => EquipmentForward, () => _player, () => _rac1WeaponWorldTick,
+            () => EquipmentForward, () => _player, () => (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0),
             (origin, range, cone) => Rac1World.Weapons.Contacts.FindArsenalTarget(origin, range, cone),
             node => Rac1World.Weapons.Contacts.IsAimTarget(node),
             (from, to, radius) => Rac1World.Weapons.Contacts.Contact(from, to, radius),
@@ -442,7 +442,7 @@ public partial class OBPGame : Node3D
             (cls, sound, position) => FusionWeapons.PlayNativeSound(cls, sound, position),
             SpawnEquipmentFlash),
         new Rac1TaunterPorts(
-            () => _rac1WeaponWorldTick, () => Rac1World.Enemies.Targets,
+            () => (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), () => Rac1World.Enemies.Targets,
             () => Rac1World.Weapons.Projectiles.Shots.Where(shot => shot.Weapon == Rac1WeaponId.MineGlove)
                 .Select(shot => new Rac1TaunterMine(shot.Position, () => shot.Taunted = true)),
             (from, forward) =>
@@ -455,7 +455,7 @@ public partial class OBPGame : Node3D
             (node, damage) => Rac1World.WeaponDamage.Apply(node, damage)),
         new Rac1TeslaPorts(
             (origin, range, cone, excluded) => Rac1World.Weapons.Contacts.FindArsenalTarget(origin, range, cone, excluded),
-            () => _rac1WeaponWorldTick,
+            () => (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0),
             (node, damage) => Rac1World.WeaponDamage.Apply(node, damage),
             (cls, sound, origin) => FusionWeapons.PlayNativeSound(cls, sound, origin)),
         new Rac1MorphPorts(
@@ -475,7 +475,7 @@ public partial class OBPGame : Node3D
             (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(min, max)),
         new Rac1ArsenalUsePorts(
             () => _rac1Weapons.Equipped, () => _rac1Weapons.GetAmmo(19),
-            () => _rac1WeaponWorldTick, weapon => EquipmentMuzzle(weapon), () => EquipmentForward,
+            () => (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), weapon => EquipmentMuzzle(weapon), () => EquipmentForward,
             () => _player!.GlobalPosition, SpawnEquipmentFlash),
         new Rac1EquipmentProjectilePorts(
             () => _player, () => (float)(_avatarPresentation.Avatar?.BaseHeight ?? -.7),
@@ -494,7 +494,7 @@ public partial class OBPGame : Node3D
             EnsureRac1Particles,
             () => _equipmentPresentation.Explosions.Particles,
             weapon => EquipmentMuzzle(weapon), () => EquipmentForward,
-            () => _player, () => _rac1WeaponWorldTick,
+            () => _player, () => (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0),
             node => Rac1World.Enemies.IsRac1GameplayActive(node),
             (node, damage) => Rac1World.WeaponDamage.Apply(node, damage)),
         new Rac1WrenchFramePorts(
@@ -1851,7 +1851,10 @@ public partial class OBPGame : Node3D
             transients);
     }
 
-    private GodotRac1AdditionalWeaponDiagnosticFixture CreateRac1AdditionalWeaponDiagnosticFixture(IDiagnosticWorldObservations worlds) => new(new(
+    private GodotRac1AdditionalWeaponDiagnosticFixture CreateRac1AdditionalWeaponDiagnosticFixture(IDiagnosticWorldObservations worlds)
+    {
+        var scope = new GodotRac1DiagnosticWorldScope(worlds);
+        return new(new(
         () => new(_persistentPlayer.WeaponPreview is not null, _rac1Campaign.Session.Weapons.Owns(Rac1WeaponId.Blaster), _persistentPlayer.Rac1Use.Session?.Cargo.Count ?? 0,
             _persistentPlayer.Rac1Use.UseTicks, _persistentPlayer.Rac1Use.ShotsFired, _persistentPlayer.Rac1Use.PyroEmitting, _equipmentPresentation.WeaponAudio.Loop, _hudState.Current.CurrentWeapon,
             GodotMovementPlayer.Copy(EquipmentForward), _player?.Rac1RemoteControlActive == true, Rac1World.Weapons.GuidedCamera.Camera is not null,
@@ -1859,11 +1862,24 @@ public partial class OBPGame : Node3D
         weapon => _equipmentPresentation.NativeViews.View(weapon), weapon => EquipmentMuzzle(weapon), item => _rac1Weapons.GetAmmo(item),
         (nativeClass, sound) => Rac1World.Loot.PickupAssets?.Sounds?.TryGetValue((nativeClass, sound), out var voice) == true && voice.Clip.InterleavedPcm16.Any(sample => sample != 0),
         () => [.. _equipmentPresentation.WeaponAudio.Events.Select(cue => new Rac1WeaponAudioDiagnostic(ObpSourceGame.Rac1, cue.Tick, cue.Class, cue.Sound, cue.Loop))],
-        () => [.. Rac1World.Weapons.Projectiles.Shots.Select(shot => new GodotWeaponDiagnosticWitness<Rac1EquipmentShotDiagnostic>(new(worlds), () => new(
-            new(ObpSourceGame.Rac1, (int)shot.Weapon), shot.Id, GodotMovementPlayer.Copy(shot.Position), shot.Grounded, GodotWeaponModelFacts.Read(shot.Node))))],
-        () => [.. Rac1World.Weapons.Projectiles.DoomAgents.Select(agent => new GodotWeaponDiagnosticWitness<Rac1DoomAgentDiagnostic>(new(worlds), () => new(
-            new(ObpSourceGame.Rac1, (int)Rac1WeaponId.GloveOfDoom), agent.Id, GodotMovementPlayer.Copy(agent.Body.GlobalPosition), agent.Motion.Wander,
-            GodotWeaponModelFacts.Read(agent.View))))], () => _persistentPlayer.WeaponPreview is not null, SetRac1WeaponPreview));
+        () =>
+        {
+            scope.RequireCurrent();
+            var gameplay = _worldScenes?.Current?.Resources.Rac1Gameplay
+                ?? throw new DiagnosticUnavailableException("R&C1 gameplay is unavailable.");
+            return [.. gameplay.Weapons.Projectiles.Shots.Select(shot => new GodotWeaponDiagnosticWitness<Rac1EquipmentShotDiagnostic>(scope, () => new(
+                new(ObpSourceGame.Rac1, (int)shot.Weapon), shot.Id, GodotMovementPlayer.Copy(shot.Position), shot.Grounded, GodotWeaponModelFacts.Read(shot.Node))))];
+        },
+        () =>
+        {
+            scope.RequireCurrent();
+            var gameplay = _worldScenes?.Current?.Resources.Rac1Gameplay
+                ?? throw new DiagnosticUnavailableException("R&C1 gameplay is unavailable.");
+            return [.. gameplay.Weapons.Projectiles.DoomAgents.Select(agent => new GodotWeaponDiagnosticWitness<Rac1DoomAgentDiagnostic>(scope, () => new(
+                new(ObpSourceGame.Rac1, (int)Rac1WeaponId.GloveOfDoom), agent.Id, GodotMovementPlayer.Copy(agent.Body.GlobalPosition), agent.Motion.Wander,
+                GodotWeaponModelFacts.Read(agent.View))))];
+        }, () => _persistentPlayer.WeaponPreview is not null, SetRac1WeaponPreview));
+    }
 
     private GodotRac1ArsenalDiagnosticFixture CreateRac1ArsenalDiagnosticFixture(IDiagnosticWorldObservations worlds, GodotRac1WeaponTargetFixture targets) => new(new(
         () => new(Rac1World.Weapons.Missiles.SalvoRemaining, Rac1World.Weapons.LastArsenalId, Rac1World.Weapons.Deployables.DroneCount, Rac1World.Weapons.SuckCannon.ChickenCargoCount,
@@ -1881,7 +1897,7 @@ public partial class OBPGame : Node3D
         () => [.. Rac1World.Weapons.Morph.Project((enemy, view) => new Rac1ChickenDiagnostic(targets.Key(enemy.Node), Rac1World.Enemies.IsRac1GameplayActive(enemy.Node),
             enemy.RewardEmitted, GodotWeaponModelFacts.Read(view)))],
         () => Rac1World.Weapons.Deployables.RetireDrones(),
-        () => _rac1WeaponWorldTick = 0,
+        () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.ResetWorldTick(),
         (actor, player) =>
         {
             targets.Read(actor); return GodotMovementPlayer.Copy(Rac1World.Weapons.Deployables.EnemyGoal(

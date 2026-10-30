@@ -142,8 +142,8 @@ public sealed class Rac1WeaponPreviewPlayerOwnershipTests
         Assert.Contains("_equipmentPresentation.WeaponAudio.Reset()", weapons, StringComparison.Ordinal);
         Assert.Contains("_equipmentPresentation.WeaponAudio.Reset()", combat, StringComparison.Ordinal);
         Assert.Contains("_equipmentPresentation.WeaponAudio.Reset(freeImmediately: true)", composition, StringComparison.Ordinal);
-        Assert.Contains("_equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, _rac1WeaponWorldTick, _args.Rac1WeaponsSmoke)", composition, StringComparison.Ordinal);
-        Assert.Equal(2, composition.Split("_equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, _rac1WeaponWorldTick, _args.Rac1WeaponsSmoke)").Length - 1);
+        Assert.Contains("_equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), _args.Rac1WeaponsSmoke)", composition, StringComparison.Ordinal);
+        Assert.Equal(2, composition.Split("_equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), _args.Rac1WeaponsSmoke)").Length - 1);
         Assert.Contains("_equipmentPresentation.WeaponAudio.Step(new(", weapons, StringComparison.Ordinal);
         Assert.Contains("_equipmentPresentation.WeaponAudio.SetPaused(paused)", weapons, StringComparison.Ordinal);
         Assert.DoesNotContain("ResetRac1WeaponAudio(", weapons, StringComparison.Ordinal);

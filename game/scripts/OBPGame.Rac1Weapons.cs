@@ -17,7 +17,7 @@ public partial class OBPGame
                 !_player.Rac1WrenchFrame.Active && !(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true),
             _rac1Weapons.Equipped, _persistentPlayer.Rac1Use.UseTicks, _persistentPlayer.Rac1Use.PyroEmitting,
             _persistentPlayer.Rac1Use.Session?.Vacuuming == true, Rac1World.Weapons.Arsenal.Held, _rac1Weapons.GetAmmo(19) > 0,
-            _rac1WeaponWorldTick, _args.Rac1WeaponsSmoke), _player, _playerAudio?.Random,
+            (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), _args.Rac1WeaponsSmoke), _player, _playerAudio?.Random,
             _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets)?.Sounds);
 
     private void SetPlayerAudioPaused(bool paused)
@@ -30,13 +30,19 @@ public partial class OBPGame
     private void ResetRac1AdditionalWeapons()
     {
         _equipmentPresentation.WeaponAudio.Reset();
-        ResetRac1Arsenal();
+        Rac1World.Weapons.Arsenal.Reset();
+        if (_player is not null)
+        {
+            _player.Rac1EquipmentActionActive = false;
+            _player.Rac1EquipmentLungeVelocity = Vector3.Zero;
+        }
         Rac1World.Weapons.Projectiles.RetireShotsAgentsMotes();
         Rac1World.Weapons.SuckCannon.Reset();
         Rac1World.Weapons.Flames.ClearCooldowns();
         Rac1World.Weapons.Flames.ClearTrackedFlames(); _equipmentPresentation.Explosions.Particles?.RemoveType(12); _equipmentPresentation.Explosions.Particles?.RemoveType(2);
         _persistentPlayer.Rac1Use.ResetSession(_rac1Weapons);
-        Rac1World.Weapons.Projectiles.ResetFlashes(); _rac1WeaponWorldTick = 0;
+        Rac1World.Weapons.Projectiles.ResetFlashes();
+        Rac1World.Weapons.ResetWorldTick();
         _persistentPlayer.Rac1Use.ResetInputState();
         // A preview/reset may restore morphed target meshes within this same
         // physics frame. Do not reuse their previous bounds or exclusions.
@@ -86,6 +92,10 @@ public partial class OBPGame
         if (frame.PyroChanged) _equipmentPresentation.NativeViews.PlayPyrocitor(frame.Pyro);
         if (frame.Shot is { } shot)
         {
+            // Invisible equipment skips its normal view step; sample the current
+            // socket before firing so the first post-hide shot uses today's pose.
+            if (_avatarPresentation.Controller is Rac1PlayerAnimationPresentationController controller)
+                _equipmentPresentation.NativeViews.RefreshAttachment(shot.Weapon, controller);
             use.RecordShot(shot);
             _equipmentPresentation.NativeViews.PlayShot(shot);
             if (shot.Weapon is Rac1WeaponId.MineGlove or Rac1WeaponId.GloveOfDoom)

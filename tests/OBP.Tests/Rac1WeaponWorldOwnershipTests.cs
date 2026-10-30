@@ -19,6 +19,55 @@ public sealed class Rac1WeaponWorldOwnershipTests
             .Single(method => method.Identifier.ValueText == name).ToString();
 
     [Fact]
+    public void WeaponDiagnosticCollectorsRejectRetiredGameplayBeforeEnumeratingProjectiles()
+    {
+        string root = Script("OBPGame.cs");
+        int start = root.IndexOf("private GodotRac1AdditionalWeaponDiagnosticFixture CreateRac1AdditionalWeaponDiagnosticFixture", StringComparison.Ordinal);
+        int end = root.IndexOf("private GodotRac1ArsenalDiagnosticFixture CreateRac1ArsenalDiagnosticFixture", StringComparison.Ordinal);
+        string fixture = root[start..end];
+        Assert.Contains("var scope = new GodotRac1DiagnosticWorldScope(worlds)", fixture, StringComparison.Ordinal);
+        Assert.Equal(2, fixture.Split("scope.RequireCurrent()", StringSplitOptions.None).Length - 1);
+        Assert.Equal(2, fixture.Split("?? throw new DiagnosticUnavailableException", StringSplitOptions.None).Length - 1);
+        Assert.Equal(2, fixture.Split("new GodotWeaponDiagnosticWitness<", StringSplitOptions.None).Length - 1);
+        Assert.DoesNotContain("new GodotWeaponDiagnosticWitness<Rac1EquipmentShotDiagnostic>(new(worlds)", fixture, StringComparison.Ordinal);
+        Assert.DoesNotContain("Rac1World.Weapons.Projectiles.Shots.Select", fixture, StringComparison.Ordinal);
+        Assert.DoesNotContain("Rac1World.Weapons.Projectiles.DoomAgents.Select", fixture, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SharedWeaponWorldClockAndOrderedEffectsBelongToTheWorldLease()
+    {
+        var root = HostOwnershipAudit.Host.Value.GetTypeByMetadataName("OBP.Game.OBPGame")!;
+        Assert.Empty(root.GetMembers("_rac1WeaponWorldTick"));
+        string host = Script("Rac1WeaponHost.cs");
+        string composition = Script("OBPGame.cs");
+        string rootWorld = Script("OBPGame.Rac1WeaponWorld.cs");
+        string rootUse = Script("OBPGame.Rac1Weapons.cs");
+        Assert.Contains("private ulong _worldTick;", host, StringComparison.Ordinal);
+        Assert.Contains("internal ulong WorldTick => _worldTick;", host, StringComparison.Ordinal);
+        Assert.Contains("ResetWorldTick();", Method("Rac1WeaponHost.cs", "ResetWorld"), StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.ResetWorldTick()", rootUse, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.StepWorld(_persistentPlayer.Rac1Use.PyroEmitting)", rootWorld, StringComparison.Ordinal);
+        Assert.Contains("Weapons.WorldTick ?? 0", composition, StringComparison.Ordinal);
+        Assert.Contains("Weapons.ResetWorldTick()", composition, StringComparison.Ordinal);
+        string step = Method("Rac1WeaponHost.cs", "StepWorld");
+        string[] order =
+        [
+            "_worldTick++", "Arsenal.Tick()", "Flames.Emit(pyroEmitting)",
+            "Projectiles.StepMotes()", "Flames.StepContacts()", "SuckCannon.Step()",
+            "Projectiles.StepShots()", "Projectiles.StepDoomAgents()", "Projectiles.StepFlashes()",
+        ];
+        int previous = -1;
+        foreach (string call in order)
+        {
+            int position = step.IndexOf(call, StringComparison.Ordinal);
+            Assert.True(position > previous, "Changed weapon world frame order: " + call);
+            previous = position;
+        }
+    }
+
+
+    [Fact]
     public void DetectorRunsInRac1WorldLeaseInsteadOfRootPartial()
     {
         Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1MetalDetector.cs")));

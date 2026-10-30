@@ -22,19 +22,21 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
             "StepRac1ArsenalDeployables", "StepRac1ArsenalBeams",
         })
             Assert.Empty(root.GetMembers(member));
+        Assert.Empty(root.GetMembers("ResetRac1Arsenal"));
+        Assert.Empty(root.GetMembers("StepRac1ArsenalWorld"));
 
         string host = Script("Rac1ArsenalUseHost.cs");
         string parent = Script("Rac1WeaponHost.cs");
         string module = Script("Rac1WorldModule.cs");
-        string rootArsenal = Script("OBPGame.Rac1Arsenal.cs");
+        Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1Arsenal.cs")));
 
         Assert.Contains("Arsenal = new(this, arsenal)", parent, StringComparison.Ordinal);
         Assert.Contains("internal Rac1ArsenalUseHost Arsenal { get; }", parent, StringComparison.Ordinal);
         Assert.Contains("Arsenal.ClearHeld()", parent, StringComparison.Ordinal);
         Assert.Contains("Arsenal.Dispose()", parent, StringComparison.Ordinal);
         Assert.Contains("beamPresentation, arsenal, projectiles, flames)", module, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Arsenal.Reset()", rootArsenal, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Arsenal.Tick()", rootArsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Arsenal.Reset()", Script("OBPGame.Rac1Weapons.cs"), StringComparison.Ordinal);
+        Assert.Contains("Arsenal.Tick()", parent, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", host, StringComparison.Ordinal);
         Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1ArsenalUseHost.cs.uid")));
     }

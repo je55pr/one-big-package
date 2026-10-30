@@ -62,7 +62,8 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
         Assert.Contains("if ((ports.WorldTick() & 3) == 0 && created.Count > 2)", flame, StringComparison.Ordinal);
         Assert.Contains("if (_flames.Count == 15) _flames.RemoveAt(0)", flame, StringComparison.Ordinal);
         Assert.Contains("_flames.Add(new(created[2]))", flame, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Flames.Emit(_persistentPlayer.Rac1Use.PyroEmitting)", frame, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.StepWorld(_persistentPlayer.Rac1Use.PyroEmitting)", frame, StringComparison.Ordinal);
+        Assert.Contains("Flames.Emit(pyroEmitting)", Script("Rac1WeaponHost.cs"), StringComparison.Ordinal);
         Assert.DoesNotContain("particles.Pyrocitor(", frame, StringComparison.Ordinal);
     }
 
@@ -125,10 +126,12 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
             previous = next;
         }
 
-        int emit = frame.IndexOf("Rac1World.Weapons.Flames.Emit(_persistentPlayer.Rac1Use.PyroEmitting)", StringComparison.Ordinal);
-        int motes = frame.IndexOf("Rac1World.Weapons.Projectiles.StepMotes()", StringComparison.Ordinal);
-        int contacts = frame.IndexOf("Rac1World.Weapons.Flames.StepContacts()", StringComparison.Ordinal);
-        int suck = frame.IndexOf("Rac1World.Weapons.SuckCannon.Step()", StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.StepWorld(_persistentPlayer.Rac1Use.PyroEmitting)", frame, StringComparison.Ordinal);
+        string owner = Script("Rac1WeaponHost.cs");
+        int emit = owner.IndexOf("Flames.Emit(pyroEmitting)", StringComparison.Ordinal);
+        int motes = owner.IndexOf("Projectiles.StepMotes()", StringComparison.Ordinal);
+        int contacts = owner.IndexOf("Flames.StepContacts()", StringComparison.Ordinal);
+        int suck = owner.IndexOf("SuckCannon.Step()", StringComparison.Ordinal);
         Assert.True(emit >= 0 && emit < motes && motes < contacts && contacts < suck);
         Assert.Contains("ClearCooldowns()", flame, StringComparison.Ordinal);
         Assert.Contains("ClearTrackedFlames()", flame, StringComparison.Ordinal);

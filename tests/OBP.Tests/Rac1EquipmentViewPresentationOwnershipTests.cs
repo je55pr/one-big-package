@@ -113,6 +113,22 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
     }
 
     [Fact]
+    public void FirstShotAfterHiddenHandRefreshesCurrentSocketBeforeFiring()
+    {
+        string weapons = Script("OBPGame.Rac1Weapons.cs");
+        int start = weapons.IndexOf("if (frame.Shot is { } shot)", StringComparison.Ordinal);
+        int end = weapons.IndexOf("use.CompleteFrame(frame, _rac1Weapons)", StringComparison.Ordinal);
+        string fire = weapons[start..end];
+        AssertIncreasing(fire,
+            "if (frame.Shot is { } shot)",
+            "_avatarPresentation.Controller is Rac1PlayerAnimationPresentationController controller",
+            "NativeViews.RefreshAttachment(shot.Weapon, controller)",
+            "use.RecordShot(shot)",
+            "NativeViews.PlayShot(shot)",
+            "Rac1World.Weapons.Projectiles.FireBlaster(shot)");
+    }
+
+    [Fact]
     public void EquipmentMuzzleKeepsAvatarSocketRayAndNativeFallbackWithNoWorldOwnership()
     {
         string views = Script("Rac1EquipmentViewPresentation.cs");

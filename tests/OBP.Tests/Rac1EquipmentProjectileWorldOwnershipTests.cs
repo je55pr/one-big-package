@@ -48,18 +48,21 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
     [Fact]
     public void EquipmentFrameUpdatesPreserveOriginalOrderAndPyrocitorAuthority()
     {
-        string frame = Script("OBPGame.Rac1WeaponWorld.cs");
+        string frame = Script("Rac1WeaponHost.cs");
+        string root = Script("OBPGame.Rac1WeaponWorld.cs");
         string projectile = Script("Rac1EquipmentProjectileHost.cs");
+        Assert.Contains("Rac1World.Weapons.StepWorld(_persistentPlayer.Rac1Use.PyroEmitting)", root, StringComparison.Ordinal);
         string[] ordered =
         [
-            "StepRac1ArsenalWorld()",
-            "Rac1World.Weapons.Flames.Emit(_persistentPlayer.Rac1Use.PyroEmitting)",
-            "Rac1World.Weapons.Projectiles.StepMotes()",
-            "Rac1World.Weapons.Flames.StepContacts()",
-            "Rac1World.Weapons.SuckCannon.Step()",
-            "Rac1World.Weapons.Projectiles.StepShots()",
-            "Rac1World.Weapons.Projectiles.StepDoomAgents()",
-            "Rac1World.Weapons.Projectiles.StepFlashes()",
+            "_worldTick++",
+            "Arsenal.Tick()",
+            "Flames.Emit(pyroEmitting)",
+            "Projectiles.StepMotes()",
+            "Flames.StepContacts()",
+            "SuckCannon.Step()",
+            "Projectiles.StepShots()",
+            "Projectiles.StepDoomAgents()",
+            "Projectiles.StepFlashes()",
         ];
         int previous = -1;
         foreach (var member in ordered)
@@ -112,7 +115,7 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
         string host = Script("Rac1EquipmentProjectileHost.cs");
         string composition = Script("OBPGame.cs");
 
-        int arsenal = root.IndexOf("ResetRac1Arsenal()", StringComparison.Ordinal);
+        int arsenal = root.IndexOf("Rac1World.Weapons.Arsenal.Reset()", StringComparison.Ordinal);
         int retire = root.IndexOf("Rac1World.Weapons.Projectiles.RetireShotsAgentsMotes()", StringComparison.Ordinal);
         int suck = root.IndexOf("Rac1World.Weapons.SuckCannon.Reset()", StringComparison.Ordinal);
         int particles = root.IndexOf("Rac1World.Weapons.Flames.ClearTrackedFlames()", StringComparison.Ordinal);
@@ -126,8 +129,8 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
         Assert.Contains("Reset();", host, StringComparison.Ordinal);
         Assert.Contains("owner.Weapons.Projectiles.MinePosition(id)", composition, StringComparison.Ordinal);
         Assert.Contains("owner.Weapons.Projectiles.DoomPosition(id)", composition, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Projectiles.Shots.Select(", composition, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Projectiles.DoomAgents.Select(", composition, StringComparison.Ordinal);
+        Assert.Contains("gameplay.Weapons.Projectiles.Shots.Select(", composition, StringComparison.Ordinal);
+        Assert.Contains("gameplay.Weapons.Projectiles.DoomAgents.Select(", composition, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Weapons.Projectiles.AddMote(", composition, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Weapons.Projectiles.AddSuckCarrier(", composition, StringComparison.Ordinal);
     }

@@ -143,7 +143,7 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
         Assert.Contains("_persistentPlayer.Rac1Use.PyroEmitting", Script("OBPGame.Rac1WeaponWorld.cs"), StringComparison.Ordinal);
 
         AssertIncreasing(weapons,
-            "ResetRac1Arsenal()",
+            "Rac1World.Weapons.Arsenal.Reset()",
             "Rac1World.Weapons.Projectiles.RetireShotsAgentsMotes()",
             "Rac1World.Weapons.Flames.ClearCooldowns()",
             "Rac1World.Weapons.Flames.ClearTrackedFlames()",
