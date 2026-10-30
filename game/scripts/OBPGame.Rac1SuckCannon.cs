@@ -25,14 +25,14 @@ public partial class OBPGame
             // Bounded OBP eligibility adapter for opening Veldin. Full native
             // capture callbacks remain unpromoted: accept small class749 and
             // ordinary wood crates; do not vacuum large robots or metal crates.
-            foreach (var target in EquipmentTargets.Where(node => node.Source.NativeClassId is Rac1ClassIds.VeldinToad or Rac1ClassIds.WoodenCrate ||
+            foreach (var target in Rac1World.Weapons.Contacts.Targets.Where(node => node.Source.NativeClassId is Rac1ClassIds.VeldinToad or Rac1ClassIds.WoodenCrate ||
                 _rac1Chickens.ContainsKey(node.Source.InstanceIndex)).ToArray())
             {
                 var point = target.Root.GlobalPosition + Vector3.Up * .4f;
                 var offset = point - muzzle;
                 if (offset.Length() > Rac1WeaponReconstructionPolicy.SuckCaptureRange || offset.LengthSquared() > .01f &&
                     offset.Normalized().Dot(EquipmentForward) < Rac1WeaponReconstructionPolicy.SuckCaptureConeDot ||
-                    !BombHasLineOfSight(muzzle, point)) continue;
+                    !Rac1World.Weapons.Contacts.HasLineOfSight(muzzle, point)) continue;
                 var key = new Rac1MobyRuntimeKey(target.Source.NativeClassId, target.Source.InstanceIndex);
                 if (!_rac1AdditionalWeapons.TryCapture(key)) break;
                 if (_rac1Chickens.ContainsKey(target.Source.InstanceIndex)) _rac1ChickenCargo.Add(key);
@@ -110,7 +110,7 @@ public partial class OBPGame
         if (pending is not null) _rac1Captures.Remove(pending);
         visual.Scale = pending?.Scale ?? Vector3.One; visual.Visible = true;
         visual.GlobalPosition = EquipmentMuzzle(Rac1WeaponId.SuckCannon);
-        var direction = (EquipmentAim(visual.GlobalPosition, 30, .94f) - visual.GlobalPosition).Normalized();
+        var direction = (Rac1World.Weapons.Contacts.Aim(visual.GlobalPosition, 30, .94f) - visual.GlobalPosition).Normalized();
         _rac1EquipmentShots.Add(new(Rac1WeaponId.SuckCannon, shot.Generation, visual, visual.GlobalPosition, direction * Rac1WeaponReconstructionPolicy.SuckProjectileStep));
         SpawnEquipmentFlash(visual.GlobalPosition, 27, new(.5f, .7f, 1, 1), .6f, 7);
     }

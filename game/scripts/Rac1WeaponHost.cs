@@ -7,11 +7,13 @@ namespace OBP.Game;
 /// borrowed through player equipment ports, not owned or reset here.
 /// Combat contact/arsenal family migration (#367/#368) joins this host next.
 /// </summary>
-internal sealed class Rac1WeaponHost(Rac1MetalDetectorPorts detector) : IDisposable
+internal sealed class Rac1WeaponHost(Rac1MetalDetectorPorts detector,
+    Rac1WeaponTargetPorts targets, Rac1WeaponContactPhysicsPorts physics) : IDisposable
 {
     private bool _disposed;
 
     internal Rac1MetalDetectorHost Detector { get; } = new(detector);
+    internal Rac1WeaponContactHost Contacts { get; } = new(targets, physics);
     internal Rac1GuidedWeaponCamera GuidedCamera { get; } = new();
 
     internal void Configure(RuntimeWorld world)
@@ -32,6 +34,7 @@ internal sealed class Rac1WeaponHost(Rac1MetalDetectorPorts detector) : IDisposa
         // Release camera/input before the player/world lease is retired.
         GuidedCamera.End();
         Detector.Reset();
+        Contacts.Invalidate();
     }
 
     public void Dispose()
@@ -40,5 +43,6 @@ internal sealed class Rac1WeaponHost(Rac1MetalDetectorPorts detector) : IDisposa
         _disposed = true;
         GuidedCamera.Dispose();
         Detector.Dispose();
+        Contacts.Dispose();
     }
 }

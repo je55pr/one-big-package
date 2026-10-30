@@ -52,8 +52,6 @@ public partial class OBPGame
     private Rac1WeaponId _rac1EquipmentUseWeapon;
     private int _rac1EquipmentUseTicks, _rac1EquipmentUseAge;
     private int _rac1WeaponShotsFired;
-    private ulong _rac1EquipmentGeometryFrame = ulong.MaxValue;
-    private (RuntimeWorldScene.DynamicObjectNode Node, Aabb Bounds)[] _rac1EquipmentGeometry = [];
 
     private sealed class HostedEquipmentShot(Rac1WeaponId weapon, long id, Node3D node, Vector3 position, Vector3 step)
     {
@@ -106,7 +104,9 @@ public partial class OBPGame
         _rac1AdditionalFireRequested = _rac1PyroEmitting = false;
         _rac1EquipmentUseTicks = _rac1EquipmentUseAge = 0;
         _rac1WeaponShotsFired = 0;
-        _rac1EquipmentGeometryFrame = ulong.MaxValue; _rac1EquipmentGeometry = [];
+        // A preview/reset may restore morphed target meshes within this same
+        // physics frame. Do not reuse their previous bounds or exclusions.
+        _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Contacts.Invalidate();
     }
 
     private void ToggleRac1WeaponPreview()
@@ -284,75 +284,6 @@ public partial class OBPGame
         return _player!.GlobalPosition + Vector3.Up * .9f + EquipmentForward * .7f;
     }
 
-    private IReadOnlyList<(RuntimeWorldScene.DynamicObjectNode Node, Aabb Bounds)> EquipmentGeometry
-    {
-        get
-        {
-            ulong frame = Engine.GetPhysicsFrames();
-            if (_rac1EquipmentGeometryFrame == frame) return _rac1EquipmentGeometry;
-            _rac1EquipmentGeometryFrame = frame;
-            var geometry = new List<(RuntimeWorldScene.DynamicObjectNode, Aabb)>();
-            foreach (var node in Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes).Concat(Rac1World.Enemies.Frogs.Rac1QueenDamageTargets))
-            {
-                if (!IsInstanceValid(node.Root) ||
-                    (node.Source.NativeClassId == Rac1FrogQueenGroup.QueenClassId
-                        ? !Rac1World.Enemies.Frogs.QueenDamageAdmitted
-                        : !Rac1World.Enemies.IsRac1GameplayActive(node)) ||
-                    Rac1World.Enemies.Roster.TryGetValue(node.Source.InstanceIndex, out var enemy) && enemy.RewardEmitted) continue;
-                Aabb? bounds = null;
-                var meshes = _rac1Chickens.TryGetValue(node.Source.InstanceIndex, out var chicken)
-                    ? chicken.View.GetChildren().OfType<MeshInstance3D>() : node.Root.GetChildren().OfType<MeshInstance3D>();
-                foreach (var mesh in meshes)
-                {
-                    var world = mesh.GlobalTransform * mesh.GetAabb();
-                    bounds = bounds?.Merge(world) ?? world;
-                }
-                if (bounds is { } box) geometry.Add((node, box));
-            }
-            return _rac1EquipmentGeometry = geometry.ToArray();
-        }
-    }
-    private IEnumerable<RuntimeWorldScene.DynamicObjectNode> EquipmentTargets => EquipmentGeometry
-        .Select(entry => entry.Node).Where(node =>
-            node.Source.NativeClassId == Rac1FrogQueenGroup.QueenClassId
-                ? Rac1World.Enemies.Frogs.QueenDamageAdmitted
-                : Rac1World.Enemies.IsRac1GameplayActive(node));
-    private bool IsRac1WeaponAimTarget(RuntimeWorldScene.DynamicObjectNode node) =>
-        node.Source.NativeClassId == Rac1FrogQueenGroup.QueenClassId
-            ? Rac1World.Enemies.Frogs.IsQueenNode(node)
-            : Rac1World.Enemies.IsRac1GameplayActive(node) && (!Rac1World.Enemies.Roster.TryGetValue(node.Source.InstanceIndex, out var enemy) || !enemy.RewardEmitted);
-
-    private Vector3 EquipmentAim(Vector3 origin, float distance, float coneDot)
-    {
-        var target = Rac1World.Enemies.Targets.Concat(Rac1World.Enemies.Frogs.Rac1QueenDamageTargets).Where(IsRac1WeaponAimTarget)
-            .Select(node => node.Root.GlobalPosition + Vector3.Up * .45f)
-            .Where(point => point.DistanceSquaredTo(origin) is > .1f && point.DistanceSquaredTo(origin) < distance * distance &&
-                (point - origin).Normalized().Dot(EquipmentForward) > coneDot && BombHasLineOfSight(origin, point))
-            .OrderBy(point => point.DistanceSquaredTo(origin)).FirstOrDefault();
-        return target == Vector3.Zero ? origin + EquipmentForward * distance : target;
-    }
-
-    private (Vector3 Point, RuntimeWorldScene.DynamicObjectNode? Target)? EquipmentContact(Vector3 from, Vector3 to, float radius)
-    {
-        if (_player is null || from.DistanceSquaredTo(to) < .000001f) return null;
-        var ray = PhysicsRayQueryParameters3D.Create(from, to); ray.Exclude = [_player.GetRid()];
-        var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(ray);
-        float closest = hit.TryGetValue("position", out var point) ? from.DistanceTo(point.AsVector3()) : float.PositiveInfinity;
-        RuntimeWorldScene.DynamicObjectNode? target = null;
-        Vector3 position = hit.Count > 0 ? point.AsVector3() : to;
-        foreach (var (candidate, bounds) in EquipmentGeometry)
-        {
-            if (!IsRac1WeaponAimTarget(candidate) || !SegmentBoxFraction(from, to, bounds.Grow(radius), out float fraction)) continue;
-            var contact = from.Lerp(to, fraction); float length = from.DistanceTo(contact);
-            if (length > closest + .001f) continue;
-            closest = length; target = candidate; position = contact;
-        }
-        return float.IsFinite(closest) ? (position, target) : null;
-    }
-
-    private static bool SegmentBoxFraction(Vector3 a, Vector3 b, Aabb bounds, out float fraction)
-        => ActorContactGeometry.SegmentBoxFraction(a, b, bounds, out fraction);
-
     private bool ApplyRac1AdditionalDamage(RuntimeWorldScene.DynamicObjectNode target, Rac1GameplayDamageEvent damage)
     {
         if (target.Source.NativeClassId == Rac1FrogQueenGroup.QueenClassId)
@@ -374,7 +305,7 @@ public partial class OBPGame
     private void FireRac1Blaster(Rac1AdditionalWeaponSession.Shot shot)
     {
         Vector3 origin = EquipmentMuzzle(shot.Weapon);
-        Vector3 end = origin + (EquipmentAim(origin, Rac1WeaponReconstructionPolicy.BlasterAimRange, .96f) - origin).Normalized() * Rac1WeaponReconstructionPolicy.BlasterAimRange;
+        Vector3 end = origin + (Rac1World.Weapons.Contacts.Aim(origin, Rac1WeaponReconstructionPolicy.BlasterAimRange, .96f) - origin).Normalized() * Rac1WeaponReconstructionPolicy.BlasterAimRange;
         var node = EquipmentParticle(27, EquipmentColor(Rac1WeaponProfiles.BlasterImpactColor), .18f);
         node.Name = "Rac1Blaster_Class305_Type27";
         _sceneResult!.Root.AddChild(node);
@@ -382,7 +313,7 @@ public partial class OBPGame
         _rac1EquipmentShots.Add(new(shot.Weapon, shot.Generation, node, origin, (end - origin).Normalized() * Rac1WeaponProfiles.BlasterSpeed)
         {
             Motion = new(Rac1LootPresentation.ToEffectNative(origin), Rac1LootPresentation.ToEffectNative((end - origin).Normalized()), 40, Rac1WeaponProfiles.BlasterCarrierTicks),
-            AimPoint = Rac1LootPresentation.ToEffectNative(EquipmentAim(origin, Rac1WeaponReconstructionPolicy.BlasterAimRange, .96f)),
+            AimPoint = Rac1LootPresentation.ToEffectNative(Rac1World.Weapons.Contacts.Aim(origin, Rac1WeaponReconstructionPolicy.BlasterAimRange, .96f)),
         });
         SpawnEquipmentFlash(origin, 27, EquipmentColor(Rac1WeaponProfiles.BlasterMuzzleColor), .35f, 4);
     }
@@ -393,7 +324,7 @@ public partial class OBPGame
         float yaw = (float)_player!.Rac1CurrentYaw;
         NVector3 body = Rac1LootPresentation.ToEffectNative(_player.GlobalPosition) + new NVector3(0, 0, (float)-(_avatarPresentation.Avatar?.BaseHeight ?? -.7));
         var origin = Rac1BombProjectileSession.LaunchOrigin(body, yaw);
-        var target = Rac1LootPresentation.ToEffectNative(EquipmentAim(Rac1LootPresentation.FromEffectNative(origin), 8.5f, .94f));
+        var target = Rac1LootPresentation.ToEffectNative(Rac1World.Weapons.Contacts.Aim(Rac1LootPresentation.FromEffectNative(origin), 8.5f, .94f));
         var velocity = Rac1BombProjectileSession.LaunchVelocity(origin, target, yaw);
         // Shared glove-origin family is recovered; this flight adapter currently
         // uses the recovered Bomb arc pending the complete class74/230 integrator.
@@ -406,7 +337,7 @@ public partial class OBPGame
         { Canister = nativeClass == 230 ? new() : null };
         _rac1EquipmentShots.Add(flying);
         var start = Rac1LootPresentation.FromEffectNative(new(body.X, body.Y, origin.Z));
-        if (EquipmentContact(start, view.GlobalPosition, .12f) is { } obstruction)
+        if (Rac1World.Weapons.Contacts.Contact(start, view.GlobalPosition, .12f) is { } obstruction)
         { flying.Position = obstruction.Point; flying.GroundHeight = obstruction.Point.Y; flying.Grounded = true; flying.Step = Vector3.Zero; }
         if (nativeClass == 74)
         {

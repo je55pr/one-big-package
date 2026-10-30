@@ -91,13 +91,13 @@ public partial class OBPGame
         IEnumerable<int>? excluded = null)
     {
         var skip = excluded?.ToHashSet();
-        return Rac1World.Enemies.Targets.Where(node => IsRac1WeaponAimTarget(node) && !_rac1Chickens.ContainsKey(node.Source.InstanceIndex) &&
+        return Rac1World.Enemies.Targets.Where(node => Rac1World.Weapons.Contacts.IsAimTarget(node) && !_rac1Chickens.ContainsKey(node.Source.InstanceIndex) &&
                 skip?.Contains(node.Source.InstanceIndex) != true)
             .Where(node =>
             {
                 var delta = node.Root.GlobalPosition + Vector3.Up * .5f - origin;
                 return delta.LengthSquared() < range * range && delta.LengthSquared() > .00001f &&
-                    delta.Normalized().Dot(EquipmentForward) > cone && BombHasLineOfSight(origin, node.Root.GlobalPosition + Vector3.Up * .5f);
+                    delta.Normalized().Dot(EquipmentForward) > cone && Rac1World.Weapons.Contacts.HasLineOfSight(origin, node.Root.GlobalPosition + Vector3.Up * .5f);
             }).OrderBy(node => node.Root.GlobalPosition.DistanceSquaredTo(origin)).FirstOrDefault();
     }
 
@@ -158,7 +158,7 @@ public partial class OBPGame
         {
             var from = Rac1LootPresentation.FromEffectNative(missile.Motion.Position);
             bool guided = missile.Weapon == Rac1WeaponId.VisibombGun;
-            NVector3? target = missile.Target is { } victim && IsRac1WeaponAimTarget(victim)
+            NVector3? target = missile.Target is { } victim && Rac1World.Weapons.Contacts.IsAimTarget(victim)
                 ? Rac1LootPresentation.ToEffectNative(victim.Root.GlobalPosition + Vector3.Up * .5f) : null;
             if (guided)
             {
@@ -172,7 +172,7 @@ public partial class OBPGame
                 guided ? 0 : 30, guided ? Rac1ArsenalHostPolicy.VisibombSpeed :
                     missile.Weapon == Rac1WeaponId.Ryno ? Rac1ArsenalRules.RynoMaximumSpeed : Rac1ArsenalRules.RocketMaximumSpeed);
             var to = Rac1LootPresentation.FromEffectNative(missile.Motion.Position);
-            var hit = EquipmentContact(from, to, .15f);
+            var hit = Rac1World.Weapons.Contacts.Contact(from, to, .15f);
             if (hit is not null || ended || guided && (_player.Rac1RemoteDetonate ||
                 _rac1Weapons.Equipped != Rac1WeaponId.VisibombGun || !PlayerLife.Alive))
             {
@@ -201,11 +201,11 @@ public partial class OBPGame
 
     private void ApplyArsenalBlast(Rac1WeaponId weapon, Vector3 position, float radius, double damage, uint flags)
     {
-        foreach (var (node, bounds) in EquipmentGeometry.ToArray())
+        foreach (var (node, bounds) in Rac1World.Weapons.Contacts.Geometry.ToArray())
         {
             var closest = position.Clamp(bounds.Position, bounds.End);
             if (!Rac1World.Enemies.IsRac1GameplayActive(node) || position.DistanceTo(closest) > radius ||
-                !BombHasLineOfSight(position + Vector3.Up * .1f, bounds.GetCenter())) continue;
+                !Rac1World.Weapons.Contacts.HasLineOfSight(position + Vector3.Up * .1f, bounds.GetCenter())) continue;
             ApplyRac1AdditionalDamage(node, Rac1WeaponProfiles.DirectDamage(weapon,
                 new(node.Source.NativeClassId, node.Source.InstanceIndex), damage, flags));
         }
@@ -231,7 +231,7 @@ public partial class OBPGame
                 var from = decoy.View.GlobalPosition;
                 var next = from + decoy.Velocity / 60;
                 decoy.Velocity += Vector3.Down * (18f / 60);
-                if (EquipmentContact(from, next, .1f) is { } hit)
+                if (Rac1World.Weapons.Contacts.Contact(from, next, .1f) is { } hit)
                 {
                     decoy.GroundHeight = hit.Point.Y;
                     decoy.View.GlobalPosition = hit.Point + Vector3.Up * decoy.View.FootOffset;
@@ -259,13 +259,13 @@ public partial class OBPGame
         foreach (var drone in _rac1Drones.ToArray())
         {
             drone.Age++; var from = drone.View.GlobalPosition;
-            if (drone.Target is null || !IsRac1WeaponAimTarget(drone.Target))
+            if (drone.Target is null || !Rac1World.Weapons.Contacts.IsAimTarget(drone.Target))
                 drone.Target = FindArsenalTarget(from, Rac1ArsenalHostPolicy.DroneInterceptRange);
             if (drone.Target is { } target)
             {
                 var goal = target.Root.GlobalPosition + Vector3.Up * .6f;
                 var next = from.MoveToward(goal, Rac1ArsenalHostPolicy.DroneSpeed / 60);
-                var hit = EquipmentContact(from, next, .23f);
+                var hit = Rac1World.Weapons.Contacts.Contact(from, next, .23f);
                 if (hit is not null || next.DistanceTo(goal) < .35f)
                 {
                     ApplyArsenalBlast(Rac1WeaponId.DroneDevice, hit?.Point ?? next, 1.5f, Rac1ArsenalRules.DroneDamage, 0x10000);
@@ -310,7 +310,7 @@ public partial class OBPGame
         var position = enemy.Node.Root.GlobalPosition;
         if (_rac1Taunts.GetValueOrDefault(enemy.Node.Source.InstanceIndex) > _rac1WeaponWorldTick) return player;
         var decoy = _rac1Decoys.Where(item => item.Grounded && item.RetiringTicks < 0 && item.Hits < 3 && position.DistanceSquaredTo(item.View.GlobalPosition) < 900 &&
-            BombHasLineOfSight(position + Vector3.Up * .5f, item.View.GlobalPosition + Vector3.Up * .5f))
+            Rac1World.Weapons.Contacts.HasLineOfSight(position + Vector3.Up * .5f, item.View.GlobalPosition + Vector3.Up * .5f))
             .OrderBy(item => position.DistanceSquaredTo(item.View.GlobalPosition)).FirstOrDefault();
         return decoy?.View.GlobalPosition ?? player;
     }
@@ -351,12 +351,12 @@ public partial class OBPGame
                 _sceneResult!.Root.AddChild(ring); ring.GlobalPosition = from + EquipmentForward * .5f;
                 _rac1WeaponMotes.Add(new(ring, EquipmentForward * .25f));
             }
-            foreach (var node in Rac1World.Enemies.Targets.Where(IsRac1WeaponAimTarget))
+            foreach (var node in Rac1World.Enemies.Targets.Where(Rac1World.Weapons.Contacts.IsAimTarget))
             {
                 var delta = node.Root.GlobalPosition - _player!.GlobalPosition;
                 if (delta.LengthSquared() < Rac1ArsenalRules.TaunterRange * Rac1ArsenalRules.TaunterRange &&
                     delta.Normalized().Dot(EquipmentForward) > MathF.Cos(Rac1ArsenalRules.TaunterHalfAngle) &&
-                    BombHasLineOfSight(from, node.Root.GlobalPosition + Vector3.Up * .4f)) _rac1Taunts[node.Source.InstanceIndex] = _rac1WeaponWorldTick + 60;
+                    Rac1World.Weapons.Contacts.HasLineOfSight(from, node.Root.GlobalPosition + Vector3.Up * .4f)) _rac1Taunts[node.Source.InstanceIndex] = _rac1WeaponWorldTick + 60;
             }
             foreach (var mine in _rac1EquipmentShots.Where(shot => shot.Weapon == Rac1WeaponId.MineGlove))
                 if (mine.Position.DistanceTo(from) < Rac1ArsenalRules.TaunterRange &&
@@ -366,10 +366,10 @@ public partial class OBPGame
             if (_rac1WeaponWorldTick % 30 == 0)
             {
                 // Native class 505 is admitted by this cone, but its object identity is not yet confirmed.
-                var crate = EquipmentTargets.Where(node => node.Source.NativeClassId is Rac1ClassIds.WoodenCrate or Rac1ClassIds.NanotechCrate or 505 or Rac1ClassIds.AmmoCrate)
+                var crate = Rac1World.Weapons.Contacts.Targets.Where(node => node.Source.NativeClassId is Rac1ClassIds.WoodenCrate or Rac1ClassIds.NanotechCrate or 505 or Rac1ClassIds.AmmoCrate)
                     .FirstOrDefault(node => node.Root.GlobalPosition.DistanceTo(from) < 12 &&
                         (node.Root.GlobalPosition - from).Normalized().Dot(EquipmentForward) > MathF.Cos(Rac1ArsenalRules.TaunterHalfAngle) &&
-                        BombHasLineOfSight(from, node.Root.GlobalPosition + Vector3.Up * .4f));
+                        Rac1World.Weapons.Contacts.HasLineOfSight(from, node.Root.GlobalPosition + Vector3.Up * .4f));
                 if (crate is not null) ApplyRac1AdditionalDamage(crate,
                     Rac1WeaponProfiles.DirectDamage(weapon, new(crate.Source.NativeClassId, crate.Source.InstanceIndex), 1, 0x10000));
             }
@@ -380,7 +380,7 @@ public partial class OBPGame
         {
             _rac1TeslaSoundTargets.Clear();
             var end = from + EquipmentForward * (weapon == Rac1WeaponId.MorphORay ? 3 : .55f);
-            var hit = EquipmentContact(from, end, .01f);
+            var hit = Rac1World.Weapons.Contacts.Contact(from, end, .01f);
             DrawArsenalBeam(0, from, hit?.Point ?? end, weapon == Rac1WeaponId.TeslaClaw ? new(.3f, .6f, 1) : new(.4f, 1, .25f));
             return;
         }
@@ -566,10 +566,10 @@ public partial class OBPGame
             _player.Rac1EquipmentLungeVelocity = EquipmentForward * Rac1ArsenalRules.WalloperLungeSpeed;
         if (age <= Rac1ArsenalRules.WalloperLungeFrom || age >= Rac1ArsenalRules.WalloperContactTo) return;
         var centre = _player!.GlobalPosition + EquipmentForward * .8f + Vector3.Up * .55f;
-        foreach (var (node, bounds) in EquipmentGeometry)
+        foreach (var (node, bounds) in Rac1World.Weapons.Contacts.Geometry)
         {
             if (_rac1WalloperVictims.Contains(node.Source.InstanceIndex) || centre.DistanceTo(centre.Clamp(bounds.Position, bounds.End)) > .8f ||
-                !BombHasLineOfSight(centre, bounds.GetCenter())) continue;
+                !Rac1World.Weapons.Contacts.HasLineOfSight(centre, bounds.GetCenter())) continue;
             if (ApplyRac1AdditionalDamage(node, Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Walloper,
                 new(node.Source.NativeClassId, node.Source.InstanceIndex), 3, 0x30000)))
                 _rac1WalloperVictims.Add(node.Source.InstanceIndex);

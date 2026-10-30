@@ -11,12 +11,6 @@ public partial class OBPGame
     private long _rac1BombThrowGeneration;
     private bool _rac1BombThrowActive;
     private int _rac1BombImpactCount;
-    private ulong _rac1BombOcclusionFrame = ulong.MaxValue;
-    private Rid _rac1BombOcclusionPlayer;
-    private global::Godot.Collections.Array<Rid> _rac1BombOcclusionExclusions = [];
-    // OBP query adapter: the native 1efc70 primitive/body representation remains
-    // unresolved. Sweep a small sphere and use host enemy bounds for contact.
-    private readonly SphereShape3D _rac1BombContactShape = new() { Radius = .12f };
 
     private void StepRac1BombWeaponPhysics()
     {
@@ -84,7 +78,7 @@ public partial class OBPGame
             .Select(candidate => (candidate.Node, candidate.Point, Offset: candidate.Point - origin))
             .Where(candidate => candidate.Offset.LengthSquared() is > .25f and < 225f &&
                 NVector3.Dot(NVector3.Normalize(candidate.Offset), forward) > .94f &&
-                BombHasLineOfSight(Rac1LootPresentation.FromEffectNative(origin), Rac1LootPresentation.FromEffectNative(candidate.Point)))
+                Rac1World.Weapons.Contacts.HasLineOfSight(Rac1LootPresentation.FromEffectNative(origin), Rac1LootPresentation.FromEffectNative(candidate.Point)))
             .OrderBy(candidate => Rac1World.Enemies.Roster.ContainsKey(candidate.Node.Source.InstanceIndex) ? 0 : 1)
             .ThenBy(candidate => candidate.Offset.LengthSquared()).FirstOrDefault();
         if (aim.Node is not null) target = aim.Point;
@@ -98,7 +92,7 @@ public partial class OBPGame
         // 2ad350..2ad390 checks the body-to-launch segment at launch height.
         // A clear muzzle endpoint alone would let a bomb spawn beyond a thin wall.
         var clearanceStart = Rac1LootPresentation.FromEffectNative(new(body.X, body.Y, origin.Z));
-        if (ProbeBombWorldContact(clearanceStart, Rac1LootPresentation.FromEffectNative(origin)) is { } obstruction)
+        if (Rac1World.Weapons.Contacts.ProbeBombWorldContact(clearanceStart, Rac1LootPresentation.FromEffectNative(origin)) is { } obstruction)
             ImpactRac1Bomb(hosted, obstruction);
     }
 
@@ -114,7 +108,7 @@ public partial class OBPGame
             {
                 Vector3 from = Rac1LootPresentation.FromEffectNative(motion.Position);
                 Vector3 to = Rac1LootPresentation.FromEffectNative(motion.AdvanceFlight());
-                Vector3? contact = ProbeBombWorldContact(from, to);
+                Vector3? contact = Rac1World.Weapons.Contacts.ProbeBombWorldContact(from, to);
                 float closest = contact is { } hit ? from.DistanceTo(hit) : float.PositiveInfinity;
                 foreach (var target in Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes))
                 {
@@ -145,24 +139,6 @@ public partial class OBPGame
         }
     }
 
-    private Vector3? ProbeBombWorldContact(Vector3 from, Vector3 to)
-    {
-        if (_player is null) return null;
-        var space = _player.GetWorld3D().DirectSpaceState;
-        var query = new PhysicsShapeQueryParameters3D
-        {
-            Shape = _rac1BombContactShape,
-            Transform = new(Basis.Identity, from),
-            Motion = to - from,
-            Exclude = new global::Godot.Collections.Array<Rid> { _player.GetRid() },
-        };
-        // CastMotion ignores an initial overlap; check it explicitly so firing
-        // beside a wall cannot put a bomb through the far side.
-        if (space.IntersectShape(query, 1).Count != 0) return from;
-        var fractions = space.CastMotion(query);
-        return fractions.Length >= 2 && fractions[0] < 1 ? from.Lerp(to, fractions[0]) : null;
-    }
-
     private void ImpactRac1Bomb(Rac1HostedProjectile projectile, Vector3 position)
     {
         if (!projectile.Motion.Flying) return;
@@ -175,42 +151,13 @@ public partial class OBPGame
         Vector3 velocity = Rac1LootPresentation.FromEffectNative(projectile.Motion.Velocity);
         Vector3 direction = velocity.LengthSquared() > .000001f ? velocity.Normalized() : Vector3.Down;
         var ray = PhysicsRayQueryParameters3D.Create(position - direction * .4f, position + direction * .4f);
-        ray.Exclude = Rac1DamageableRayExclusions();
+        ray.Exclude = Rac1World.Weapons.Contacts.RayExclusions();
         var hit = _player!.GetWorld3D().DirectSpaceState.IntersectRay(ray);
         Vector3 normal = hit.TryGetValue("normal", out var result) && result.AsVector3().LengthSquared() > .5f
             ? result.AsVector3().Normalized() : Vector3.Up;
         Vector3 push = velocity.Bounce(normal);
         push = push.LengthSquared() > .000001f ? push.Normalized() * (2f / 60) : normal * (2f / 60);
         SpawnRac1BombExplosion(position, impactNormal: normal, reflectedPush: push);
-    }
-
-    private bool BombHasLineOfSight(Vector3 from, Vector3 to)
-    {
-        if (_player is null || from.DistanceSquaredTo(to) < .0001f) return true;
-        var query = PhysicsRayQueryParameters3D.Create(from, to);
-        query.Exclude = Rac1DamageableRayExclusions();
-        var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(query);
-        return hit.Count == 0;
-    }
-
-    private global::Godot.Collections.Array<Rid> Rac1DamageableRayExclusions()
-    {
-        var player = _player ?? throw new InvalidOperationException("World queries require a player.");
-        // OBP occlusion policy: damageable bodies are the separately queried
-        // victims, not walls. Testing against them made diagonal rays reject a
-        // crate's own box, and let the first crate shield its entire stack.
-        // Keep terrain/walls in the query, with no arbitrary endpoint allowance.
-        // Share one exclusion list across every candidate in this physics tick.
-        if (_rac1BombOcclusionFrame != Engine.GetPhysicsFrames() || _rac1BombOcclusionPlayer != player.GetRid())
-        {
-            _rac1BombOcclusionFrame = Engine.GetPhysicsFrames();
-            _rac1BombOcclusionPlayer = player.GetRid();
-            _rac1BombOcclusionExclusions = [player.GetRid()];
-            foreach (var body in Rac1World.Loot.CrateBodies.Values.Concat<CollisionObject3D>(Rac1World.Enemies.Roster.Values.Select(enemy => enemy.Body)))
-                if (IsInstanceValid(body)) _rac1BombOcclusionExclusions.Add(body.GetRid());
-            ActorHost.AddRayExclusions(_rac1BombOcclusionExclusions);
-        }
-        return _rac1BombOcclusionExclusions;
     }
 
     private void ResolveRac1BombBlast(long id, Rac1BombProjectileSession motion, long generation)
@@ -220,7 +167,7 @@ public partial class OBPGame
         var facts = Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes)
             .Where(node => IsInstanceValid(node.Root) && Rac1World.Enemies.IsRac1GameplayActive(node) && Rac1EnemyHost.HasRac1HostContactGeometry(node))
             .Where(node => origin.DistanceTo(node.Root.GlobalPosition + Vector3.Up * .5f) <= motion.BlastRadius + .35f &&
-                BombHasLineOfSight(origin, node.Root.GlobalPosition + Vector3.Up * .5f))
+                Rac1World.Weapons.Contacts.HasLineOfSight(origin, node.Root.GlobalPosition + Vector3.Up * .5f))
             .OrderBy(node => node.Source.InstanceIndex)
             .Select(node => Rac1MobyContactFacts.FromRuntime(Rac1World.Context.MobyRuntime.Require(node.Source), false)).ToArray();
         var resolution = Rac1World.Context.BombGlove!.ResolveExplosionVolume(id, facts);

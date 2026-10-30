@@ -60,6 +60,60 @@ public sealed class Rac1WeaponWorldOwnershipTests
     }
 
     [Fact]
+    public void ContactTargetGeometryAndOcclusionAreOwnedByTheSameWorldLease()
+    {
+        var compilation = HostOwnershipAudit.Host.Value;
+        var root = compilation.GetTypeByMetadataName("OBP.Game.OBPGame")!;
+        foreach (string member in new[]
+        {
+            "_rac1EquipmentGeometryFrame", "_rac1EquipmentGeometry",
+            "_rac1BombOcclusionFrame", "_rac1BombOcclusionPlayer", "_rac1BombOcclusionExclusions",
+            "EquipmentGeometry", "EquipmentTargets", "EquipmentContact", "EquipmentAim",
+            "IsRac1WeaponAimTarget", "BombHasLineOfSight", "Rac1DamageableRayExclusions",
+            "_rac1BombContactShape", "ProbeBombWorldContact"
+        })
+            Assert.Empty(root.GetMembers(member));
+
+        var host = compilation.GetTypeByMetadataName("OBP.Game.Rac1WeaponHost")!;
+        Assert.Equal("Rac1WeaponContactHost",
+            Assert.Single(host.GetMembers("Contacts").OfType<IPropertySymbol>()).Type.Name);
+        string weapon = Script("Rac1WeaponHost.cs");
+        Assert.Contains("Contacts.Invalidate()", weapon, StringComparison.Ordinal);
+        Assert.Contains("Contacts.Dispose()", weapon, StringComparison.Ordinal);
+        string world = Script("Rac1WorldModule.cs");
+        Assert.Contains("Weapons.ResetWorld()", world, StringComparison.Ordinal);
+        Assert.Contains("Weapons.Dispose()", world, StringComparison.Ordinal);
+        string application = Script("OBPGame.cs");
+        Assert.Contains("new Rac1WeaponTargetPorts(", application, StringComparison.Ordinal);
+        Assert.Contains("new Rac1WeaponContactPhysicsPorts(", application, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ExistingNativeContactAndOcclusionPoliciesAreNotReplacedWithNewPhysics()
+    {
+        string contact = Script("Rac1WeaponContactHost.cs");
+        Assert.Contains("Engine.GetPhysicsFrames()", contact, StringComparison.Ordinal);
+        Assert.Contains("Rac1FrogQueenGroup.QueenClassId", contact, StringComparison.Ordinal);
+        Assert.Contains("ActorContactGeometry.SegmentBoxFraction", contact, StringComparison.Ordinal);
+        Assert.Contains("bounds.Grow(radius)", contact, StringComparison.Ordinal);
+        Assert.Contains("player.GetWorld3D().DirectSpaceState.IntersectRay", contact, StringComparison.Ordinal);
+        Assert.Contains("physics.AddRayExclusions(_occlusionExclusions)", contact, StringComparison.Ordinal);
+        Assert.Contains("space.IntersectShape(query, 1)", contact, StringComparison.Ordinal);
+        Assert.Contains("space.CastMotion(query)", contact, StringComparison.Ordinal);
+        Assert.Contains("_bombContactShape.Dispose()", contact, StringComparison.Ordinal);
+        Assert.Contains("targets.MorphView(node.Source.InstanceIndex) ?? node.Root", contact, StringComparison.Ordinal);
+        Assert.DoesNotContain("OBPGame", contact, StringComparison.Ordinal);
+        Assert.DoesNotContain("ApplyDamage(", contact, StringComparison.Ordinal);
+
+        string arsenal = Script("OBPGame.Rac1Arsenal.cs");
+        string projectile = Script("OBPGame.Rac1Projectiles.cs");
+        string world = Script("OBPGame.Rac1WeaponWorld.cs");
+        Assert.Contains("Rac1World.Weapons.Contacts.Contact(", arsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Contacts.HasLineOfSight(", projectile, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Contacts.RayExclusions()", world, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void GuidedCameraRestoresFocusOnlyWhenItStillOwnsTheCamera()
     {
         var compilation = HostOwnershipAudit.Host.Value;

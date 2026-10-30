@@ -70,7 +70,7 @@ public partial class OBPGame
                 continue;
             var center = node.Root.GlobalPosition + Vector3.Up * .5f;
             if (origin.DistanceTo(center) > radius + .35f ||
-                !BombHasLineOfSight(origin, center))
+                !Rac1World.Weapons.Contacts.HasLineOfSight(origin, center))
                 continue;
             TryBreakRac1NovalisProp(node, Rac1NovalisBreakableSession.ContactKind.Explosion);
         }

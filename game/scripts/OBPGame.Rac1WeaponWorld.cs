@@ -78,7 +78,7 @@ public partial class OBPGame
             Vector3 nozzle = EquipmentMuzzle(Rac1WeaponId.Pyrocitor);
             float reach = Rac1WeaponProfiles.PyrocitorReach;
             var ray = PhysicsRayQueryParameters3D.Create(nozzle, nozzle + EquipmentForward * (reach + .75f));
-            ray.Exclude = Rac1DamageableRayExclusions();
+            ray.Exclude = Rac1World.Weapons.Contacts.RayExclusions();
             var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(ray);
             if (hit.TryGetValue("position", out var contact)) reach = Math.Max(0, nozzle.DistanceTo(contact.AsVector3()) - .75f);
             var created = particles.Pyrocitor(Rac1LootPresentation.ToEffectNative(nozzle), Rac1LootPresentation.ToEffectNative(EquipmentForward), reach);
@@ -110,7 +110,7 @@ public partial class OBPGame
                 {
                     RetireEquipmentShot(shot); continue;
                 }
-                if (EquipmentContact(shot.Position, next, shot.Weapon == Rac1WeaponId.Blaster ? .15f : .25f) is { } hit)
+                if (Rac1World.Weapons.Contacts.Contact(shot.Position, next, shot.Weapon == Rac1WeaponId.Blaster ? .15f : .25f) is { } hit)
                 {
                     if (hit.Target is { } victim)
                         ApplyRac1AdditionalDamage(victim, Rac1WeaponProfiles.DirectDamage(shot.Weapon,
@@ -136,7 +136,7 @@ public partial class OBPGame
             {
                 Vector3 next = shot.Position + shot.Step;
                 shot.Step -= Vector3.Up * OBP.RAC1.Gameplay.Rac1BombProjectileSession.GravityStep;
-                if (EquipmentContact(shot.Position, next, .12f) is { } hit)
+                if (Rac1World.Weapons.Contacts.Contact(shot.Position, next, .12f) is { } hit)
                 {
                     if (shot.Weapon == Rac1WeaponId.MineGlove && hit.Target is { } directVictim &&
                         Rac1World.Enemies.Roster.ContainsKey(directVictim.Source.InstanceIndex))
@@ -160,15 +160,15 @@ public partial class OBPGame
             {
                 // Grounded mine proximity/seek is an OBP query adapter. Native
                 // class74 animation and damage descriptors remain source-owned.
-                var enemy = Rac1World.Enemies.Targets.Where(IsRac1WeaponAimTarget)
+                var enemy = Rac1World.Enemies.Targets.Where(Rac1World.Weapons.Contacts.IsAimTarget)
                     .OrderBy(node => node.Root.GlobalPosition.DistanceSquaredTo(shot.Position)).FirstOrDefault();
                 if (enemy is not null && shot.Age > 20)
                 {
                     Vector3 goal = enemy.Root.GlobalPosition + Vector3.Up * .2f;
                     float distance = goal.DistanceTo(shot.Position);
-                    if (distance < Rac1WeaponReconstructionPolicy.MineDetonationDistance * (shot.Taunted ? 3 : 1) && BombHasLineOfSight(shot.Position + Vector3.Up * .15f, goal))
+                    if (distance < Rac1WeaponReconstructionPolicy.MineDetonationDistance * (shot.Taunted ? 3 : 1) && Rac1World.Weapons.Contacts.HasLineOfSight(shot.Position + Vector3.Up * .15f, goal))
                     { ExplodeEquipment(shot, 2, 3, Rac1WeaponProfiles.MineFlags, 74); continue; }
-                    if (distance < Rac1WeaponReconstructionPolicy.MineSeekRange * (shot.Taunted ? 3 : 1) && BombHasLineOfSight(shot.Position + Vector3.Up * .2f, goal))
+                    if (distance < Rac1WeaponReconstructionPolicy.MineSeekRange * (shot.Taunted ? 3 : 1) && Rac1World.Weapons.Contacts.HasLineOfSight(shot.Position + Vector3.Up * .2f, goal))
                     {
                         Vector3 step = (goal - shot.Position).Slide(Vector3.Up).Normalized() * Rac1WeaponReconstructionPolicy.MineSeekStep;
                         if (EquipmentGround(shot.Position + step, .5f, 1.2f) is { } ground)
@@ -200,7 +200,7 @@ public partial class OBPGame
             var from = mote.Node.GlobalPosition; var next = from + mote.Step;
             // The remaining Taunter/Suck presentation motes are not the native
             // flame pool and cannot submit Pyrocitor damage.
-            if (++mote.Age > Rac1WeaponReconstructionPolicy.FlameLifetimeTicks || !BombHasLineOfSight(from, next))
+            if (++mote.Age > Rac1WeaponReconstructionPolicy.FlameLifetimeTicks || !Rac1World.Weapons.Contacts.HasLineOfSight(from, next))
             { mote.Node.QueueFree(); _rac1WeaponMotes.Remove(mote); continue; }
             mote.Node.GlobalPosition = next;
             float radius = .12f + mote.Age * .025f;
@@ -218,11 +218,11 @@ public partial class OBPGame
             particles.FlameSecondary(p);
             Vector3 point = Rac1LootPresentation.FromEffectNative(p.Position);
             float radius = p.Size * .5f;
-            foreach (var (victim, bounds) in EquipmentGeometry)
+            foreach (var (victim, bounds) in Rac1World.Weapons.Contacts.Geometry)
             {
                 var key = new Rac1MobyRuntimeKey(victim.Source.NativeClassId, victim.Source.InstanceIndex);
                 if (!Rac1World.Enemies.IsRac1GameplayActive(victim) || flame.Victims.Contains(key) || _rac1FlameHitTicks.GetValueOrDefault(key) > _rac1WeaponWorldTick) continue;
-                if (!bounds.Grow(radius).HasPoint(point) || !BombHasLineOfSight(point, victim.Root.GlobalPosition + Vector3.Up * .4f)) continue;
+                if (!bounds.Grow(radius).HasPoint(point) || !Rac1World.Weapons.Contacts.HasLineOfSight(point, victim.Root.GlobalPosition + Vector3.Up * .4f)) continue;
                 if (ApplyRac1AdditionalDamage(victim, Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Pyrocitor, key,
                     Rac1WeaponProfiles.PyrocitorDamage, Rac1WeaponProfiles.PyrocitorFlags)))
                 {
@@ -272,9 +272,9 @@ public partial class OBPGame
         {
             if (!IsInstanceValid(bot.Body)) { _rac1DoomAgents.Remove(bot); continue; }
             var origin = bot.Body.GlobalPosition;
-            var target = Rac1World.Enemies.Targets.Where(node => IsRac1WeaponAimTarget(node) && node.Root.GlobalPosition.DistanceSquaredTo(origin) <
+            var target = Rac1World.Enemies.Targets.Where(node => Rac1World.Weapons.Contacts.IsAimTarget(node) && node.Root.GlobalPosition.DistanceSquaredTo(origin) <
                 Rac1WeaponReconstructionPolicy.DoomSearchRange * Rac1WeaponReconstructionPolicy.DoomSearchRange &&
-                BombHasLineOfSight(origin + Vector3.Up * .3f, node.Root.GlobalPosition + Vector3.Up * .3f))
+                Rac1World.Weapons.Contacts.HasLineOfSight(origin + Vector3.Up * .3f, node.Root.GlobalPosition + Vector3.Up * .3f))
                 .OrderBy(node => node.Root.GlobalPosition.DistanceSquaredTo(origin)).FirstOrDefault();
             System.Numerics.Vector3? targetPoint = target is null ? null : Rac1LootPresentation.ToEffectNative(target.Root.GlobalPosition);
             Vector3 direction = Rac1LootPresentation.FromEffectNative(bot.Motion.Direction(Rac1LootPresentation.ToEffectNative(origin), targetPoint));
@@ -315,10 +315,10 @@ public partial class OBPGame
 
     private void ResolveEquipmentBlast(Rac1WeaponId weapon, long id, int nativeClass, Vector3 origin, float radius, double damage, uint flags)
     {
-        foreach (var target in EquipmentTargets.ToArray())
+        foreach (var target in Rac1World.Weapons.Contacts.Targets.ToArray())
         {
             var centre = target.Root.GlobalPosition + Vector3.Up * .4f;
-            if (origin.DistanceTo(centre) > radius + .35f || !BombHasLineOfSight(origin + Vector3.Up * .1f, centre)) continue;
+            if (origin.DistanceTo(centre) > radius + .35f || !Rac1World.Weapons.Contacts.HasLineOfSight(origin + Vector3.Up * .1f, centre)) continue;
             ApplyRac1AdditionalDamage(target, Rac1WeaponProfiles.ChildDamage(weapon, nativeClass, id,
                 new(target.Source.NativeClassId, target.Source.InstanceIndex), damage, flags));
         }

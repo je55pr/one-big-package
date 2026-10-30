@@ -124,7 +124,7 @@ public partial class OBPGame
         int sourceIndex = source.Source.InstanceIndex;
         if (!_rac1ExplosivePlayerHits.Contains(sourceIndex) &&
             origin.DistanceTo(_player.GlobalPosition + Vector3.Up * .5f) <= frame.PlayerBlastRadius &&
-            BombHasLineOfSight(origin, _player.GlobalPosition + Vector3.Up * .5f))
+            Rac1World.Weapons.Contacts.HasLineOfSight(origin, _player.GlobalPosition + Vector3.Up * .5f))
         {
             _rac1ExplosivePlayerHits.Add(sourceIndex);
             Rac1World.Enemies.ApplyRac1EnemyPlayerDamage(Rac1ExplosiveCrateBlast.ToPlayer(sourceIndex));
@@ -137,7 +137,7 @@ public partial class OBPGame
                 !IsInstanceValid(target.Root) || !Rac1World.Enemies.IsRac1GameplayActive(target)) continue;
             var centre = target.Root.GlobalPosition + Vector3.Up * .5f;
             if (origin.DistanceTo(centre) > frame.MobyBlastRadius + .35f ||
-                !BombHasLineOfSight(origin, centre)) continue;
+                !Rac1World.Weapons.Contacts.HasLineOfSight(origin, centre)) continue;
             var damage = Rac1ExplosiveCrateBlast.ToMoby(sourceIndex,
                 new(target.Source.NativeClassId, targetIndex));
             bool accepted;
