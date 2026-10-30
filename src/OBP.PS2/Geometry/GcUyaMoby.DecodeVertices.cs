@@ -165,7 +165,7 @@ public static partial class GcUyaMoby
         }
         else if (applySkin && twoWay + threeWay > 0)
         {
-            state.SkinningApplied = true;
+            state.MarkSkinningApplied();
         }
 
         int arrayOfs = vh + 0x10 + matrixTransferCount * 2;

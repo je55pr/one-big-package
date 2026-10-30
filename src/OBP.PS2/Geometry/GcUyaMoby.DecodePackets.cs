@@ -86,7 +86,7 @@ public static partial class GcUyaMoby
         int vertexTableOffset = BinaryPrimitives.ReadUInt16LittleEndian(buf.AsSpan(vh + 0x0c));
         if (twoWay + threeWay > 0)
         {
-            state.Skinned = true;
+            state.MarkSkinned();
         }
 
         int inFileCount = twoWay + threeWay + mainCount;

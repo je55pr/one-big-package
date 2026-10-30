@@ -35,8 +35,11 @@ public static partial class GcUyaMoby
 
         public int Material;
         public int MaterialStateIndex = -1;
-        public bool Skinned { get; set; }
-        public bool SkinningApplied { get; set; }
+        public bool Skinned { get; private set; }
+        public bool SkinningApplied { get; private set; }
+
+        public void MarkSkinned() => Skinned = true;
+        public void MarkSkinningApplied() => SkinningApplied = true;
 
         public DecodeState(byte[] buf, bool allowSkinning, bool recoverPersistentVertexCache)
         {
