@@ -22,7 +22,6 @@ public partial class OBPGame
     private Rac1PickupRandom? _rac1TeslaEffectRandom;
     private StandardMaterial3D? _rac1PlainBeamMaterial;
     private bool _rac1ArsenalHeld;
-    private readonly HashSet<int> _rac1TeslaSoundTargets = [];
 
     private void ResetRac1Arsenal()
     {
@@ -45,7 +44,7 @@ public partial class OBPGame
         _rac1TeslaPresentation.Reset(); _rac1TeslaMaterials.Clear(); _rac1TeslaEffectRandom = null;
         Rac1World.Weapons.Walloper.Reset();
         _rac1ArsenalHeld = false;
-        _rac1TeslaSoundTargets.Clear();
+        Rac1World.Weapons.Tesla.Reset();
         if (_player is not null) { _player.Rac1EquipmentActionActive = false; _player.Rac1EquipmentLungeVelocity = Vector3.Zero; }
     }
 
@@ -132,9 +131,9 @@ public partial class OBPGame
         foreach (var beam in _rac1ArsenalBeams) beam.Visible = false;
         foreach (int key in _rac1MorphExposure.Keys.ToArray())
             if (--_rac1MorphExposure[key] <= 0) _rac1MorphExposure.Remove(key);
-        if (!_rac1ArsenalHeld) { _rac1TeslaSoundTargets.Clear(); return; }
+        if (!_rac1ArsenalHeld) { Rac1World.Weapons.Tesla.Release(); return; }
         var weapon = _rac1Weapons.Equipped;
-        if (weapon != Rac1WeaponId.TeslaClaw) _rac1TeslaSoundTargets.Clear();
+        if (weapon != Rac1WeaponId.TeslaClaw) Rac1World.Weapons.Tesla.Release();
         if (weapon is not (Rac1WeaponId.TeslaClaw or Rac1WeaponId.MorphORay or Rac1WeaponId.Taunter)) return;
         if (weapon == Rac1WeaponId.TeslaClaw && _rac1Weapons.GetAmmo(19) <= 0) return;
         if (weapon == Rac1WeaponId.TeslaClaw) _rac1TeslaPresentation.Advance();
@@ -146,40 +145,24 @@ public partial class OBPGame
             Rac1World.Weapons.Taunter.Tick(from, EquipmentForward, _player!.GlobalPosition);
             return;
         }
-        var first = FindArsenalTarget(from, weapon == Rac1WeaponId.TeslaClaw ? Rac1ArsenalRules.TeslaRange : Rac1ArsenalHostPolicy.MorphRange, .5f);
-        if (first is null)
-        {
-            _rac1TeslaSoundTargets.Clear();
-            var end = from + EquipmentForward * (weapon == Rac1WeaponId.MorphORay ? 3 : .55f);
-            var hit = Rac1World.Weapons.Contacts.Contact(from, end, .01f);
-            DrawArsenalBeam(0, from, hit?.Point ?? end, weapon == Rac1WeaponId.TeslaClaw ? new(.3f, .6f, 1) : new(.4f, 1, .25f));
-            return;
-        }
-        var targets = new List<RuntimeWorldScene.DynamicObjectNode> { first };
         if (weapon == Rac1WeaponId.TeslaClaw)
         {
-            var second = FindArsenalTarget(from, Rac1ArsenalRules.TeslaRange, .5f, [first.Source.InstanceIndex]);
-            if (second is not null) targets.Add(second);
-            _rac1TeslaSoundTargets.RemoveWhere(id => targets.All(target => target.Source.InstanceIndex != id));
-            foreach (var target in targets)
-                if (_rac1TeslaSoundTargets.Add(target.Source.InstanceIndex)) FusionWeapons.PlayNativeSound(177, 1, from); // 0x2b9870 lock acquisition.
+            Rac1World.Weapons.Tesla.Tick(from, EquipmentForward);
+            return;
         }
-        for (int i = 0; i < targets.Count; i++)
+
+        var target = FindArsenalTarget(from, Rac1ArsenalHostPolicy.MorphRange, .5f);
+        if (target is null)
         {
-            var target = targets[i]; var to = target.Root.GlobalPosition + Vector3.Up * .5f;
-            DrawArsenalBeam(i, from, to, weapon == Rac1WeaponId.TeslaClaw ? new(.3f, .6f, 1) : new(.4f, 1, .25f));
-            if (weapon == Rac1WeaponId.TeslaClaw)
-            {
-                if (_rac1WeaponWorldTick % 10 == 0) ApplyRac1AdditionalDamage(target,
-                    Rac1WeaponProfiles.DirectDamage(weapon, new(target.Source.NativeClassId, target.Source.InstanceIndex), Rac1ArsenalRules.TeslaDamage, Rac1ArsenalRules.TeslaDamageFlags));
-            }
-            else
-            {
-                int progress = _rac1MorphExposure.GetValueOrDefault(target.Source.InstanceIndex) + 2;
-                _rac1MorphExposure[target.Source.InstanceIndex] = progress;
-                if (progress >= Rac1ArsenalHostPolicy.MorphExposureTicks) MorphArsenalEnemy(target);
-            }
+            var end = from + EquipmentForward * 3;
+            var hit = Rac1World.Weapons.Contacts.Contact(from, end, .01f);
+            DrawArsenalBeam(0, from, hit?.Point ?? end, new(.4f, 1, .25f));
+            return;
         }
+        DrawArsenalBeam(0, from, target.Root.GlobalPosition + Vector3.Up * .5f, new(.4f, 1, .25f));
+        int progress = _rac1MorphExposure.GetValueOrDefault(target.Source.InstanceIndex) + 2;
+        _rac1MorphExposure[target.Source.InstanceIndex] = progress;
+        if (progress >= Rac1ArsenalHostPolicy.MorphExposureTicks) MorphArsenalEnemy(target);
     }
 
     private void DrawArsenalBeam(int index, Vector3 from, Vector3 to, Color color)

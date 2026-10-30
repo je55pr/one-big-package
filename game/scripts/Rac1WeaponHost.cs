@@ -15,7 +15,8 @@ internal sealed class Rac1WeaponHost : IDisposable
     internal Rac1WeaponHost(Rac1MetalDetectorPorts detector, Rac1WeaponTargetPorts targets,
         Rac1WeaponContactPhysicsPorts physics, Rac1SuckCannonPorts suckCannon,
         Rac1ArsenalMissilePorts missiles, Rac1ArsenalDeployablePorts deployables,
-        Rac1WalloperPorts walloper, Rac1TaunterPorts taunter)
+        Rac1WalloperPorts walloper, Rac1TaunterPorts taunter,
+        Rac1TeslaPorts tesla)
     {
         GuidedCamera = new();
         Detector = new(detector);
@@ -23,6 +24,7 @@ internal sealed class Rac1WeaponHost : IDisposable
         SuckCannon = new(suckCannon);
         Missiles = new(missiles, GuidedCamera, NextArsenalId);
         Taunter = new(taunter, Contacts);
+        Tesla = new(tesla, Contacts);
         Deployables = new(deployables, NextArsenalId, Taunter);
         Walloper = new(walloper, Contacts);
     }
@@ -34,6 +36,7 @@ internal sealed class Rac1WeaponHost : IDisposable
     internal Rac1ArsenalDeployableHost Deployables { get; }
     internal Rac1WalloperHost Walloper { get; }
     internal Rac1TaunterHost Taunter { get; }
+    internal Rac1TeslaHost Tesla { get; }
     internal Rac1GuidedWeaponCamera GuidedCamera { get; }
 
     // Shared, world-owned presentation generation for missile launches and
@@ -70,6 +73,7 @@ internal sealed class Rac1WeaponHost : IDisposable
         Deployables.Reset();
         Walloper.Reset();
         Taunter.Reset();
+        Tesla.Reset();
     }
 
     public void Dispose()
@@ -78,6 +82,7 @@ internal sealed class Rac1WeaponHost : IDisposable
         _disposed = true;
         Walloper.Dispose();
         Deployables.Dispose();
+        Tesla.Dispose();
         Taunter.Dispose();
         Missiles.Dispose();
         GuidedCamera.Dispose();

@@ -28,14 +28,14 @@ internal sealed class Rac1WorldModule : IDisposable
         Rac1BreakablePorts breakables, Rac1WorldResetPorts reset, Rac1WorldActorPorts actors, Rac1WorldTickPorts ticks,
         Rac1PlayerGameplayPorts player, Rac1WorldContactPorts contacts, Rac1AuthoredMechanismPorts authored, Rac1GameplayHudPorts hud,
         Rac1MetalDetectorPorts detector, Rac1WeaponTargetPorts weaponTargets,
-        Rac1WeaponContactPhysicsPorts contactPhysics, Rac1SuckCannonPorts suckCannon, Rac1ArsenalMissilePorts missiles, Rac1ArsenalDeployablePorts deployables, Rac1WalloperPorts walloper, Rac1TaunterPorts taunter, Rac1TaxiHostPorts taxis, Func<Rac1WorldModule, Rac1EnemyHost> enemies)
+        Rac1WeaponContactPhysicsPorts contactPhysics, Rac1SuckCannonPorts suckCannon, Rac1ArsenalMissilePorts missiles, Rac1ArsenalDeployablePorts deployables, Rac1WalloperPorts walloper, Rac1TaunterPorts taunter, Rac1TeslaPorts tesla, Rac1TaxiHostPorts taxis, Func<Rac1WorldModule, Rac1EnemyHost> enemies)
     {
         _world = world; _scene = scene; _reset = reset; _actors = actors; _ticks = ticks;
         _playerPorts = player; _contacts = contacts; _binding = new(player);
         Context = new(world.LevelId, random);
         Loot = new(scene, Context, Presentation, loot);
         Mechanisms = new(world, scene, authored);
-        Weapons = new(detector, weaponTargets, contactPhysics, suckCannon, missiles, deployables, walloper, taunter);
+        Weapons = new(detector, weaponTargets, contactPhysics, suckCannon, missiles, deployables, walloper, taunter, tesla);
         Taxis = new(taxis);
         Enemies = enemies(this);
         Breakables = new(world, Context, Presentation, Loot, Enemies, () => breakables.Current(this), breakables);

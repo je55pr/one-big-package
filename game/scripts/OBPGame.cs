@@ -449,6 +449,12 @@ public partial class OBPGame : Node3D
                 _rac1WeaponMotes.Add(new(ring, forward * .25f));
             },
             (node, damage) => ApplyRac1AdditionalDamage(node, damage)),
+        new Rac1TeslaPorts(
+            (origin, range, cone, excluded) => FindArsenalTarget(origin, range, cone, excluded),
+            () => _rac1WeaponWorldTick,
+            (slot, from, to) => DrawArsenalBeam(slot, from, to, new(.3f, .6f, 1)),
+            (node, damage) => ApplyRac1AdditionalDamage(node, damage),
+            (cls, sound, origin) => FusionWeapons.PlayNativeSound(cls, sound, origin)),
         new Rac1TaxiHostPorts(
             () => _player is { } player && IsInstanceValid(player) ? new Rac1TaxiPlayerController(player) : null,
             () => _mode == Mode.World && !GetTree().Paused &&

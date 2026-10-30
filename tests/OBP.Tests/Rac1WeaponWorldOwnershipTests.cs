@@ -170,6 +170,55 @@ public sealed class Rac1WeaponWorldOwnershipTests
     }
 
     [Fact]
+    public void TeslaTargetLockAndDamageCadenceBelongToWorldWeaponLease()
+    {
+        var compilation = HostOwnershipAudit.Host.Value;
+        var root = compilation.GetTypeByMetadataName("OBP.Game.OBPGame")!;
+        Assert.Empty(root.GetMembers("_rac1TeslaSoundTargets"));
+
+        var weapon = compilation.GetTypeByMetadataName("OBP.Game.Rac1WeaponHost")!;
+        Assert.Equal("Rac1TeslaHost",
+            Assert.Single(weapon.GetMembers("Tesla").OfType<IPropertySymbol>()).Type.Name);
+
+        string family = Script("Rac1TeslaHost.cs");
+        string parent = Script("Rac1WeaponHost.cs");
+        string arsenal = Script("OBPGame.Rac1Arsenal.cs");
+        string rootComposition = Script("OBPGame.cs");
+
+        Assert.Contains("Tesla = new(tesla, Contacts)", parent, StringComparison.Ordinal);
+        Assert.Contains("Tesla.Reset()", parent, StringComparison.Ordinal);
+        Assert.Contains("Tesla.Dispose()", parent, StringComparison.Ordinal);
+        Assert.Contains("new Rac1TeslaPorts(", rootComposition, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Tesla.Release()", arsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Tesla.Reset()", arsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Tesla.Tick(from, EquipmentForward)", arsenal, StringComparison.Ordinal);
+        Assert.DoesNotContain("OBPGame", family, StringComparison.Ordinal);
+        Assert.DoesNotContain("_rac1TeslaSoundTargets", arsenal, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TeslaMaintainsNativeTargetLockAudioDamageAndShortBeam()
+    {
+        string family = Script("Rac1TeslaHost.cs");
+        string arsenal = Script("OBPGame.Rac1Arsenal.cs");
+        Assert.Contains("Rac1ArsenalRules.TeslaRange, .5f, null", family, StringComparison.Ordinal);
+        Assert.Contains("[first.Source.InstanceIndex]", family, StringComparison.Ordinal);
+        Assert.Contains("_locked.RemoveWhere(id => targets.All", family, StringComparison.Ordinal);
+        Assert.Contains("if (_locked.Add(target.Source.InstanceIndex))", family, StringComparison.Ordinal);
+        Assert.Contains("ports.Sound(177, 1, from)", family, StringComparison.Ordinal);
+        Assert.Contains("ports.WorldTick() % 10 == 0", family, StringComparison.Ordinal);
+        Assert.Contains("Rac1ArsenalRules.TeslaDamage", family, StringComparison.Ordinal);
+        Assert.Contains("Rac1ArsenalRules.TeslaDamageFlags", family, StringComparison.Ordinal);
+        Assert.Contains("contacts.Contact(from, end, .01f)", family, StringComparison.Ordinal);
+        Assert.Contains("ports.DrawBeam(0, from, hit?.Point ?? end)", family, StringComparison.Ordinal);
+        Assert.Contains("internal void Release() => _locked.Clear()", family, StringComparison.Ordinal);
+        Assert.Contains("internal void Reset() => _locked.Clear()", family, StringComparison.Ordinal);
+        Assert.Contains("_rac1TeslaPresentation.Advance()", arsenal, StringComparison.Ordinal);
+        Assert.Contains("if (weapon == Rac1WeaponId.TeslaClaw && _rac1Weapons.GetAmmo(19) <= 0) return", arsenal, StringComparison.Ordinal);
+        Assert.Contains("DrawArsenalBeam(slot, from, to, new(.3f, .6f, 1))", Script("OBPGame.cs"), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void TaunterAttractionAndMineContactBelongToWorldWeaponLease()
     {
         var compilation = HostOwnershipAudit.Host.Value;
