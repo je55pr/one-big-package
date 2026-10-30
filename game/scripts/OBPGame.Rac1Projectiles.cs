@@ -16,7 +16,7 @@ public partial class OBPGame
     {
         if (_equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is null || Rac1World.Context.BombGlove is null || _player is null || !PlayerLife.Alive) return;
         bool fire = Rac1World.Context.BombFireRequested && !Rac1World.Weapons.Detector.Equipped &&
-            !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active;
+            !_player.Rac1WrenchFrame.Active && !(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true);
         Rac1World.Context.BombFireRequested = false;
         var probe = Rac1World.Context.BombGlove.Step(fire);
         if (probe.Shot is { } shot)

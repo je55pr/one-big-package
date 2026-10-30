@@ -394,7 +394,7 @@ public partial class OBPGame
         if (_avatarPresentation.PhysicsPlayer is { } player)
         {
             _avatarPresentation.StepHandAttachments(controller, player.Rac1WrenchFrame,
-                _rac1WrenchThrow.Active, _rac1BombThrowGeneration);
+                (_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true), _rac1BombThrowGeneration);
             StepRac1EquipmentViews(controller);
             FusionWeapons.StepViews(controller, _avatarPresentation.Avatar);
         }
@@ -457,7 +457,7 @@ public partial class OBPGame
         FusionWeapons.Session?.Selected.SourceGame is not (ObpSourceGame.Rac2 or ObpSourceGame.Rac3) &&
         _rac1HeldItem.Hand.IsHolding(new(ObpSourceGame.Rac1, (int)item)) &&
         _player?.Rac1WaterHandItemHidden != true &&
-        _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active;
+        _player?.Rac1WrenchFrame.Active != true && !(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true);
 
     private void RefreshRac1WrenchPresentationVisibility()
     {
@@ -473,7 +473,7 @@ public partial class OBPGame
         _avatarPresentation.WrenchView.Visible =
             _player?.Rac1WaterHandItemHidden != true &&
             (_rac1HeldItem.Hand.WrenchHeld ||
-             _player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active);
+             _player?.Rac1WrenchFrame.Active == true || (_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true));
     }
 
     /// <summary>

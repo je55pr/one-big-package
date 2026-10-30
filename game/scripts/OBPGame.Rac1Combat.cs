@@ -20,7 +20,7 @@ public partial class OBPGame
         // including when a legacy repro or keyboard shortcut selects item 8.
         if (!PlayerLife.Alive ||
             FusionWeapons.Session?.Selected.SourceGame is not (ObpSourceGame.Rac2 or ObpSourceGame.Rac3) && _rac1Weapons.Equipped == Rac1WeaponId.Wrench) return;
-        if (_player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active) return;
+        if (_player?.Rac1WrenchFrame.Active == true || (_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true)) return;
         Rac1World.Context.EquipmentUsePressed = true;
     }
 
@@ -31,7 +31,7 @@ public partial class OBPGame
         if (_playerNative is not null && ReadPlayerEquipment().Single(entry => entry.Definition.Item == _playerNative.Weapons.Selected).Usable == false) return;
         if (FusionWeapons.Session is not null && FusionWeapons.Sources.Assets?.Available(FusionWeapons.Session.Selected) == false) return;
         bool admitted = _player is not null && PlayerLife.Alive &&
-            !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active && !_player.Rac1SwingshotActive && !_player.Rac1Hanging;
+            !_player.Rac1WrenchFrame.Active && !(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true) && !_player.Rac1SwingshotActive && !_player.Rac1Hanging;
         if (FusionWeapons.Session is { Selected.SourceGame: not ObpSourceGame.Rac1 })
         {
             if (pressed && admitted && !QuickSelectOpen && !_player!.Scripted && !_player.Rac1WaterHandItemHidden)

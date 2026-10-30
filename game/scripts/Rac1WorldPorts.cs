@@ -11,7 +11,7 @@ namespace OBP.Game;
 // reference and can be supplied by the independently extracted source modules.
 internal sealed record Rac1WorldResetPorts(Action Player, Action Wheel,
     Action Checkpoints, Action Missions,
-    Action Wrench, Action Retry, Action Pickups, Action GoldBolts,
+    Action Retry, Action Pickups, Action GoldBolts,
     Action AdditionalWeapons, Action BombPresentation);
 
 internal sealed record Rac1WorldActorPorts(Action<RuntimeWorld> Pickups,

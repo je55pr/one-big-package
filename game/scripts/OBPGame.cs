@@ -170,7 +170,7 @@ public partial class OBPGame : Node3D
             _args.FusionTest, _args.FixedSeed ?? 1440, OrdinaryPlayerSession, _activeDestination?.DestinationId,
             _captureReplay?.Recorder is not null, Sources.Setup.Access == SourceAccessMode.OrdinaryPlay || _args.CaptureFrame is not null || _args.ShotsPath is not null),
         Snapshot: () => new(_player is not null, MovementReproduction.IsLoading, PlayerLife.Alive, _player?.Scripted == true,
-            _player?.Rac1WrenchFrame.Active == true, _rac1WrenchThrow.Active, _player?.Rac1WaterHandItemHidden == true,
+            _player?.Rac1WrenchFrame.Active == true, (_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true), _player?.Rac1WaterHandItemHidden == true,
             QuickSelectOpen, _player?.Rac1EquippedItemHeld == true),
         Inventory: () => _rac1Weapons, Hand: () => _rac1HeldItem.Hand, Equipment: ReadPlayerEquipment,
         SelectNative: OnRac1WeaponSelectionRequested, HoldNative: HoldSelectedRac1HandItem,
@@ -283,8 +283,8 @@ public partial class OBPGame : Node3D
 
     private Rac1WorldModule CreateRac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene) => new(world, scene, _persistentPlayer.Rac1EffectRandom(_args.FixedSeed),
         new Rac1LootPorts(() => _player, () => _world, () => _rac1Weapons, () => _rac1Nanotech,
-            () => _rac1BoltWallet, () => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed), () => _rac1WrenchThrow.Active,
-            WrenchWorldPosition, () => OrdinaryPlayerSession, () => _equipmentPresentation,
+            () => _rac1BoltWallet, () => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed), () => (_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true),
+            () => Rac1World.Wrench.WorldPosition, () => OrdinaryPlayerSession, () => _equipmentPresentation,
             () => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path, _worldHost.PlayEffect,
             () => _playerAudio?.RetireWorld(), PersistRac1CampaignState,
             () => RefreshRac1HudState(), value => RefreshRac1HudState(Rac1HudProjection.CollectedBoltFeedback(value)),
@@ -304,7 +304,7 @@ public partial class OBPGame : Node3D
             },
             Wheel: () => { _lastQuickSelectTap = 0; _previousSelectedWeapon = null; },
             Checkpoints: ResetRac1CheckpointTriggers,
-            Missions: ResetRac1Missions, Wrench: ResetRac1WrenchHost,
+            Missions: ResetRac1Missions,
             Retry: ResetRac1CombatRetry, Pickups: () => Rac1World.Loot.ResetRac1PickupPresentation(),
             GoldBolts: () => Rac1World.Loot.ResetRac1GoldBolts(),
             AdditionalWeapons: ResetRac1AdditionalWeapons,
@@ -467,6 +467,54 @@ public partial class OBPGame : Node3D
             () => GetViewport().GetCamera3D(), () => _rac1EquipmentAssets?.Effects,
             () => _rac1Weapons.Equipped, () => _args.FixedSeed,
             (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(min, max)),
+        new Rac1WrenchFramePorts(
+            () => _player,
+            () => _avatarPresentation.TryWrenchContactPose(out var pose) ? (pose.Hand, pose.Tip) : null,
+            () => PlayerLife.Alive,
+            () => GodotRac1PlayerAudioPlayback.ResetWrench(_playerAudio),
+            () => _rac1HeldItem.HoldWrench(),
+            profileId =>
+            {
+                _rac1Nanotech.Actions.ApplyWrenchAttack(Rac1WrenchAttackProfile.Profiles[profileId]);
+                _player!.Rac1GameplayState = _rac1Nanotech.Probe();
+            },
+            () =>
+            {
+                if (_rac1Nanotech.Actions.Probe().CurrentNativeState is not (0x13 or 0x14 or 0x15)) return;
+                _rac1Nanotech.Actions.EnterState(Rac1PlayerActionDomain.Neutral);
+                _player!.Rac1GameplayState = _rac1Nanotech.Probe();
+            },
+            (position, spin) => _avatarPresentation.UpdateThrownWrenchVisual(position, spin),
+            hit => GodotRac1PlayerAudioPlayback.WrenchWorldContact(_playerAudio, hit),
+            () => _playerAudio?.WrenchImpactAdmitted == true,
+            (frame, thrown, hand, position) => GodotRac1PlayerAudioPlayback.StepWrench(
+                _playerAudio, _avatarPresentation.Controller, frame, thrown, hand, position),
+            RefreshRac1WrenchPresentationVisibility),
+        new Rac1WrenchContactPorts(
+            (previousHand, previousTip, hand, tip, radius, damage, result) =>
+            {
+                Rac1World.Enemies.Frogs.ResolveRac1FrogCarrierWrenchContacts(previousHand, previousTip, hand, tip, radius);
+                Rac1World.Enemies.Frogs.ResolveRac1QueenWrenchContacts(previousHand, previousTip, hand, tip, radius, result);
+                ActorHost.Combat.ResolveWrench(previousHand, previousTip, hand, tip, radius, damage);
+            },
+            () => Rac1World.Presentation.CrateNodes.Concat(Rac1World.Enemies.Targets).Concat(Rac1World.Breakables.NovalisNodes),
+            node => Rac1World.Breakables.IsNovalisProp(node)
+                ? !Rac1World.Breakables.IsNovalisDestroyed(node.Source.InstanceIndex)
+                : Rac1World.Enemies.IsRac1GameplayActive(node),
+            id => Rac1World.Weapons.Morph.ViewFor(id),
+            (target, result) => target.Source.NativeClassId switch
+            {
+                int nativeClass when Rac1BoltCrate.IsCrateClass(nativeClass) ||
+                    nativeClass == Rac1ExplosiveCrateSession.ClassId => TryStrikeRac1Crate(target, result),
+                Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId or
+                    Rac1AridiaEnemies.Sandshark or Rac1AridiaEnemies.Constructorbot or Rac1AridiaEnemies.Nest or
+                    Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId or Rac1FrogAuthored.ClassId =>
+                    TryStrikeRac1Hostile(target, result),
+                Rac1NovalisBreakableSession.MushroomClass or Rac1NovalisBreakableSession.RockFormationClass =>
+                    Rac1World.Breakables.TryBreakNovalisProp(target, Rac1NovalisBreakableSession.ContactKind.Wrench),
+                _ => false,
+            },
+            soft => _playerAudio?.WrenchContact(soft)),
         new Rac1TaxiHostPorts(
             () => _player is { } player && IsInstanceValid(player) ? new Rac1TaxiPlayerController(player) : null,
             () => _mode == Mode.World && !GetTree().Paused &&
@@ -503,8 +551,8 @@ public partial class OBPGame : Node3D
                 id => Rac1World.Weapons.Morph.Contains(id)),
             new(() => ReferenceEquals(_worldScenes?.Current?.Resources.Rac1Gameplay, owner)),
             new(GetViewport, () => _activeCamera, camera => _activeCamera = camera, () => _camera,
-                () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.GuidedCamera.Camera, _rac1WrenchHitTargets.Contains,
-                key => { _rac1WrenchHitTargets.Add(key); },
+                () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.GuidedCamera.Camera, owner.Wrench.HasVictim,
+                key => { owner.Wrench.AdmitVictim(key); },
                 (nativeClass, name) => owner.Loot.CreateRac1EffectNode(nativeClass, name),
                 (node, debris) => owner.Loot.AddDebris(node, debris), Rac1LootPresentation.FromEffectOrientation)));
 
@@ -1722,8 +1770,8 @@ public partial class OBPGame : Node3D
             Rac1World.Enemies.IsRac1GameplayActive, (node, position) => GodotRac1CrateStaging.Place(node, position, Rac1World.Loot.FallingCrates),
             id => Rac1World.Enemies.Class1440?.Get(id).Health ?? throw new DiagnosticUnavailableException("The robot health source is unavailable.")), worlds);
         var wrench = new GodotRac1WrenchDiagnosticFacts(new(() => _player, () => _avatarPresentation.WrenchView, () => _avatarPresentation.Avatar,
-            () => _avatarPresentation.Controller, () => _rac1WrenchHostGeneration, () => _rac1WrenchThrow.Active,
-            WrenchWorldPosition, () => _avatarPresentation.GloveView?.Visible == true));
+            () => _avatarPresentation.Controller, () => Rac1World.Wrench.Generation, () => (_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true),
+            () => Rac1World.Wrench.WorldPosition, () => _avatarPresentation.GloveView?.Visible == true));
         var capture = new GodotWeaponDiagnosticCapture(this, () => _player, () => _sceneResult?.Root, () => _ui, new GodotDiagnosticFrameClock(this));
         var bomb = new GodotRac1BombAcceptanceFixture(new(
             () =>
@@ -1886,7 +1934,8 @@ public partial class OBPGame : Node3D
                 TickFrog = enemy => encounter()?.TickRac1Frog(enemy),
                 TickCarrier = enemy => encounter()?.TickRac1FrogCarrier(enemy),
                 MeleeTouchesPlayer = Rac1World.Enemies.EnemyMeleeTouchesPlayer,
-                ResolveWrench = ResolveRac1AnimatedWrenchContacts,
+                ResolveWrench = (previousHand, previousTip, hand, tip, radius, damage) =>
+                    Rac1World.Wrench.ResolveContacts(previousHand, previousTip, hand, tip, radius, damage),
                 TickShuttle = () => encounter()?.TickRac1FrogShuttleSwitch(),
                 ApplyShuttle = () => encounter()?.ApplyRac1FrogShuttleSelection(),
                 TickWaves = () => encounter()?.TickRac1FrogWaves(),
@@ -1917,7 +1966,7 @@ public partial class OBPGame : Node3D
             QueenCamera = () => encounter()?.QueenCamera,
             GuidedCamera = () => Rac1World.Weapons.GuidedCamera.Camera,
             DamageSequence = () => Rac1World.Context.DamageTransport.Sequence,
-            ForgetWrenchContact = key => _rac1WrenchHitTargets.Remove(key),
+            ForgetWrenchContact = key => Rac1World.Wrench.ForgetVictim(key),
             ResolveWrench = (previousHand, previousTip, hand, tip, radius, result) =>
                 encounter()?.ResolveRac1QueenWrenchContacts(previousHand, previousTip, hand, tip, radius, result),
             InvalidateEquipmentGeometry = () => Rac1World.Weapons.Contacts.Invalidate(),
@@ -2124,7 +2173,7 @@ public partial class OBPGame : Node3D
             () => _hudState.Current.Health, () => [.. (_worldScenes?.Current?.Resources.Rac2Gameplay?.OpeningHostileNodes() ?? [])], PlayerLife.Respawn));
         var audio = new GodotPlayerAudioFixture(this, new(() => _player,
             () => new(_playerAudio?.Ready == true, _world?.LevelId, _playerAudio?.PackSound, _playerAudio?.ThrownWrenchSound, _equipmentPresentation.WeaponAudio.Loop is not null,
-                _rac1WrenchThrow.Active, Rac1World.Context.BoltCrates.DestroyedCrateCount, _rac1Nanotech.Probe().Nanotech, _rac1Nanotech.Probe().IsDead),
+                (_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true), Rac1World.Context.BoltCrates.DestroyedCrateCount, _rac1Nanotech.Probe().Nanotech, _rac1Nanotech.Probe().IsDead),
             () => _playerAudio?.ReadVoices() ?? [],
             ClearMovementSmokeInput, SetAnalogueSmokeInput, SetRac1SmokeConditionedInput, TryHandleInteractiveBack,
             OnRac1WeaponSelectionRequested, SetRac1WeaponPreview, () => [.. Rac1World.Presentation.CrateNodes], Rac1World.Enemies.IsRac1GameplayActive,

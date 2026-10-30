@@ -236,7 +236,8 @@ public sealed class Rac1WeaponWorldOwnershipTests
         Assert.Contains("id => Rac1World.Weapons.Morph.ViewFor(id)", root, StringComparison.Ordinal);
         Assert.Contains("id => Rac1World.Weapons.Morph.Contains(id)", root, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Weapons.Morph.Project((enemy, view)", root, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Morph.ViewFor(target.Source.InstanceIndex)", wrench, StringComparison.Ordinal);
+        Assert.Contains("contactPorts.MorphView(target.Source.InstanceIndex)", Script("Rac1WrenchHost.cs"), StringComparison.Ordinal);
+        Assert.Contains("_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.OnPhysicsUpdated(frame)", wrench, StringComparison.Ordinal);
         Assert.Contains("internal IReadOnlyList<Rac1MobyRuntimeKey> ActiveKeys()", host, StringComparison.Ordinal);
         Assert.Contains("!chicken.Enemy.RewardEmitted", host, StringComparison.Ordinal);
         Assert.Contains("internal Rac1EquipmentView? ViewFor(int instanceIndex)", host, StringComparison.Ordinal);

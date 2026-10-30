@@ -20,7 +20,7 @@ public partial class OBPGame
     private void StepRac1WeaponAudio()
         => _equipmentPresentation.WeaponAudio.Step(new(
             _player is not null && _playerAudio?.Ready == true && PlayerLife.Alive && !MovementReproduction.IsLoading &&
-                !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active,
+                !_player.Rac1WrenchFrame.Active && !(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true),
             _rac1Weapons.Equipped, _rac1EquipmentUseTicks, _rac1PyroEmitting,
             _rac1AdditionalWeapons?.Vacuuming == true, _rac1ArsenalHeld, _rac1Weapons.GetAmmo(19) > 0,
             _rac1WeaponWorldTick, _args.Rac1WeaponsSmoke), _player, _playerAudio?.Random,
@@ -175,7 +175,7 @@ public partial class OBPGame
     private void StepRac1AdditionalWeapons()
     {
         if (MovementReproduction.IsLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is null || _player is null || _rac1AdditionalWeapons is null) return;
-        bool held = PlayerLife.Alive && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active &&
+        bool held = PlayerLife.Alive && !_player.Rac1WrenchFrame.Active && !(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true) &&
             _rac1AdditionalFireRequested && !Rac1World.Weapons.Detector.Equipped;
         _rac1AdditionalFireRequested = false;
         _rac1ArsenalHeld = held;
