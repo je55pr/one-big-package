@@ -42,29 +42,13 @@ public partial class OBPGame
             _equipmentPresentation.NativeViews.Assets, _args.FixedSeed,
             !OrdinaryPlayerSession && !_args.Rac1WeaponsSmoke && !_args.Rac1BombGloveSmoke, SetBombOrientation);
 
-    private QuadMesh GetRac1ParticleMesh(int poolType)
-        => _equipmentPresentation.Explosions.GetParticleMesh(poolType, _equipmentPresentation.NativeViews.Assets?.ParticleTextures,
-            _avatarPresentation.GloveAsset?.ParticleTexturesByPoolType);
-
     private ulong _rac1WeaponWorldTick;
-    private static Color EquipmentColor(uint rgba) => new((rgba & 255) / 128f, ((rgba >> 8) & 255) / 128f,
-        ((rgba >> 16) & 255) / 128f, ((rgba >> 24) & 255) / 128f);
-
-    private Node3D EquipmentParticle(int poolType, Color color, float size)
-    {
-        var node = new MeshInstance3D
-        {
-            Mesh = GetRac1ParticleMesh(poolType),
-            Scale = Vector3.One * size,
-            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off
-        };
-        node.SetInstanceShaderParameter("tint", color);
-        return node;
-    }
 
     private void SpawnEquipmentFlash(Vector3 origin, int type, Color color, float size, int ticks)
     {
-        var node = EquipmentParticle(type, color, size); _sceneResult!.Root.AddChild(node); node.GlobalPosition = origin;
+        var node = _equipmentPresentation.Explosions.CreateEquipmentParticle(type, color, size,
+            _equipmentPresentation.NativeViews.Assets, _avatarPresentation.GloveAsset?.ParticleTexturesByPoolType);
+        _sceneResult!.Root.AddChild(node); node.GlobalPosition = origin;
         Rac1World.Weapons.Projectiles.AddFlash(node, ticks, size);
     }
 

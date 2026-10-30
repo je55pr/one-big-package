@@ -221,6 +221,25 @@ internal sealed class Rac1ExplosionPresenter
         }
         return mesh;
     }
+
+    // Original R&C1 intensity uses /128 rather than the usual /255.
+    internal static Color EquipmentColor(uint rgba) => new((rgba & 255) / 128f, ((rgba >> 8) & 255) / 128f,
+        ((rgba >> 16) & 255) / 128f, ((rgba >> 24) & 255) / 128f);
+
+    /// <summary>Build a native equipment mote using the world-scoped particle mesh cache.</summary>
+    internal MeshInstance3D CreateEquipmentParticle(int poolType, Color color, float size,
+        Rac1EquipmentAssets.Catalogue? assets, IReadOnlyDictionary<int, RuntimeTexture>? gloveTextures)
+    {
+        var node = new MeshInstance3D
+        {
+            Mesh = GetParticleMesh(poolType, assets?.ParticleTextures, gloveTextures),
+            Scale = Vector3.One * size,
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off
+        };
+        node.SetInstanceShaderParameter("tint", color);
+        return node;
+    }
+
     private static NVector3 ToEffectNative(Vector3 point) => new(-point.X, point.Z, point.Y);
     private static Vector3 FromEffectNative(NVector3 point) => new(-point.X, point.Z, point.Y);
 }

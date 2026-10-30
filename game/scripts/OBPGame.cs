@@ -384,7 +384,8 @@ public partial class OBPGame : Node3D
             () => Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes),
             id => Rac1World.Weapons.Morph.ViewFor(id),
             (from, to) => Rac1World.Weapons.Contacts.HasLineOfSight(from, to),
-            EquipmentParticle,
+            (type, tint, scale) => _equipmentPresentation.Explosions.CreateEquipmentParticle(type, tint, scale,
+                _equipmentPresentation.NativeViews.Assets, _avatarPresentation.GloveAsset?.ParticleTexturesByPoolType),
             (mote, position, step) =>
             {
                 _sceneResult!.Root.AddChild(mote); mote.GlobalPosition = position;
@@ -446,7 +447,8 @@ public partial class OBPGame : Node3D
                 .Select(shot => new Rac1TaunterMine(shot.Position, () => shot.Taunted = true)),
             (from, forward) =>
             {
-                var ring = EquipmentParticle(27, new(.3f, .7f, 1, .6f), .6f);
+                var ring = _equipmentPresentation.Explosions.CreateEquipmentParticle(27, new(.3f, .7f, 1, .6f), .6f,
+                    _equipmentPresentation.NativeViews.Assets, _avatarPresentation.GloveAsset?.ParticleTexturesByPoolType);
                 _sceneResult!.Root.AddChild(ring); ring.GlobalPosition = from + forward * .5f;
                 Rac1World.Weapons.Projectiles.AddMote(ring, forward * .25f);
             },
@@ -478,7 +480,10 @@ public partial class OBPGame : Node3D
         new Rac1EquipmentProjectilePorts(
             () => _player, () => (float)(_avatarPresentation.Avatar?.BaseHeight ?? -.7),
             weapon => EquipmentMuzzle(weapon), () => EquipmentForward,
-            CreateEquipmentWorldView, EquipmentParticle, EquipmentColor,
+            CreateEquipmentWorldView,
+            (type, tint, scale) => _equipmentPresentation.Explosions.CreateEquipmentParticle(type, tint, scale,
+                _equipmentPresentation.NativeViews.Assets, _avatarPresentation.GloveAsset?.ParticleTexturesByPoolType),
+            Rac1ExplosionPresenter.EquipmentColor,
             SpawnEquipmentFlash, SpawnRac1WeaponExplosion,
             (cls, sound, point) => FusionWeapons.PlayNativeSound(cls, sound, point),
             () => Rac1World.Enemies.Targets,
