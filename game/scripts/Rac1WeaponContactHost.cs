@@ -15,7 +15,9 @@ internal sealed record Rac1WeaponTargetPorts(
     Func<RuntimeWorldScene.DynamicObjectNode, bool> IsGameplayActive,
     Func<RuntimeWorldScene.DynamicObjectNode, bool> IsQueenNode,
     Func<bool> QueenDamageAdmitted,
-    Func<int, bool> RewardEmitted);
+    Func<int, bool> RewardEmitted,
+    Func<IEnumerable<RuntimeWorldScene.DynamicObjectNode>> ArsenalTargets,
+    Func<int, bool> IsMorphed);
 
 internal sealed record Rac1WeaponContactPhysicsPorts(
     Func<PlayerHost?> Player,
@@ -99,6 +101,25 @@ internal sealed class Rac1WeaponContactHost(
                 (point - origin).Normalized().Dot(forward) > coneDot && HasLineOfSight(origin, point))
             .OrderBy(point => point.DistanceSquaredTo(origin)).FirstOrDefault();
         return target == Vector3.Zero ? origin + forward * distance : target;
+    }
+
+    // Arsenal target selection intentionally scans enemy candidates only, not
+    // the wider crate/queen damage geometry used by shared contact queries.
+    // Keep the authored .5f aim offset, root-distance ordering and occlusion.
+    internal RuntimeWorldScene.DynamicObjectNode? FindArsenalTarget(Vector3 origin, float range, float cone = -.1f,
+        IEnumerable<int>? excluded = null)
+    {
+        if (_disposed) return null;
+        var skip = excluded?.ToHashSet();
+        var forward = physics.Forward();
+        return targets.ArsenalTargets().Where(node => IsAimTarget(node) && !targets.IsMorphed(node.Source.InstanceIndex) &&
+                skip?.Contains(node.Source.InstanceIndex) != true)
+            .Where(node =>
+            {
+                var delta = node.Root.GlobalPosition + Vector3.Up * .5f - origin;
+                return delta.LengthSquared() < range * range && delta.LengthSquared() > .00001f &&
+                    delta.Normalized().Dot(forward) > cone && HasLineOfSight(origin, node.Root.GlobalPosition + Vector3.Up * .5f);
+            }).OrderBy(node => node.Root.GlobalPosition.DistanceSquaredTo(origin)).FirstOrDefault();
     }
 
     internal (Vector3 Point, RuntimeWorldScene.DynamicObjectNode? Target)? Contact(Vector3 from, Vector3 to, float radius)

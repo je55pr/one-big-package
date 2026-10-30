@@ -41,6 +41,7 @@ internal sealed class Rac1WorldModule : IDisposable
         Enemies = enemies(this);
         Breakables = new(world, Context, Presentation, Loot, Enemies, () => breakables.Current(this), breakables);
         WrenchDamage = new(Context, Breakables, Enemies, Loot, wrenchDamage);
+        WeaponDamage = new(Context, Enemies, Breakables, WrenchDamage, Weapons.Contacts);
         Bombs = new(Context, Presentation, Weapons, Enemies, Breakables, bomb);
         Hud = new(world, Context, Presentation, hud, () => _disposed);
     }
@@ -49,6 +50,7 @@ internal sealed class Rac1WorldModule : IDisposable
     internal Rac1BreakableHost Breakables { get; }
     internal Rac1BombProjectileHost Bombs { get; }
     internal Rac1WrenchDamageHost WrenchDamage { get; }
+    internal Rac1WeaponDamageHost WeaponDamage { get; }
     internal Rac1WorldContext Context { get; }
     internal Rac1AuthoredMechanismRegistry Mechanisms { get; }
     internal Rac1WorldPresentation Presentation { get; } = new();
@@ -93,6 +95,7 @@ internal sealed class Rac1WorldModule : IDisposable
         _reset.Missions();
         Wrench.Reset();
         _reset.Retry();
+        if (retiring) WeaponDamage.Dispose();
         if (retiring) WrenchDamage.Dispose();
         if (retiring) Enemies.Dispose(); else Enemies.ResetRac1Enemies();
         Loot.ResetRac1PickupPresentation();
@@ -182,14 +185,18 @@ internal sealed class Rac1WorldModule : IDisposable
             _player = null;
             try
             {
-                try { Bombs.Dispose(); }
+                try { WeaponDamage.Dispose(); }
                 finally
                 {
-                    try { WrenchDamage.Dispose(); }
+                    try { Bombs.Dispose(); }
                     finally
                     {
-                        try { Wrench.Dispose(); }
-                        finally { Enemies.Dispose(); }
+                        try { WrenchDamage.Dispose(); }
+                        finally
+                        {
+                            try { Wrench.Dispose(); }
+                            finally { Enemies.Dispose(); }
+                        }
                     }
                 }
             }

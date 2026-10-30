@@ -114,7 +114,7 @@ public partial class OBPGame
                 if (Rac1World.Weapons.Contacts.Contact(shot.Position, next, shot.Weapon == Rac1WeaponId.Blaster ? .15f : .25f) is { } hit)
                 {
                     if (hit.Target is { } victim)
-                        ApplyRac1AdditionalDamage(victim, Rac1WeaponProfiles.DirectDamage(shot.Weapon,
+                        Rac1World.WeaponDamage.Apply(victim, Rac1WeaponProfiles.DirectDamage(shot.Weapon,
                             new(victim.Source.NativeClassId, victim.Source.InstanceIndex),
                             shot.Weapon == Rac1WeaponId.Blaster ? Rac1WeaponProfiles.BlasterDamage : Rac1WeaponReconstructionPolicy.SuckDamage,
                             shot.Weapon == Rac1WeaponId.Blaster ? Rac1WeaponProfiles.BlasterFlags : Rac1WeaponReconstructionPolicy.SuckDamageFlags));
@@ -224,7 +224,7 @@ public partial class OBPGame
                 var key = new Rac1MobyRuntimeKey(victim.Source.NativeClassId, victim.Source.InstanceIndex);
                 if (!Rac1World.Enemies.IsRac1GameplayActive(victim) || flame.Victims.Contains(key) || _rac1FlameHitTicks.GetValueOrDefault(key) > _rac1WeaponWorldTick) continue;
                 if (!bounds.Grow(radius).HasPoint(point) || !Rac1World.Weapons.Contacts.HasLineOfSight(point, victim.Root.GlobalPosition + Vector3.Up * .4f)) continue;
-                if (ApplyRac1AdditionalDamage(victim, Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Pyrocitor, key,
+                if (Rac1World.WeaponDamage.Apply(victim, Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Pyrocitor, key,
                     Rac1WeaponProfiles.PyrocitorDamage, Rac1WeaponProfiles.PyrocitorFlags)))
                 {
                     // Victim repetition remains the existing bounded damage
@@ -320,7 +320,7 @@ public partial class OBPGame
         {
             var centre = target.Root.GlobalPosition + Vector3.Up * .4f;
             if (origin.DistanceTo(centre) > radius + .35f || !Rac1World.Weapons.Contacts.HasLineOfSight(origin + Vector3.Up * .1f, centre)) continue;
-            ApplyRac1AdditionalDamage(target, Rac1WeaponProfiles.ChildDamage(weapon, nativeClass, id,
+            Rac1World.WeaponDamage.Apply(target, Rac1WeaponProfiles.ChildDamage(weapon, nativeClass, id,
                 new(target.Source.NativeClassId, target.Source.InstanceIndex), damage, flags));
         }
     }

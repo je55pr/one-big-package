@@ -277,24 +277,6 @@ public partial class OBPGame
         return _player!.GlobalPosition + Vector3.Up * .9f + EquipmentForward * .7f;
     }
 
-    private bool ApplyRac1AdditionalDamage(RuntimeWorldScene.DynamicObjectNode target, Rac1GameplayDamageEvent damage)
-    {
-        if (target.Source.NativeClassId == Rac1FrogQueenGroup.QueenClassId)
-            return Rac1World.Enemies.Frogs.ApplyRac1QueenWeaponDamage(target, damage);
-        if (!Rac1World.Context.MobyRuntime.CanDispatchDamage(damage)) return false;
-        bool applied;
-        if (Rac1BoltCrate.IsCrateClass(target.Source.NativeClassId))
-        {
-            Rac1World.WrenchDamage.CompleteCrateDamage(target, Rac1World.Context.MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage));
-            applied = true;
-        }
-        else if (target.Source.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
-            applied = Rac1World.Breakables.TryTriggerExplosiveDamage(target, damage);
-        else applied = Rac1World.Enemies.ApplyRac1EnemyWeaponDamage(target, damage);
-        if (applied) Rac1World.Context.DamageTransport.Publish(damage);
-        return applied;
-    }
-
     private void FireRac1Blaster(Rac1AdditionalWeaponSession.Shot shot)
     {
         Vector3 origin = EquipmentMuzzle(shot.Weapon);

@@ -224,7 +224,7 @@ public partial class OBPGame : Node3D
                 }
                 var target = Rac1World.Weapons.Contacts.Targets.FirstOrDefault(node => node.Source.SourceGame == intent.Target.SourceGame &&
                     node.Source.NativeClassId == intent.Target.NativeClassId && node.Source.InstanceIndex == intent.Target.InstanceIndex);
-                return target is not null && FusionDamagePolicy.Translate(intent) is { } damage && ApplyRac1AdditionalDamage(target, damage);
+                return target is not null && FusionDamagePolicy.Translate(intent) is { } damage && Rac1World.WeaponDamage.Apply(target, damage);
             }, () => Rac1World.Weapons.Contacts.RayExclusions(), (from, to) => Rac1World.Weapons.Contacts.HasLineOfSight(from, to))), () => _avatarPresentation.View,
         new((nativeClass, name) => Rac1World.Loot.CreateRac1EffectNode(nativeClass, name, playerEquipment: true),
             (nativeClass, localSound, position) =>
@@ -367,7 +367,9 @@ public partial class OBPGame : Node3D
             node => Rac1World.Enemies.IsRac1GameplayActive(node),
             node => Rac1World.Enemies.Frogs.IsQueenNode(node),
             () => Rac1World.Enemies.Frogs.QueenDamageAdmitted,
-            id => Rac1World.Enemies.Roster.TryGetValue(id, out var enemy) && enemy.RewardEmitted),
+            id => Rac1World.Enemies.Roster.TryGetValue(id, out var enemy) && enemy.RewardEmitted,
+            () => Rac1World.Enemies.Targets,
+            id => Rac1World.Weapons.Morph.Contains(id)),
         new Rac1WeaponContactPhysicsPorts(
             () => _player, () => EquipmentForward,
             () => Rac1World.Loot.CrateBodies.Values.Concat<CollisionObject3D>(Rac1World.Enemies.Roster.Values.Select(enemy => enemy.Body)),
@@ -415,26 +417,26 @@ public partial class OBPGame : Node3D
         new Rac1ArsenalMissilePorts(
             (weapon, barrel) => EquipmentMuzzle(weapon, barrel),
             () => EquipmentForward, CreateEquipmentWorldView,
-            (origin, range, cone, excluded) => FindArsenalTarget(origin, range, cone, excluded),
+            (origin, range, cone, excluded) => Rac1World.Weapons.Contacts.FindArsenalTarget(origin, range, cone, excluded),
             node => Rac1World.Weapons.Contacts.IsAimTarget(node),
             (from, to, radius) => Rac1World.Weapons.Contacts.Contact(from, to, radius),
             () => _player, () => PlayerLife.Alive, () => _rac1Weapons.Equipped,
-            () => _rac1WeaponWorldTick, SpawnEquipmentFlash, ApplyArsenalBlast,
+            () => _rac1WeaponWorldTick, SpawnEquipmentFlash, (weapon, position, radius, damage, flags) => Rac1World.WeaponDamage.ApplyBlast(weapon, position, radius, damage, flags),
             SpawnRac1WeaponExplosion, (cls, sound, position) => FusionWeapons.PlayNativeSound(cls, sound, position),
             () => _sceneResult!.Root),
         new Rac1ArsenalDeployablePorts(
             CreateEquipmentWorldView, weapon => EquipmentMuzzle(weapon),
             () => EquipmentForward, () => _player, () => _rac1WeaponWorldTick,
-            (origin, range, cone) => FindArsenalTarget(origin, range, cone),
+            (origin, range, cone) => Rac1World.Weapons.Contacts.FindArsenalTarget(origin, range, cone),
             node => Rac1World.Weapons.Contacts.IsAimTarget(node),
             (from, to, radius) => Rac1World.Weapons.Contacts.Contact(from, to, radius),
             (from, to) => Rac1World.Weapons.Contacts.HasLineOfSight(from, to),
-            SpawnEquipmentFlash, ApplyArsenalBlast, SpawnRac1WeaponExplosion,
+            SpawnEquipmentFlash, (weapon, position, radius, damage, flags) => Rac1World.WeaponDamage.ApplyBlast(weapon, position, radius, damage, flags), SpawnRac1WeaponExplosion,
             (cls, sound, position) => FusionWeapons.PlayNativeSound(cls, sound, position)),
         new Rac1WalloperPorts(
             () => _player, () => _rac1Weapons.Equipped, () => PlayerLife.Alive,
             () => EquipmentForward, () => EquipmentMuzzle(Rac1WeaponId.Walloper),
-            (node, damage) => ApplyRac1AdditionalDamage(node, damage),
+            (node, damage) => Rac1World.WeaponDamage.Apply(node, damage),
             (cls, sound, position) => FusionWeapons.PlayNativeSound(cls, sound, position),
             SpawnEquipmentFlash),
         new Rac1TaunterPorts(
@@ -447,11 +449,11 @@ public partial class OBPGame : Node3D
                 _sceneResult!.Root.AddChild(ring); ring.GlobalPosition = from + forward * .5f;
                 _rac1WeaponMotes.Add(new(ring, forward * .25f));
             },
-            (node, damage) => ApplyRac1AdditionalDamage(node, damage)),
+            (node, damage) => Rac1World.WeaponDamage.Apply(node, damage)),
         new Rac1TeslaPorts(
-            (origin, range, cone, excluded) => FindArsenalTarget(origin, range, cone, excluded),
+            (origin, range, cone, excluded) => Rac1World.Weapons.Contacts.FindArsenalTarget(origin, range, cone, excluded),
             () => _rac1WeaponWorldTick,
-            (node, damage) => ApplyRac1AdditionalDamage(node, damage),
+            (node, damage) => Rac1World.WeaponDamage.Apply(node, damage),
             (cls, sound, origin) => FusionWeapons.PlayNativeSound(cls, sound, origin)),
         new Rac1MorphPorts(
             id => Rac1World.Enemies.Roster.TryGetValue(id, out var enemy) ? enemy : null,
@@ -462,7 +464,7 @@ public partial class OBPGame : Node3D
             () => EquipmentForward,
             (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(min, max),
             EquipmentGround, SpawnEquipmentFlash,
-            (origin, range, cone) => FindArsenalTarget(origin, range, cone),
+            (origin, range, cone) => Rac1World.Weapons.Contacts.FindArsenalTarget(origin, range, cone),
             (from, to, radius) => Rac1World.Weapons.Contacts.Contact(from, to, radius)),
         new Rac1ArsenalBeamPorts(
             () => GetViewport().GetCamera3D(), () => _rac1EquipmentAssets?.Effects,
@@ -2115,7 +2117,7 @@ public partial class OBPGame : Node3D
             if (Rac1World.Presentation.PickupNodes.Remove(id, out var node) && IsInstanceValid(node)) node.QueueFree();
         }, () => unchecked((uint)(_args.FixedSeed ?? System.Environment.TickCount))), new(
         new(() => _worldScenes?.Current?.Resources.Rac1Gameplay?.Enemies,
-            () => Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes), ApplyRac1AdditionalDamage,
+            () => Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes), (node, damage) => Rac1World.WeaponDamage.Apply(node, damage),
             key => _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.SuckCannon.ForgetCapture(key),
             () => Rac1World.Loot.PickupAssets, () => _equipmentPresentation.SelectedAssets,
             (assets, materials) => { Rac1World.Loot.SetDiagnosticAssets(assets, materials); }, delta => Rac1World.Loot.TickRac1Pickups(delta)),

@@ -194,8 +194,8 @@ public sealed class Rac1WeaponWorldOwnershipTests
         Assert.Contains("weapons.Morph.TickExposure()", arsenal, StringComparison.Ordinal);
         Assert.Contains("weapons.Morph.Fire(from, ports.EquipmentForward())", arsenal, StringComparison.Ordinal);
         Assert.Contains("weapons.Morph.Reset()", arsenal, StringComparison.Ordinal);
-        Assert.Contains("!Rac1World.Weapons.Morph.Contains(node.Source.InstanceIndex)",
-            Script("OBPGame.Rac1Arsenal.cs"), StringComparison.Ordinal);
+        Assert.Contains("!targets.IsMorphed(node.Source.InstanceIndex)",
+            Script("Rac1WeaponContactHost.cs"), StringComparison.Ordinal);
         Assert.Contains("new Rac1MorphPorts(", world, StringComparison.Ordinal);
         Assert.DoesNotContain("_rac1Chickens", world, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", host, StringComparison.Ordinal);
