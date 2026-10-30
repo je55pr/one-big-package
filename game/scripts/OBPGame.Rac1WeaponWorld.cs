@@ -73,7 +73,7 @@ public partial class OBPGame
         if (MovementReproduction.IsLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is null || _player is null) return;
         _rac1WeaponWorldTick++;
         StepRac1ArsenalWorld();
-        Rac1World.Weapons.Flames.Emit(_rac1PyroEmitting);
+        Rac1World.Weapons.Flames.Emit(_persistentPlayer.Rac1Use.PyroEmitting);
         Rac1World.Weapons.Projectiles.StepMotes();
         Rac1World.Weapons.Flames.StepContacts();
         Rac1World.Weapons.SuckCannon.Step();

@@ -47,7 +47,7 @@ public partial class OBPGame : Node3D
     private Rac1MovementWorldStateAdapter? _movementWorldState;
     private Rac1MovementWorldStateAdapter MovementWorldState => _movementWorldState ??= new(new(
         World: () => Rac1World, Scene: () => _sceneResult, Weapons: () => _rac1Weapons,
-        Wallet: () => _rac1BoltWallet, AdditionalWeapons: () => _rac1AdditionalWeapons,
+        Wallet: () => _rac1BoltWallet, AdditionalWeapons: () => _persistentPlayer.Rac1Use.Session,
         WeaponPreview: () => _persistentPlayer.WeaponPreview is not null,
         MorphedMobies: () => Rac1World.Weapons.Morph.ActiveKeys()
             .Concat(Rac1World.Weapons.SuckCannon.ChickenCargoKeys).Distinct().ToArray(),
@@ -160,7 +160,7 @@ public partial class OBPGame : Node3D
         () => _rac1CombatRetry is not null,
         () => { FusionWeapons.ClearOnDeath(); ResetRac1WrenchHost(); },
         (before, after) => _playerAudio?.NotifyDamage(before, after), () => RefreshRac1HudState(), _hudState,
-        () => Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, capturedMobyCount: _rac1AdditionalWeapons?.Cargo.Count ?? 0,
+        () => Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, capturedMobyCount: _persistentPlayer.Rac1Use.Session?.Cargo.Count ?? 0,
             swimming: _player?.Rac1SwimState, ownsOxygenMask: _player?.Rac1MovementEquipment.OxygenMask == true),
         FusionWeapons.Hud));
     private FusionWeaponHost? _fusionWeapons;
@@ -178,7 +178,8 @@ public partial class OBPGame : Node3D
         {
             _previousSelectedWeapon = previous;
             ResetRac1WeaponAudio();
-            Rac1World.Context.BombFireRequested = _rac1AdditionalFireRequested = Rac1World.Context.EquipmentUsePressed = false;
+            Rac1World.Context.BombFireRequested = Rac1World.Context.EquipmentUsePressed = false;
+            _persistentPlayer.Rac1Use.CancelFire();
             _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.ThrownAnimation.Stop();
         },
         RefreshAvailability: () => _persistentPlayer.Equipment.RefreshAvailability(),
@@ -347,7 +348,7 @@ public partial class OBPGame : Node3D
             status => Rac1World.Context.CombatStatus = status),
         new Rac1GameplayHudPorts(_hudState, () => OrdinaryPlayerSession, () => _playerSession is not null,
             PlayerLife.PublishHud, FusionWeapons.Hud, () => _rac1Nanotech, () => _rac1Weapons, () => _rac1BoltWallet,
-            () => _rac1AdditionalWeapons?.Cargo.Count ?? 0, () => _player, () => Rac1World.Weapons.Detector.HudText()),
+            () => _persistentPlayer.Rac1Use.Session?.Cargo.Count ?? 0, () => _player, () => Rac1World.Weapons.Detector.HudText()),
         new Rac1MetalDetectorPorts(
             () => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path,
             () => _rac1Campaign.Session.BuriedBolts, () => _persistentPlayer.WeaponPreview is not null,
@@ -375,7 +376,7 @@ public partial class OBPGame : Node3D
             () => Rac1World.Loot.CrateBodies.Values.Concat<CollisionObject3D>(Rac1World.Enemies.Roster.Values.Select(enemy => enemy.Body)),
             ActorHost.AddRayExclusions),
         new Rac1SuckCannonPorts(
-            () => _rac1AdditionalWeapons, () => _player is not null,
+            () => _persistentPlayer.Rac1Use.Session, () => _player is not null,
             () => EquipmentMuzzle(Rac1WeaponId.SuckCannon), () => EquipmentForward,
             () => _rac1WeaponWorldTick,
             (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(min, max),
@@ -851,9 +852,9 @@ public partial class OBPGame : Node3D
             SelectWeapon: FusionWeapons.Select,
             ResetWeaponPresentation: () =>
             {
-                _rac1EquipmentUseTicks = 0;
+                _persistentPlayer.Rac1Use.ClearUseTicks();
                 _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Arsenal.SetHeld(false);
-                _rac1PyroEmitting = false;
+                _persistentPlayer.Rac1Use.StopPyro();
                 ResetRac1WeaponAudio(); FusionWeapons.ResetHeldUse();
                 RefreshRac1WrenchPresentationVisibility(); RefreshRac1HudState();
             },
@@ -1846,8 +1847,8 @@ public partial class OBPGame : Node3D
     }
 
     private GodotRac1AdditionalWeaponDiagnosticFixture CreateRac1AdditionalWeaponDiagnosticFixture(IDiagnosticWorldObservations worlds) => new(new(
-        () => new(_persistentPlayer.WeaponPreview is not null, _rac1Campaign.Session.Weapons.Owns(Rac1WeaponId.Blaster), _rac1AdditionalWeapons?.Cargo.Count ?? 0,
-            _rac1EquipmentUseTicks, _rac1WeaponShotsFired, _rac1PyroEmitting, _equipmentPresentation.WeaponAudio.Loop, _hudState.Current.CurrentWeapon,
+        () => new(_persistentPlayer.WeaponPreview is not null, _rac1Campaign.Session.Weapons.Owns(Rac1WeaponId.Blaster), _persistentPlayer.Rac1Use.Session?.Cargo.Count ?? 0,
+            _persistentPlayer.Rac1Use.UseTicks, _persistentPlayer.Rac1Use.ShotsFired, _persistentPlayer.Rac1Use.PyroEmitting, _equipmentPresentation.WeaponAudio.Loop, _hudState.Current.CurrentWeapon,
             GodotMovementPlayer.Copy(EquipmentForward), _player?.Rac1RemoteControlActive == true, Rac1World.Weapons.GuidedCamera.Camera is not null,
             Rac1World.Weapons.GuidedCamera.Camera?.Current == true, _player?.Camera.Current == true, _equipmentPresentation.Explosions.RenderedCount, _equipmentPresentation.Explosions.DrawCalls),
         weapon => _rac1EquipmentViews.GetValueOrDefault(weapon), weapon => EquipmentMuzzle(weapon), item => _rac1Weapons.GetAmmo(item),
@@ -2109,7 +2110,7 @@ public partial class OBPGame : Node3D
         Scene = () => _sceneResult!.Root,
         Read = () => new(OrdinaryPlayerSession, _playerNative is not null, _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is not null, _playerAudio?.Ready == true,
             _rac1HeldItem.Hand.WrenchHeld, _avatarPresentation.Clock?.Tick ?? 0, FusionWeapons.Session?.ShotsFired ?? 0, _pauseMenu?.UniversalEnabled == true,
-            _pauseMenu?.RetailEnabled == true, _rac1PyroEmitting, _equipmentPresentation.Explosions.Particles?.Live.Any(particle => particle.Type == 12) == true,
+            _pauseMenu?.RetailEnabled == true, _persistentPlayer.Rac1Use.PyroEmitting, _equipmentPresentation.Explosions.Particles?.Live.Any(particle => particle.Type == 12) == true,
             _equipmentPresentation.Explosions.RenderedCount, _playerNative?.Life.Capture().Current ?? 0, GodotMovementPlayer.Copy(_player?.GlobalPosition ?? Vector3.Zero),
             _player?.Rac1CurrentYaw ?? 0, FusionWeapons.AcceptedHits, FusionWeapons.Projectiles.Count, FusionWeapons.AudioPlayerCount),
         ResetAudio = () => _playerAudio?.ResetDiagnosticRandom(1440),
@@ -2619,7 +2620,7 @@ public partial class OBPGame : Node3D
             .Select(id => (Rac1WeaponId)id).Concat(available).Distinct().ToArray();
         var entries = order.Select(weapon => new WeaponQuickSelectUi.Entry(new(ObpSourceGame.Rac1, (int)weapon),
             weapon == Rac1WeaponId.FirstRanged ? "Bomb Glove" : Rac1WeaponProfiles.Get(weapon).Name,
-            (int)weapon == 9 ? $"{_rac1AdditionalWeapons?.Cargo.Count ?? 0} captured" :
+            (int)weapon == 9 ? $"{_persistentPlayer.Rac1Use.Session?.Cargo.Count ?? 0} captured" :
             Rac1ItemAmmoDescriptors.Get((int)weapon).MaxAmmo > 0 ? $"{_rac1Weapons.GetAmmo((int)weapon)} ammo" : "")).ToArray();
         if (FusionWeapons.Session is not null && _playerNative is null)
         {

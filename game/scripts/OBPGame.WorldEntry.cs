@@ -366,7 +366,7 @@ public partial class OBPGame
         _avatarPresentation.StepNative(state, input);
 
 
-        bool holdGun = _rac1EquipmentUseTicks > 0 && OBP.RAC1.Gameplay.Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped) &&
+        bool holdGun = _persistentPlayer.Rac1Use.UseTicks > 0 && OBP.RAC1.Gameplay.Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped) &&
             OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence is > 0 and not 44 &&
             IsRac1HandEquipmentVisible(_rac1Weapons.Equipped) && input.Traversal is null &&
             PlayerLife.Alive;
@@ -388,7 +388,7 @@ public partial class OBPGame
         {
             controller.ClearSourceEquipment();
             _avatarPresentation.Sink?.SetAnimationPresentation(controller.ApplyEquipmentPose(equipmentPose,
-                walloper ? walloperAge / 60d : _rac1EquipmentUseAge / 60d, !walloper, fullBody: walloper || !moving));
+                walloper ? walloperAge / 60d : _persistentPlayer.Rac1Use.UseAge / 60d, !walloper, fullBody: walloper || !moving));
         }
 
         if (_avatarPresentation.PhysicsPlayer is { } player)

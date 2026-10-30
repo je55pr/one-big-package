@@ -44,7 +44,7 @@ public partial class OBPGame
         if (frame.HandChanged) RefreshRac1HeldItem(previous);
         if (!frame.UseRequested) return;
         if (_rac1Weapons.Equipped == Rac1WeaponId.FirstRanged) Rac1World.Context.BombFireRequested = true;
-        else if (Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped)) _rac1AdditionalFireRequested = true;
+        else if (Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped)) _persistentPlayer.Rac1Use.RequestFire();
     }
 
     private void OnRac1WeaponSelectionRequested(Rac1WeaponId weapon)

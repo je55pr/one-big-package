@@ -62,7 +62,7 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
         Assert.Contains("if ((ports.WorldTick() & 3) == 0 && created.Count > 2)", flame, StringComparison.Ordinal);
         Assert.Contains("if (_flames.Count == 15) _flames.RemoveAt(0)", flame, StringComparison.Ordinal);
         Assert.Contains("_flames.Add(new(created[2]))", flame, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Flames.Emit(_rac1PyroEmitting)", frame, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Flames.Emit(_persistentPlayer.Rac1Use.PyroEmitting)", frame, StringComparison.Ordinal);
         Assert.DoesNotContain("particles.Pyrocitor(", frame, StringComparison.Ordinal);
     }
 
@@ -112,7 +112,6 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
             "Rac1World.Weapons.Projectiles.RetireShotsAgentsMotes()",
             "Rac1World.Weapons.SuckCannon.Reset()",
             "Rac1World.Weapons.Flames.ClearCooldowns()",
-            "_rac1WeaponGenerations.Clear()",
             "Rac1World.Weapons.Flames.ClearTrackedFlames()",
             "_equipmentPresentation.Explosions.Particles?.RemoveType(12)",
             "_equipmentPresentation.Explosions.Particles?.RemoveType(2)",
@@ -126,7 +125,7 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
             previous = next;
         }
 
-        int emit = frame.IndexOf("Rac1World.Weapons.Flames.Emit(_rac1PyroEmitting)", StringComparison.Ordinal);
+        int emit = frame.IndexOf("Rac1World.Weapons.Flames.Emit(_persistentPlayer.Rac1Use.PyroEmitting)", StringComparison.Ordinal);
         int motes = frame.IndexOf("Rac1World.Weapons.Projectiles.StepMotes()", StringComparison.Ordinal);
         int contacts = frame.IndexOf("Rac1World.Weapons.Flames.StepContacts()", StringComparison.Ordinal);
         int suck = frame.IndexOf("Rac1World.Weapons.SuckCannon.Step()", StringComparison.Ordinal);

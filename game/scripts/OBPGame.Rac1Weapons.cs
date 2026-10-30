@@ -21,8 +21,8 @@ public partial class OBPGame
         => _equipmentPresentation.WeaponAudio.Step(new(
             _player is not null && _playerAudio?.Ready == true && PlayerLife.Alive && !MovementReproduction.IsLoading &&
                 !_player.Rac1WrenchFrame.Active && !(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true),
-            _rac1Weapons.Equipped, _rac1EquipmentUseTicks, _rac1PyroEmitting,
-            _rac1AdditionalWeapons?.Vacuuming == true, Rac1World.Weapons.Arsenal.Held, _rac1Weapons.GetAmmo(19) > 0,
+            _rac1Weapons.Equipped, _persistentPlayer.Rac1Use.UseTicks, _persistentPlayer.Rac1Use.PyroEmitting,
+            _persistentPlayer.Rac1Use.Session?.Vacuuming == true, Rac1World.Weapons.Arsenal.Held, _rac1Weapons.GetAmmo(19) > 0,
             _rac1WeaponWorldTick, _args.Rac1WeaponsSmoke), _player, _playerAudio?.Random,
             _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets)?.Sounds);
 
@@ -36,15 +36,8 @@ public partial class OBPGame
     private Rac1EquipmentAssets.Catalogue? _rac1EquipmentAssets;
     private string? _rac1EquipmentSource;
     private WorldMaterialFactory? _rac1EquipmentMaterials;
-    private Rac1AdditionalWeaponSession? _rac1AdditionalWeapons;
     private readonly Dictionary<Rac1WeaponId, Rac1EquipmentView> _rac1EquipmentViews = [];
     private readonly Dictionary<Rac1WeaponId, Rac1EquipmentView> _rac1StagedEquipment = [];
-    private readonly Dictionary<Rac1WeaponId, long> _rac1WeaponGenerations = [];
-    private bool _rac1AdditionalFireRequested;
-    private bool _rac1PyroEmitting;
-    private Rac1WeaponId _rac1EquipmentUseWeapon;
-    private int _rac1EquipmentUseTicks, _rac1EquipmentUseAge;
-    private int _rac1WeaponShotsFired;
 
     private void ResetRac1AdditionalWeapons()
     {
@@ -52,14 +45,11 @@ public partial class OBPGame
         ResetRac1Arsenal();
         Rac1World.Weapons.Projectiles.RetireShotsAgentsMotes();
         Rac1World.Weapons.SuckCannon.Reset();
-        Rac1World.Weapons.Flames.ClearCooldowns(); _rac1WeaponGenerations.Clear();
+        Rac1World.Weapons.Flames.ClearCooldowns();
         Rac1World.Weapons.Flames.ClearTrackedFlames(); _equipmentPresentation.Explosions.Particles?.RemoveType(12); _equipmentPresentation.Explosions.Particles?.RemoveType(2);
-        _rac1AdditionalWeapons = new(_rac1Weapons);
-        _rac1AdditionalWeaponsInventory = _rac1Weapons;
+        _persistentPlayer.Rac1Use.ResetSession(_rac1Weapons);
         Rac1World.Weapons.Projectiles.ResetFlashes(); _rac1WeaponWorldTick = 0;
-        _rac1AdditionalFireRequested = _rac1PyroEmitting = false;
-        _rac1EquipmentUseTicks = _rac1EquipmentUseAge = 0;
-        _rac1WeaponShotsFired = 0;
+        _persistentPlayer.Rac1Use.ResetInputState();
         // A preview/reset may restore morphed target meshes within this same
         // physics frame. Do not reuse their previous bounds or exclusions.
         _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Contacts.Invalidate();
@@ -88,13 +78,13 @@ public partial class OBPGame
                 _rac1Weapons.GrantAmmoClamped((int)weapon, Rac1ItemAmmoDescriptors.Get((int)weapon).MaxAmmo);
             }
             // Rebind once when entering preview; refilling does not erase live cargo.
-            if (_rac1AdditionalWeaponsInventory != _rac1Weapons)
+            if (_persistentPlayer.Rac1Use.BoundInventory != _rac1Weapons)
             {
                 Rac1World.Context.BombGlove = new(_rac1Weapons); ResetRac1AdditionalWeapons();
             }
             MovementReproduction.Report("Full arsenal preview: hold Triangle to select, Circle to use. Refill or restore campaign equipment from Pause → Testing Equipment.");
         }
-        _rac1AdditionalWeaponsInventory = _rac1Weapons;
+        _persistentPlayer.Rac1Use.BindInventory(_rac1Weapons);
         FusionWeapons.SynchronizeNativeSelection();
         RefreshSourceEquipmentContext();
         if (_rac1HeldItem.NativeItemId != (int)Rac1WeaponId.Wrench) HoldSelectedRac1HandItem();
@@ -108,7 +98,6 @@ public partial class OBPGame
             Rac1World.Weapons.Detector.Refresh(world);
         }
     }
-    private Rac1WeaponInventory? _rac1AdditionalWeaponsInventory;
 
     private void AttachRac1EquipmentViews(Node3D avatarView)
     {
@@ -137,38 +126,18 @@ public partial class OBPGame
 
     private void StepRac1AdditionalWeapons()
     {
-        if (MovementReproduction.IsLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is null || _player is null || _rac1AdditionalWeapons is null) return;
-        bool held = PlayerLife.Alive && !_player.Rac1WrenchFrame.Active && !(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true) &&
-            _rac1AdditionalFireRequested && !Rac1World.Weapons.Detector.Equipped;
-        _rac1AdditionalFireRequested = false;
-        Rac1World.Weapons.Arsenal.SetHeld(held);
-        if (_rac1EquipmentUseWeapon != _rac1Weapons.Equipped)
+        var use = _persistentPlayer.Rac1Use;
+        if (MovementReproduction.IsLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is null ||
+            _player is null || use.Session is null) return;
+        bool eligible = PlayerLife.Alive && !_player.Rac1WrenchFrame.Active &&
+            !(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true);
+        var frame = use.BeginFrame(eligible, () => Rac1World.Weapons.Detector.Equipped, _rac1Weapons,
+            Rac1World.Weapons.Arsenal.SetHeld, Rac1World.Weapons.Arsenal.AdmitUse);
+        if (frame.PyroChanged && _rac1EquipmentViews.TryGetValue(Rac1WeaponId.Pyrocitor, out var pyroView))
+            pyroView.Play(frame.Pyro ? 3 : 5, false, ++_rac1WeaponPoseGeneration, frame.Pyro ? 4 : 1);
+        if (frame.Shot is { } shot)
         {
-            _rac1EquipmentUseWeapon = _rac1Weapons.Equipped;
-            _rac1EquipmentUseTicks = _rac1EquipmentUseAge = 0;
-        }
-        if (_rac1EquipmentUseTicks > 0) { _rac1EquipmentUseTicks--; _rac1EquipmentUseAge++; }
-        var shot = _rac1AdditionalWeapons.Step(held, Rac1World.Weapons.Arsenal.AdmitUse());
-        bool pyro = held && _rac1Weapons.Equipped == Rac1WeaponId.Pyrocitor && (_rac1Weapons.GetAmmo(16) > 0 || shot is not null);
-        if (pyro != _rac1PyroEmitting)
-        {
-            _rac1PyroEmitting = pyro;
-            if (_rac1EquipmentViews.TryGetValue(Rac1WeaponId.Pyrocitor, out var pyroView))
-                pyroView.Play(pyro ? 3 : 5, false, ++_rac1WeaponPoseGeneration, pyro ? 4 : 1);
-        }
-        if (shot is not null)
-        {
-            if (_rac1EquipmentUseTicks == 0) _rac1EquipmentUseAge = 0;
-            _rac1EquipmentUseTicks = shot.Weapon switch
-            {
-                Rac1WeaponId.Blaster => 6,
-                Rac1WeaponId.Devastator => 35,
-                Rac1WeaponId.Ryno => Rac1ArsenalRules.FireTicks(shot.Weapon),
-                Rac1WeaponId.Walloper => Rac1ArsenalRules.WalloperDurationTicks,
-                _ => 2,
-            };
-            _rac1WeaponShotsFired++;
-            _rac1WeaponGenerations[shot.Weapon] = shot.Generation;
+            use.RecordShot(shot);
             if (shot.Weapon is not (Rac1WeaponId.Pyrocitor or Rac1WeaponId.Blaster) && _rac1EquipmentViews.TryGetValue(shot.Weapon, out var view) &&
                 shot.Weapon is not (Rac1WeaponId.MorphORay or Rac1WeaponId.Taunter or Rac1WeaponId.TeslaClaw))
                 view.Play(Rac1ArsenalRules.HandFireSequence(shot.Weapon), false, shot.Generation);
@@ -186,10 +155,7 @@ public partial class OBPGame
                 PersistRac1CampaignState($"{shot.Weapon} ammo consumption");
             RefreshRac1HudState();
         }
-        bool continuous = pyro || held && (_rac1Weapons.Equipped is Rac1WeaponId.Taunter or Rac1WeaponId.MorphORay ||
-            _rac1Weapons.Equipped == Rac1WeaponId.TeslaClaw && _rac1Weapons.GetAmmo(19) > 0 ||
-            _rac1Weapons.Equipped == Rac1WeaponId.SuckCannon && _rac1AdditionalWeapons.Vacuuming);
-        if (continuous) _rac1EquipmentUseTicks = Math.Max(_rac1EquipmentUseTicks, 2);
+        use.CompleteFrame(frame, _rac1Weapons);
         StepRac1WeaponAudio();
     }
     private long _rac1WeaponPoseGeneration;
@@ -203,14 +169,14 @@ public partial class OBPGame
             view.Visible = visible;
             if (!visible) continue;
             if (profile.Item == Rac1WeaponId.Blaster)
-                view.Play(_rac1EquipmentUseTicks > 0 ? 4 : 1);
+                view.Play(_persistentPlayer.Rac1Use.UseTicks > 0 ? 4 : 1);
             if (profile.Item is Rac1WeaponId.Taunter or Rac1WeaponId.MorphORay or Rac1WeaponId.TeslaClaw)
                 view.Play(_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Arsenal.Held == true ? 3 : 1);
             if (profile.Item == Rac1WeaponId.SuckCannon)
             {
-                if (_rac1AdditionalWeapons?.Vacuuming == true) view.Play(3);
+                if (_persistentPlayer.Rac1Use.Session?.Vacuuming == true) view.Play(3);
                 else if (view.Sequence != 5)
-                    view.Play(_rac1AdditionalWeapons?.Cargo.Count > 0 ? 6 : 1);
+                    view.Play(_persistentPlayer.Rac1Use.Session?.Cargo.Count > 0 ? 6 : 1);
             }
             foreach (int sound in view.Step(controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(profile.HandSemantic))))
                 if (_equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets)?.Sounds?.TryGetValue((profile.ModelClass, sound), out var voice) != true || voice?.Loop != true)
@@ -219,7 +185,7 @@ public partial class OBPGame
             {
                 staged.Position = view.MuzzleLocal; staged.Step();
                 staged.Visible = _rac1Weapons.GetAmmo((int)profile.Item) > 0 &&
-                    (profile.Item != Rac1WeaponId.MineGlove || _rac1AdditionalWeapons?.MineRearmTicks == 0);
+                    (profile.Item != Rac1WeaponId.MineGlove || _persistentPlayer.Rac1Use.Session?.MineRearmTicks == 0);
             }
         }
     }

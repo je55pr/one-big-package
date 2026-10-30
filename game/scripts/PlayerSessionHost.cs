@@ -34,6 +34,7 @@ internal sealed class PlayerSessionHost
 
     internal Rac1RatchetNanotechSession ParityHealth { get; private set; } = new();
     internal Rac1HeldItemSession ParityHeld { get; } = new();
+    internal Rac1AdditionalUseHost Rac1Use { get; } = new();
     internal Rac1WeaponInventory? WeaponPreview { get; set; }
     internal Rac1WrenchCombatController Wrench { get; } = new();
     internal Rac1BoltWallet Rac1Wallet(Rac1BoltWallet parityWallet) => Native?.Wallet ?? parityWallet;

@@ -110,8 +110,9 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
         Assert.Contains("Rac1WeaponId.Ryno => weapons.Missiles.CanBeginRyno", host, StringComparison.Ordinal);
         Assert.Contains("Rac1WeaponId.DecoyGlove => weapons.Deployables.CanFireDecoy", host, StringComparison.Ordinal);
         Assert.Contains("new Rac1ArsenalUsePorts(", root, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Arsenal.SetHeld(held)", weapons, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Arsenal.AdmitUse()", weapons, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Arsenal.SetHeld, Rac1World.Weapons.Arsenal.AdmitUse)", weapons, StringComparison.Ordinal);
+        Assert.Contains("setArsenalHeld(held)", Script("Rac1AdditionalUseHost.cs"), StringComparison.Ordinal);
+        Assert.Contains("session.Step(held, admitArsenalUse())", Script("Rac1AdditionalUseHost.cs"), StringComparison.Ordinal);
         Assert.Contains("Rac1World.Weapons.Arsenal.Fire(shot.Weapon)", weapons, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1WeaponInventory(", host, StringComparison.Ordinal);
         Assert.DoesNotContain("Rac1AdditionalWeaponSession _", host, StringComparison.Ordinal);

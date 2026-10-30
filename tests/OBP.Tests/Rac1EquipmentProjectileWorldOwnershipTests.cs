@@ -53,7 +53,7 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
         string[] ordered =
         [
             "StepRac1ArsenalWorld()",
-            "Rac1World.Weapons.Flames.Emit(_rac1PyroEmitting)",
+            "Rac1World.Weapons.Flames.Emit(_persistentPlayer.Rac1Use.PyroEmitting)",
             "Rac1World.Weapons.Projectiles.StepMotes()",
             "Rac1World.Weapons.Flames.StepContacts()",
             "Rac1World.Weapons.SuckCannon.Step()",
