@@ -8,12 +8,14 @@ namespace OBP.Game;
 /// Combat contact/arsenal family migration (#367/#368) joins this host next.
 /// </summary>
 internal sealed class Rac1WeaponHost(Rac1MetalDetectorPorts detector,
-    Rac1WeaponTargetPorts targets, Rac1WeaponContactPhysicsPorts physics) : IDisposable
+    Rac1WeaponTargetPorts targets, Rac1WeaponContactPhysicsPorts physics,
+    Rac1SuckCannonPorts suckCannon) : IDisposable
 {
     private bool _disposed;
 
     internal Rac1MetalDetectorHost Detector { get; } = new(detector);
     internal Rac1WeaponContactHost Contacts { get; } = new(targets, physics);
+    internal Rac1SuckCannonHost SuckCannon { get; } = new(suckCannon);
     internal Rac1GuidedWeaponCamera GuidedCamera { get; } = new();
 
     internal void Configure(RuntimeWorld world)
@@ -35,6 +37,7 @@ internal sealed class Rac1WeaponHost(Rac1MetalDetectorPorts detector,
         GuidedCamera.End();
         Detector.Reset();
         Contacts.Invalidate();
+        SuckCannon.Reset();
     }
 
     public void Dispose()
@@ -44,5 +47,6 @@ internal sealed class Rac1WeaponHost(Rac1MetalDetectorPorts detector,
         GuidedCamera.Dispose();
         Detector.Dispose();
         Contacts.Dispose();
+        SuckCannon.Dispose();
     }
 }

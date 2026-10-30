@@ -114,6 +114,62 @@ public sealed class Rac1WeaponWorldOwnershipTests
     }
 
     [Fact]
+    public void SuckCannonCargoAndCapturePresentationBelongToTheWorldLease()
+    {
+        Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1SuckCannon.cs")));
+        Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1SuckCannon.cs.uid")));
+        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1SuckCannonHost.cs.uid")));
+
+        var compilation = HostOwnershipAudit.Host.Value;
+        var root = compilation.GetTypeByMetadataName("OBP.Game.OBPGame")!;
+        foreach (string member in new[]
+        {
+            "_rac1ChickenCargo", "_rac1Captures", "_rac1CargoModels", "HostedCapturedMoby",
+            "StepRac1Vacuum", "RetireRac1CapturedCargoPresentation",
+            "CloneEquipmentCargo", "FireRac1CapturedMoby"
+        })
+            Assert.Empty(root.GetMembers(member));
+
+        string host = Script("Rac1SuckCannonHost.cs");
+        string weapon = Script("Rac1WeaponHost.cs");
+        string application = Script("OBPGame.cs");
+        string restore = Script("Rac1MovementWorldStateAdapter.cs");
+        Assert.Contains("Rac1AdditionalWeaponSession?", host, StringComparison.Ordinal);
+        Assert.Contains("session.TryCapture(key)", host, StringComparison.Ordinal);
+        Assert.Contains("Rac1MobyRuntimeKey", host, StringComparison.Ordinal);
+        Assert.Contains("ports.LaunchCargo(shot, visual, visual.GlobalPosition, direction)", host, StringComparison.Ordinal);
+        Assert.Contains("internal Rac1SuckCannonHost SuckCannon", weapon, StringComparison.Ordinal);
+        Assert.Contains("SuckCannon.Reset()", weapon, StringComparison.Ordinal);
+        Assert.Contains("SuckCannon.Dispose()", weapon, StringComparison.Ordinal);
+        Assert.Contains("new Rac1SuckCannonPorts(", application, StringComparison.Ordinal);
+        Assert.Contains("Action ClearChickenCargo", restore, StringComparison.Ordinal);
+        Assert.Contains("Action<Rac1MobyRuntimeKey> RememberChickenCargo", restore, StringComparison.Ordinal);
+        Assert.Contains("ports.ClearChickenCargo()", restore, StringComparison.Ordinal);
+        Assert.Contains("ports.RememberChickenCargo(key)", restore, StringComparison.Ordinal);
+        Assert.Contains("ClearChickenCargo: () => Rac1World.Weapons.SuckCannon.ClearChickenCargo()", application, StringComparison.Ordinal);
+        Assert.Contains("RememberChickenCargo: key => Rac1World.Weapons.SuckCannon.RememberChickenCargo(key)", application, StringComparison.Ordinal);
+        Assert.DoesNotContain("ISet<Rac1MobyRuntimeKey> ChickenCargo", host, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CargoVisualRetirementDoesNotEraseNativeCargoOrSavedMorphMetadata()
+    {
+        string host = Script("Rac1SuckCannonHost.cs");
+        string retirement = Method("Rac1SuckCannonHost.cs", "RetirePresentation");
+        string reset = Method("Rac1SuckCannonHost.cs", "Reset");
+        string fire = Method("Rac1SuckCannonHost.cs", "Fire");
+        Assert.DoesNotContain("_chickenCargo.Clear()", retirement, StringComparison.Ordinal);
+        Assert.Contains("_captures.Clear()", retirement, StringComparison.Ordinal);
+        Assert.Contains("_models.Clear()", retirement, StringComparison.Ordinal);
+        Assert.Contains("RetirePresentation()", reset, StringComparison.Ordinal);
+        Assert.Contains("_chickenCargo.Clear()", reset, StringComparison.Ordinal);
+        Assert.Contains("_chickenCargo.Remove(key)", fire, StringComparison.Ordinal);
+        Assert.Contains("ports.EligibleTargets()", host, StringComparison.Ordinal);
+        Assert.Contains("ports.PresentedTargets()", fire, StringComparison.Ordinal);
+        Assert.DoesNotContain("OBPGame", host, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ContactCallbacksDoNotResolveTheWorldDuringHostConstruction()
     {
         var tree = HostOwnershipAudit.Host.Value.SyntaxTrees

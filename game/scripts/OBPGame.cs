@@ -52,8 +52,10 @@ public partial class OBPGame : Node3D
         MorphedMobies: () => _rac1Chickens.Values
             .Where(chicken => Rac1World.Enemies.IsRac1GameplayActive(chicken.Enemy.Node) && !chicken.Enemy.RewardEmitted)
             .Select(chicken => new Rac1MobyRuntimeKey(chicken.Enemy.Node.Source.NativeClassId, chicken.Enemy.Node.Source.InstanceIndex))
-            .Concat(_rac1ChickenCargo).Distinct().ToArray(),
-        ChickenCargo: _rac1ChickenCargo, RetireCapturedCargoPresentation: RetireRac1CapturedCargoPresentation,
+            .Concat(Rac1World.Weapons.SuckCannon.ChickenCargoKeys).Distinct().ToArray(),
+        ClearChickenCargo: () => Rac1World.Weapons.SuckCannon.ClearChickenCargo(),
+        RememberChickenCargo: key => Rac1World.Weapons.SuckCannon.RememberChickenCargo(key),
+        RetireCapturedCargoPresentation: () => Rac1World.Weapons.SuckCannon.RetirePresentation(),
         HeldItemId: () => _rac1HeldItem.NativeItemId,
         MorphEnemy: MorphArsenalEnemy, DisableCrateCollider: id => Rac1World.Loot.DisableRac1CrateCollider(id),
         RemovePlacedBolt: id => Rac1World.Loot.RemovePlacedBolt(id)));
@@ -365,6 +367,46 @@ public partial class OBPGame : Node3D
             () => _player, () => EquipmentForward,
             () => Rac1World.Loot.CrateBodies.Values.Concat<CollisionObject3D>(Rac1World.Enemies.Roster.Values.Select(enemy => enemy.Body)),
             ActorHost.AddRayExclusions),
+        new Rac1SuckCannonPorts(
+            () => _rac1AdditionalWeapons, () => _player is not null,
+            () => EquipmentMuzzle(Rac1WeaponId.SuckCannon), () => EquipmentForward,
+            () => _rac1WeaponWorldTick,
+            (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Signed(min, max),
+            () => Rac1World.Weapons.Contacts.Targets,
+            () => Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes),
+            id => _rac1Chickens.TryGetValue(id, out var chicken) ? chicken.View : null,
+            (from, to) => Rac1World.Weapons.Contacts.HasLineOfSight(from, to),
+            EquipmentParticle,
+            (mote, position, step) =>
+            {
+                _sceneResult!.Root.AddChild(mote); mote.GlobalPosition = position;
+                _rac1WeaponMotes.Add(new(mote, step));
+            },
+            (target, point) =>
+            {
+                var instance = Rac1World.Context.MobyRuntime.Require(target.Source);
+                // Native capture retires the actor; it never awards damage or bolts.
+                Rac1World.Context.MobyRuntime.SetNativeState(instance, Rac1MobyRuntime.TerminalNativeStateFe);
+                Rac1World.Context.MobyRuntime.Terminalize(instance);
+                Rac1World.Enemies.SetRac1HostedPresence(target, RuntimeEntityPresence.Inactive);
+                if (Rac1World.Enemies.Roster.TryGetValue(target.Source.InstanceIndex, out var enemy))
+                {
+                    enemy.RewardEmitted = enemy.DeathPresented = true;
+                    enemy.Body.CollisionLayer = enemy.Body.CollisionMask = 0;
+                    Rac1World.Enemies.SetRac1EnemyFlame(enemy, false);
+                }
+                else Rac1World.Loot.DisableRac1CrateCollider(target.Source.InstanceIndex);
+            },
+            () => _sceneResult!.Root, CreateEquipmentWorldView,
+            (origin, distance, cone) => Rac1World.Weapons.Contacts.Aim(origin, distance, cone),
+            (shot, visual, origin, direction) =>
+            {
+                _rac1EquipmentShots.Add(new(Rac1WeaponId.SuckCannon, shot.Generation, visual, origin,
+                    direction * Rac1WeaponReconstructionPolicy.SuckProjectileStep));
+                SpawnEquipmentFlash(origin, 27, new(.5f, .7f, 1, 1), .6f, 7);
+            },
+            (cls, sound, position) => Rac1World.Loot.PlayRac1PickupSound(cls, sound, position),
+            () => RefreshRac1HudState()),
         new Rac1TaxiHostPorts(
             () => _player is { } player && IsInstanceValid(player) ? new Rac1TaxiPlayerController(player) : null,
             () => _mode == Mode.World && !GetTree().Paused &&
@@ -1667,7 +1709,7 @@ public partial class OBPGame : Node3D
             GodotWeaponModelFacts.Read(agent.View))))], () => _persistentPlayer.WeaponPreview is not null, SetRac1WeaponPreview));
 
     private GodotRac1ArsenalDiagnosticFixture CreateRac1ArsenalDiagnosticFixture(IDiagnosticWorldObservations worlds, GodotRac1WeaponTargetFixture targets) => new(new(
-        () => new(_rac1RynoSalvo.Remaining, _rac1ArsenalId, _rac1Drones.Count, _rac1ChickenCargo.Count,
+        () => new(_rac1RynoSalvo.Remaining, _rac1ArsenalId, _rac1Drones.Count, Rac1World.Weapons.SuckCannon.ChickenCargoCount,
             [.. _rac1ArsenalBeams.Select(beam => beam.Visible)], [.. _rac1ArsenalBeams.Select(beam => beam.MaterialOverride is ShaderMaterial)]),
         () => [.. _rac1ArsenalMissiles.Select(missile => new GodotWeaponDiagnosticWitness<Rac1ArsenalMissileDiagnostic>(new(worlds), () => new(
             new(ObpSourceGame.Rac1, (int)missile.Weapon), missile.Id, GodotWeaponModelFacts.Read(missile.View))))],
@@ -1939,7 +1981,7 @@ public partial class OBPGame : Node3D
         }, () => unchecked((uint)(_args.FixedSeed ?? System.Environment.TickCount))), new(
         new(() => _worldScenes?.Current?.Resources.Rac1Gameplay?.Enemies,
             () => Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes), ApplyRac1AdditionalDamage,
-            key => _rac1Captures.RemoveAll(capture => capture.Key == key),
+            key => _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.SuckCannon.ForgetCapture(key),
             () => Rac1World.Loot.PickupAssets, () => _equipmentPresentation.SelectedAssets,
             (assets, materials) => { Rac1World.Loot.SetDiagnosticAssets(assets, materials); }, delta => Rac1World.Loot.TickRac1Pickups(delta)),
         new(() => _worldScenes?.Current?.Resources.Rac2Gameplay),

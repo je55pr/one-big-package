@@ -41,11 +41,9 @@ public partial class OBPGame
     private readonly Dictionary<Rac1WeaponId, Rac1EquipmentView> _rac1StagedEquipment = [];
     private readonly List<HostedEquipmentShot> _rac1EquipmentShots = [];
     private readonly List<HostedDoomAgent> _rac1DoomAgents = [];
-    private readonly List<HostedCapturedMoby> _rac1Captures = [];
     private readonly List<HostedWeaponParticle> _rac1WeaponMotes = [];
     private readonly List<HostedNativeFlame> _rac1NativeFlames = [];
     private readonly Dictionary<Rac1MobyRuntimeKey, ulong> _rac1FlameHitTicks = [];
-    private readonly Dictionary<Rac1MobyRuntimeKey, Node3D> _rac1CargoModels = [];
     private readonly Dictionary<Rac1WeaponId, long> _rac1WeaponGenerations = [];
     private bool _rac1AdditionalFireRequested;
     private bool _rac1PyroEmitting;
@@ -72,10 +70,6 @@ public partial class OBPGame
     {
         public Rac1DoomAgentSession Motion { get; } = new();
     }
-    private sealed record HostedCapturedMoby(Rac1MobyRuntimeKey Key, Node3D Visual, Vector3 Origin, Vector3 Scale)
-    {
-        public int Age;
-    }
     private sealed record HostedWeaponParticle(Node3D Node, Vector3 Step)
     {
         public int Age;
@@ -92,11 +86,10 @@ public partial class OBPGame
         foreach (var node in _rac1EquipmentShots.Select(shot => shot.Node).Concat(_rac1DoomAgents.Select(agent => agent.Body))
             .Concat(_rac1WeaponMotes.Select(mote => mote.Node)))
             if (IsInstanceValid(node)) node.QueueFree();
-        RetireRac1CapturedCargoPresentation();
+        Rac1World.Weapons.SuckCannon.Reset();
         _rac1EquipmentShots.Clear(); _rac1DoomAgents.Clear();
         _rac1WeaponMotes.Clear(); _rac1FlameHitTicks.Clear(); _rac1WeaponGenerations.Clear();
         _rac1NativeFlames.Clear(); _equipmentPresentation.Explosions.Particles?.RemoveType(12); _equipmentPresentation.Explosions.Particles?.RemoveType(2);
-        _rac1ChickenCargo.Clear();
         _rac1AdditionalWeapons = new(_rac1Weapons);
         _rac1AdditionalWeaponsInventory = _rac1Weapons;
         foreach (var flash in _rac1WeaponFlashes) if (IsInstanceValid(flash.Node)) flash.Node.QueueFree();
@@ -222,7 +215,7 @@ public partial class OBPGame
                 SpawnRac1ThrownEquipment(shot);
             }
             else if (shot.Weapon == Rac1WeaponId.Blaster) FireRac1Blaster(shot);
-            else if (shot.Weapon == Rac1WeaponId.SuckCannon) FireRac1CapturedMoby(shot);
+            else if (shot.Weapon == Rac1WeaponId.SuckCannon) Rac1World.Weapons.SuckCannon.Fire(shot);
             else if (Rac1ArsenalRules.IsNew(shot.Weapon)) FireRac1Arsenal(shot);
             if (shot.Weapon is Rac1WeaponId.DecoyGlove or Rac1WeaponId.DroneDevice)
             { _rac1BombThrowGeneration++; _rac1BombThrowActive = true; }

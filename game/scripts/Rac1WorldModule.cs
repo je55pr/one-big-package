@@ -28,14 +28,14 @@ internal sealed class Rac1WorldModule : IDisposable
         Rac1WorldResetPorts reset, Rac1WorldActorPorts actors, Rac1WorldTickPorts ticks,
         Rac1PlayerGameplayPorts player, Rac1WorldContactPorts contacts, Rac1AuthoredMechanismPorts authored, Rac1GameplayHudPorts hud,
         Rac1MetalDetectorPorts detector, Rac1WeaponTargetPorts weaponTargets,
-        Rac1WeaponContactPhysicsPorts contactPhysics, Rac1TaxiHostPorts taxis, Func<Rac1WorldModule, Rac1EnemyHost> enemies)
+        Rac1WeaponContactPhysicsPorts contactPhysics, Rac1SuckCannonPorts suckCannon, Rac1TaxiHostPorts taxis, Func<Rac1WorldModule, Rac1EnemyHost> enemies)
     {
         _world = world; _scene = scene; _reset = reset; _actors = actors; _ticks = ticks;
         _playerPorts = player; _contacts = contacts; _binding = new(player);
         Context = new(world.LevelId, random);
         Loot = new(scene, Context, Presentation, loot);
         Mechanisms = new(world, scene, authored);
-        Weapons = new(detector, weaponTargets, contactPhysics);
+        Weapons = new(detector, weaponTargets, contactPhysics, suckCannon);
         Taxis = new(taxis);
         Enemies = enemies(this);
         Hud = new(world, Context, Presentation, hud, () => _disposed);

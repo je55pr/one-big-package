@@ -92,7 +92,7 @@ public partial class OBPGame
         }
         StepRac1WeaponMotes();
         StepRac1NativeFlameContacts();
-        StepRac1Vacuum();
+        Rac1World.Weapons.SuckCannon.Step();
         foreach (var shot in _rac1EquipmentShots.ToArray())
         {
             if (!IsInstanceValid(shot.Node)) { _rac1EquipmentShots.Remove(shot); continue; }
