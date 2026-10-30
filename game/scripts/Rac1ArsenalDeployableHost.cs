@@ -20,7 +20,6 @@ internal sealed record Rac1ArsenalDeployablePorts(
     Func<RuntimeWorldScene.DynamicObjectNode, bool> IsAimTarget,
     Func<Vector3, Vector3, float, (Vector3 Point, RuntimeWorldScene.DynamicObjectNode? Target)?> Contact,
     Func<Vector3, Vector3, bool> HasLineOfSight,
-    Func<int, bool> IsTaunted,
     Action<Vector3, int, Color, float, int> Flash,
     Action<Rac1WeaponId, Vector3, float, double, uint> Blast,
     Action<Rac1WeaponId, Vector3> Explosion,
@@ -32,7 +31,8 @@ internal sealed record Rac1ArsenalDeployablePorts(
 /// Retired models are freed with the same queues and frame ordering as the
 /// original arsenal host; no generic projectile behaviour is substituted.
 /// </summary>
-internal sealed class Rac1ArsenalDeployableHost(Rac1ArsenalDeployablePorts ports, Func<long> nextId) : IDisposable
+internal sealed class Rac1ArsenalDeployableHost(Rac1ArsenalDeployablePorts ports, Func<long> nextId,
+    Rac1TaunterHost taunter) : IDisposable
 {
     private sealed record Decoy(Rac1EquipmentView View)
     {
@@ -175,7 +175,7 @@ internal sealed class Rac1ArsenalDeployableHost(Rac1ArsenalDeployablePorts ports
     internal Vector3 EnemyGoal(Rac1HostedEnemy enemy, Vector3 player)
     {
         var position = enemy.Node.Root.GlobalPosition;
-        if (ports.IsTaunted(enemy.Node.Source.InstanceIndex)) return player;
+        if (taunter.IsTaunted(enemy.Node.Source.InstanceIndex)) return player;
         var decoy = _decoys.Where(item => item.Grounded && item.RetiringTicks < 0 && item.Hits < 3 &&
             position.DistanceSquaredTo(item.View.GlobalPosition) < 900 &&
             ports.HasLineOfSight(position + Vector3.Up * .5f, item.View.GlobalPosition + Vector3.Up * .5f))

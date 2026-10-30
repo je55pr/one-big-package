@@ -430,7 +430,6 @@ public partial class OBPGame : Node3D
             node => Rac1World.Weapons.Contacts.IsAimTarget(node),
             (from, to, radius) => Rac1World.Weapons.Contacts.Contact(from, to, radius),
             (from, to) => Rac1World.Weapons.Contacts.HasLineOfSight(from, to),
-            id => _rac1Taunts.GetValueOrDefault(id) > _rac1WeaponWorldTick,
             SpawnEquipmentFlash, ApplyArsenalBlast, SpawnRac1WeaponExplosion,
             (cls, sound, position) => FusionWeapons.PlayNativeSound(cls, sound, position)),
         new Rac1WalloperPorts(
@@ -439,6 +438,17 @@ public partial class OBPGame : Node3D
             (node, damage) => ApplyRac1AdditionalDamage(node, damage),
             (cls, sound, position) => FusionWeapons.PlayNativeSound(cls, sound, position),
             SpawnEquipmentFlash),
+        new Rac1TaunterPorts(
+            () => _rac1WeaponWorldTick, () => Rac1World.Enemies.Targets,
+            () => _rac1EquipmentShots.Where(shot => shot.Weapon == Rac1WeaponId.MineGlove)
+                .Select(shot => new Rac1TaunterMine(shot.Position, () => shot.Taunted = true)),
+            (from, forward) =>
+            {
+                var ring = EquipmentParticle(27, new(.3f, .7f, 1, .6f), .6f);
+                _sceneResult!.Root.AddChild(ring); ring.GlobalPosition = from + forward * .5f;
+                _rac1WeaponMotes.Add(new(ring, forward * .25f));
+            },
+            (node, damage) => ApplyRac1AdditionalDamage(node, damage)),
         new Rac1TaxiHostPorts(
             () => _player is { } player && IsInstanceValid(player) ? new Rac1TaxiPlayerController(player) : null,
             () => _mode == Mode.World && !GetTree().Paused &&

@@ -21,7 +21,6 @@ public partial class OBPGame
     private readonly Dictionary<int, ShaderMaterial> _rac1TeslaMaterials = [];
     private Rac1PickupRandom? _rac1TeslaEffectRandom;
     private StandardMaterial3D? _rac1PlainBeamMaterial;
-    private readonly Dictionary<int, ulong> _rac1Taunts = [];
     private bool _rac1ArsenalHeld;
     private readonly HashSet<int> _rac1TeslaSoundTargets = [];
 
@@ -41,7 +40,8 @@ public partial class OBPGame
             collider.Shape = chicken.OriginalShape; collider.Position = chicken.OriginalShapePosition;
         }
         _rac1Chickens.Clear();
-        _rac1MorphExposure.Clear(); _rac1ArsenalBeams.Clear(); _rac1Taunts.Clear();
+        _rac1MorphExposure.Clear(); _rac1ArsenalBeams.Clear();
+        Rac1World.Weapons.Taunter.Reset();
         _rac1TeslaPresentation.Reset(); _rac1TeslaMaterials.Clear(); _rac1TeslaEffectRandom = null;
         Rac1World.Weapons.Walloper.Reset();
         _rac1ArsenalHeld = false;
@@ -143,34 +143,7 @@ public partial class OBPGame
             SpawnEquipmentFlash(from, 27, weapon == Rac1WeaponId.TeslaClaw ? new(.3f, .6f, 1, .85f) : new(.4f, 1, .25f, .75f), .28f, 5);
         if (weapon == Rac1WeaponId.Taunter)
         {
-            if (_rac1WeaponWorldTick % 8 == 0)
-            {
-                var ring = EquipmentParticle(27, new(.3f, .7f, 1, .6f), .6f);
-                _sceneResult!.Root.AddChild(ring); ring.GlobalPosition = from + EquipmentForward * .5f;
-                _rac1WeaponMotes.Add(new(ring, EquipmentForward * .25f));
-            }
-            foreach (var node in Rac1World.Enemies.Targets.Where(Rac1World.Weapons.Contacts.IsAimTarget))
-            {
-                var delta = node.Root.GlobalPosition - _player!.GlobalPosition;
-                if (delta.LengthSquared() < Rac1ArsenalRules.TaunterRange * Rac1ArsenalRules.TaunterRange &&
-                    delta.Normalized().Dot(EquipmentForward) > MathF.Cos(Rac1ArsenalRules.TaunterHalfAngle) &&
-                    Rac1World.Weapons.Contacts.HasLineOfSight(from, node.Root.GlobalPosition + Vector3.Up * .4f)) _rac1Taunts[node.Source.InstanceIndex] = _rac1WeaponWorldTick + 60;
-            }
-            foreach (var mine in _rac1EquipmentShots.Where(shot => shot.Weapon == Rac1WeaponId.MineGlove))
-                if (mine.Position.DistanceTo(from) < Rac1ArsenalRules.TaunterRange &&
-                    (mine.Position - from).Normalized().Dot(EquipmentForward) > MathF.Cos(Rac1ArsenalRules.TaunterHalfAngle)) mine.Taunted = true;
-            // 0x2b6bc8 also hits one of the ordinary crate classes in its
-            // 12-unit forward cone. The mine interaction is tracked separately.
-            if (_rac1WeaponWorldTick % 30 == 0)
-            {
-                // Native class 505 is admitted by this cone, but its object identity is not yet confirmed.
-                var crate = Rac1World.Weapons.Contacts.Targets.Where(node => node.Source.NativeClassId is Rac1ClassIds.WoodenCrate or Rac1ClassIds.NanotechCrate or 505 or Rac1ClassIds.AmmoCrate)
-                    .FirstOrDefault(node => node.Root.GlobalPosition.DistanceTo(from) < 12 &&
-                        (node.Root.GlobalPosition - from).Normalized().Dot(EquipmentForward) > MathF.Cos(Rac1ArsenalRules.TaunterHalfAngle) &&
-                        Rac1World.Weapons.Contacts.HasLineOfSight(from, node.Root.GlobalPosition + Vector3.Up * .4f));
-                if (crate is not null) ApplyRac1AdditionalDamage(crate,
-                    Rac1WeaponProfiles.DirectDamage(weapon, new(crate.Source.NativeClassId, crate.Source.InstanceIndex), 1, 0x10000));
-            }
+            Rac1World.Weapons.Taunter.Tick(from, EquipmentForward, _player!.GlobalPosition);
             return;
         }
         var first = FindArsenalTarget(from, weapon == Rac1WeaponId.TeslaClaw ? Rac1ArsenalRules.TeslaRange : Rac1ArsenalHostPolicy.MorphRange, .5f);

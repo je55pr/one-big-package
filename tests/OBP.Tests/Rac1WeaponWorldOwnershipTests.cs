@@ -170,6 +170,58 @@ public sealed class Rac1WeaponWorldOwnershipTests
     }
 
     [Fact]
+    public void TaunterAttractionAndMineContactBelongToWorldWeaponLease()
+    {
+        var compilation = HostOwnershipAudit.Host.Value;
+        var root = compilation.GetTypeByMetadataName("OBP.Game.OBPGame")!;
+        Assert.Empty(root.GetMembers("_rac1Taunts"));
+
+        var weapon = compilation.GetTypeByMetadataName("OBP.Game.Rac1WeaponHost")!;
+        Assert.Equal("Rac1TaunterHost",
+            Assert.Single(weapon.GetMembers("Taunter").OfType<IPropertySymbol>()).Type.Name);
+
+        string family = Script("Rac1TaunterHost.cs");
+        string parent = Script("Rac1WeaponHost.cs");
+        string rootArsenal = Script("OBPGame.Rac1Arsenal.cs");
+        string deployable = Script("Rac1ArsenalDeployableHost.cs");
+        string application = Script("OBPGame.cs");
+
+        Assert.Contains("Taunter = new(taunter, Contacts)", parent, StringComparison.Ordinal);
+        Assert.Contains("Deployables = new(deployables, NextArsenalId, Taunter)", parent, StringComparison.Ordinal);
+        Assert.Contains("Taunter.Reset()", parent, StringComparison.Ordinal);
+        Assert.Contains("Taunter.Dispose()", parent, StringComparison.Ordinal);
+        Assert.Contains("taunter.IsTaunted(enemy.Node.Source.InstanceIndex)", deployable, StringComparison.Ordinal);
+        Assert.DoesNotContain("ports.IsTaunted(", deployable, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Taunter.Tick(from, EquipmentForward, _player!.GlobalPosition)", rootArsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Taunter.Reset()", rootArsenal, StringComparison.Ordinal);
+        Assert.Contains("new Rac1TaunterPorts(", application, StringComparison.Ordinal);
+        Assert.DoesNotContain("_rac1Taunts", application, StringComparison.Ordinal);
+        Assert.DoesNotContain("OBPGame", family, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TaunterPreservesSourceNativeConeDurationAndHitCadence()
+    {
+        string family = Script("Rac1TaunterHost.cs");
+        string application = Script("OBPGame.cs");
+        Assert.Contains("_taunts.GetValueOrDefault(instanceIndex) > ports.WorldTick()", family, StringComparison.Ordinal);
+        Assert.Contains("_taunts[node.Source.InstanceIndex] = tick + 60", family, StringComparison.Ordinal);
+        Assert.Contains("tick % 8 == 0", family, StringComparison.Ordinal);
+        Assert.Contains("tick % 30 == 0", family, StringComparison.Ordinal);
+        Assert.Contains("Rac1ArsenalRules.TaunterRange * Rac1ArsenalRules.TaunterRange", family, StringComparison.Ordinal);
+        Assert.Contains("MathF.Cos(Rac1ArsenalRules.TaunterHalfAngle)", family, StringComparison.Ordinal);
+        Assert.Contains("contacts.HasLineOfSight(from, node.Root.GlobalPosition + Vector3.Up * .4f)", family, StringComparison.Ordinal);
+        Assert.Contains("mine.MarkTaunted()", family, StringComparison.Ordinal);
+        Assert.Contains("Rac1ClassIds.WoodenCrate or Rac1ClassIds.NanotechCrate or 505 or Rac1ClassIds.AmmoCrate", family, StringComparison.Ordinal);
+        Assert.Contains("new(crate.Source.NativeClassId, crate.Source.InstanceIndex), 1, 0x10000)", family, StringComparison.Ordinal);
+        Assert.Contains("shot.Weapon == Rac1WeaponId.MineGlove", application, StringComparison.Ordinal);
+        Assert.Contains("() => shot.Taunted = true", application, StringComparison.Ordinal);
+        Assert.Contains("_rac1WeaponMotes.Add(new(ring, forward * .25f))", application, StringComparison.Ordinal);
+        Assert.Contains("internal void Reset() => _taunts.Clear()", family, StringComparison.Ordinal);
+        Assert.Contains("if (_disposed) return;", family, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void WalloperSwingAndVictimAdmissionBelongToTheWorldLease()
     {
         var compilation = HostOwnershipAudit.Host.Value;
@@ -236,7 +288,7 @@ public sealed class Rac1WeaponWorldOwnershipTests
         string weapon = Script("Rac1WeaponHost.cs");
         string arsenal = Script("OBPGame.Rac1Arsenal.cs");
         string rootComposition = Script("OBPGame.cs");
-        Assert.Contains("Deployables = new(deployables, NextArsenalId)", weapon, StringComparison.Ordinal);
+        Assert.Contains("Deployables = new(deployables, NextArsenalId, Taunter)", weapon, StringComparison.Ordinal);
         Assert.Contains("Deployables.Reset()", weapon, StringComparison.Ordinal);
         Assert.Contains("Deployables.Dispose()", weapon, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Weapons.Deployables.Tick()", arsenal, StringComparison.Ordinal);
@@ -259,7 +311,7 @@ public sealed class Rac1WeaponWorldOwnershipTests
         Assert.Contains("Rac1ArsenalRules.DroneCapacity", host, StringComparison.Ordinal);
         Assert.Contains("Rac1ArsenalRules.DroneDamage", host, StringComparison.Ordinal);
         Assert.Contains("ports.WorldTick() - decoy.LastHitTick >= 30", host, StringComparison.Ordinal);
-        Assert.Contains("ports.IsTaunted(enemy.Node.Source.InstanceIndex)", host, StringComparison.Ordinal);
+        Assert.Contains("taunter.IsTaunted(enemy.Node.Source.InstanceIndex)", host, StringComparison.Ordinal);
         Assert.Contains("ports.HasLineOfSight(", host, StringComparison.Ordinal);
         Assert.Contains("ports.Contact(from, next, .23f)", host, StringComparison.Ordinal);
         Assert.Contains("ports.Blast(Rac1WeaponId.DroneDevice", host, StringComparison.Ordinal);
