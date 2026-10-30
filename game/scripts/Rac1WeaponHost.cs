@@ -17,12 +17,14 @@ internal sealed class Rac1WeaponHost : IDisposable
         Rac1WeaponContactPhysicsPorts physics, Rac1SuckCannonPorts suckCannon,
         Rac1ArsenalMissilePorts missiles, Rac1ArsenalDeployablePorts deployables,
         Rac1WalloperPorts walloper, Rac1TaunterPorts taunter,
-        Rac1TeslaPorts tesla, Rac1MorphPorts morph, Rac1ArsenalBeamPorts beams, Rac1ArsenalUsePorts arsenal)
+        Rac1TeslaPorts tesla, Rac1MorphPorts morph, Rac1ArsenalBeamPorts beams, Rac1ArsenalUsePorts arsenal,
+        Rac1EquipmentProjectilePorts projectiles)
     {
         GuidedCamera = new();
         ThrownAnimation = new();
         Detector = new(detector);
         Contacts = new(targets, physics);
+        Projectiles = new(Contacts, projectiles);
         SuckCannon = new(suckCannon);
         Missiles = new(missiles, GuidedCamera, NextArsenalId);
         Taunter = new(taunter, Contacts);
@@ -36,6 +38,7 @@ internal sealed class Rac1WeaponHost : IDisposable
 
     internal Rac1MetalDetectorHost Detector { get; }
     internal Rac1WeaponContactHost Contacts { get; }
+    internal Rac1EquipmentProjectileHost Projectiles { get; }
     internal Rac1SuckCannonHost SuckCannon { get; }
     internal Rac1ArsenalMissileHost Missiles { get; }
     internal Rac1ArsenalDeployableHost Deployables { get; }
@@ -79,6 +82,7 @@ internal sealed class Rac1WeaponHost : IDisposable
         ThrownAnimation.Reset();
         Detector.Reset();
         Contacts.Invalidate();
+        Projectiles.Reset();
         SuckCannon.Reset();
         Missiles.Reset();
         Deployables.Reset();
@@ -94,6 +98,7 @@ internal sealed class Rac1WeaponHost : IDisposable
         if (_disposed) return;
         _disposed = true;
         Arsenal.Dispose();
+        Projectiles.Dispose();
         Walloper.Dispose();
         Deployables.Dispose();
         Beams.Dispose();

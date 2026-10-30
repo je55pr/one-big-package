@@ -46,7 +46,6 @@ public partial class OBPGame
         => _equipmentPresentation.Explosions.GetParticleMesh(poolType, _rac1EquipmentAssets?.ParticleTextures,
             _avatarPresentation.GloveAsset?.ParticleTexturesByPoolType);
 
-    private readonly List<(Node3D Node, int Age, int Lifetime, float Size)> _rac1WeaponFlashes = [];
     private ulong _rac1WeaponWorldTick;
     private static Color EquipmentColor(uint rgba) => new((rgba & 255) / 128f, ((rgba >> 8) & 255) / 128f,
         ((rgba >> 16) & 255) / 128f, ((rgba >> 24) & 255) / 128f);
@@ -66,7 +65,7 @@ public partial class OBPGame
     private void SpawnEquipmentFlash(Vector3 origin, int type, Color color, float size, int ticks)
     {
         var node = EquipmentParticle(type, color, size); _sceneResult!.Root.AddChild(node); node.GlobalPosition = origin;
-        _rac1WeaponFlashes.Add((node, 0, ticks, size));
+        Rac1World.Weapons.Projectiles.AddFlash(node, ticks, size);
     }
 
     private void StepRac1AdditionalWeaponWorld()
@@ -91,123 +90,16 @@ public partial class OBPGame
                 _rac1NativeFlames.Add(new(created[2]));
             }
         }
-        StepRac1WeaponMotes();
+        Rac1World.Weapons.Projectiles.StepMotes();
         StepRac1NativeFlameContacts();
         Rac1World.Weapons.SuckCannon.Step();
-        foreach (var shot in _rac1EquipmentShots.ToArray())
-        {
-            if (!IsInstanceValid(shot.Node)) { _rac1EquipmentShots.Remove(shot); continue; }
-            shot.Age++;
-            if (shot.Weapon is Rac1WeaponId.Blaster or Rac1WeaponId.SuckCannon)
-            {
-                Vector3 next = shot.Position + shot.Step;
-                if (shot.Motion is { } motion)
-                {
-                    motion.Step(shot.AimPoint, 1.5f * MathF.PI);
-                    next = Rac1LootPresentation.FromEffectNative(motion.Position);
-                }
-                int lifetime = shot.Weapon == Rac1WeaponId.Blaster ? Rac1WeaponProfiles.BlasterCarrierTicks : Rac1WeaponReconstructionPolicy.SuckProjectileLifetimeTicks;
-                if (shot.Age > lifetime)
-                {
-                    RetireEquipmentShot(shot); continue;
-                }
-                if (Rac1World.Weapons.Contacts.Contact(shot.Position, next, shot.Weapon == Rac1WeaponId.Blaster ? .15f : .25f) is { } hit)
-                {
-                    if (hit.Target is { } victim)
-                        Rac1World.WeaponDamage.Apply(victim, Rac1WeaponProfiles.DirectDamage(shot.Weapon,
-                            new(victim.Source.NativeClassId, victim.Source.InstanceIndex),
-                            shot.Weapon == Rac1WeaponId.Blaster ? Rac1WeaponProfiles.BlasterDamage : Rac1WeaponReconstructionPolicy.SuckDamage,
-                            shot.Weapon == Rac1WeaponId.Blaster ? Rac1WeaponProfiles.BlasterFlags : Rac1WeaponReconstructionPolicy.SuckDamageFlags));
-                    SpawnEquipmentFlash(hit.Point, 27, new(.7f, .8f, 1, 1), .6f, 10);
-                    FusionWeapons.PlayNativeSound(849, 0, hit.Point); RetireEquipmentShot(shot); continue;
-                }
-                shot.Position = next; shot.Node.GlobalPosition = next;
-                if (shot.Weapon == Rac1WeaponId.SuckCannon) shot.Node.RotateY(.25f);
-                continue;
-            }
-            if (shot.Node is Rac1EquipmentView skin)
-            {
-                if (shot.Weapon == Rac1WeaponId.GloveOfDoom)
-                    skin.Scale = Vector3.One * Math.Min(Rac1ArsenalRules.DoomCanisterThrownScale, skin.Scale.X + Rac1ArsenalRules.DoomCanisterGrowth);
-                foreach (int sound in skin.Step()) FusionWeapons.PlayNativeSound(shot.Weapon == Rac1WeaponId.MineGlove ? 74 : 230, sound, shot.Position);
-                if (shot.Grounded)
-                { shot.Position = new(shot.Position.X, shot.GroundHeight + skin.FootOffset * skin.Scale.Y, shot.Position.Z); shot.Node.GlobalPosition = shot.Position; }
-            }
-            if (!shot.Grounded)
-            {
-                Vector3 next = shot.Position + shot.Step;
-                shot.Step -= Vector3.Up * OBP.RAC1.Gameplay.Rac1BombProjectileSession.GravityStep;
-                if (Rac1World.Weapons.Contacts.Contact(shot.Position, next, .12f) is { } hit)
-                {
-                    if (shot.Weapon == Rac1WeaponId.MineGlove && hit.Target is { } directVictim &&
-                        Rac1World.Enemies.Roster.ContainsKey(directVictim.Source.InstanceIndex))
-                    { shot.Position = hit.Point; ExplodeEquipment(shot, 2, 3, Rac1WeaponProfiles.MineFlags, 74); continue; }
-                    shot.Position = hit.Point + Vector3.Up * (((shot.Node as Rac1EquipmentView)?.FootOffset ?? .06f) * shot.Node.Scale.Y);
-                    shot.GroundHeight = hit.Point.Y;
-                    shot.Grounded = true; shot.Step = Vector3.Zero;
-                    if (shot.Node is Rac1EquipmentView mine && shot.Weapon == Rac1WeaponId.MineGlove)
-                        mine.Play(1, false, shot.Id, 2);
-                    FusionWeapons.PlayNativeSound(shot.Weapon == Rac1WeaponId.MineGlove ? 74 : 230, 0, hit.Point);
-                }
-                else { shot.Position = next; shot.Node.RotateY(.15f); }
-                shot.Node.GlobalPosition = shot.Position;
-            }
-            else if (shot.Canister is { } canister)
-            {
-                if (canister.Step(_rac1DoomAgents.Count)) SpawnRac1DoomAgent(shot, canister.Emitted - 1);
-                if (canister.Finished) { RetireEquipmentShot(shot); continue; }
-            }
-            else
-            {
-                // Grounded mine proximity/seek is an OBP query adapter. Native
-                // class74 animation and damage descriptors remain source-owned.
-                var enemy = Rac1World.Enemies.Targets.Where(Rac1World.Weapons.Contacts.IsAimTarget)
-                    .OrderBy(node => node.Root.GlobalPosition.DistanceSquaredTo(shot.Position)).FirstOrDefault();
-                if (enemy is not null && shot.Age > 20)
-                {
-                    Vector3 goal = enemy.Root.GlobalPosition + Vector3.Up * .2f;
-                    float distance = goal.DistanceTo(shot.Position);
-                    if (distance < Rac1WeaponReconstructionPolicy.MineDetonationDistance * (shot.Taunted ? 3 : 1) && Rac1World.Weapons.Contacts.HasLineOfSight(shot.Position + Vector3.Up * .15f, goal))
-                    { ExplodeEquipment(shot, 2, 3, Rac1WeaponProfiles.MineFlags, 74); continue; }
-                    if (distance < Rac1WeaponReconstructionPolicy.MineSeekRange * (shot.Taunted ? 3 : 1) && Rac1World.Weapons.Contacts.HasLineOfSight(shot.Position + Vector3.Up * .2f, goal))
-                    {
-                        Vector3 step = (goal - shot.Position).Slide(Vector3.Up).Normalized() * Rac1WeaponReconstructionPolicy.MineSeekStep;
-                        if (EquipmentGround(shot.Position + step, .5f, 1.2f) is { } ground)
-                        { shot.GroundHeight = ground.Y; shot.Position = ground + Vector3.Up * ((shot.Node as Rac1EquipmentView)?.FootOffset ?? .06f); shot.Node.GlobalPosition = shot.Position; }
-                    }
-                }
-            }
-            if (shot.Age > Rac1WeaponReconstructionPolicy.PlantedLifetimeTicks || shot.Position.Y < -100) RetireEquipmentShot(shot);
-        }
-        StepRac1DoomAgents();
-        for (int i = _rac1WeaponFlashes.Count - 1; i >= 0; i--)
-        {
-            var item = _rac1WeaponFlashes[i];
-            if (!IsInstanceValid(item.Node) || ++item.Age >= item.Lifetime)
-            {
-                if (IsInstanceValid(item.Node)) item.Node.QueueFree();
-                _rac1WeaponFlashes.RemoveAt(i); continue;
-            }
-            item.Node.Scale = Vector3.One * item.Size * (1 - item.Age / (float)item.Lifetime);
-            _rac1WeaponFlashes[i] = item;
-        }
+        Rac1World.Weapons.Projectiles.StepShots();
+        Rac1World.Weapons.Projectiles.StepDoomAgents();
+        Rac1World.Weapons.Projectiles.StepFlashes();
     }
 
-    private void StepRac1WeaponMotes()
-    {
-        foreach (var mote in _rac1WeaponMotes.ToArray())
-        {
-            if (!IsInstanceValid(mote.Node)) { _rac1WeaponMotes.Remove(mote); continue; }
-            var from = mote.Node.GlobalPosition; var next = from + mote.Step;
-            // The remaining Taunter/Suck presentation motes are not the native
-            // flame pool and cannot submit Pyrocitor damage.
-            if (++mote.Age > Rac1WeaponReconstructionPolicy.FlameLifetimeTicks || !Rac1World.Weapons.Contacts.HasLineOfSight(from, next))
-            { mote.Node.QueueFree(); _rac1WeaponMotes.Remove(mote); continue; }
-            mote.Node.GlobalPosition = next;
-            float radius = .12f + mote.Age * .025f;
-            mote.Node.Scale = Vector3.One * radius * 2;
-        }
-    }
+    private Vector3? EquipmentGround(Vector3 point, float up, float down)
+        => Rac1World.Weapons.Projectiles.Ground(point, up, down);
 
     private void StepRac1NativeFlameContacts()
     {
@@ -235,99 +127,5 @@ public partial class OBPGame
         }
     }
 
-    private Vector3? EquipmentGround(Vector3 point, float up, float down)
-    {
-        if (_player is null) return null;
-        var query = PhysicsRayQueryParameters3D.Create(point + Vector3.Up * up, point - Vector3.Up * down);
-        query.Exclude = [_player.GetRid()];
-        foreach (var bot in _rac1DoomAgents) query.Exclude.Add(bot.Body.GetRid());
-        var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(query);
-        return hit.TryGetValue("position", out var position) && hit["normal"].AsVector3().Y > .55f ? position.AsVector3() : null;
-    }
 
-    private void SpawnRac1DoomAgent(HostedEquipmentShot canister, int index)
-    {
-        var body = new CharacterBody3D
-        {
-            Name = "Rac1DoomAgent_Class186",
-            CollisionLayer = 0,
-            CollisionMask = 1,
-            FloorSnapLength = .2f,
-            FloorMaxAngle = Mathf.DegToRad(50),
-            SafeMargin = .005f
-        };
-        body.AddChild(new CollisionShape3D { Shape = new SphereShape3D { Radius = .22f }, Position = Vector3.Up * .22f });
-        _sceneResult!.Root.AddChild(body);
-        var view = CreateEquipmentWorldView(186); view.Reparent(body, false); view.Play(0, false, index, 1);
-        float direction = index * MathF.Tau / 4;
-        Vector3 offset = new(MathF.Cos(direction) * .3f, 0, MathF.Sin(direction) * .3f);
-        body.GlobalPosition = EquipmentGround(canister.Position + offset, 1, 2) ?? canister.Position;
-        var bot = new HostedDoomAgent(canister.Id * 4 + index + 1, body, view);
-        bot.Motion.Wander = Rac1LootPresentation.ToEffectNative(offset.Normalized());
-        _rac1DoomAgents.Add(bot);
-    }
-
-    private void StepRac1DoomAgents()
-    {
-        foreach (var bot in _rac1DoomAgents.ToArray())
-        {
-            if (!IsInstanceValid(bot.Body)) { _rac1DoomAgents.Remove(bot); continue; }
-            var origin = bot.Body.GlobalPosition;
-            var target = Rac1World.Enemies.Targets.Where(node => Rac1World.Weapons.Contacts.IsAimTarget(node) && node.Root.GlobalPosition.DistanceSquaredTo(origin) <
-                Rac1WeaponReconstructionPolicy.DoomSearchRange * Rac1WeaponReconstructionPolicy.DoomSearchRange &&
-                Rac1World.Weapons.Contacts.HasLineOfSight(origin + Vector3.Up * .3f, node.Root.GlobalPosition + Vector3.Up * .3f))
-                .OrderBy(node => node.Root.GlobalPosition.DistanceSquaredTo(origin)).FirstOrDefault();
-            System.Numerics.Vector3? targetPoint = target is null ? null : Rac1LootPresentation.ToEffectNative(target.Root.GlobalPosition);
-            Vector3 direction = Rac1LootPresentation.FromEffectNative(bot.Motion.Direction(Rac1LootPresentation.ToEffectNative(origin), targetPoint));
-            if (bot.Motion.Step(Rac1LootPresentation.ToEffectNative(origin), targetPoint))
-            {
-                ResolveEquipmentBlast(Rac1WeaponId.GloveOfDoom, bot.Id, 186, origin + Vector3.Up * .3f, 1, 3, Rac1WeaponProfiles.DoomFlags);
-                SpawnRac1WeaponExplosion(Rac1WeaponId.GloveOfDoom, origin + Vector3.Up * .2f);
-                FusionWeapons.PlayNativeSound(186, 4, origin);
-                bot.Body.QueueFree(); _rac1DoomAgents.Remove(bot); continue;
-            }
-            // Host ground/obstruction queries prevent the native model from
-            // walking through walls or across a gap. Native navigation remains
-            // a separate recovery boundary from source clips/damage/emission.
-            bool support = EquipmentGround(origin + direction * .45f, .4f, .9f) is not null;
-            if (!support) { direction = Vector3.Zero; bot.Motion.Wander = -bot.Motion.Wander; }
-            bot.Body.Velocity = direction * Rac1WeaponReconstructionPolicy.DoomRunSpeed + Vector3.Down * (bot.Body.IsOnFloor() ? .1f : 4);
-            bot.Body.MoveAndSlide();
-            if (direction.LengthSquared() > .01f) bot.View.Rotation = new(0, Mathf.Atan2(direction.Z, -direction.X), 0);
-            // Class186 selects sequence7 while chasing and sequence6 near its
-            // owner (0x2c0b90/0x2c0cc0). Sequence1 is a leap, not a run loop.
-            bot.View.Play(bot.Motion.SourceSequence(direction.LengthSquared() > .01f));
-            foreach (int sound in bot.View.Step()) FusionWeapons.PlayNativeSound(186, sound, origin);
-            if (target is null)
-                for (int collision = 0; collision < bot.Body.GetSlideCollisionCount(); collision++)
-                    if (bot.Body.GetSlideCollision(collision).GetNormal().Y < .7f)
-                    { bot.Motion.Wander = Rac1LootPresentation.ToEffectNative(Rac1LootPresentation.FromEffectNative(bot.Motion.Wander).Rotated(Vector3.Up, .3f)); break; }
-        }
-    }
-
-    private void ExplodeEquipment(HostedEquipmentShot shot, float radius, double damage, uint flags, int childClass)
-    {
-        ResolveEquipmentBlast(shot.Weapon, shot.Id, childClass, shot.Position, radius, damage, flags);
-        // The native ground/air visual recipe is separate from blast admission.
-        SpawnRac1WeaponExplosion(shot.Weapon, shot.Position);
-        FusionWeapons.PlayNativeSound(childClass, shot.Weapon == Rac1WeaponId.MineGlove ? 2 : 4, shot.Position);
-        RetireEquipmentShot(shot);
-    }
-
-    private void ResolveEquipmentBlast(Rac1WeaponId weapon, long id, int nativeClass, Vector3 origin, float radius, double damage, uint flags)
-    {
-        foreach (var target in Rac1World.Weapons.Contacts.Targets.ToArray())
-        {
-            var centre = target.Root.GlobalPosition + Vector3.Up * .4f;
-            if (origin.DistanceTo(centre) > radius + .35f || !Rac1World.Weapons.Contacts.HasLineOfSight(origin + Vector3.Up * .1f, centre)) continue;
-            Rac1World.WeaponDamage.Apply(target, Rac1WeaponProfiles.ChildDamage(weapon, nativeClass, id,
-                new(target.Source.NativeClassId, target.Source.InstanceIndex), damage, flags));
-        }
-    }
-
-    private void RetireEquipmentShot(HostedEquipmentShot shot)
-    {
-        if (IsInstanceValid(shot.Node)) shot.Node.QueueFree();
-        _rac1EquipmentShots.Remove(shot);
-    }
 }

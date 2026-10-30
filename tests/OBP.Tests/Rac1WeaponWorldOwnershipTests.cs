@@ -424,7 +424,7 @@ public sealed class Rac1WeaponWorldOwnershipTests
         Assert.Contains("new(crate.Source.NativeClassId, crate.Source.InstanceIndex), 1, 0x10000)", family, StringComparison.Ordinal);
         Assert.Contains("shot.Weapon == Rac1WeaponId.MineGlove", application, StringComparison.Ordinal);
         Assert.Contains("() => shot.Taunted = true", application, StringComparison.Ordinal);
-        Assert.Contains("_rac1WeaponMotes.Add(new(ring, forward * .25f))", application, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Projectiles.AddMote(ring, forward * .25f)", application, StringComparison.Ordinal);
         Assert.Contains("internal void Reset() => _taunts.Clear()", family, StringComparison.Ordinal);
         Assert.Contains("if (_disposed) return;", family, StringComparison.Ordinal);
     }

@@ -387,7 +387,7 @@ public partial class OBPGame : Node3D
             (mote, position, step) =>
             {
                 _sceneResult!.Root.AddChild(mote); mote.GlobalPosition = position;
-                _rac1WeaponMotes.Add(new(mote, step));
+                Rac1World.Weapons.Projectiles.AddMote(mote, step);
             },
             (target, point) =>
             {
@@ -408,8 +408,8 @@ public partial class OBPGame : Node3D
             (origin, distance, cone) => Rac1World.Weapons.Contacts.Aim(origin, distance, cone),
             (shot, visual, origin, direction) =>
             {
-                _rac1EquipmentShots.Add(new(Rac1WeaponId.SuckCannon, shot.Generation, visual, origin,
-                    direction * Rac1WeaponReconstructionPolicy.SuckProjectileStep));
+                Rac1World.Weapons.Projectiles.AddSuckCarrier(shot.Generation, visual, origin,
+                    direction * Rac1WeaponReconstructionPolicy.SuckProjectileStep);
                 SpawnEquipmentFlash(origin, 27, new(.5f, .7f, 1, 1), .6f, 7);
             },
             (cls, sound, position) => Rac1World.Loot.PlayRac1PickupSound(cls, sound, position),
@@ -441,13 +441,13 @@ public partial class OBPGame : Node3D
             SpawnEquipmentFlash),
         new Rac1TaunterPorts(
             () => _rac1WeaponWorldTick, () => Rac1World.Enemies.Targets,
-            () => _rac1EquipmentShots.Where(shot => shot.Weapon == Rac1WeaponId.MineGlove)
+            () => Rac1World.Weapons.Projectiles.Shots.Where(shot => shot.Weapon == Rac1WeaponId.MineGlove)
                 .Select(shot => new Rac1TaunterMine(shot.Position, () => shot.Taunted = true)),
             (from, forward) =>
             {
                 var ring = EquipmentParticle(27, new(.3f, .7f, 1, .6f), .6f);
                 _sceneResult!.Root.AddChild(ring); ring.GlobalPosition = from + forward * .5f;
-                _rac1WeaponMotes.Add(new(ring, forward * .25f));
+                Rac1World.Weapons.Projectiles.AddMote(ring, forward * .25f);
             },
             (node, damage) => Rac1World.WeaponDamage.Apply(node, damage)),
         new Rac1TeslaPorts(
@@ -474,6 +474,16 @@ public partial class OBPGame : Node3D
             () => _rac1Weapons.Equipped, () => _rac1Weapons.GetAmmo(19),
             () => _rac1WeaponWorldTick, weapon => EquipmentMuzzle(weapon), () => EquipmentForward,
             () => _player!.GlobalPosition, SpawnEquipmentFlash),
+        new Rac1EquipmentProjectilePorts(
+            () => _player, () => (float)(_avatarPresentation.Avatar?.BaseHeight ?? -.7),
+            weapon => EquipmentMuzzle(weapon), () => EquipmentForward,
+            CreateEquipmentWorldView, EquipmentParticle, EquipmentColor,
+            SpawnEquipmentFlash, SpawnRac1WeaponExplosion,
+            (cls, sound, point) => FusionWeapons.PlayNativeSound(cls, sound, point),
+            () => Rac1World.Enemies.Targets,
+            id => Rac1World.Enemies.Roster.ContainsKey(id),
+            (node, damage) => Rac1World.WeaponDamage.Apply(node, damage),
+            () => _sceneResult!.Root),
         new Rac1WrenchFramePorts(
             () => _player,
             () => _avatarPresentation.TryWrenchContactPose(out var pose) ? (pose.Hand, pose.Tip) : null,
@@ -555,8 +565,8 @@ public partial class OBPGame : Node3D
             new((enemy, player) => owner.Weapons.Deployables.EnemyGoal(enemy, player),
                 enemy => owner.Weapons.Deployables.EnemyHitsDecoy(enemy),
                 enemy => owner.Weapons.Deployables.IsDecoyNearby(enemy),
-                id => _rac1EquipmentShots.FirstOrDefault(shot => shot.Weapon == Rac1WeaponId.MineGlove && shot.Id == id)?.Position,
-                id => _rac1DoomAgents.FirstOrDefault(bot => bot.Id == id)?.Body.GlobalPosition,
+                id => owner.Weapons.Projectiles.MinePosition(id),
+                id => owner.Weapons.Projectiles.DoomPosition(id),
                 SelectRac1CrateReward, owner.Loot.SpawnRac1BoltPickups, (node, ids) => ActorHost.TrackPickups(node, ids),
                 nativeClass => owner.Loot.HasPickupModel(nativeClass),
                 (nativeClass, motion) =>
@@ -684,11 +694,11 @@ public partial class OBPGame : Node3D
                 v.Value.Animation.Position, v.Value.DeathTicks, v.Value.RewardEmitted, v.Value.Buried,
                 v.Value.Node.Source.NativeClassId == 1440 && Rac1World.Enemies.Class1440 is not null ? Rac1World.Enemies.Class1440.Get(v.Key).Health : null,
                 Rac1World.Presentation.HostileNodes.ContainsKey(v.Key) ? Rac1World.Context.Hostiles.Probe(v.Value.Node.Source).Health : null)).ToArray(),
-            [Rac1World.Presentation.Projectiles.Count, Rac1World.Loot.PickupMotions.Count, _rac1EquipmentShots.Count, _rac1DoomAgents.Count, Rac1World.Loot.AmmoPickups.Count, Rac1World.Loot.NanotechClouds.Count],
+            [Rac1World.Presentation.Projectiles.Count, Rac1World.Loot.PickupMotions.Count, Rac1World.Weapons.Projectiles.Shots.Count, Rac1World.Weapons.Projectiles.DoomAgents.Count, Rac1World.Loot.AmmoPickups.Count, Rac1World.Loot.NanotechClouds.Count],
             Rac1World.Presentation.Projectiles.Select(v => new CaptureBombCheckpoint(v.Key, ToNumerics(Rac1LootPresentation.FromEffectNative(v.Value.Motion.Position)), ToNumerics(Rac1LootPresentation.FromEffectNative(v.Value.Motion.Velocity)),
                 v.Value.Motion.NativeState, v.Value.Motion.BlastAge)).ToArray(),
-            _rac1EquipmentShots.Select(v => new CaptureShotCheckpoint(v.Id, ToNumerics(v.Position), ToNumerics(v.Step), (int)v.Weapon, v.Age, v.Grounded)).ToArray(),
-            _rac1DoomAgents.Where(v => IsInstanceValid(v.Body)).Select(v => new CaptureBodyCheckpoint(v.Id, ToNumerics(v.Body.GlobalPosition), ToNumerics(v.Body.Velocity))).ToArray(),
+            Rac1World.Weapons.Projectiles.Shots.Select(v => new CaptureShotCheckpoint(v.Id, ToNumerics(v.Position), ToNumerics(v.Step), (int)v.Weapon, v.Age, v.Grounded)).ToArray(),
+            Rac1World.Weapons.Projectiles.DoomAgents.Where(v => IsInstanceValid(v.Body)).Select(v => new CaptureBodyCheckpoint(v.Id, ToNumerics(v.Body.GlobalPosition), ToNumerics(v.Body.Velocity))).ToArray(),
             Rac1World.Presentation.PickupNodes.Where(v => IsInstanceValid(v.Value)).Select(v => new CapturePositionCheckpoint(v.Key, ToNumerics(v.Value.GlobalPosition))).ToArray(),
             Rac1World.Mechanisms.Cranks is { } cranks
                 ? cranks.CrankNodes.Keys.Select(v => new CaptureCrankCheckpoint(v, cranks.Session.Progress(v))).ToArray()
@@ -1836,9 +1846,9 @@ public partial class OBPGame : Node3D
         weapon => _rac1EquipmentViews.GetValueOrDefault(weapon), weapon => EquipmentMuzzle(weapon), item => _rac1Weapons.GetAmmo(item),
         (nativeClass, sound) => Rac1World.Loot.PickupAssets?.Sounds?.TryGetValue((nativeClass, sound), out var voice) == true && voice.Clip.InterleavedPcm16.Any(sample => sample != 0),
         () => [.. _equipmentPresentation.WeaponAudio.Events.Select(cue => new Rac1WeaponAudioDiagnostic(ObpSourceGame.Rac1, cue.Tick, cue.Class, cue.Sound, cue.Loop))],
-        () => [.. _rac1EquipmentShots.Select(shot => new GodotWeaponDiagnosticWitness<Rac1EquipmentShotDiagnostic>(new(worlds), () => new(
+        () => [.. Rac1World.Weapons.Projectiles.Shots.Select(shot => new GodotWeaponDiagnosticWitness<Rac1EquipmentShotDiagnostic>(new(worlds), () => new(
             new(ObpSourceGame.Rac1, (int)shot.Weapon), shot.Id, GodotMovementPlayer.Copy(shot.Position), shot.Grounded, GodotWeaponModelFacts.Read(shot.Node))))],
-        () => [.. _rac1DoomAgents.Select(agent => new GodotWeaponDiagnosticWitness<Rac1DoomAgentDiagnostic>(new(worlds), () => new(
+        () => [.. Rac1World.Weapons.Projectiles.DoomAgents.Select(agent => new GodotWeaponDiagnosticWitness<Rac1DoomAgentDiagnostic>(new(worlds), () => new(
             new(ObpSourceGame.Rac1, (int)Rac1WeaponId.GloveOfDoom), agent.Id, GodotMovementPlayer.Copy(agent.Body.GlobalPosition), agent.Motion.Wander,
             GodotWeaponModelFacts.Read(agent.View))))], () => _persistentPlayer.WeaponPreview is not null, SetRac1WeaponPreview));
 

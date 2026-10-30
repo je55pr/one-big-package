@@ -39,9 +39,6 @@ public partial class OBPGame
     private Rac1AdditionalWeaponSession? _rac1AdditionalWeapons;
     private readonly Dictionary<Rac1WeaponId, Rac1EquipmentView> _rac1EquipmentViews = [];
     private readonly Dictionary<Rac1WeaponId, Rac1EquipmentView> _rac1StagedEquipment = [];
-    private readonly List<HostedEquipmentShot> _rac1EquipmentShots = [];
-    private readonly List<HostedDoomAgent> _rac1DoomAgents = [];
-    private readonly List<HostedWeaponParticle> _rac1WeaponMotes = [];
     private readonly List<HostedNativeFlame> _rac1NativeFlames = [];
     private readonly Dictionary<Rac1MobyRuntimeKey, ulong> _rac1FlameHitTicks = [];
     private readonly Dictionary<Rac1WeaponId, long> _rac1WeaponGenerations = [];
@@ -51,29 +48,6 @@ public partial class OBPGame
     private int _rac1EquipmentUseTicks, _rac1EquipmentUseAge;
     private int _rac1WeaponShotsFired;
 
-    private sealed class HostedEquipmentShot(Rac1WeaponId weapon, long id, Node3D node, Vector3 position, Vector3 step)
-    {
-        public Rac1WeaponId Weapon { get; } = weapon;
-        public long Id { get; } = id;
-        public Node3D Node { get; } = node;
-        public Vector3 Position = position;
-        public Vector3 Step = step;
-        public int Age;
-        public bool Grounded;
-        public float GroundHeight;
-        public Rac1DoomCanisterSession? Canister;
-        public Rac1ArsenalProjectile? Motion;
-        public NVector3? AimPoint;
-        public bool Taunted;
-    }
-    private sealed record HostedDoomAgent(long Id, CharacterBody3D Body, Rac1EquipmentView View)
-    {
-        public Rac1DoomAgentSession Motion { get; } = new();
-    }
-    private sealed record HostedWeaponParticle(Node3D Node, Vector3 Step)
-    {
-        public int Age;
-    }
     private sealed record HostedNativeFlame(Rac1ParticleSession.Particle Motion)
     {
         public HashSet<Rac1MobyRuntimeKey> Victims { get; } = [];
@@ -83,17 +57,13 @@ public partial class OBPGame
     {
         ResetRac1WeaponAudio();
         ResetRac1Arsenal();
-        foreach (var node in _rac1EquipmentShots.Select(shot => shot.Node).Concat(_rac1DoomAgents.Select(agent => agent.Body))
-            .Concat(_rac1WeaponMotes.Select(mote => mote.Node)))
-            if (IsInstanceValid(node)) node.QueueFree();
+        Rac1World.Weapons.Projectiles.RetireShotsAgentsMotes();
         Rac1World.Weapons.SuckCannon.Reset();
-        _rac1EquipmentShots.Clear(); _rac1DoomAgents.Clear();
-        _rac1WeaponMotes.Clear(); _rac1FlameHitTicks.Clear(); _rac1WeaponGenerations.Clear();
+        _rac1FlameHitTicks.Clear(); _rac1WeaponGenerations.Clear();
         _rac1NativeFlames.Clear(); _equipmentPresentation.Explosions.Particles?.RemoveType(12); _equipmentPresentation.Explosions.Particles?.RemoveType(2);
         _rac1AdditionalWeapons = new(_rac1Weapons);
         _rac1AdditionalWeaponsInventory = _rac1Weapons;
-        foreach (var flash in _rac1WeaponFlashes) if (IsInstanceValid(flash.Node)) flash.Node.QueueFree();
-        _rac1WeaponFlashes.Clear(); _rac1WeaponWorldTick = 0;
+        Rac1World.Weapons.Projectiles.ResetFlashes(); _rac1WeaponWorldTick = 0;
         _rac1AdditionalFireRequested = _rac1PyroEmitting = false;
         _rac1EquipmentUseTicks = _rac1EquipmentUseAge = 0;
         _rac1WeaponShotsFired = 0;
@@ -212,9 +182,9 @@ public partial class OBPGame
             if (shot.Weapon is Rac1WeaponId.MineGlove or Rac1WeaponId.GloveOfDoom)
             {
                 Rac1World.Weapons.ThrownAnimation.Begin();
-                SpawnRac1ThrownEquipment(shot);
+                Rac1World.Weapons.Projectiles.Throw(shot);
             }
-            else if (shot.Weapon == Rac1WeaponId.Blaster) FireRac1Blaster(shot);
+            else if (shot.Weapon == Rac1WeaponId.Blaster) Rac1World.Weapons.Projectiles.FireBlaster(shot);
             else if (shot.Weapon == Rac1WeaponId.SuckCannon) Rac1World.Weapons.SuckCannon.Fire(shot);
             else if (Rac1ArsenalRules.IsNew(shot.Weapon)) Rac1World.Weapons.Arsenal.Fire(shot.Weapon);
             if (shot.Weapon is Rac1WeaponId.DecoyGlove or Rac1WeaponId.DroneDevice)
@@ -275,50 +245,6 @@ public partial class OBPGame
             return hit.TryGetValue("position", out var point) ? point.AsVector3() - (muzzle - start).Normalized() * .02f : muzzle;
         }
         return _player!.GlobalPosition + Vector3.Up * .9f + EquipmentForward * .7f;
-    }
-
-    private void FireRac1Blaster(Rac1AdditionalWeaponSession.Shot shot)
-    {
-        Vector3 origin = EquipmentMuzzle(shot.Weapon);
-        Vector3 end = origin + (Rac1World.Weapons.Contacts.Aim(origin, Rac1WeaponReconstructionPolicy.BlasterAimRange, .96f) - origin).Normalized() * Rac1WeaponReconstructionPolicy.BlasterAimRange;
-        var node = EquipmentParticle(27, EquipmentColor(Rac1WeaponProfiles.BlasterImpactColor), .18f);
-        node.Name = "Rac1Blaster_Class305_Type27";
-        _sceneResult!.Root.AddChild(node);
-        node.GlobalPosition = origin;
-        _rac1EquipmentShots.Add(new(shot.Weapon, shot.Generation, node, origin, (end - origin).Normalized() * Rac1WeaponProfiles.BlasterSpeed)
-        {
-            Motion = new(Rac1LootPresentation.ToEffectNative(origin), Rac1LootPresentation.ToEffectNative((end - origin).Normalized()), 40, Rac1WeaponProfiles.BlasterCarrierTicks),
-            AimPoint = Rac1LootPresentation.ToEffectNative(Rac1World.Weapons.Contacts.Aim(origin, Rac1WeaponReconstructionPolicy.BlasterAimRange, .96f)),
-        });
-        SpawnEquipmentFlash(origin, 27, EquipmentColor(Rac1WeaponProfiles.BlasterMuzzleColor), .35f, 4);
-    }
-
-    private void SpawnRac1ThrownEquipment(Rac1AdditionalWeaponSession.Shot shot)
-    {
-        FusionWeapons.PlayNativeSound(0, 26, _player!.GlobalPosition); // hero_sound_start(0x1a,0), shared glove throw.
-        float yaw = (float)_player!.Rac1CurrentYaw;
-        NVector3 body = Rac1LootPresentation.ToEffectNative(_player.GlobalPosition) + new NVector3(0, 0, (float)-(_avatarPresentation.Avatar?.BaseHeight ?? -.7));
-        var origin = Rac1BombProjectileSession.LaunchOrigin(body, yaw);
-        var target = Rac1LootPresentation.ToEffectNative(Rac1World.Weapons.Contacts.Aim(Rac1LootPresentation.FromEffectNative(origin), 8.5f, .94f));
-        var velocity = Rac1BombProjectileSession.LaunchVelocity(origin, target, yaw);
-        // Shared glove-origin family is recovered; this flight adapter currently
-        // uses the recovered Bomb arc pending the complete class74/230 integrator.
-        int nativeClass = shot.Weapon == Rac1WeaponId.MineGlove ? 74 : 230;
-        var view = CreateEquipmentWorldView(nativeClass);
-        view.Play(0); view.GlobalPosition = Rac1LootPresentation.FromEffectNative(origin);
-        if (nativeClass == 230) view.Scale = Vector3.One * Rac1ArsenalRules.DoomCanisterHeldScale;
-        var flying = new HostedEquipmentShot(shot.Weapon, shot.Generation, view, view.GlobalPosition,
-            new(-velocity.X, velocity.Z, velocity.Y))
-        { Canister = nativeClass == 230 ? new() : null };
-        _rac1EquipmentShots.Add(flying);
-        var start = Rac1LootPresentation.FromEffectNative(new(body.X, body.Y, origin.Z));
-        if (Rac1World.Weapons.Contacts.Contact(start, view.GlobalPosition, .12f) is { } obstruction)
-        { flying.Position = obstruction.Point; flying.GroundHeight = obstruction.Point.Y; flying.Grounded = true; flying.Step = Vector3.Zero; }
-        if (nativeClass == 74)
-        {
-            var mines = _rac1EquipmentShots.Where(item => item.Weapon == Rac1WeaponId.MineGlove).ToArray();
-            if (mines.Length > 8) ExplodeEquipment(mines[0], 2, Rac1WeaponProfiles.MineDamage, Rac1WeaponProfiles.MineFlags, 74);
-        }
     }
 
     private Rac1EquipmentView CreateEquipmentWorldView(int nativeClass)
