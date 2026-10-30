@@ -289,6 +289,11 @@ public partial class OBPGame : Node3D
             () => _playerAudio?.RetireWorld(), PersistRac1CampaignState,
             () => RefreshRac1HudState(), value => RefreshRac1HudState(Rac1HudProjection.CollectedBoltFeedback(value)),
             (nativeClass, localSound) => RecordRac1WeaponSound(nativeClass, localSound), () => _rac1CollectedNovalisGoldBolts),
+        new Rac1BreakablePorts(() => _player,
+            owner => ReferenceEquals(_worldScenes?.Current?.Resources.Rac1Gameplay, owner),
+            (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Inclusive(min, max),
+            SelectRac1CrateReward, BombHasLineOfSight,
+            damage => Rac1World.Enemies.ApplyRac1EnemyPlayerDamage(damage), CompleteRac1CrateDamage),
         new Rac1WorldResetPorts(
             Player: () =>
             {
@@ -297,19 +302,19 @@ public partial class OBPGame : Node3D
                 else _playerNative.EndWorld();
             },
             Wheel: () => { _lastQuickSelectTap = 0; _previousSelectedWeapon = null; },
-            Explosives: ResetRac1ExplosiveCrates, Checkpoints: ResetRac1CheckpointTriggers,
+            Checkpoints: ResetRac1CheckpointTriggers,
             Missions: ResetRac1Missions, MetalDetector: ResetRac1MetalDetector, Wrench: ResetRac1WrenchHost,
             Retry: ResetRac1CombatRetry, Pickups: () => Rac1World.Loot.ResetRac1PickupPresentation(),
-            GoldBolts: () => Rac1World.Loot.ResetRac1GoldBolts(), Breakables: ResetRac1NovalisBreakables,
+            GoldBolts: () => Rac1World.Loot.ResetRac1GoldBolts(),
             AdditionalWeapons: ResetRac1AdditionalWeapons,
 
             BombPresentation: ResetRac1BombPresentation),
         new Rac1WorldActorPorts(world => Rac1World.Loot.ConfigureRac1PickupPresentation(world), node => Rac1World.Loot.AddRac1CrateCollider(node),
-            ConfigureRac1ExplosiveCrates, ConfigureRac1CheckpointTriggers, ConfigureRac1Missions, ConfigureRac1MetalDetector,
+            ConfigureRac1CheckpointTriggers, ConfigureRac1Missions, ConfigureRac1MetalDetector,
             (world, result) => Rac1World.Loot.ConfigureRac1PlacedBolts(world, result),
-            (world, result) => Rac1World.Loot.ConfigureRac1GoldBolts(world, result), ConfigureRac1NovalisBreakables),
+            (world, result) => Rac1World.Loot.ConfigureRac1GoldBolts(world, result)),
         new Rac1WorldTickPorts(() => MovementReproduction.IsLoading,
-            TickRac1Swing, TickRac1ExplosiveCrates, TickRac1CheckpointTriggers, TickRac1MetalDetector,
+            TickRac1Swing, TickRac1CheckpointTriggers, TickRac1MetalDetector,
             delta => Rac1World.Loot.TickRac1Pickups(delta), () => Rac1World.Loot.TickRac1GoldBolts(), TickRac1Missions),
 
         new Rac1PlayerGameplayPorts(() => OrdinaryPlayerSession, () => _playerNative is not null, () => PlayerLife.Alive,
@@ -371,7 +376,7 @@ public partial class OBPGame : Node3D
                     node.GlobalPosition = Rac1LootPresentation.FromEffectNative(motion.Position); owner.Loot.AddDebris(node, motion);
                 }, owner.Loot.PlayRac1PickupSound, (node, sound) => ActorHost.PlayRac1Sound(node, sound), BombHasLineOfSight, origin => SpawnRac1BombExplosion(origin),
                 origin => SpawnRac1ExplosionBursts(origin, Rac1BombExplosion.Bursts(false).Take(1).ToArray()),
-                TryTriggerRac1ExplosiveDamage, CompleteRac1CrateDamage,
+                (node, damage) => owner.Breakables.TryTriggerExplosiveDamage(node, damage), CompleteRac1CrateDamage,
                 (id, presence) => { if (owner.Loot.CrateBodies.TryGetValue(id, out var body) && IsInstanceValid(body)) body.CollisionLayer = presence == RuntimeEntityPresence.Active ? 1u : 0; },
                 id => _rac1Chickens.ContainsKey(id)),
             new(() => ReferenceEquals(_worldScenes?.Current?.Resources.Rac1Gameplay, owner)),
@@ -1581,7 +1586,10 @@ public partial class OBPGame : Node3D
             Damage = () => _rac1Nanotech.ApplyDamage(Rac1DamageRuntime.FromClass749Attack(new(749, 149), new(34, 1))),
         }, targets, worlds);
         return new(movement.Ports, new(loot, targets, movement.Equipment, new GodotRac1LootDiagnosticCapture(this,
-            () => _world?.LevelId ?? throw new DiagnosticUnavailableException("The loot capture world is unavailable."), () => _ui, () => _player, new GodotDiagnosticFrameClock(this))));
+            () => _world?.LevelId ?? throw new DiagnosticUnavailableException("The loot capture world is unavailable."), () => _ui, () => _player, new GodotDiagnosticFrameClock(this)),
+            new GodotRac1BreakableDiagnosticFixture(() => Rac1World.Breakables.Observe(),
+                id => Rac1World.Breakables.TouchExplosiveForDiagnostics(id),
+                (id, contact) => Rac1World.Breakables.BreakNovalisForDiagnostics(id, contact), worlds)));
     }
 
     private WeaponDiagnosticHarness CreateWeaponDiagnosticHarness()

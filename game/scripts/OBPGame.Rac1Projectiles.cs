@@ -216,7 +216,7 @@ public partial class OBPGame
     private void ResolveRac1BombBlast(long id, Rac1BombProjectileSession motion, long generation)
     {
         Vector3 origin = Rac1LootPresentation.FromEffectNative(motion.Position);
-        ResolveRac1NovalisBombBreakables(origin, motion.BlastRadius);
+        Rac1World.Breakables.ResolveNovalisBombBreakables(origin, motion.BlastRadius);
         var facts = Rac1World.Enemies.Targets.Concat(Rac1World.Presentation.CrateNodes)
             .Where(node => IsInstanceValid(node.Root) && Rac1World.Enemies.IsRac1GameplayActive(node) && Rac1EnemyHost.HasRac1HostContactGeometry(node))
             .Where(node => origin.DistanceTo(node.Root.GlobalPosition + Vector3.Up * .5f) <= motion.BlastRadius + .35f &&
@@ -239,8 +239,7 @@ public partial class OBPGame
                 CompleteRac1CrateDamage(Rac1World.Presentation.CrateNodes.Single(node => node.Source.InstanceIndex == damage.Target.RuntimeId), admission);
             }
             else if (damage.Target.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
-                TryTriggerRac1ExplosiveDamage(
-                    _rac1ExplosiveNodes[(int)damage.Target.RuntimeId], damage);
+                Rac1World.Breakables.TryTriggerExplosiveDamage(damage);
             else if (Rac1World.Enemies.Roster.TryGetValue((int)damage.Target.RuntimeId, out var enemy))
                 Rac1World.Enemies.ApplyRac1EnemyWeaponDamage(enemy.Node, damage);
         }

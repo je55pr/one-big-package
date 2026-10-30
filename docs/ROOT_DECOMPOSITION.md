@@ -877,3 +877,40 @@ Root boundary policy records the exact removed members as retirements and
 updates only the affected composition hashes; the frozen origin ledger is
 intact. The existing host coordinator architecture assertion now checks the
 new presentation owner instead of expecting a root partial.
+
+## #366 R&C1 explosive crates and Novalis breakable ownership
+
+`OBPGame.Rac1Explosives.cs` and `OBPGame.Rac1NovalisBreakables.cs`
+are retired. The new `Rac1WorldModule.Breakables` owns a
+`Rac1BreakableHost`, containing independent class-505 and authored Novalis
+adapters for their source sessions, presented-node maps, frame accumulators,
+hit histories, flash material overrides and destroyed state. The host borrows
+world-local actors and presentation; it does not own the persistent player,
+wallet, RNG, imported source assets or original authored scene roots.
+
+Native class-505 registration still requires the exact R&C1 native record/PVar,
+and uses the existing `Rac1ExplosiveCrateSession` 60 Hz fuse and expanding
+state-3 blast. Class 754/704 admission remains restricted to authored R&C1
+Novalis nodes and the existing `Rac1NovalisBreakableSession` policies. No
+unrecovered fragment program or reward has been invented. #233's metal-crate
+blast admission and #237's Novalis cave parity remain independently open.
+
+The lease-specific `Rac1BreakablePorts.Current(owner)` check binds the
+actual owning `Rac1WorldModule`, never whichever module happens to be current
+later. The host rejects stale damage, bomb/wrench contacts and diagnostic actions
+after retirement. R&C1's Moby damage flags, source reward selection and
+player-owned random stream are unchanged. Detonation keeps the original
+debris, bolt-emission, audio and collider-disable order; only the resulting
+typed pickup facts reach the existing `Rac1LootPresentation`. Crate bodies and
+falling support remain in that lease-owned presenter, with explicit idempotent
+release and bounded contact lookup rather than an adapter reading private
+mutable dictionaries. Temporary material copies are restored/released by the
+breakable adapter. The module's disposal chain releases all owners even if an
+earlier owner's disposal throws.
+
+The existing crate acceptance scenario has an optional, explicitly
+test-only breakable fixture. It returns source/world-stamped immutable snapshots,
+native explosive states and collider presence, with bounded touch/break actions
+that reject stale generation/actor identities. The native-session tests, source-
+free ownership guards and original engine crate scenario remain the authority
+for behaviours that can be checked without inventing retail source facts.

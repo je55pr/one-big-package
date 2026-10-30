@@ -95,6 +95,59 @@ public sealed class Rac1CrateScenario(MovementDiagnosticContext context, Rac1Loo
                 Log("[crate-smoke] metal rejects wrench/Bomb Glove input and projectile/metal fragments PASS");
             }
             await PhysicsFramesAsync(600); Require(Loot.Read().DebrisClasses.Length == 0, "debris failed to expire");
+            if (ports.Breakables is { } breakables)
+            {
+                var start = breakables.Read();
+                Require(start.Explosives.Select(entry => entry.Actor).Distinct().Count() == start.Explosives.Length,
+                    "explosive registrations contain duplicate authored identities");
+                Require(start.Novalis.Select(entry => entry.Actor).Distinct().Count() == start.Novalis.Length,
+                    "Novalis registrations contain duplicate authored identities");
+                Require(start.Explosives.All(entry => entry.Actor.Target.SourceGame == ObpSourceGame.Rac1 &&
+                        entry.Actor.Target.NativeClassId == Rac1ExplosiveCrateSession.ClassId),
+                    "explosive adapter admitted an unrelated source/native class");
+                Require(start.Novalis.All(entry => entry.Actor.Target.SourceGame == ObpSourceGame.Rac1 &&
+                        entry.Actor.Target.NativeClassId is 704 or 754),
+                    "Novalis adapter admitted an unrelated source/native class");
+
+                var explosive = start.Explosives.FirstOrDefault(entry =>
+                    entry.Presence == RuntimeEntityPresence.Active && entry.HasCollider);
+                if (explosive is not null)
+                {
+                    Require(breakables.TouchExplosive(explosive.Actor), "fixture could not start admitted native class-505 touch");
+                    await WaitAsync(() => breakables.Read().Explosives.Any(entry =>
+                        entry.Actor == explosive.Actor && entry.NativeState == Rac1ExplosiveCrateSession.BurstState), 220,
+                        "native explosive countdown to state-3 burst");
+                    Require(!breakables.Read().Explosives.Single(entry => entry.Actor == explosive.Actor).HasCollider,
+                        "explosive detonation retained its contact body");
+                    Require(!breakables.TouchExplosive(explosive.Actor), "spent explosive admitted repeated touch");
+                    Log("[crate-smoke] lease-owned explosive touch/fuse/retirement PASS");
+                }
+
+                var mushroom = start.Novalis.FirstOrDefault(entry =>
+                    entry.Actor.Target.NativeClassId == Rac1NovalisBreakableSession.MushroomClass &&
+                    entry.Presence == RuntimeEntityPresence.Active);
+                if (mushroom is not null)
+                {
+                    Require(breakables.BreakNovalis(mushroom.Actor, Rac1NovalisBreakableSession.ContactKind.Wrench),
+                        "admitted Novalis mushroom rejected host wrench contact");
+                    Require(!breakables.BreakNovalis(mushroom.Actor, Rac1NovalisBreakableSession.ContactKind.Explosion),
+                        "destroyed Novalis mushroom admitted duplicate break/reward");
+                    Require(breakables.Read().Novalis.Single(entry => entry.Actor == mushroom.Actor).Presence ==
+                        RuntimeEntityPresence.Inactive, "Novalis mushroom retained active presentation");
+                }
+
+                var rock = start.Novalis.FirstOrDefault(entry =>
+                    entry.Actor.Target.NativeClassId == Rac1NovalisBreakableSession.RockFormationClass &&
+                    entry.Presence == RuntimeEntityPresence.Active);
+                if (rock is not null)
+                {
+                    Require(!breakables.BreakNovalis(rock.Actor, Rac1NovalisBreakableSession.ContactKind.Wrench),
+                        "existing class-704 host policy admitted wrench");
+                    Require(breakables.BreakNovalis(rock.Actor, Rac1NovalisBreakableSession.ContactKind.Explosion),
+                        "admitted class-704 explosion failed");
+                }
+                Log("[crate-smoke] lease-scoped Novalis admission and duplicate-contact guards PASS");
+            }
             Log($"[crate-smoke] PASS level={World.Read().LevelId}");
         }
         catch (OperationCanceledException error) when (Driver.Lifetime.IsCancellationRequested && error.CancellationToken == Driver.Lifetime) { throw; }

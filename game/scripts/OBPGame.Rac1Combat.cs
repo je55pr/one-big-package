@@ -115,7 +115,7 @@ public partial class OBPGame
             if (strike is null) return false;
             var key = new Rac1MobyRuntimeKey(target.Source.NativeClassId, target.Source.InstanceIndex);
             var hit = Rac1DamageRuntime.FromWrench(key, strike);
-            if (!TryTriggerRac1ExplosiveDamage(target, hit)) return false;
+            if (!Rac1World.Breakables.TryTriggerExplosiveDamage(target, hit)) return false;
             Rac1World.Context.DamageTransport.Publish(hit);
             return true;
         }
