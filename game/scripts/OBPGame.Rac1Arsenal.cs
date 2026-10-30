@@ -8,31 +8,12 @@ namespace OBP.Game;
 
 public partial class OBPGame
 {
-    private sealed record ArsenalDecoy(Rac1EquipmentView View)
-    {
-        public Vector3 Velocity;
-        public int Age;
-        public int Hits;
-        public bool Grounded;
-        public float GroundHeight;
-        public int GroundTicks;
-        public int RetiringTicks = -1;
-        public int LastAttacker = -1;
-        public ulong LastHitTick;
-    }
-    private sealed record ArsenalDrone(Rac1EquipmentView View, int Slot)
-    {
-        public RuntimeWorldScene.DynamicObjectNode? Target;
-        public int Age;
-    }
     private sealed record ArsenalChicken(Rac1HostedEnemy Enemy, Rac1EquipmentView View, Shape3D OriginalShape, Vector3 OriginalShapePosition)
     {
         public int Age;
         public Vector3 Direction;
     }
 
-    private readonly List<ArsenalDecoy> _rac1Decoys = [];
-    private readonly List<ArsenalDrone> _rac1Drones = [];
     private readonly Dictionary<int, ArsenalChicken> _rac1Chickens = [];
     private readonly Dictionary<int, int> _rac1MorphExposure = [];
     private readonly List<MeshInstance3D> _rac1ArsenalBeams = [];
@@ -49,8 +30,8 @@ public partial class OBPGame
     private void ResetRac1Arsenal()
     {
         Rac1World.Weapons.Missiles.Reset();
-        foreach (var node in _rac1Decoys.Select(item => (Node)item.View).Concat(_rac1Drones.Select(item => (Node)item.View))
-            .Concat(_rac1Chickens.Values.Select(item => (Node)item.View)).Concat(_rac1ArsenalBeams))
+        Rac1World.Weapons.Deployables.Reset();
+        foreach (var node in _rac1Chickens.Values.Select(item => (Node)item.View).Concat(_rac1ArsenalBeams))
             if (IsInstanceValid(node)) node.QueueFree();
         foreach (var chicken in _rac1Chickens.Values.Where(chicken => IsInstanceValid(chicken.Enemy.Node.Root) && IsInstanceValid(chicken.Enemy.Body)))
         {
@@ -61,7 +42,7 @@ public partial class OBPGame
             var collider = chicken.Enemy.Body.GetChild<CollisionShape3D>(0);
             collider.Shape = chicken.OriginalShape; collider.Position = chicken.OriginalShapePosition;
         }
-        _rac1Decoys.Clear(); _rac1Drones.Clear(); _rac1Chickens.Clear();
+        _rac1Chickens.Clear();
         _rac1MorphExposure.Clear(); _rac1ArsenalBeams.Clear(); _rac1Taunts.Clear();
         _rac1TeslaPresentation.Reset(); _rac1TeslaMaterials.Clear(); _rac1TeslaEffectRandom = null;
         _rac1WalloperAge = 0;
@@ -73,9 +54,9 @@ public partial class OBPGame
     private bool AdmitRac1ArsenalUse() => _rac1Weapons.Equipped switch
     {
         Rac1WeaponId.VisibombGun => !Rac1World.Weapons.Missiles.GuidedActive,
-        Rac1WeaponId.DroneDevice => _rac1Drones.Count < Rac1ArsenalRules.DroneCapacity,
+        Rac1WeaponId.DroneDevice => Rac1World.Weapons.Deployables.CanFireDrone,
         Rac1WeaponId.Ryno => Rac1World.Weapons.Missiles.CanBeginRyno,
-        Rac1WeaponId.DecoyGlove => _rac1Decoys.Count < Rac1ArsenalHostPolicy.DecoyCapacity,
+        Rac1WeaponId.DecoyGlove => Rac1World.Weapons.Deployables.CanFireDecoy,
         _ => true,
     };
 
@@ -100,19 +81,8 @@ public partial class OBPGame
             case Rac1WeaponId.Devastator: Rac1World.Weapons.Missiles.Fire(shot.Weapon); break;
             case Rac1WeaponId.VisibombGun: Rac1World.Weapons.Missiles.Fire(shot.Weapon); break;
             case Rac1WeaponId.Ryno: Rac1World.Weapons.Missiles.Fire(shot.Weapon); break;
-            case Rac1WeaponId.DroneDevice:
-                while (_rac1Drones.Count < Rac1ArsenalRules.DroneCapacity)
-                {
-                    int slot = Enumerable.Range(0, Rac1ArsenalRules.DroneCapacity).First(index => _rac1Drones.All(drone => drone.Slot != index));
-                    var view = CreateEquipmentWorldView(479); view.Play(0);
-                    view.GlobalPosition = EquipmentMuzzle(shot.Weapon); _rac1Drones.Add(new(view, slot));
-                }
-                FusionWeapons.PlayNativeSound(483, 0, _player!.GlobalPosition); break;
-            case Rac1WeaponId.DecoyGlove:
-                FusionWeapons.PlayNativeSound(0, 26, _player!.GlobalPosition);
-                var decoy = CreateEquipmentWorldView(203); decoy.Play(0); decoy.Scale = Vector3.One * Rac1ArsenalRules.DecoyInitialScale;
-                decoy.GlobalPosition = EquipmentMuzzle(shot.Weapon);
-                _rac1Decoys.Add(new(decoy) { Velocity = EquipmentForward * 5 + Vector3.Up * 3 }); break;
+            case Rac1WeaponId.DroneDevice: Rac1World.Weapons.Deployables.FireDrones(); break;
+            case Rac1WeaponId.DecoyGlove: Rac1World.Weapons.Deployables.FireDecoy(); break;
             case Rac1WeaponId.Walloper:
                 _rac1WalloperAge = 1; _rac1WalloperVictims.Clear(); break;
         }
@@ -139,78 +109,7 @@ public partial class OBPGame
 
     private void StepRac1ArsenalDeployables()
     {
-        foreach (var decoy in _rac1Decoys.ToArray())
-        {
-            decoy.Age++;
-            if (decoy.RetiringTicks >= 0)
-            {
-                decoy.View.Step();
-                decoy.View.GlobalPosition = new(decoy.View.GlobalPosition.X,
-                    decoy.GroundHeight + decoy.View.FootOffset * decoy.View.Scale.X, decoy.View.GlobalPosition.Z);
-                if (++decoy.RetiringTicks >= 60)
-                { decoy.View.QueueFree(); _rac1Decoys.Remove(decoy); }
-                continue;
-            }
-            decoy.View.Scale = Vector3.One * Math.Min(1, decoy.View.Scale.X + Rac1ArsenalRules.DecoyGrowthPerTick);
-            if (!decoy.Grounded)
-            {
-                var from = decoy.View.GlobalPosition;
-                var next = from + decoy.Velocity / 60;
-                decoy.Velocity += Vector3.Down * (18f / 60);
-                if (Rac1World.Weapons.Contacts.Contact(from, next, .1f) is { } hit)
-                {
-                    decoy.GroundHeight = hit.Point.Y;
-                    decoy.View.GlobalPosition = hit.Point + Vector3.Up * decoy.View.FootOffset;
-                    decoy.Grounded = true; decoy.View.Play(1, false, Rac1World.Weapons.NextArsenalId(), 2);
-                }
-                else decoy.View.GlobalPosition = next;
-            }
-            foreach (int sound in decoy.View.Step()) FusionWeapons.PlayNativeSound(203, sound, decoy.View.GlobalPosition);
-            if (decoy.Grounded)
-            {
-                decoy.GroundTicks++;
-                decoy.View.GlobalPosition = new(decoy.View.GlobalPosition.X, decoy.GroundHeight + decoy.View.FootOffset, decoy.View.GlobalPosition.Z);
-            }
-            if (decoy.GroundTicks >= Rac1ArsenalRules.DecoyLifetime || decoy.Hits >= 3)
-            {
-                decoy.RetiringTicks = 0;
-                decoy.View.BlendTo(0, 60, Rac1World.Weapons.NextArsenalId()); // 0x2c50d0..2c5108, fold over60 ticks.
-            }
-            else if (decoy.View.GlobalPosition.Y < -100)
-            {
-                SpawnEquipmentFlash(decoy.View.GlobalPosition + Vector3.Up * .6f, 25, new(.7f, .7f, .7f), 1, 20);
-                decoy.View.QueueFree(); _rac1Decoys.Remove(decoy);
-            }
-        }
-        foreach (var drone in _rac1Drones.ToArray())
-        {
-            drone.Age++; var from = drone.View.GlobalPosition;
-            if (drone.Target is null || !Rac1World.Weapons.Contacts.IsAimTarget(drone.Target))
-                drone.Target = FindArsenalTarget(from, Rac1ArsenalHostPolicy.DroneInterceptRange);
-            if (drone.Target is { } target)
-            {
-                var goal = target.Root.GlobalPosition + Vector3.Up * .6f;
-                var next = from.MoveToward(goal, Rac1ArsenalHostPolicy.DroneSpeed / 60);
-                var hit = Rac1World.Weapons.Contacts.Contact(from, next, .23f);
-                if (hit is not null || next.DistanceTo(goal) < .35f)
-                {
-                    ApplyArsenalBlast(Rac1WeaponId.DroneDevice, hit?.Point ?? next, 1.5f, Rac1ArsenalRules.DroneDamage, 0x10000);
-                    SpawnRac1WeaponExplosion(Rac1WeaponId.DroneDevice, hit?.Point ?? next);
-                    FusionWeapons.PlayNativeSound(479, 1, hit?.Point ?? next);
-                    drone.View.QueueFree(); _rac1Drones.Remove(drone); continue;
-                }
-                drone.View.GlobalPosition = next; Rac1ArsenalViewPose.Orient(drone.View, next - from);
-            }
-            else
-            {
-                float phase = _rac1WeaponWorldTick / 45f + drone.Slot * MathF.Tau / Rac1ArsenalRules.DroneCapacity;
-                var goal = _player!.GlobalPosition + new Vector3(MathF.Cos(phase) * Rac1ArsenalHostPolicy.DroneOrbitRadius,
-                    1 + MathF.Sin(phase * 2) * .15f, MathF.Sin(phase) * Rac1ArsenalHostPolicy.DroneOrbitRadius);
-                drone.View.GlobalPosition = from.MoveToward(goal, Rac1ArsenalHostPolicy.DroneSpeed / 60);
-                Rac1ArsenalViewPose.Orient(drone.View, goal - from);
-            }
-            drone.View.Step();
-        }
+        Rac1World.Weapons.Deployables.Tick();
         foreach (var pair in _rac1Chickens.ToArray())
         {
             var chicken = pair.Value;
@@ -229,30 +128,6 @@ public partial class OBPGame
             chicken.View.Play(1); Rac1ArsenalViewPose.Orient(chicken.View, chicken.Direction);
             chicken.View.Rotation -= new Vector3(0, chicken.Enemy.Node.Root.Rotation.Y, 0); chicken.View.Step();
         }
-    }
-
-    private Vector3 ArsenalEnemyGoal(Rac1HostedEnemy enemy, Vector3 player)
-    {
-        var position = enemy.Node.Root.GlobalPosition;
-        if (_rac1Taunts.GetValueOrDefault(enemy.Node.Source.InstanceIndex) > _rac1WeaponWorldTick) return player;
-        var decoy = _rac1Decoys.Where(item => item.Grounded && item.RetiringTicks < 0 && item.Hits < 3 && position.DistanceSquaredTo(item.View.GlobalPosition) < 900 &&
-            Rac1World.Weapons.Contacts.HasLineOfSight(position + Vector3.Up * .5f, item.View.GlobalPosition + Vector3.Up * .5f))
-            .OrderBy(item => position.DistanceSquaredTo(item.View.GlobalPosition)).FirstOrDefault();
-        return decoy?.View.GlobalPosition ?? player;
-    }
-
-    private bool ArsenalEnemyHitsDecoy(Rac1HostedEnemy enemy)
-    {
-        var decoy = _rac1Decoys.FirstOrDefault(item => item.Grounded && item.RetiringTicks < 0 && item.View.GlobalPosition.DistanceTo(enemy.Body.GlobalPosition) < 1.8f);
-        if (decoy is null) return false;
-        int attacker = enemy.Node.Source.InstanceIndex;
-        // 0x2c4c9c..2c4cc4 filters the same attacker for30 ticks.
-        if (attacker != decoy.LastAttacker || _rac1WeaponWorldTick - decoy.LastHitTick >= 30)
-        {
-            decoy.LastAttacker = attacker; decoy.LastHitTick = _rac1WeaponWorldTick;
-            decoy.Hits++; FusionWeapons.PlayNativeSound(203, 0, decoy.View.GlobalPosition);
-        }
-        return true;
     }
 
     private void StepRac1ArsenalBeams()

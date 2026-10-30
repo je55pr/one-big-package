@@ -417,6 +417,16 @@ public partial class OBPGame : Node3D
             () => _rac1WeaponWorldTick, SpawnEquipmentFlash, ApplyArsenalBlast,
             SpawnRac1WeaponExplosion, (cls, sound, position) => FusionWeapons.PlayNativeSound(cls, sound, position),
             () => _sceneResult!.Root),
+        new Rac1ArsenalDeployablePorts(
+            CreateEquipmentWorldView, weapon => EquipmentMuzzle(weapon),
+            () => EquipmentForward, () => _player, () => _rac1WeaponWorldTick,
+            (origin, range, cone) => FindArsenalTarget(origin, range, cone),
+            node => Rac1World.Weapons.Contacts.IsAimTarget(node),
+            (from, to, radius) => Rac1World.Weapons.Contacts.Contact(from, to, radius),
+            (from, to) => Rac1World.Weapons.Contacts.HasLineOfSight(from, to),
+            id => _rac1Taunts.GetValueOrDefault(id) > _rac1WeaponWorldTick,
+            SpawnEquipmentFlash, ApplyArsenalBlast, SpawnRac1WeaponExplosion,
+            (cls, sound, position) => FusionWeapons.PlayNativeSound(cls, sound, position)),
         new Rac1TaxiHostPorts(
             () => _player is { } player && IsInstanceValid(player) ? new Rac1TaxiPlayerController(player) : null,
             () => _mode == Mode.World && !GetTree().Paused &&
@@ -435,8 +445,9 @@ public partial class OBPGame : Node3D
                 (before, after) => _playerAudio?.NotifyDamage(before, after), feedback => RefreshRac1HudState(feedback),
                 (attacker, tick, amount, flags) => PlayerLife.ApplySourceDamage(attacker, OBP.RAC1.Rac1Authority.Primary.BuildId,
                     PlayerSessionNativeState.AridiaDamageAdapter, PlayerSessionNativeState.AridiaDamageDescriptor, tick, amount, flags)),
-            new(ArsenalEnemyGoal, ArsenalEnemyHitsDecoy,
-                enemy => _rac1Decoys.Any(decoy => decoy.Grounded && decoy.View.GlobalPosition.DistanceTo(enemy.Body.GlobalPosition) < 1.8f),
+            new((enemy, player) => owner.Weapons.Deployables.EnemyGoal(enemy, player),
+                enemy => owner.Weapons.Deployables.EnemyHitsDecoy(enemy),
+                enemy => owner.Weapons.Deployables.IsDecoyNearby(enemy),
                 id => _rac1EquipmentShots.FirstOrDefault(shot => shot.Weapon == Rac1WeaponId.MineGlove && shot.Id == id)?.Position,
                 id => _rac1DoomAgents.FirstOrDefault(bot => bot.Id == id)?.Body.GlobalPosition,
                 SelectRac1CrateReward, owner.Loot.SpawnRac1BoltPickups, (node, ids) => ActorHost.TrackPickups(node, ids),
@@ -1719,24 +1730,25 @@ public partial class OBPGame : Node3D
             GodotWeaponModelFacts.Read(agent.View))))], () => _persistentPlayer.WeaponPreview is not null, SetRac1WeaponPreview));
 
     private GodotRac1ArsenalDiagnosticFixture CreateRac1ArsenalDiagnosticFixture(IDiagnosticWorldObservations worlds, GodotRac1WeaponTargetFixture targets) => new(new(
-        () => new(Rac1World.Weapons.Missiles.SalvoRemaining, Rac1World.Weapons.LastArsenalId, _rac1Drones.Count, Rac1World.Weapons.SuckCannon.ChickenCargoCount,
+        () => new(Rac1World.Weapons.Missiles.SalvoRemaining, Rac1World.Weapons.LastArsenalId, Rac1World.Weapons.Deployables.DroneCount, Rac1World.Weapons.SuckCannon.ChickenCargoCount,
             [.. _rac1ArsenalBeams.Select(beam => beam.Visible)], [.. _rac1ArsenalBeams.Select(beam => beam.MaterialOverride is ShaderMaterial)]),
         () => [.. Rac1World.Weapons.Missiles.Project((weapon, id, view) =>
             new GodotWeaponDiagnosticWitness<Rac1ArsenalMissileDiagnostic>(new(worlds), () => new(
                 new(ObpSourceGame.Rac1, (int)weapon), id, GodotWeaponModelFacts.Read(view))))],
-        () => [.. _rac1Decoys.Select(decoy => new GodotRac1DecoyDiagnosticFixture(new(worlds), () => new(new(ObpSourceGame.Rac1, (int)Rac1WeaponId.DecoyGlove),
-            GodotWeaponModelFacts.Read(decoy.View), decoy.Grounded, decoy.RetiringTicks), () => decoy.GroundTicks = Rac1ArsenalRules.DecoyLifetime - 1))],
+        () => [.. Rac1World.Weapons.Deployables.ProjectDecoys((snapshot, forceExpire) =>
+            new GodotRac1DecoyDiagnosticFixture(new(worlds), () =>
+            {
+                var state = snapshot();
+                return new(new(ObpSourceGame.Rac1, (int)Rac1WeaponId.DecoyGlove),
+                    GodotWeaponModelFacts.Read(state.View), state.Grounded, state.RetiringTicks);
+            }, forceExpire))],
         () => [.. _rac1Chickens.Values.Select(chicken => new Rac1ChickenDiagnostic(targets.Key(chicken.Enemy.Node), Rac1World.Enemies.IsRac1GameplayActive(chicken.Enemy.Node),
             chicken.Enemy.RewardEmitted, GodotWeaponModelFacts.Read(chicken.View)))],
-        () =>
-        {
-            foreach (var drone in _rac1Drones.Where(drone => IsInstanceValid(drone.View))) drone.View.QueueFree();
-            _rac1Drones.Clear();
-        },
+        () => Rac1World.Weapons.Deployables.RetireDrones(),
         () => _rac1WeaponWorldTick = 0,
         (actor, player) =>
         {
-            targets.Read(actor); return GodotMovementPlayer.Copy(ArsenalEnemyGoal(
+            targets.Read(actor); return GodotMovementPlayer.Copy(Rac1World.Weapons.Deployables.EnemyGoal(
             Rac1World.Enemies.Roster.TryGetValue(actor.Target.InstanceIndex, out var enemy) ? enemy : throw new DiagnosticUnavailableException("The arsenal fixture enemy is unavailable."),
             GodotMovementPlayer.Engine(player)));
         }));

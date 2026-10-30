@@ -170,6 +170,66 @@ public sealed class Rac1WeaponWorldOwnershipTests
     }
 
     [Fact]
+    public void ArsenalDeployableModelsAndEnemyAiBelongToTheWorldLease()
+    {
+        var compilation = HostOwnershipAudit.Host.Value;
+        var root = compilation.GetTypeByMetadataName("OBP.Game.OBPGame")!;
+        foreach (string member in new[]
+        {
+            "ArsenalDecoy", "ArsenalDrone", "_rac1Decoys", "_rac1Drones",
+            "ArsenalEnemyGoal", "ArsenalEnemyHitsDecoy"
+        })
+            Assert.Empty(root.GetMembers(member));
+
+        var owner = compilation.GetTypeByMetadataName("OBP.Game.Rac1WeaponHost")!;
+        Assert.Equal("Rac1ArsenalDeployableHost",
+            Assert.Single(owner.GetMembers("Deployables").OfType<IPropertySymbol>()).Type.Name);
+
+        string host = Script("Rac1ArsenalDeployableHost.cs");
+        string weapon = Script("Rac1WeaponHost.cs");
+        string arsenal = Script("OBPGame.Rac1Arsenal.cs");
+        string rootComposition = Script("OBPGame.cs");
+        Assert.Contains("Deployables = new(deployables, NextArsenalId)", weapon, StringComparison.Ordinal);
+        Assert.Contains("Deployables.Reset()", weapon, StringComparison.Ordinal);
+        Assert.Contains("Deployables.Dispose()", weapon, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Deployables.Tick()", arsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Deployables.FireDrones()", arsenal, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Deployables.FireDecoy()", arsenal, StringComparison.Ordinal);
+        Assert.Contains("owner.Weapons.Deployables.EnemyGoal(enemy, player)", rootComposition, StringComparison.Ordinal);
+        Assert.Contains("owner.Weapons.Deployables.EnemyHitsDecoy(enemy)", rootComposition, StringComparison.Ordinal);
+        Assert.Contains("owner.Weapons.Deployables.IsDecoyNearby(enemy)", rootComposition, StringComparison.Ordinal);
+        Assert.Contains("new Rac1ArsenalDeployablePorts(", rootComposition, StringComparison.Ordinal);
+        Assert.DoesNotContain("OBPGame", host, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ArsenalDeployablesPreserveNativeMovementAdmissionAndLiveDiagnostics()
+    {
+        string host = Script("Rac1ArsenalDeployableHost.cs");
+        string root = Script("OBPGame.cs");
+        Assert.Contains("Rac1ArsenalRules.DecoyGrowthPerTick", host, StringComparison.Ordinal);
+        Assert.Contains("Rac1ArsenalRules.DecoyLifetime", host, StringComparison.Ordinal);
+        Assert.Contains("Rac1ArsenalRules.DroneCapacity", host, StringComparison.Ordinal);
+        Assert.Contains("Rac1ArsenalRules.DroneDamage", host, StringComparison.Ordinal);
+        Assert.Contains("ports.WorldTick() - decoy.LastHitTick >= 30", host, StringComparison.Ordinal);
+        Assert.Contains("ports.IsTaunted(enemy.Node.Source.InstanceIndex)", host, StringComparison.Ordinal);
+        Assert.Contains("ports.HasLineOfSight(", host, StringComparison.Ordinal);
+        Assert.Contains("ports.Contact(from, next, .23f)", host, StringComparison.Ordinal);
+        Assert.Contains("ports.Blast(Rac1WeaponId.DroneDevice", host, StringComparison.Ordinal);
+        Assert.Contains("ports.Explosion(Rac1WeaponId.DroneDevice", host, StringComparison.Ordinal);
+        Assert.Contains("ports.Sound(203, 0, decoy.View.GlobalPosition)", host, StringComparison.Ordinal);
+        Assert.Contains("Func<(Rac1EquipmentView View, bool Grounded, int RetiringTicks)>", host, StringComparison.Ordinal);
+        Assert.Contains("() => (decoy.View, decoy.Grounded, decoy.RetiringTicks)", host, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Deployables.ProjectDecoys((snapshot, forceExpire)", root, StringComparison.Ordinal);
+        Assert.Contains("var state = snapshot()", root, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Deployables.RetireDrones()", root, StringComparison.Ordinal);
+        Assert.Contains("void RetireDrones()", host, StringComparison.Ordinal);
+        Assert.Contains("_decoys.Clear()", Method("Rac1ArsenalDeployableHost.cs", "Reset"), StringComparison.Ordinal);
+        Assert.Contains("RetireDrones()", Method("Rac1ArsenalDeployableHost.cs", "Reset"), StringComparison.Ordinal);
+        Assert.Contains("Reset()", Method("Rac1ArsenalDeployableHost.cs", "Dispose"), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ArsenalMissileRuntimeAndRynoSessionBelongToWorldLease()
     {
         var compilation = HostOwnershipAudit.Host.Value;
@@ -197,7 +257,8 @@ public sealed class Rac1WeaponWorldOwnershipTests
         Assert.Contains("Missiles.Reset()", world, StringComparison.Ordinal);
         Assert.Contains("Missiles.Dispose()", world, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Weapons.Missiles.Tick()", rootArsenal, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.NextArsenalId()", rootArsenal, StringComparison.Ordinal);
+        Assert.Contains("nextId()", host, StringComparison.Ordinal);
+        Assert.Contains("nextId()", Script("Rac1ArsenalDeployableHost.cs"), StringComparison.Ordinal);
         Assert.Contains("Rac1ArsenalViewPose.Orient(", rootArsenal, StringComparison.Ordinal);
         Assert.Contains("view.Rotation = new(0, MathF.Atan2(direction.Z, -direction.X)",
             Script("Rac1ArsenalViewPose.cs"), StringComparison.Ordinal);
