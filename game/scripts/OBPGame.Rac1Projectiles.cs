@@ -21,7 +21,7 @@ public partial class OBPGame
     private void StepRac1BombWeaponPhysics()
     {
         if (_equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is null || Rac1World.Context.BombGlove is null || _player is null || !PlayerLife.Alive) return;
-        bool fire = Rac1World.Context.BombFireRequested && !_rac1DetectorEquipped &&
+        bool fire = Rac1World.Context.BombFireRequested && !Rac1World.Weapons.Detector.Equipped &&
             !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active;
         Rac1World.Context.BombFireRequested = false;
         var probe = Rac1World.Context.BombGlove.Step(fire);

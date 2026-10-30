@@ -44,7 +44,6 @@ public partial class OBPGame
     private Rac1PickupRandom? _rac1TeslaEffectRandom;
     private StandardMaterial3D? _rac1PlainBeamMaterial;
     private readonly Dictionary<int, ulong> _rac1Taunts = [];
-    private Camera3D? _rac1MissileCamera;
     private bool _rac1ArsenalHeld;
     private Rac1RynoSalvoSession _rac1RynoSalvo = new();
     private int _rac1WalloperAge;
@@ -55,7 +54,7 @@ public partial class OBPGame
 
     private void ResetRac1Arsenal()
     {
-        EndRac1GuidedCamera();
+        Rac1World.Weapons.GuidedCamera.End();
         foreach (var node in _rac1ArsenalMissiles.Select(item => (Node)item.View)
             .Concat(_rac1Decoys.Select(item => (Node)item.View)).Concat(_rac1Drones.Select(item => (Node)item.View))
             .Concat(_rac1Chickens.Values.Select(item => (Node)item.View)).Concat(_rac1ArsenalBeams))
@@ -108,7 +107,7 @@ public partial class OBPGame
         {
             case Rac1WeaponId.Devastator: SpawnArsenalMissile(shot.Weapon, FindArsenalTarget(EquipmentMuzzle(shot.Weapon), 70, .85f)); break;
             case Rac1WeaponId.VisibombGun:
-                SpawnArsenalMissile(shot.Weapon, null); BeginRac1GuidedCamera(); break;
+                SpawnArsenalMissile(shot.Weapon, null); Rac1World.Weapons.GuidedCamera.Begin(_sceneResult!.Root, _player!); break;
             case Rac1WeaponId.Ryno:
                 _rac1RynoSalvo.Begin(); _rac1RynoTargets.Clear(); break;
             case Rac1WeaponId.DroneDevice:
@@ -183,18 +182,13 @@ public partial class OBPGame
                 SpawnRac1WeaponExplosion(missile.Weapon, position);
                 FusionWeapons.PlayNativeSound(guided ? 172 : missile.Weapon == Rac1WeaponId.Ryno ? 457 : 153, 0, position);
                 missile.View.QueueFree(); _rac1ArsenalMissiles.Remove(missile);
-                if (guided) EndRac1GuidedCamera();
+                if (guided) Rac1World.Weapons.GuidedCamera.End();
                 continue;
             }
             missile.View.GlobalPosition = to; OrientArsenalView(missile.View, Rac1LootPresentation.FromEffectNative(missile.Motion.Direction));
             missile.View.Step();
             if (_rac1WeaponWorldTick % 3 == 0) SpawnEquipmentFlash(from, 25, new(.7f, .65f, .6f, .45f), .3f, 18);
-            if (guided && _rac1MissileCamera is not null)
-            {
-                var forward = Rac1LootPresentation.FromEffectNative(missile.Motion.Direction);
-                _rac1MissileCamera.GlobalPosition = to - forward * .7f + Vector3.Up * .15f;
-                _rac1MissileCamera.LookAt(to + forward * 4);
-            }
+            if (guided) Rac1World.Weapons.GuidedCamera.Step(to, Rac1LootPresentation.FromEffectNative(missile.Motion.Direction));
         }
         StepRac1ArsenalDeployables(); StepRac1ArsenalBeams(); StepRac1Walloper();
     }
@@ -215,22 +209,6 @@ public partial class OBPGame
             ApplyRac1AdditionalDamage(node, Rac1WeaponProfiles.DirectDamage(weapon,
                 new(node.Source.NativeClassId, node.Source.InstanceIndex), damage, flags));
         }
-    }
-
-    private void BeginRac1GuidedCamera()
-    {
-        EndRac1GuidedCamera();
-        _rac1MissileCamera = new Camera3D { Name = "VisibombCamera", Fov = 65, Near = .05f };
-        _sceneResult!.Root.AddChild(_rac1MissileCamera); _rac1MissileCamera.MakeCurrent();
-        _player!.Rac1RemoteControlActive = true;
-    }
-
-    private void EndRac1GuidedCamera()
-    {
-        if (_rac1MissileCamera is not null && IsInstanceValid(_rac1MissileCamera)) _rac1MissileCamera.QueueFree();
-        _rac1MissileCamera = null;
-        if (_player is not null && IsInstanceValid(_player))
-        { _player.Rac1RemoteControlActive = false; if (IsInstanceValid(_player.Camera)) _player.Camera.MakeCurrent(); }
     }
 
     private void StepRac1ArsenalDeployables()

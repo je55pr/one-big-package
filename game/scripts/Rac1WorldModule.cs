@@ -27,13 +27,14 @@ internal sealed class Rac1WorldModule : IDisposable
     internal Rac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene, Rac1PickupRandom random, Rac1LootPorts loot,
         Rac1WorldResetPorts reset, Rac1WorldActorPorts actors, Rac1WorldTickPorts ticks,
         Rac1PlayerGameplayPorts player, Rac1WorldContactPorts contacts, Rac1AuthoredMechanismPorts authored, Rac1GameplayHudPorts hud,
-        Rac1TaxiHostPorts taxis, Func<Rac1WorldModule, Rac1EnemyHost> enemies)
+        Rac1MetalDetectorPorts detector, Rac1TaxiHostPorts taxis, Func<Rac1WorldModule, Rac1EnemyHost> enemies)
     {
         _world = world; _scene = scene; _reset = reset; _actors = actors; _ticks = ticks;
         _playerPorts = player; _contacts = contacts; _binding = new(player);
         Context = new(world.LevelId, random);
         Loot = new(scene, Context, Presentation, loot);
         Mechanisms = new(world, scene, authored);
+        Weapons = new(detector);
         Taxis = new(taxis);
         Enemies = enemies(this);
         Hud = new(world, Context, Presentation, hud, () => _disposed);
@@ -46,6 +47,7 @@ internal sealed class Rac1WorldModule : IDisposable
     internal Rac1GameplayHudPresenter Hud { get; }
     internal Rac1EnemyHost Enemies { get; }
     internal Rac1MetropolisTaxiHost Taxis { get; }
+    internal Rac1WeaponHost Weapons { get; }
 
     internal void Configure()
     {
@@ -72,13 +74,13 @@ internal sealed class Rac1WorldModule : IDisposable
     {
         // Release the taxi's captured player before its player/world bindings retire.
         Taxis.Reset();
+        Weapons.ResetWorld();
         _reset.Player();
         Context.EquipmentUsePressed = false;
         _reset.Wheel();
         _reset.Explosives();
         _reset.Checkpoints();
         _reset.Missions();
-        _reset.MetalDetector();
         _reset.Wrench();
         _reset.Retry();
         if (retiring) Enemies.Dispose(); else Enemies.ResetRac1Enemies();
@@ -136,7 +138,7 @@ internal sealed class Rac1WorldModule : IDisposable
         Mechanisms.Tick(delta, Rac1AuthoredTickPhase.Visual);
         _ticks.Explosives(delta);
         _ticks.Checkpoints();
-        _ticks.MetalDetector(delta);
+        Weapons.Tick(delta);
         Loot.TickRac1Pickups(delta);
         Loot.TickRac1GoldBolts();
         _ticks.Missions(delta);
@@ -172,6 +174,7 @@ internal sealed class Rac1WorldModule : IDisposable
             finally
             {
                 Taxis.Dispose();
+                Weapons.Dispose();
                 try { Loot.Dispose(); }
                 finally { Presentation.Dispose(); }
                 Context.BombGlove = null;
@@ -223,7 +226,7 @@ internal sealed class Rac1WorldModule : IDisposable
         _actors.Explosives(world, result);
         _actors.Checkpoints(world);
         _actors.Missions(world, result);
-        _actors.MetalDetector(world);
+        Weapons.Configure(world);
         Loot.ConfigureRac1PlacedBolts(world, result);
         Loot.ConfigureRac1GoldBolts(world, result);
         Mechanisms.Configure();

@@ -149,9 +149,7 @@ public partial class OBPGame
     {
         if (_world is { Game.SourceGame: ObpSourceGame.Rac1 } world)
         {
-            _rac1DetectorEquipped = false;
-            _rac1DetectorNearest = null;
-            ConfigureRac1MetalDetector(world);
+            Rac1World.Weapons.Detector.Refresh(world);
         }
     }
     private Rac1WeaponInventory? _rac1AdditionalWeaponsInventory;
@@ -185,7 +183,7 @@ public partial class OBPGame
     {
         if (MovementReproduction.IsLoading || _equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is null || _player is null || _rac1AdditionalWeapons is null) return;
         bool held = PlayerLife.Alive && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active &&
-            _rac1AdditionalFireRequested && !_rac1DetectorEquipped;
+            _rac1AdditionalFireRequested && !Rac1World.Weapons.Detector.Equipped;
         _rac1AdditionalFireRequested = false;
         _rac1ArsenalHeld = held;
         if (_rac1EquipmentUseWeapon != _rac1Weapons.Equipped)

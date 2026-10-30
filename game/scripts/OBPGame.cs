@@ -298,18 +298,18 @@ public partial class OBPGame : Node3D
             },
             Wheel: () => { _lastQuickSelectTap = 0; _previousSelectedWeapon = null; },
             Explosives: ResetRac1ExplosiveCrates, Checkpoints: ResetRac1CheckpointTriggers,
-            Missions: ResetRac1Missions, MetalDetector: ResetRac1MetalDetector, Wrench: ResetRac1WrenchHost,
+            Missions: ResetRac1Missions, Wrench: ResetRac1WrenchHost,
             Retry: ResetRac1CombatRetry, Pickups: () => Rac1World.Loot.ResetRac1PickupPresentation(),
             GoldBolts: () => Rac1World.Loot.ResetRac1GoldBolts(), Breakables: ResetRac1NovalisBreakables,
             AdditionalWeapons: ResetRac1AdditionalWeapons,
 
             BombPresentation: ResetRac1BombPresentation),
         new Rac1WorldActorPorts(world => Rac1World.Loot.ConfigureRac1PickupPresentation(world), node => Rac1World.Loot.AddRac1CrateCollider(node),
-            ConfigureRac1ExplosiveCrates, ConfigureRac1CheckpointTriggers, ConfigureRac1Missions, ConfigureRac1MetalDetector,
+            ConfigureRac1ExplosiveCrates, ConfigureRac1CheckpointTriggers, ConfigureRac1Missions,
             (world, result) => Rac1World.Loot.ConfigureRac1PlacedBolts(world, result),
             (world, result) => Rac1World.Loot.ConfigureRac1GoldBolts(world, result), ConfigureRac1NovalisBreakables),
         new Rac1WorldTickPorts(() => MovementReproduction.IsLoading,
-            TickRac1Swing, TickRac1ExplosiveCrates, TickRac1CheckpointTriggers, TickRac1MetalDetector,
+            TickRac1Swing, TickRac1ExplosiveCrates, TickRac1CheckpointTriggers,
             delta => Rac1World.Loot.TickRac1Pickups(delta), () => Rac1World.Loot.TickRac1GoldBolts(), TickRac1Missions),
 
         new Rac1PlayerGameplayPorts(() => OrdinaryPlayerSession, () => _playerNative is not null, () => PlayerLife.Alive,
@@ -340,7 +340,19 @@ public partial class OBPGame : Node3D
             status => Rac1World.Context.CombatStatus = status),
         new Rac1GameplayHudPorts(_hudState, () => OrdinaryPlayerSession, () => _playerSession is not null,
             PlayerLife.PublishHud, FusionWeapons.Hud, () => _rac1Nanotech, () => _rac1Weapons, () => _rac1BoltWallet,
-            () => _rac1AdditionalWeapons?.Cargo.Count ?? 0, () => _player, MetalDetectorHudText),
+            () => _rac1AdditionalWeapons?.Cargo.Count ?? 0, () => _player, () => Rac1World.Weapons.Detector.HudText()),
+        new Rac1MetalDetectorPorts(
+            () => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path,
+            () => _rac1Campaign.Session.BuriedBolts, () => _persistentPlayer.WeaponPreview is not null,
+            () => OrdinaryPlayerSession,
+            () => ReadPlayerEquipment().Single(entry => entry.Definition.Id == "rac1/item/27").Reason
+                ?? "The common Metal Detector action is unavailable.",
+            () => _rac1Weapons.OwnsNativeItem(Rac1MetalDetectorSession.NativeGadgetItem),
+            () => _player, () => _rac1Nanotech.Probe().IsDead, () => EquipmentForward,
+            MovementReproduction.Report, status => Rac1World.Context.CombatStatus = status, () => RefreshRac1HudState(),
+            (position, bursts) => Rac1World.Loot.SpawnRac1BoltPickups(position,
+                Enumerable.Range(0, bursts).SelectMany(_ => Rac1World.Context.BoltPickups.Emit(Rac1MetalDetectorSession.BoltsPerBurst)).ToArray()),
+            PersistRac1CampaignState),
         new Rac1TaxiHostPorts(
             () => _player is { } player && IsInstanceValid(player) ? new Rac1TaxiPlayerController(player) : null,
             () => _mode == Mode.World && !GetTree().Paused &&
@@ -376,7 +388,7 @@ public partial class OBPGame : Node3D
                 id => _rac1Chickens.ContainsKey(id)),
             new(() => ReferenceEquals(_worldScenes?.Current?.Resources.Rac1Gameplay, owner)),
             new(GetViewport, () => _activeCamera, camera => _activeCamera = camera, () => _camera,
-                () => _rac1MissileCamera, _rac1WrenchHitTargets.Contains,
+                () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.GuidedCamera.Camera, _rac1WrenchHitTargets.Contains,
                 key => { _rac1WrenchHitTargets.Add(key); },
                 (nativeClass, name) => owner.Loot.CreateRac1EffectNode(nativeClass, name),
                 (node, debris) => owner.Loot.AddDebris(node, debris), Rac1LootPresentation.FromEffectOrientation)));
@@ -845,7 +857,7 @@ public partial class OBPGame : Node3D
             return;
         }
 
-        if (key.Keycode == Key.M && TryToggleRac1MetalDetector())
+        if (key.Keycode == Key.M && Rac1World.Weapons.Detector.Toggle())
         {
             GetViewport().SetInputAsHandled();
         }
@@ -1631,8 +1643,8 @@ public partial class OBPGame : Node3D
     private GodotRac1AdditionalWeaponDiagnosticFixture CreateRac1AdditionalWeaponDiagnosticFixture(IDiagnosticWorldObservations worlds) => new(new(
         () => new(_persistentPlayer.WeaponPreview is not null, _rac1Campaign.Session.Weapons.Owns(Rac1WeaponId.Blaster), _rac1AdditionalWeapons?.Cargo.Count ?? 0,
             _rac1EquipmentUseTicks, _rac1WeaponShotsFired, _rac1PyroEmitting, _equipmentPresentation.WeaponAudio.Loop, _hudState.Current.CurrentWeapon,
-            GodotMovementPlayer.Copy(EquipmentForward), _player?.Rac1RemoteControlActive == true, _rac1MissileCamera is not null,
-            _rac1MissileCamera?.Current == true, _player?.Camera.Current == true, _equipmentPresentation.Explosions.RenderedCount, _equipmentPresentation.Explosions.DrawCalls),
+            GodotMovementPlayer.Copy(EquipmentForward), _player?.Rac1RemoteControlActive == true, Rac1World.Weapons.GuidedCamera.Camera is not null,
+            Rac1World.Weapons.GuidedCamera.Camera?.Current == true, _player?.Camera.Current == true, _equipmentPresentation.Explosions.RenderedCount, _equipmentPresentation.Explosions.DrawCalls),
         weapon => _rac1EquipmentViews.GetValueOrDefault(weapon), weapon => EquipmentMuzzle(weapon), item => _rac1Weapons.GetAmmo(item),
         (nativeClass, sound) => Rac1World.Loot.PickupAssets?.Sounds?.TryGetValue((nativeClass, sound), out var voice) == true && voice.Clip.InterleavedPcm16.Any(sample => sample != 0),
         () => [.. _equipmentPresentation.WeaponAudio.Events.Select(cue => new Rac1WeaponAudioDiagnostic(ObpSourceGame.Rac1, cue.Tick, cue.Class, cue.Sound, cue.Loop))],
@@ -1783,7 +1795,7 @@ public partial class OBPGame : Node3D
             Player = () => _player,
             ActiveCamera = () => _activeCamera,
             QueenCamera = () => encounter()?.QueenCamera,
-            GuidedCamera = () => _rac1MissileCamera,
+            GuidedCamera = () => Rac1World.Weapons.GuidedCamera.Camera,
             DamageSequence = () => Rac1World.Context.DamageTransport.Sequence,
             ForgetWrenchContact = key => _rac1WrenchHitTargets.Remove(key),
             ResolveWrench = (previousHand, previousTip, hand, tip, radius, result) =>
@@ -1796,8 +1808,8 @@ public partial class OBPGame : Node3D
             TickLinked = () => encounter()?.TickRac1QueenLinkedChildren(),
             SynchronizeLinked = () => encounter()?.SynchronizeRac1QueenLinkedParents(),
             ObserveFrogEvent = (state, sequence, completed) => encounter()?.ObserveRac1QueenFrogEvent(state, sequence, completed) ?? 0,
-            BeginGuided = BeginRac1GuidedCamera,
-            EndGuided = EndRac1GuidedCamera,
+            BeginGuided = () => Rac1World.Weapons.GuidedCamera.Begin(_sceneResult!.Root, _player!),
+            EndGuided = () => Rac1World.Weapons.GuidedCamera.End(),
             EndQueen = () => encounter()?.EndRac1QueenScriptedCamera(),
         };
     }
@@ -1980,9 +1992,9 @@ public partial class OBPGame : Node3D
         var equipment = new DiagnosticPlayerEquipmentFixture(ReadPlayerEquipment, SelectPlayerEquipment, AssignPlayerQuickSelect,
             UnequipPlayerEquipment, SetPlayerGadgetEnabled, () => _playerNative?.GadgetEnabled(OBP.RAC1.Player.Rac1TraversalEquipmentId.HeliPack) == true);
         var ui = new DiagnosticPlayerInterfaceFixture(() => new(_playerHud?.Visible == true, _hudState.Current.Health, _hudState.Current.Bolts,
-            _quickSelect is null ? [] : [.. _quickSelect.Entries.Select(entry => entry.Weapon)], _rac1DetectorEquipped),
+            _quickSelect is null ? [] : [.. _quickSelect.Entries.Select(entry => entry.Weapon)], Rac1World.Weapons.Detector.Equipped),
             () => { using var press = new InputEventAction { Action = ControllerBindings.QuickSelect, Pressed = true }; return TryOpenWeaponQuickSelect(press); },
-            () => CloseWeaponQuickSelect(), TryToggleRac1MetalDetector);
+            () => CloseWeaponQuickSelect(), () => Rac1World.Weapons.Detector.Toggle());
         var profile = new DiagnosticSharedProfileFixture(() => new(OrdinaryPlayerSession, SharedProfilePath is not null, _profileWriteBlocked,
             FusionWeapons.Sources.Preparation is not null, _profileDocument?.Destination, _currentDestinationId, _profileDocument?.Sources.Count ?? 0), () => _playerNative);
         var samples = new GodotCapabilitySamples(new(() => _player, () => _avatarPresentation.Clock, () => PlayerLife.ServiceTick,
