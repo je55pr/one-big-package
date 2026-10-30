@@ -8,7 +8,7 @@
 
 ## Architecture
 - `OBP.IO`: bounded/random-access IO and authority verification.
-- `OBP.PS2`: shared PS2 formats/codecs; `src/OBP.PS2/Presentation/` contains the narrow PS2-material to neutral-runtime adapter. Keep runtime dependencies confined to that folder.
+- `OBP.PS2`: shared PS2 formats/codecs; `src/OBP.PS2/Presentation/` contains narrow PS2-to-neutral-runtime adapters for materials and supported skeletal assets. Keep runtime dependencies confined to that folder; native formats, source selection and game-specific policy remain in their owning layers.
 - `OBP.RAC1/2/3`: game-specific formats, evidence and native behaviour.
 - `OBP.Runtime`: engine-neutral facts, identities and ports; no source-native formulas or orchestration policy.
 - `OBP.Fusion`: engine-neutral, source-qualified gameplay orchestration and player-session policy; never native decoders/controllers.
