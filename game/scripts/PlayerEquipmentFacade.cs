@@ -169,6 +169,22 @@ internal sealed class PlayerEquipmentFacade(PlayerEquipmentPorts ports) : IDispo
         return Array.AsReadOnly(order.ToArray());
     }
 
+    /// <summary>
+    /// Choose the next source-qualified wheel item without requiring any owned
+    /// weapons. If a source/loadout change removed the current selection, start
+    /// from the corresponding end of the remaining order.
+    /// </summary>
+    internal static SourceWeaponKey? CycleTarget(
+        IReadOnlyList<SourceWeaponKey> order, SourceWeaponKey selected, int direction)
+    {
+        if (direction == 0 || order.Count == 0) return null;
+        int current = -1;
+        for (int i = 0; i < order.Count; i++)
+            if (order[i] == selected) { current = i; break; }
+        if (current < 0) return order[direction > 0 ? 0 : order.Count - 1];
+        return order[(current + (direction > 0 ? 1 : order.Count - 1)) % order.Count];
+    }
+
     internal IReadOnlyList<SourceWeaponKey?> QuickSelectOrder() => Ports.Native()?.Assignments.WithOverflow(Read()
         .Where(entry => entry.Definition.Category == EquipmentCategory.Weapon && entry.Definition.Implementation == EquipmentImplementation.Implemented && entry.State.Owned)
         .Select(entry => entry.Definition.Item!.Value).Where(key => key != PlayerEquipmentRegistrations.Wrench)) ?? ReadQuickSlots();

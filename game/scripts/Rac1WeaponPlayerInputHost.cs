@@ -130,9 +130,8 @@ internal sealed class Rac1WeaponPlayerInputHost(
         var fusion = selection.Fusion();
         if (fusion.Session is not null)
         {
-            var order = session.Equipment.WeaponOrder();
-            int current = order.ToList().IndexOf(state.CurrentWeapon());
-            fusion.Select(order[(current + Math.Sign(direction) + order.Count) % order.Count]);
+            if (PlayerEquipmentFacade.CycleTarget(session.Equipment.WeaponOrder(), state.CurrentWeapon(), direction) is { } next)
+                fusion.Select(next);
             return;
         }
         var weapons = new[] { Rac1WeaponId.FirstRanged }
