@@ -111,7 +111,8 @@ internal sealed class Rac1MorphHost(Rac1MorphPorts ports, Rac1ArsenalBeamPresent
                 chicken.Enemy.NeedsGroundPlacement = false;
             }
             chicken.Age++; var body = chicken.Enemy.Body;
-            if (chicken.Age >= 0 && (uint)chicken.Age % 90u == 1u)
+            _ = Math.DivRem(chicken.Age, 90, out int directionPhase);
+            if (chicken.Age >= 0 && directionPhase == 1)
                 chicken.Direction = ports.Forward().Rotated(Vector3.Up, ports.SignedRandom(0, MathF.PI));
             bool supported = ports.Ground(body.GlobalPosition + chicken.Direction * .5f, .4f, .8f) is not null;
             body.Velocity = (supported ? chicken.Direction : Vector3.Zero) * .8f + Vector3.Down * 2;

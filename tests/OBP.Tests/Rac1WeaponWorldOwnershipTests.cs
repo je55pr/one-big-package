@@ -263,7 +263,8 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
         Assert.Contains("view.Scale = Vector3.One / target.Root.Scale", host, StringComparison.Ordinal);
         Assert.Contains("collider.Shape = new CapsuleShape3D { Radius = .24f, Height = .65f }", host, StringComparison.Ordinal);
         Assert.Contains("collider.Position = Vector3.Up * .325f", host, StringComparison.Ordinal);
-        Assert.Contains("chicken.Age >= 0 && (uint)chicken.Age % 90u == 1u", host, StringComparison.Ordinal);
+        Assert.Contains("Math.DivRem(chicken.Age, 90, out int directionPhase)", host, StringComparison.Ordinal);
+        Assert.Contains("chicken.Age >= 0 && directionPhase == 1", host, StringComparison.Ordinal);
         Assert.Contains("ports.SignedRandom(0, MathF.PI)", host, StringComparison.Ordinal);
         Assert.Contains("ports.Ground(body.GlobalPosition + chicken.Direction * .5f, .4f, .8f)", host, StringComparison.Ordinal);
         Assert.Contains("body.MoveAndSlide()", host, StringComparison.Ordinal);
