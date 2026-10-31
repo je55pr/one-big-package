@@ -26,7 +26,7 @@ internal sealed class Rac1WorldModule : IDisposable
 
     internal Rac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene, Rac1PickupRandom random, Rac1LootPorts loot,
         Rac1BreakablePorts breakables, Rac1WorldResetPorts reset, Rac1WorldActorPorts actors, Rac1WorldTickPorts ticks,
-        Rac1PlayerGameplayPorts player, Rac1WorldContactPorts contacts, Rac1AuthoredMechanismPorts authored, Rac1GameplayHudPorts hud,
+        Rac1MissionWorldPorts missionPorts, Rac1PlayerGameplayPorts player, Rac1WorldContactPorts contacts, Rac1AuthoredMechanismPorts authored, Rac1GameplayHudPorts hud,
         Rac1MetalDetectorPorts detector, Rac1WeaponTargetPorts weaponTargets,
         Rac1WeaponContactPhysicsPorts contactPhysics, Rac1SuckCannonPorts suckCannon, Rac1ArsenalMissilePorts missiles, Rac1ArsenalDeployablePorts deployables, Rac1WalloperPorts walloper, Rac1TaunterPorts taunter, Rac1TeslaPorts tesla, Rac1MorphPorts morph, Rac1ArsenalBeamPorts beamPresentation, Rac1ArsenalUsePorts arsenal, Rac1EquipmentProjectilePorts projectiles, Rac1PyrocitorFlamePorts flames,
         Rac1WrenchFramePorts wrenchFrame, Rac1WrenchContactPorts wrenchContact, Rac1WrenchDamagePorts wrenchDamage, Rac1BombProjectilePorts bomb, Rac1TaxiHostPorts taxis, Func<Rac1WorldModule, Rac1EnemyHost> enemies, Rac1WeaponEffectsPorts weaponEffects, Rac1WeaponUsePorts weaponUse)
@@ -34,6 +34,7 @@ internal sealed class Rac1WorldModule : IDisposable
         _world = world; _scene = scene; _reset = reset; _actors = actors; _ticks = ticks;
         _playerPorts = player; _contacts = contacts; _binding = new(player);
         Context = new(world.LevelId, random);
+        Missions = new(world, scene, Context, missionPorts);
         Loot = new(scene, Context, Presentation, loot);
         Mechanisms = new(world, scene, authored);
         Weapons = new(scene.Root, detector,
@@ -65,6 +66,7 @@ internal sealed class Rac1WorldModule : IDisposable
     internal Rac1GameplayHudPresenter Hud { get; }
     internal Rac1EnemyHost Enemies { get; }
     internal Rac1CheckpointHost Checkpoints { get; }
+    internal Rac1MissionWorldHost Missions { get; }
     internal Rac1MetropolisTaxiHost Taxis { get; }
     internal Rac1WeaponHost Weapons { get; }
     internal Rac1WrenchHost Wrench { get; }
@@ -101,7 +103,7 @@ internal sealed class Rac1WorldModule : IDisposable
         _reset.Wheel();
         Breakables.Reset();
         Checkpoints.Reset();
-        _reset.Missions();
+        Missions.Reset();
         Wrench.Reset();
         _reset.Retry();
         if (retiring)
@@ -166,7 +168,7 @@ internal sealed class Rac1WorldModule : IDisposable
         Weapons.Tick(delta);
         Loot.TickRac1Pickups(delta);
         Loot.TickRac1GoldBolts();
-        _ticks.Missions(delta);
+        Missions.Tick(delta);
     }
 
     internal void PhysicsStep(bool suspended, bool waitingForReplay) =>
@@ -229,7 +231,8 @@ internal sealed class Rac1WorldModule : IDisposable
                                 try { Presentation.Dispose(); }
                                 finally
                                 {
-                                    Checkpoints.Dispose();
+                                    try { Missions.Dispose(); }
+                                    finally { Checkpoints.Dispose(); }
                                     Context.BombGlove = null;
                                     Context.BombFireRequested = false;
                                     Context.CombatStatus = "off";
@@ -283,7 +286,7 @@ internal sealed class Rac1WorldModule : IDisposable
 
         Breakables.ConfigureExplosives(world, result);
         _actors.Checkpoints(Checkpoints);
-        _actors.Missions(world, result);
+        Missions.Configure();
         Weapons.Configure(world);
         Loot.ConfigureRac1PlacedBolts(world, result);
         Loot.ConfigureRac1GoldBolts(world, result);

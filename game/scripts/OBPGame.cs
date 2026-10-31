@@ -330,19 +330,29 @@ public partial class OBPGame : Node3D
                 else _playerNative.EndWorld();
             },
             Wheel: () => { _lastQuickSelectTap = 0; _previousSelectedWeapon = null; },
-            Missions: ResetRac1Missions,
             Retry: ResetRac1CombatRetry, Pickups: () => Rac1World.Loot.ResetRac1PickupPresentation(),
             GoldBolts: () => Rac1World.Loot.ResetRac1GoldBolts(),
             AdditionalWeapons: () => Rac1World.UsePresentation.ResetAdditional(),
 
             BombPresentation: () => Rac1WeaponEffectsHost.ResetOrFallback(_worldScenes?.Current?.Resources.Rac1Gameplay, _equipmentPresentation)),
         new Rac1WorldActorPorts(world => Rac1World.Loot.ConfigureRac1PickupPresentation(world), node => Rac1World.Loot.AddRac1CrateCollider(node),
-            checkpoints => checkpoints.Configure(() => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path), ConfigureRac1Missions,
+            checkpoints => checkpoints.Configure(() => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path),
             (world, result) => Rac1World.Loot.ConfigureRac1PlacedBolts(world, result),
             (world, result) => Rac1World.Loot.ConfigureRac1GoldBolts(world, result)),
         new Rac1WorldTickPorts(() => MovementReproduction.IsLoading,
             checkpoints => checkpoints.Tick(_player, _rac1Campaign.Session.LevelCheckpoint),
-            delta => Rac1World.Loot.TickRac1Pickups(delta), () => Rac1World.Loot.TickRac1GoldBolts(), TickRac1Missions),
+            delta => Rac1World.Loot.TickRac1Pickups(delta), () => Rac1World.Loot.TickRac1GoldBolts()),
+        new Rac1MissionWorldPorts(
+            SourcePath: () => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path,
+            Campaign: () => _rac1Campaign, Wallet: () => _rac1BoltWallet,
+            Health: () => _rac1Nanotech, Player: () => _player,
+            QuickSelectOpen: () => QuickSelectOpen,
+            Paused: () => GetTree().Paused, Pause: paused => GetTree().Paused = paused,
+            AttachPrompt: prompt => _ui.AddChild(prompt),
+            AttachScene: sceneUi => AddChild(sceneUi),
+            Persist: PersistRac1CampaignState, RefreshHud: () => RefreshRac1HudState(),
+            Navigate: destination => OnDestinationChosen(destination),
+            WorldStillCurrent: () => ReferenceEquals(_world, world)),
 
         new Rac1PlayerGameplayPorts(() => OrdinaryPlayerSession, () => _playerNative is not null, () => PlayerLife.Alive,
             () => _rac1Nanotech, () => _rac1Weapons, _persistentPlayer.Equipment.RefreshMovementEquipment,
@@ -1800,7 +1810,7 @@ public partial class OBPGame : Node3D
         {
             var state = _rac1Nanotech.Probe();
             return new(state.Nanotech, state.IsDead, state.HasRecoveredEnvironmentalRespawn, _rac1Nanotech.EnvironmentalDeathGeneration);
-        }, () => _rac1Missions?.Probe().SingleOrDefault(actor => actor.Key.NativeClassId == 774)?.Retired == true);
+        }, () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Missions.Probe().SingleOrDefault(actor => actor.Key.NativeClassId == 774)?.Retired == true);
         var actions = new Rac1CampaignDiagnosticActions(ApplyRac1CampaignProgressionEvent, TravelRac1CampaignTo, () => _rac1Campaign.Session.Travel.OpenPlanetMap(),
             level => OpenDestinationFromBootstrap($"rac1:LEVEL{level}"), TickRac1CampaignSaves, FlushRac1CampaignSaves);
         var checkpoints = new GodotRac1CampaignCheckpointFixture(() =>
@@ -2527,7 +2537,7 @@ public partial class OBPGame : Node3D
             SetSourceVisible: visible => Sources.SetVisible(visible),
             SetSelectorVisible: visible => _navigation.SetSelectorVisible(visible),
             SetPlayerAudioPaused: paused => Rac1WeaponUsePresentationHost.SetPlayerAudioPaused(paused, _playerAudio, _equipmentPresentation, FusionWeapons),
-            TryMissionInteraction: TryHandleRac1MissionInteraction,
+            TryMissionInteraction: input => _worldScenes?.Current?.Resources.Rac1Gameplay?.Missions.TryHandleInteraction(input) == true,
             TryTaxiInteraction: input => (_worldScenes?.Current?.Resources.Rac1Gameplay?.Taxis)?.TryHandleInput(input) == true,
             Equipment: equipment));
     }
