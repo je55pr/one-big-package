@@ -11,4 +11,8 @@ internal sealed class Rac1CampaignHost
 {
     internal Rac1CampaignRuntimeSession Session { get; set; } = new(new Rac1CampaignState(), Rac1WeaponInventory.CreateOpeningLoadout());
     internal Rac1BoltWallet Wallet { get; set; } = new();
+    internal HashSet<int> CollectedNovalisGoldBolts { get; } = [];
+    internal Rac1CampaignPersistenceHost Persistence { get; }
+
+    internal Rac1CampaignHost() => Persistence = new(this);
 }
