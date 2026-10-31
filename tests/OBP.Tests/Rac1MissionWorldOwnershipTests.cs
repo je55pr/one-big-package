@@ -54,13 +54,35 @@ public sealed class Rac1MissionWorldOwnershipTests
             StringComparison.Ordinal);
         Assert.Contains("_disposed || generation != _generation || !ports.WorldStillCurrent()", present,
             StringComparison.Ordinal);
-        int guard = travel.IndexOf("_disposed || generation != _generation || !ports.WorldStillCurrent()",
+        int guard = travel.IndexOf("if (_disposed || generation != _generation) return;", StringComparison.Ordinal);
+        int staleWorld = travel.IndexOf("!ports.WorldStillCurrent() || world.LevelId != exit.Owner.LevelId",
             StringComparison.Ordinal);
         int mutation = travel.IndexOf("Session.BeginMissionLevelExit(exit)", StringComparison.Ordinal);
-        Assert.True(guard >= 0 && mutation > guard,
+        Assert.True(guard >= 0 && staleWorld > guard && mutation > staleWorld,
             "A retired world must not advance native campaign travel on deferred exit.");
-        Assert.Contains("world.LevelId != exit.Owner.LevelId", travel, StringComparison.Ordinal);
+        Assert.Contains("if (!started && !_disposed && generation == _generation) _exitQueued = false;",
+            travel, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", host, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DeferredExitRejectionUnblocksTheMissionLoopButAcceptedExitRemainsSingleDispatch()
+    {
+        // Structural host regression. The native mission session's level-exit
+        // admission is covered separately by portable progression tests.
+        string tick = Method("Rac1MissionWorldHost.cs", "Tick");
+        string dispatch = Method("Rac1MissionWorldHost.cs", "ApplyLevelExit");
+        Assert.Contains("|| _exitQueued", tick, StringComparison.Ordinal);
+        Assert.Contains("bool started = false", dispatch, StringComparison.Ordinal);
+        Assert.Contains(
+            "started = ports.Campaign().Session.BeginMissionLevelExit(exit) == Rac1PlanetTravelStartResult.Started",
+            dispatch, StringComparison.Ordinal);
+        Assert.Contains("if (!started) return;", dispatch, StringComparison.Ordinal);
+        Assert.Contains("finally", dispatch, StringComparison.Ordinal);
+        Assert.Contains("if (!started && !_disposed && generation == _generation) _exitQueued = false;",
+            dispatch, StringComparison.Ordinal);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(
+            dispatch, @"\bports\.Navigate\s*\(").Cast<System.Text.RegularExpressions.Match>());
     }
 
     [Fact]

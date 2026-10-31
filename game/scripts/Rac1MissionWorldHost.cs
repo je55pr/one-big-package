@@ -186,13 +186,28 @@ internal sealed class Rac1MissionWorldHost(
 
     private void ApplyLevelExit(Rac1MissionLevelExit exit, int generation)
     {
-        if (_disposed || generation != _generation || !ports.WorldStillCurrent() ||
-            world.LevelId != exit.Owner.LevelId) return;
-        var destination = TrilogyWorldProviders.Resolve($"rac1:LEVEL{exit.Destination}")
-            ?? throw new InvalidOperationException("Native mission requested an unavailable source destination.");
-        if (ports.Campaign().Session.BeginMissionLevelExit(exit) != Rac1PlanetTravelStartResult.Started) return;
-        GD.Print($"[rac1-missions] native actor exit L{world.LevelId} -> {exit.Destination}");
-        ports.Navigate(destination);
+        // Reset already clears the exit flag and advances the generation. Never
+        // let an old callback change the state of a newly configured lease.
+        if (_disposed || generation != _generation) return;
+        bool started = false;
+        try
+        {
+            if (!ports.WorldStillCurrent() || world.LevelId != exit.Owner.LevelId) return;
+            var destination = TrilogyWorldProviders.Resolve($"rac1:LEVEL{exit.Destination}")
+                ?? throw new InvalidOperationException("Native mission requested an unavailable source destination.");
+            started = ports.Campaign().Session.BeginMissionLevelExit(exit) == Rac1PlanetTravelStartResult.Started;
+            if (!started) return;
+
+            GD.Print($"[rac1-missions] native actor exit L{world.LevelId} -> {exit.Destination}");
+            ports.Navigate(destination);
+        }
+        finally
+        {
+            // A rejected or stale exit must not disable mission ticks for the
+            // rest of an otherwise live world. Once native travel is accepted,
+            // retain the guard to prevent a second level-exit dispatch.
+            if (!started && !_disposed && generation == _generation) _exitQueued = false;
+        }
     }
 
     public void Dispose()
