@@ -51,8 +51,7 @@ public sealed class Rac1CampaignWorldOwnershipTests
         Assert.Contains("if (_configured) throw", configure, StringComparison.Ordinal);
 
         string module = Script("Rac1WorldModule.cs");
-        Assert.Equal(3, System.Text.RegularExpressions.Regex.Matches(
-            module, @"\bResetBindings\s*\(").Count);
+        Assert.Equal(3, module.Split("ResetBindings(", StringSplitOptions.None).Length - 1);
         Assert.Contains("ResetBindings(retiring: true)", Method("Rac1WorldModule.cs", "Dispose"),
             StringComparison.Ordinal);
         Assert.Contains("Checkpoints.Reset()", Method("Rac1WorldModule.cs", "ResetBindings"),
