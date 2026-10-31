@@ -49,9 +49,9 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
     public void EquipmentFrameUpdatesPreserveOriginalOrderAndPyrocitorAuthority()
     {
         string frame = Script("Rac1WeaponHost.cs");
-        string root = Script("OBPGame.Rac1WeaponWorld.cs");
+        string root = Script("Rac1WeaponEffectsHost.cs");
         string projectile = Script("Rac1EquipmentProjectileHost.cs");
-        Assert.Contains("Rac1World.Weapons.StepWorld(_persistentPlayer.Rac1Use.PyroEmitting)", root, StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.StepWorld(ports.PyroEmitting())", root, StringComparison.Ordinal);
         string[] ordered =
         [
             "_worldTick++",
@@ -85,7 +85,7 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
     public void NativeCarrierMineAndDoomLifetimesRetainRecoveredSourceRules()
     {
         string host = Script("Rac1EquipmentProjectileHost.cs");
-        string weapons = Script("OBPGame.Rac1Weapons.cs");
+        string weapons = Script("Rac1WeaponUsePresentationHost.cs");
 
         Assert.Contains("motion.Step(shot.AimPoint, 1.5f * MathF.PI)", host, StringComparison.Ordinal);
         Assert.Contains("Rac1WeaponProfiles.BlasterCarrierTicks", host, StringComparison.Ordinal);
@@ -102,8 +102,8 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
         Assert.Contains("bot.Motion.Step(Rac1LootPresentation.ToEffectNative(origin), targetPoint)", host, StringComparison.Ordinal);
         Assert.Contains("bot.Motion.SourceSequence(direction.LengthSquared() > .01f)", host, StringComparison.Ordinal);
         Assert.Contains("new Rac1TaunterMine(shot.Position, () => shot.Taunted = true)", Script("OBPGame.cs"), StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Projectiles.FireBlaster(shot)", weapons, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Projectiles.Throw(shot)", weapons, StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.Projectiles.FireBlaster(shot)", weapons, StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.Projectiles.Throw(shot)", weapons, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1AdditionalWeaponSession(", host, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1WeaponInventory(", host, StringComparison.Ordinal);
     }
@@ -111,15 +111,15 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
     [Fact]
     public void SceneResetAndDiagnosticsUseSameOwnedLifetime()
     {
-        string root = Script("OBPGame.Rac1Weapons.cs");
+        string root = Script("Rac1WeaponUsePresentationHost.cs");
         string host = Script("Rac1EquipmentProjectileHost.cs");
         string composition = Script("OBPGame.cs");
 
-        int arsenal = root.IndexOf("Rac1World.Weapons.Arsenal.Reset()", StringComparison.Ordinal);
-        int retire = root.IndexOf("Rac1World.Weapons.Projectiles.RetireShotsAgentsMotes()", StringComparison.Ordinal);
-        int suck = root.IndexOf("Rac1World.Weapons.SuckCannon.Reset()", StringComparison.Ordinal);
-        int particles = root.IndexOf("Rac1World.Weapons.Flames.ClearTrackedFlames()", StringComparison.Ordinal);
-        int flashes = root.IndexOf("Rac1World.Weapons.Projectiles.ResetFlashes()", StringComparison.Ordinal);
+        int arsenal = root.IndexOf("world.Weapons.Arsenal.Reset()", StringComparison.Ordinal);
+        int retire = root.IndexOf("world.Weapons.Projectiles.RetireShotsAgentsMotes()", StringComparison.Ordinal);
+        int suck = root.IndexOf("world.Weapons.SuckCannon.Reset()", StringComparison.Ordinal);
+        int particles = root.IndexOf("world.Weapons.Flames.ClearTrackedFlames()", StringComparison.Ordinal);
+        int flashes = root.IndexOf("world.Weapons.Projectiles.ResetFlashes()", StringComparison.Ordinal);
         Assert.True(arsenal >= 0 && arsenal < retire && retire < suck && suck < particles && particles < flashes);
 
         Assert.Contains("if (GodotObject.IsInstanceValid(node)) node.QueueFree()", host, StringComparison.Ordinal);

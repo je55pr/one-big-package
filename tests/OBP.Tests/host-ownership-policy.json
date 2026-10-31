@@ -72,12 +72,6 @@
     "Hash": "2e1bc1dfd7a7718d3144adabfb00ffe43cc6098845c71b241c5336cd763b8767"
   },
   {
-    "Key": "game/scripts/OBPGame.Rac1Weapons.cs::OBPGame.RefreshSourceEquipmentContext()",
-    "Kind": "adapter",
-    "Reason": "Refresh only the original R&C1 metal-detector world query after equipment changes; diagnostic loadout ownership is persistent-player state, covered by PlayerNativeSessionStateTests. #367/#368 keeps native detector scanning and its 60Hz cadence inside the world-owned weapon host; the root only supplies source-qualified inventory/progress observations and never selects a player or source based on this world check.",
-    "Hash": "61c71901dbd8c161e90463a71c91f430aba2cf8de9f798daf123d23d7d3986e6"
-  },
-  {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.BeginSourceWorldEntry(RuntimeWorld)",
     "Kind": "adapter",
     "Reason": "Begin the matching original source campaign checkpoint; never selects a player profile. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",

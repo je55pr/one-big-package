@@ -22,7 +22,13 @@ internal sealed record Rac1BombProjectilePorts(
     Action<Node3D, NVector3> Orient,
     Action<Vector3, Vector3, Vector3> ImpactFx,
     Action<long, long, Vector3, float> ActorBlast,
-    Action<RuntimeWorldScene.DynamicObjectNode, Rac1BoltCrateDamageAdmission> CompleteCrate);
+    Action<RuntimeWorldScene.DynamicObjectNode, Rac1BoltCrateDamageAdmission> CompleteCrate,
+    Rac1BombGloveUsePorts Use);
+
+/// <summary>Borrowed persistent player admission/presentation, never a second ammo owner.</summary>
+internal sealed record Rac1BombGloveUsePorts(
+    Func<bool> AssetsReady, Func<bool> Alive, Func<bool> WrenchActive,
+    Action<Vector3> PlayThrowSound, Action PersistAmmo, Action RefreshHud);
 
 /// <summary>
 /// One R&C1 world lease owns Bomb Glove projectile flight, impacts and hit
@@ -38,6 +44,34 @@ internal sealed class Rac1BombProjectileHost(
     private bool _disposed;
 
     internal int ImpactCount => _disposed ? 0 : _impactCount;
+
+    // The native Bomb Glove and its projectile leases remain the only authorities.
+    // Called once per fixed player frame after source equipment admission.
+    internal void StepUse()
+    {
+        if (_disposed || !ports.Use.AssetsReady() || _context.BombGlove is null ||
+            ports.Player() is not { } player || !ports.Use.Alive()) return;
+        bool fire = _context.BombFireRequested && !_weapons.Detector.Equipped && !ports.Use.WrenchActive();
+        _context.BombFireRequested = false;
+        var probe = _context.BombGlove.Step(fire);
+        if (probe.Shot is { } shot)
+        {
+            _weapons.ThrownAnimation.Begin();
+            Spawn(shot);
+            ports.Use.PlayThrowSound(player.GlobalPosition); // 0x2c2.. hero throw, not equip cue.
+            ports.Use.PersistAmmo();
+            _context.CombatStatus = $"Bomb Glove fired: ammo {shot.AmmoBefore}->{shot.AmmoAfter}";
+            ports.Use.RefreshHud();
+            GD.Print($"[rac1-gameplay] {_context.CombatStatus}");
+        }
+        else if (fire && probe.UseAdmission is { Accepted: false } rejected)
+            _context.CombatStatus = $"Bomb Glove use rejected: {rejected.Rejection}";
+    }
+
+    // Shared authored orientation mapping for launched bombs and world effects.
+    internal static void Orient(Node3D node, NVector3 angles) =>
+        node.Quaternion = Rac1LootPresentation.FromEffectOrientation(
+            System.Numerics.Quaternion.CreateFromYawPitchRoll(angles.Y, angles.X, angles.Z));
 
     internal void ResetImpactCount()
     {

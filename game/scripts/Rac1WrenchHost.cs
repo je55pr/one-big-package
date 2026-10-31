@@ -2,6 +2,7 @@ using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
+using OBP.RAC1.Presentation;
 using OBP.Runtime.Gameplay;
 
 namespace OBP.Game;
@@ -49,6 +50,18 @@ internal sealed class Rac1WrenchHost(Rac1WrenchFramePorts framePorts, Rac1Wrench
     private Vector3? _previousHand;
     private Vector3? _previousTip;
     private bool _disposed;
+
+    // World retirement can precede a late player death or cross-source avatar reset.
+    // Preserve the player/audio fallback when no R&C1 lease is bound.
+    internal static void ResetOrFallback(Rac1WrenchHost? wrench, Rac1PlayerAudioPresenter? audio, PlayerHost? player)
+    {
+        if (wrench is not null) wrench.Reset();
+        else
+        {
+            GodotRac1PlayerAudioPlayback.ResetWrench(audio);
+            if (player is not null) player.Rac1WrenchThrown = false;
+        }
+    }
 
     internal bool ThrowActive => !_disposed && _throw.Active;
     internal long Generation => _disposed ? 0 : _generation;

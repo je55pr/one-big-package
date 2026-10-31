@@ -209,13 +209,13 @@ public sealed class SourceNeutralHostArchitectureTests
     {
         var (compilation, tree) = InsertAdapterStatement("game/scripts/OBPGame.WorldEntry.cs", "WorldOptions", """
             if (world.Game == ObpSourceGame.Rac1)
-                OnRac1WeaponSelectionRequested(OBP.RAC1.Gameplay.Rac1WeaponId.Blaster);
+                Rac1CombatInput.Select(OBP.RAC1.Gameplay.Rac1WeaponId.Blaster);
             """);
         var call = tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>()
-            .Single(invocation => invocation.Expression.ToString() == "OnRac1WeaponSelectionRequested");
+            .Single(invocation => invocation.Expression.ToString() == "Rac1CombatInput.Select");
         var bound = Assert.IsAssignableFrom<IMethodSymbol>(compilation.GetSemanticModel(tree).GetSymbolInfo(call).Symbol);
-        Assert.Equal("OBPGame", bound.ContainingType.Name);
-        Assert.NotEmpty(bound.DeclaringSyntaxReferences); // The real host method, not an unresolved or test-only stub.
+        Assert.Equal("IRac1WeaponPlayerInput", bound.ContainingType.Name);
+        Assert.NotEmpty(bound.DeclaringSyntaxReferences); // The real player-session contract, not an unresolved or test-only stub.
 
         var usages = HostOwnershipAudit.Scan(compilation);
         var adapter = usages.Single(usage => usage.Key.EndsWith("::OBPGame.WorldOptions(RuntimeWorld)", StringComparison.Ordinal));

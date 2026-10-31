@@ -41,13 +41,13 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
         Assert.Empty(root.GetMembers("_rac1WeaponWorldTick"));
         string host = Script("Rac1WeaponHost.cs");
         string composition = Script("OBPGame.cs");
-        string rootWorld = Script("OBPGame.Rac1WeaponWorld.cs");
-        string rootUse = Script("OBPGame.Rac1Weapons.cs");
+        string rootWorld = Script("Rac1WeaponEffectsHost.cs");
+        string rootUse = Script("Rac1WeaponUsePresentationHost.cs");
         Assert.Contains("private ulong _worldTick;", host, StringComparison.Ordinal);
         Assert.Contains("internal ulong WorldTick => _worldTick;", host, StringComparison.Ordinal);
         Assert.Contains("ResetWorldTick();", Method("Rac1WeaponHost.cs", "ResetWorld"), StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.ResetWorldTick()", rootUse, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.StepWorld(_persistentPlayer.Rac1Use.PyroEmitting)", rootWorld, StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.ResetWorldTick()", rootUse, StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.StepWorld(ports.PyroEmitting())", rootWorld, StringComparison.Ordinal);
         Assert.Contains("Weapons.WorldTick ?? 0", composition, StringComparison.Ordinal);
         Assert.Contains("Weapons.ResetWorldTick()", composition, StringComparison.Ordinal);
         string step = Method("Rac1WeaponHost.cs", "StepWorld");
@@ -155,11 +155,11 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
         Assert.DoesNotContain("ApplyDamage(", contact, StringComparison.Ordinal);
 
         string arsenal = Script("Rac1ArsenalUseHost.cs");
-        string projectile = Script("OBPGame.Rac1Projectiles.cs");
+        string projectile = Script("Rac1BombProjectileHost.cs");
         string flames = Script("Rac1PyrocitorFlameHost.cs");
         Assert.Contains("weapons.Morph.Fire(from, ports.EquipmentForward())", arsenal, StringComparison.Ordinal);
         Assert.Contains("ports.Contact(from, end, .01f)", Script("Rac1MorphHost.cs"), StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Bombs.Spawn(shot)", projectile, StringComparison.Ordinal);
+        Assert.Contains("Spawn(shot)", projectile, StringComparison.Ordinal);
         Assert.Contains("_weapons.Contacts.HasLineOfSight(", Script("Rac1BombProjectileHost.cs"), StringComparison.Ordinal);
         Assert.Contains("contacts.RayExclusions()", flames, StringComparison.Ordinal);
     }
@@ -263,7 +263,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
         Assert.Contains("view.Scale = Vector3.One / target.Root.Scale", host, StringComparison.Ordinal);
         Assert.Contains("collider.Shape = new CapsuleShape3D { Radius = .24f, Height = .65f }", host, StringComparison.Ordinal);
         Assert.Contains("collider.Position = Vector3.Up * .325f", host, StringComparison.Ordinal);
-        Assert.Contains("chicken.Age >= 0 && chicken.Age % 90 == 1", host, StringComparison.Ordinal);
+        Assert.Contains("chicken.Age >= 0 && (uint)chicken.Age % 90u == 1u", host, StringComparison.Ordinal);
         Assert.Contains("ports.SignedRandom(0, MathF.PI)", host, StringComparison.Ordinal);
         Assert.Contains("ports.Ground(body.GlobalPosition + chicken.Direction * .5f, .4f, .8f)", host, StringComparison.Ordinal);
         Assert.Contains("body.MoveAndSlide()", host, StringComparison.Ordinal);
@@ -279,7 +279,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
     public void MorphConsumersBorrowReadOnlyIdentitiesViewsAndDiagnostics()
     {
         string root = Script("OBPGame.cs");
-        string wrench = Script("OBPGame.Rac1Wrench.cs");
+        string wrench = Script("OBPGame.cs");
         string host = Script("Rac1MorphHost.cs");
         Assert.Contains("MorphedMobies: () => Rac1World.Weapons.Morph.ActiveKeys()", root, StringComparison.Ordinal);
         Assert.Contains(".Concat(Rac1World.Weapons.SuckCannon.ChickenCargoKeys).Distinct().ToArray()", root, StringComparison.Ordinal);

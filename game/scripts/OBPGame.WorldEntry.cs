@@ -204,7 +204,7 @@ public partial class OBPGame
                 sources: () => Sources.Setup.Library.Attached.Values.ToArray(),
                 actorAlive: key => ActorHost.IsAlive(key),
                 placementOffset: () => lab is not null ? System.Numerics.Vector3.Zero :
-                    WorldEffectHost.Runtime((_player?.GlobalPosition ?? Vector3.Zero) + EquipmentForward * 6 + Vector3.Up * 8) - new System.Numerics.Vector3(0, 0, 18),
+                    WorldEffectHost.Runtime((_player?.GlobalPosition ?? Vector3.Zero) + Rac1WeaponUsePresentationHost.EquipmentForward(_player) * 6 + Vector3.Up * 8) - new System.Numerics.Vector3(0, 0, 18),
                 suspended: () => MovementReproduction.IsLoading || _captureReplay?.Recorder is { WaitingForEntry: true } or { PreparingWorld: true },
                 recordOperation: operation => CaptureReplay.RecordCommand(new("effects", operation)),
                 commandAllowed: () => _captureReplay?.Recorder is null || EffectCaptureContract.Includes(_args, _captureReplay!.Recorder!.Reader?.Header));
@@ -337,7 +337,7 @@ public partial class OBPGame
         {
             if (_equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is not null)
                 _avatarPresentation.InstallStagedBomb(FusionWeapons.CreateNativeEffect(121, "Rac1RetailStagedBomb_Class121"));
-            AttachRac1EquipmentViews(view);
+            _worldScenes?.Current?.Resources.Rac1Gameplay?.UsePresentation.AttachViews(view);
         }
         // Shared weapon views belong to any selected avatar, not just RAC1.
         FusionWeapons.AttachViews(view);
@@ -356,11 +356,13 @@ public partial class OBPGame
     {
         if (_avatarPresentation.Controller is not Rac1PlayerAnimationPresentationController controller)
             return;
-        StepRac1EquippedUseInput();
-        StepRac1BombWeaponPhysics();
-        StepRac1AdditionalWeapons();
+        Rac1CombatInput.StepInput();
+        _worldScenes?.Current?.Resources.Rac1Gameplay?.Bombs.StepUse();
+        _worldScenes?.Current?.Resources.Rac1Gameplay?.UsePresentation.StepAdditional();
         FusionWeapons.Step();
-        input = SelectRac1BombThrowAnimation(controller, input);
+        input = _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.ThrownAnimation.Select(input,
+            PlayerLife.Alive, _player?.Rac1WrenchFrame.Active == true,
+            CurrentPlayerAvatarSourceSequence(), controller.TraversalAuthoredAnimationTime) ?? input;
         _avatarPresentation.StepNative(state, input);
 
 
@@ -394,15 +396,15 @@ public partial class OBPGame
             _avatarPresentation.StepHandAttachments(controller, player.Rac1WrenchFrame,
                 (_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true),
                 _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.ThrownAnimation.Generation ?? 0);
-            StepRac1EquipmentViews(controller);
+            _worldScenes?.Current?.Resources.Rac1Gameplay?.UsePresentation.StepViews(controller);
             FusionWeapons.StepViews(controller, _avatarPresentation.Avatar);
         }
 
 
         GodotRac1PlayerAudioPlayback.Step(_playerAudio, controller, _player, MovementReproduction.IsLoading);
-        StepRac1BombProjectilesPhysics();
-        StepRac1AdditionalWeaponWorld();
-        StepRac1BombEffectsPhysics();
+        _worldScenes?.Current?.Resources.Rac1Gameplay?.Bombs.StepPhysics();
+        _worldScenes?.Current?.Resources.Rac1Gameplay?.Effects.StepAdditionalWeaponWorld();
+        _worldScenes?.Current?.Resources.Rac1Gameplay?.Effects.StepBombEffectsPhysics();
         _avatarPresentation.SampleClock();
         RefreshRac1WrenchPresentationVisibility();
     }
@@ -412,7 +414,7 @@ public partial class OBPGame
     {
         FusionWeapons.ClearTransients();
         _playerAudio?.Reset();
-        ResetRac1WrenchHost();
+        Rac1WrenchHost.ResetOrFallback(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench, _playerAudio, _player);
         _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.ThrownAnimation.Stop();
         _avatarPresentation.ResetClock();
     }

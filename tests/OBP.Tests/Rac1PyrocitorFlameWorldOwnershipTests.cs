@@ -37,7 +37,7 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
         Assert.Contains("Flames.Dispose()", weapons, StringComparison.Ordinal);
         Assert.Contains("new(weaponTargets, contactPhysics, suckCannon, projectiles, flames)", module, StringComparison.Ordinal);
         Assert.Contains("new Rac1PyrocitorFlamePorts(", composition, StringComparison.Ordinal);
-        Assert.Contains("EnsureRac1Particles,", composition, StringComparison.Ordinal);
+        Assert.Contains("() => Rac1World.Effects.EnsureParticles(),", composition, StringComparison.Ordinal);
         Assert.Contains("() => _equipmentPresentation.Explosions.Particles,", composition, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", flame, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1ParticleSession(", flame, StringComparison.Ordinal);
@@ -48,7 +48,7 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
     public void EmissionRetainsNativeReachRayAndOneInFourTrackedSlotSelection()
     {
         string flame = Script("Rac1PyrocitorFlameHost.cs");
-        string frame = Script("OBPGame.Rac1WeaponWorld.cs");
+        string frame = Script("Rac1WeaponEffectsHost.cs");
 
         Assert.Contains("if (_disposed || !emitting || ports.EnsureParticles() is not { } particles) return", flame, StringComparison.Ordinal);
         Assert.Contains("Vector3 nozzle = ports.Muzzle(Rac1WeaponId.Pyrocitor)", flame, StringComparison.Ordinal);
@@ -62,7 +62,7 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
         Assert.Contains("if ((ports.WorldTick() & 3) == 0 && created.Count > 2)", flame, StringComparison.Ordinal);
         Assert.Contains("if (_flames.Count == 15) _flames.RemoveAt(0)", flame, StringComparison.Ordinal);
         Assert.Contains("_flames.Add(new(created[2]))", flame, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.StepWorld(_persistentPlayer.Rac1Use.PyroEmitting)", frame, StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.StepWorld(ports.PyroEmitting())", frame, StringComparison.Ordinal);
         Assert.Contains("Flames.Emit(pyroEmitting)", Script("Rac1WeaponHost.cs"), StringComparison.Ordinal);
         Assert.DoesNotContain("particles.Pyrocitor(", frame, StringComparison.Ordinal);
     }
@@ -103,20 +103,20 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
     [Fact]
     public void ResetPreservesPreviewCleanupAndWorldRetirementBoundaries()
     {
-        string reset = Script("OBPGame.Rac1Weapons.cs");
-        string frame = Script("OBPGame.Rac1WeaponWorld.cs");
+        string reset = Script("Rac1WeaponUsePresentationHost.cs");
+        string frame = Script("Rac1WeaponEffectsHost.cs");
         string flame = Script("Rac1PyrocitorFlameHost.cs");
         string composition = Script("OBPGame.cs");
 
         string[] ordered =
         [
-            "Rac1World.Weapons.Projectiles.RetireShotsAgentsMotes()",
-            "Rac1World.Weapons.SuckCannon.Reset()",
-            "Rac1World.Weapons.Flames.ClearCooldowns()",
-            "Rac1World.Weapons.Flames.ClearTrackedFlames()",
-            "_equipmentPresentation.Explosions.Particles?.RemoveType(12)",
-            "_equipmentPresentation.Explosions.Particles?.RemoveType(2)",
-            "Rac1World.Weapons.Projectiles.ResetFlashes()",
+            "world.Weapons.Projectiles.RetireShotsAgentsMotes()",
+            "world.Weapons.SuckCannon.Reset()",
+            "world.Weapons.Flames.ClearCooldowns()",
+            "world.Weapons.Flames.ClearTrackedFlames()",
+            "Equipment.Explosions.Particles?.RemoveType(12)",
+            "Equipment.Explosions.Particles?.RemoveType(2)",
+            "world.Weapons.Projectiles.ResetFlashes()",
         ];
         int previous = -1;
         foreach (var piece in ordered)
@@ -126,7 +126,7 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
             previous = next;
         }
 
-        Assert.Contains("Rac1World.Weapons.StepWorld(_persistentPlayer.Rac1Use.PyroEmitting)", frame, StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.StepWorld(ports.PyroEmitting())", frame, StringComparison.Ordinal);
         string owner = Script("Rac1WeaponHost.cs");
         int emit = owner.IndexOf("Flames.Emit(pyroEmitting)", StringComparison.Ordinal);
         int motes = owner.IndexOf("Projectiles.StepMotes()", StringComparison.Ordinal);

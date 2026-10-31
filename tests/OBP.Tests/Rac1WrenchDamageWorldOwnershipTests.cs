@@ -29,7 +29,7 @@ public sealed class Rac1WrenchDamageWorldOwnershipTests
         Assert.Contains("WrenchDamage = new(Context, Breakables, Enemies, Loot, wrenchDamage)", module, StringComparison.Ordinal);
         Assert.Contains("internal Rac1WrenchDamageHost WrenchDamage { get; }", module, StringComparison.Ordinal);
         Assert.Matches(@"(?s)if \(retiring\)\s*\{\s*WeaponDamage\.Dispose\(\);\s*WrenchDamage\.Dispose\(\);\s*Enemies\.Dispose\(\);\s*\}", module);
-        Assert.Contains("new Rac1WrenchDamagePorts(() => _persistentPlayer.Wrench, SelectRac1CrateReward)", rootFactory, StringComparison.Ordinal);
+        Assert.Contains("new Rac1WrenchDamagePorts(() => _persistentPlayer.Wrench, centre => _persistentPlayer.SelectRac1CrateReward(centre, _args.FixedSeed))", rootFactory, StringComparison.Ordinal);
         Assert.Contains("Rac1World.WrenchDamage.TryStrikeCrate(target, result)", rootFactory, StringComparison.Ordinal);
         Assert.Contains("Rac1World.WrenchDamage.TryStrikeHostile(target, result)", rootFactory, StringComparison.Ordinal);
         Assert.Contains("owner.WrenchDamage.CompleteCrateDamage(node, admission)", rootFactory, StringComparison.Ordinal);
@@ -42,15 +42,15 @@ public sealed class Rac1WrenchDamageWorldOwnershipTests
     public void PlayerLifetimeWrenchAndRandomRemainBorrowed()
     {
         string host = Script("Rac1WrenchDamageHost.cs");
-        string player = Script("OBPGame.Rac1Combat.cs");
+        string player = Script("PlayerSessionHost.cs");
 
         Assert.Contains("Func<Rac1WrenchCombatController> Wrench", host, StringComparison.Ordinal);
         Assert.Contains("Func<int, int> SelectCrateReward", host, StringComparison.Ordinal);
         Assert.Contains("ports.Wrench().AdmitGoal1RuntimeTarget(", host, StringComparison.Ordinal);
         Assert.Contains("ports.Wrench().ResolveHostAdmittedDamage(", host, StringComparison.Ordinal);
         Assert.Contains("selectedTotal: ports.SelectCrateReward(authored.RewardCentre)", host, StringComparison.Ordinal);
-        Assert.Contains("private int SelectRac1CrateReward(int centre)", player, StringComparison.Ordinal);
-        Assert.Contains("_persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Inclusive(", player, StringComparison.Ordinal);
+        Assert.Contains("internal int SelectRac1CrateReward(int centre, int? seed)", player, StringComparison.Ordinal);
+        Assert.Contains("Rac1EffectRandom(seed).Inclusive(", player, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1WrenchCombatController(", host, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1PickupRandom(", host, StringComparison.Ordinal);
     }

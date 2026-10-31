@@ -29,7 +29,7 @@ internal sealed class Rac1WorldModule : IDisposable
         Rac1PlayerGameplayPorts player, Rac1WorldContactPorts contacts, Rac1AuthoredMechanismPorts authored, Rac1GameplayHudPorts hud,
         Rac1MetalDetectorPorts detector, Rac1WeaponTargetPorts weaponTargets,
         Rac1WeaponContactPhysicsPorts contactPhysics, Rac1SuckCannonPorts suckCannon, Rac1ArsenalMissilePorts missiles, Rac1ArsenalDeployablePorts deployables, Rac1WalloperPorts walloper, Rac1TaunterPorts taunter, Rac1TeslaPorts tesla, Rac1MorphPorts morph, Rac1ArsenalBeamPorts beamPresentation, Rac1ArsenalUsePorts arsenal, Rac1EquipmentProjectilePorts projectiles, Rac1PyrocitorFlamePorts flames,
-        Rac1WrenchFramePorts wrenchFrame, Rac1WrenchContactPorts wrenchContact, Rac1WrenchDamagePorts wrenchDamage, Rac1BombProjectilePorts bomb, Rac1TaxiHostPorts taxis, Func<Rac1WorldModule, Rac1EnemyHost> enemies)
+        Rac1WrenchFramePorts wrenchFrame, Rac1WrenchContactPorts wrenchContact, Rac1WrenchDamagePorts wrenchDamage, Rac1BombProjectilePorts bomb, Rac1TaxiHostPorts taxis, Func<Rac1WorldModule, Rac1EnemyHost> enemies, Rac1WeaponEffectsPorts weaponEffects, Rac1WeaponUsePorts weaponUse)
     {
         _world = world; _scene = scene; _reset = reset; _actors = actors; _ticks = ticks;
         _playerPorts = player; _contacts = contacts; _binding = new(player);
@@ -46,12 +46,16 @@ internal sealed class Rac1WorldModule : IDisposable
         WrenchDamage = new(Context, Breakables, Enemies, Loot, wrenchDamage);
         WeaponDamage = new(Context, Enemies, Breakables, WrenchDamage, Weapons.Contacts);
         Bombs = new(Context, Presentation, Weapons, Enemies, Breakables, bomb);
+        Effects = new(this, weaponEffects);
+        UsePresentation = new(this, weaponUse);
         Hud = new(world, Context, Presentation, hud, () => _disposed);
     }
 
     internal Rac1LootPresentation Loot { get; }
     internal Rac1BreakableHost Breakables { get; }
     internal Rac1BombProjectileHost Bombs { get; }
+    internal Rac1WeaponEffectsHost Effects { get; }
+    internal Rac1WeaponUsePresentationHost UsePresentation { get; }
     internal Rac1WrenchDamageHost WrenchDamage { get; }
     internal Rac1WeaponDamageHost WeaponDamage { get; }
     internal Rac1WorldContext Context { get; }

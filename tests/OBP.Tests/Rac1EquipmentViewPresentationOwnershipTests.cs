@@ -76,8 +76,9 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
         Assert.Contains("_assets = null", views, StringComparison.Ordinal);
         Assert.Contains("_sourcePath = null", views, StringComparison.Ordinal);
         Assert.Contains("_materials = null", views, StringComparison.Ordinal);
-        string root = Script("OBPGame.Rac1Weapons.cs");
-        Assert.Contains("NativeViews.Attach(Sources.Setup.Library.Get(ObpSourceGame.Rac1)!.Path", root, StringComparison.Ordinal);
+        string root = Script("Rac1WeaponUsePresentationHost.cs");
+        Assert.Contains("Equipment.NativeViews.Attach(State.SourcePath(), State.CurrentWorld()!, avatarView, ports.Avatar.Avatar)", root, StringComparison.Ordinal);
+        Assert.Contains("Sources.Setup.Library.Get(ObpSourceGame.Rac1)!.Path", Script("OBPGame.cs"), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -101,31 +102,32 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
             "if (native?.Vacuuming == true) view.Play(3)",
             "view.Step(controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(profile.HandSemantic)))",
             "audio.Bank?.Sounds?.TryGetValue((profile.ModelClass, sound), out var voice)",
+            "voice?.Loop != true",
             "audio.PlaySound(profile.ModelClass, sound, audio.Player.GlobalPosition)",
             "staged.Position = view.MuzzleLocal; staged.Step()",
             "staged.Visible = inventory.GetAmmo((int)profile.Item) > 0");
         Assert.Contains("native?.MineRearmTicks == 0", step, StringComparison.Ordinal);
 
-        string root = Script("OBPGame.Rac1Weapons.cs");
-        Assert.Contains("_player!, FusionWeapons.PlayNativeSound", root, StringComparison.Ordinal);
-        Assert.Contains("_equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets)", root, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Loot.PickupAssets", root, StringComparison.Ordinal);
+        string root = Script("Rac1WeaponUsePresentationHost.cs");
+        Assert.Contains("State.Player()!, State.Fusion().PlayNativeSound", root, StringComparison.Ordinal);
+        Assert.Contains("Equipment.Assets(Environment.Ordinary(), world.Loot.PickupAssets)", root, StringComparison.Ordinal);
+        Assert.Contains("world.Loot.PickupAssets", root, StringComparison.Ordinal);
     }
 
     [Fact]
     public void FirstShotAfterHiddenHandRefreshesCurrentSocketBeforeFiring()
     {
-        string weapons = Script("OBPGame.Rac1Weapons.cs");
+        string weapons = Script("Rac1WeaponUsePresentationHost.cs");
         int start = weapons.IndexOf("if (frame.Shot is { } shot)", StringComparison.Ordinal);
-        int end = weapons.IndexOf("use.CompleteFrame(frame, _rac1Weapons)", StringComparison.Ordinal);
+        int end = weapons.IndexOf("use.CompleteFrame(frame, weapons)", StringComparison.Ordinal);
         string fire = weapons[start..end];
         AssertIncreasing(fire,
             "if (frame.Shot is { } shot)",
-            "_avatarPresentation.Controller is Rac1PlayerAnimationPresentationController controller",
+            "ports.Avatar.Controller is Rac1PlayerAnimationPresentationController controller",
             "NativeViews.RefreshAttachment(shot.Weapon, controller)",
             "use.RecordShot(shot)",
             "NativeViews.PlayShot(shot)",
-            "Rac1World.Weapons.Projectiles.FireBlaster(shot)");
+            "world.Weapons.Projectiles.FireBlaster(shot)");
     }
 
     [Fact]
@@ -145,34 +147,35 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
             "return player.GlobalPosition + Vector3.Up * .9f + forward * .7f");
         Assert.Contains("new Rac1EquipmentView(_assets!.Models[nativeClass], _materials!)", views, StringComparison.Ordinal);
         Assert.Contains("root.AddChild(view); return view", views, StringComparison.Ordinal);
-        string root = Script("OBPGame.Rac1Weapons.cs");
-        Assert.Contains("NativeViews.Muzzle(weapon, socket, _avatarPresentation, _player!, EquipmentForward)", root, StringComparison.Ordinal);
-        Assert.Contains("NativeViews.CreateWorldView(nativeClass, _sceneResult!.Root)", root, StringComparison.Ordinal);
+        string root = Script("Rac1WeaponUsePresentationHost.cs");
+        Assert.Contains("equipment.NativeViews.Muzzle(weapon, socket, avatar, player!, EquipmentForward(player))", root, StringComparison.Ordinal);
+        Assert.Contains("Equipment.NativeViews.CreateWorldView(nativeClass, State.SceneRoot())", root, StringComparison.Ordinal);
         Assert.DoesNotContain("PhysicsRayQueryParameters3D.Create(start, muzzle)", root, StringComparison.Ordinal);
     }
 
     [Fact]
     public void RootKeepsWorldDispatchOrderAndAvatarViewRetirementAtExistingBoundary()
     {
-        string weapons = Script("OBPGame.Rac1Weapons.cs");
-        string step = weapons[weapons.IndexOf("private void StepRac1AdditionalWeapons()", StringComparison.Ordinal)..weapons.IndexOf("private void StepRac1EquipmentViews(", StringComparison.Ordinal)];
+        string weapons = Script("Rac1WeaponUsePresentationHost.cs");
+        string step = weapons[weapons.IndexOf("internal void StepAdditional()", StringComparison.Ordinal)..weapons.IndexOf("internal void StepViews(", StringComparison.Ordinal)];
         AssertIncreasing(step,
             "var frame = use.BeginFrame(",
-            "if (frame.PyroChanged) _equipmentPresentation.NativeViews.PlayPyrocitor(frame.Pyro)",
+            "if (frame.PyroChanged) Equipment.NativeViews.PlayPyrocitor(frame.Pyro)",
             "if (frame.Shot is { } shot)",
             "use.RecordShot(shot)",
-            "_equipmentPresentation.NativeViews.PlayShot(shot)",
-            "Rac1World.Weapons.Projectiles.Throw(shot)",
-            "Rac1World.Weapons.Projectiles.FireBlaster(shot)",
-            "Rac1World.Weapons.SuckCannon.Fire(shot)",
-            "Rac1World.Weapons.Arsenal.Fire(shot.Weapon)",
-            "PersistRac1CampaignState(",
-            "RefreshRac1HudState()",
-            "use.CompleteFrame(frame, _rac1Weapons)",
-            "StepRac1WeaponAudio()");
+            "Equipment.NativeViews.PlayShot(shot)",
+            "world.Weapons.Projectiles.Throw(shot)",
+            "world.Weapons.Projectiles.FireBlaster(shot)",
+            "world.Weapons.SuckCannon.Fire(shot)",
+            "world.Weapons.Arsenal.Fire(shot.Weapon)",
+            "Views.Persist(",
+            "Views.RefreshHud()",
+            "use.CompleteFrame(frame, weapons)",
+            "StepAudio()");
 
-        string combat = Script("OBPGame.Rac1Combat.cs");
-        Assert.Contains("_equipmentPresentation.NativeViews.PlaySelection(weapon)", combat, StringComparison.Ordinal);
+        string combat = Script("Rac1WeaponPlayerInputHost.cs");
+        Assert.Contains("views.PlaySelection(weapon)", combat, StringComparison.Ordinal);
+        Assert.Contains("weapon => _equipmentPresentation.NativeViews.PlaySelection(weapon)", Script("OBPGame.cs"), StringComparison.Ordinal);
         string entry = Script("OBPGame.WorldEntry.cs");
         AssertIncreasing(entry,
             "_avatarPresentation.Retire()",

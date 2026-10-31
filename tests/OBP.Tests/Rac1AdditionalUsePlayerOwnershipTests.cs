@@ -51,7 +51,7 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
         Assert.DoesNotContain("Node3D", host, StringComparison.Ordinal);
         Assert.DoesNotContain("Rac1World.", host, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1WeaponInventory(", host, StringComparison.Ordinal);
-        Assert.DoesNotContain("_weaponGenerations", host, StringComparison.Ordinal);
+        Assert.DoesNotContain("WeaponGenerations", host, StringComparison.Ordinal);
         Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1AdditionalUseHost.cs.uid")));
     }
 
@@ -89,35 +89,35 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
     [Fact]
     public void WorldPresentationFollowsSameShotAndAudioDispatchOrder()
     {
-        string root = Script("OBPGame.Rac1Weapons.cs");
-        int start = root.IndexOf("private void StepRac1AdditionalWeapons()", StringComparison.Ordinal);
-        int end = root.IndexOf("private void StepRac1EquipmentViews(", StringComparison.Ordinal);
+        string root = Script("Rac1WeaponUsePresentationHost.cs");
+        int start = root.IndexOf("internal void StepAdditional()", StringComparison.Ordinal);
+        int end = root.IndexOf("internal void StepViews(", StringComparison.Ordinal);
         Assert.True(start >= 0 && end > start);
         string step = root[start..end];
 
         AssertIncreasing(step,
-            "MovementReproduction.IsLoading",
+            "Environment.Loading()",
             "var frame = use.BeginFrame(",
             "if (frame.PyroChanged",
-            "_equipmentPresentation.NativeViews.PlayPyrocitor(frame.Pyro)",
+            "Equipment.NativeViews.PlayPyrocitor(frame.Pyro)",
             "if (frame.Shot is { } shot)",
             "use.RecordShot(shot)",
-            "_equipmentPresentation.NativeViews.PlayShot(shot)",
-            "Rac1World.Weapons.Projectiles.Throw(shot)",
-            "Rac1World.Weapons.Projectiles.FireBlaster(shot)",
-            "Rac1World.Weapons.SuckCannon.Fire(shot)",
-            "Rac1World.Weapons.Arsenal.Fire(shot.Weapon)",
-            "PersistRac1CampaignState(",
-            "RefreshRac1HudState()",
-            "use.CompleteFrame(frame, _rac1Weapons)",
-            "StepRac1WeaponAudio()");
+            "Equipment.NativeViews.PlayShot(shot)",
+            "world.Weapons.Projectiles.Throw(shot)",
+            "world.Weapons.Projectiles.FireBlaster(shot)",
+            "world.Weapons.SuckCannon.Fire(shot)",
+            "world.Weapons.Arsenal.Fire(shot.Weapon)",
+            "Views.Persist(",
+            "Views.RefreshHud()",
+            "use.CompleteFrame(frame, weapons)",
+            "StepAudio()");
 
-        Assert.Contains("Rac1World.Weapons.Arsenal.SetHeld", step, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Arsenal.AdmitUse", step, StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.Arsenal.SetHeld", step, StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.Arsenal.AdmitUse", step, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1AdditionalWeaponSession(", step, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1WeaponInventory(", step, StringComparison.Ordinal);
-        Assert.Contains("_persistentPlayer.Rac1Use.UseTicks", root, StringComparison.Ordinal);
-        Assert.Contains("_persistentPlayer.Rac1Use.Session", root, StringComparison.Ordinal);
+        Assert.Contains("Session.Rac1Use.UseTicks", root, StringComparison.Ordinal);
+        Assert.Contains("Session.Rac1Use.Session", root, StringComparison.Ordinal);
         string views = Script("Rac1EquipmentViewPresentation.cs");
         Assert.Contains("view.Play(useTicks > 0 ? 4 : 1)", views, StringComparison.Ordinal);
         Assert.Contains("if (native?.Vacuuming == true) view.Play(3)", views, StringComparison.Ordinal);
@@ -128,11 +128,11 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
     {
         string host = Script("Rac1AdditionalUseHost.cs");
         string root = Script("OBPGame.cs");
-        string combat = Script("OBPGame.Rac1Combat.cs");
-        string weapons = Script("OBPGame.Rac1Weapons.cs");
+        string combat = Script("Rac1WeaponPlayerInputHost.cs");
+        string weapons = Script("Rac1WeaponUsePresentationHost.cs");
         string worldEntry = Script("OBPGame.WorldEntry.cs");
 
-        Assert.Contains("_persistentPlayer.Rac1Use.RequestFire()", combat, StringComparison.Ordinal);
+        Assert.Contains("session.Rac1Use.RequestFire()", combat, StringComparison.Ordinal);
         Assert.Contains("_persistentPlayer.Rac1Use.CancelFire()", root, StringComparison.Ordinal);
         Assert.Contains("_persistentPlayer.Rac1Use.ClearUseTicks()", root, StringComparison.Ordinal);
         Assert.Contains("_persistentPlayer.Rac1Use.StopPyro()", root, StringComparison.Ordinal);
@@ -140,18 +140,18 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
         Assert.Contains("_persistentPlayer.Rac1Use.PyroEmitting", root, StringComparison.Ordinal);
         Assert.Contains("_persistentPlayer.Rac1Use.UseTicks > 0", worldEntry, StringComparison.Ordinal);
         Assert.Contains("_persistentPlayer.Rac1Use.UseAge / 60d", worldEntry, StringComparison.Ordinal);
-        Assert.Contains("_persistentPlayer.Rac1Use.PyroEmitting", Script("OBPGame.Rac1WeaponWorld.cs"), StringComparison.Ordinal);
+        Assert.Contains("ports.PyroEmitting()", Script("Rac1WeaponEffectsHost.cs"), StringComparison.Ordinal);
 
         AssertIncreasing(weapons,
-            "Rac1World.Weapons.Arsenal.Reset()",
-            "Rac1World.Weapons.Projectiles.RetireShotsAgentsMotes()",
-            "Rac1World.Weapons.Flames.ClearCooldowns()",
-            "Rac1World.Weapons.Flames.ClearTrackedFlames()",
-            "_persistentPlayer.Rac1Use.ResetSession(_rac1Weapons)",
-            "Rac1World.Weapons.Projectiles.ResetFlashes()",
-            "_persistentPlayer.Rac1Use.ResetInputState()");
+            "world.Weapons.Arsenal.Reset()",
+            "world.Weapons.Projectiles.RetireShotsAgentsMotes()",
+            "world.Weapons.Flames.ClearCooldowns()",
+            "world.Weapons.Flames.ClearTrackedFlames()",
+            "Session.Rac1Use.ResetSession(State.Weapons())",
+            "world.Weapons.Projectiles.ResetFlashes()",
+            "Session.Rac1Use.ResetInputState()");
         Assert.Contains("return Rac1Use.BoundInventory != currentInventory()", Script("PlayerSessionHost.cs"), StringComparison.Ordinal);
-        Assert.Contains("_persistentPlayer.Rac1Use.BindInventory(_rac1Weapons)", weapons, StringComparison.Ordinal);
+        Assert.Contains("Session.Rac1Use.BindInventory(State.Weapons())", weapons, StringComparison.Ordinal);
         Assert.Contains("internal void ResetInputState()", host, StringComparison.Ordinal);
         Assert.Contains("UseTicks = UseAge = 0", host, StringComparison.Ordinal);
         Assert.Contains("ShotsFired = 0", host, StringComparison.Ordinal);

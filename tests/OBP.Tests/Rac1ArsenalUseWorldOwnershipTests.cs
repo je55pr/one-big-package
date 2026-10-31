@@ -35,7 +35,7 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
         Assert.Contains("Arsenal.ClearHeld()", parent, StringComparison.Ordinal);
         Assert.Contains("Arsenal.Dispose()", parent, StringComparison.Ordinal);
         Assert.Contains("new(weaponTargets, contactPhysics, suckCannon, projectiles, flames)", module, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Arsenal.Reset()", Script("OBPGame.Rac1Weapons.cs"), StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.Arsenal.Reset()", Script("Rac1WeaponUsePresentationHost.cs"), StringComparison.Ordinal);
         Assert.Contains("Arsenal.Tick()", parent, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", host, StringComparison.Ordinal);
         Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1ArsenalUseHost.cs.uid")));
@@ -94,7 +94,7 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
     {
         string host = Script("Rac1ArsenalUseHost.cs");
         string root = Script("OBPGame.cs");
-        string weapons = Script("OBPGame.Rac1Weapons.cs");
+        string weapons = Script("Rac1WeaponUsePresentationHost.cs");
 
         Assert.Contains("Func<Rac1WeaponId> Equipped", host, StringComparison.Ordinal);
         Assert.Contains("Func<int> TeslaAmmo", host, StringComparison.Ordinal);
@@ -112,10 +112,10 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
         Assert.Contains("Rac1WeaponId.Ryno => weapons.Missiles.CanBeginRyno", host, StringComparison.Ordinal);
         Assert.Contains("Rac1WeaponId.DecoyGlove => weapons.Deployables.CanFireDecoy", host, StringComparison.Ordinal);
         Assert.Contains("new Rac1ArsenalUsePorts(", root, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Arsenal.SetHeld, Rac1World.Weapons.Arsenal.AdmitUse)", weapons, StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.Arsenal.SetHeld, world.Weapons.Arsenal.AdmitUse)", weapons, StringComparison.Ordinal);
         Assert.Contains("setArsenalHeld(held)", Script("Rac1AdditionalUseHost.cs"), StringComparison.Ordinal);
         Assert.Contains("session.Step(held, admitArsenalUse())", Script("Rac1AdditionalUseHost.cs"), StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Arsenal.Fire(shot.Weapon)", weapons, StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.Arsenal.Fire(shot.Weapon)", weapons, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1WeaponInventory(", host, StringComparison.Ordinal);
         Assert.DoesNotContain("Rac1AdditionalWeaponSession _", host, StringComparison.Ordinal);
     }
@@ -126,7 +126,7 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
         string host = Script("Rac1ArsenalUseHost.cs");
         string parent = Script("Rac1WeaponHost.cs");
         string root = Script("OBPGame.cs");
-        string weapons = Script("OBPGame.Rac1Weapons.cs");
+        string weapons = Script("Rac1WeaponUsePresentationHost.cs");
 
         Assert.Contains("internal bool Held => !_disposed && _held", host, StringComparison.Ordinal);
         Assert.Contains("if (!_disposed) _held = held", host, StringComparison.Ordinal);
@@ -135,7 +135,7 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
         Assert.Contains("Arsenal.ClearHeld()", parent, StringComparison.Ordinal);
         Assert.Contains("Arsenal.Dispose()", parent, StringComparison.Ordinal);
         Assert.Contains("Weapons.Arsenal.SetHeld(false)", root, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Weapons.Arsenal.Held", weapons, StringComparison.Ordinal);
-        Assert.Contains("Rac1Gameplay?.Weapons.Arsenal.Held == true", weapons, StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.Arsenal.Held", weapons, StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.Arsenal.Held", weapons, StringComparison.Ordinal);
     }
 }

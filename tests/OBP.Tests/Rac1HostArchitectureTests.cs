@@ -139,7 +139,7 @@ public sealed class Rac1HostArchitectureTests
             RepoPaths.Root,
             "game",
             "scripts",
-            "OBPGame.Rac1Combat.cs"));
+            "Rac1WeaponPlayerInputHost.cs"));
 
         Assert.DoesNotContain(
             "Rac1Class749Hostile.TerminalNativeStateFd",

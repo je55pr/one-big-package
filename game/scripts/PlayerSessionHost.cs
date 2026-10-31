@@ -3,6 +3,7 @@ using OBP.Fusion;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.RAC1.Presentation;
+using OBP.RAC1.Progression;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Player;
 
@@ -12,6 +13,14 @@ namespace OBP.Game;
 /// Sole persistent ordinary-player owner: native state and progression outlive
 /// worlds, destinations, and menu pages. WorldEntrySession is a lease, not a new player.
 /// </summary>
+internal interface IRac1WeaponPlayerInput
+{
+    void PrimaryAttack();
+    void StepInput();
+    void Select(Rac1WeaponId weapon);
+    void Cycle(int direction);
+}
+
 internal sealed class PlayerSessionHost
 {
     // Original shared native effect RNG continues across world leases and replay resets.
@@ -35,6 +44,13 @@ internal sealed class PlayerSessionHost
     internal Rac1RatchetNanotechSession ParityHealth { get; private set; } = new();
     internal Rac1HeldItemSession ParityHeld { get; } = new();
     internal Rac1AdditionalUseHost Rac1Use { get; } = new();
+    internal IRac1WeaponPlayerInput? CombatInput { get; set; }
+
+    internal int SelectRac1CrateReward(int centre, int? seed)
+    {
+        var range = Rac1BoltCrate.RewardRange(centre);
+        return range.Maximum == 0 ? 0 : Rac1EffectRandom(seed).Inclusive(range.Minimum, range.Maximum);
+    }
     internal Rac1WeaponInventory? WeaponPreview { get; set; }
 
     /// <summary>

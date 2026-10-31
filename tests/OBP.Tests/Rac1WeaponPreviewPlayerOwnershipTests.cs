@@ -109,19 +109,19 @@ public sealed class Rac1WeaponPreviewPlayerOwnershipTests
         Assert.DoesNotContain("Godot", preview, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", preview, StringComparison.Ordinal);
 
-        string root = Script("OBPGame.Rac1Weapons.cs");
-        string orchestrate = root[root.IndexOf("private void SetRac1WeaponPreview(", StringComparison.Ordinal)..root.IndexOf("private void AttachRac1EquipmentViews(", StringComparison.Ordinal)];
+        string root = Script("Rac1WeaponUsePresentationHost.cs");
+        string orchestrate = root[root.IndexOf("internal void SetPreview(", StringComparison.Ordinal)..root.IndexOf("internal void AttachViews(", StringComparison.Ordinal)];
         AssertIncreasing(orchestrate,
-            "if (FusionWeapons.TestActive)",
-            "_persistentPlayer.UpdateRac1WeaponPreview(disable, () => _rac1Weapons, _rac1Campaign.Session.Weapons)",
+            "if (fusion.TestActive)",
+            "Session.UpdateRac1WeaponPreview(disable, State.Weapons, State.CampaignWeapons())",
             "if (resetWorld)",
-            "Rac1World.Context.BombGlove = new(_rac1Weapons); ResetRac1AdditionalWeapons()",
-            "MovementReproduction.Report(disable",
-            "_persistentPlayer.Rac1Use.BindInventory(_rac1Weapons)",
-            "FusionWeapons.SynchronizeNativeSelection()",
-            "RefreshSourceEquipmentContext()",
-            "HoldSelectedRac1HandItem()",
-            "RefreshRac1HudState(); RefreshRac1WrenchPresentationVisibility()");
+            "world.Context.BombGlove = new(State.Weapons())",
+            "Views.Report(disable",
+            "Session.Rac1Use.BindInventory(State.Weapons())",
+            "fusion.SynchronizeNativeSelection()",
+            "if (State.CurrentWorld() is { Game.SourceGame: ObpSourceGame.Rac1 } current)",
+            "Views.HoldSelected()",
+            "Views.RefreshHud()");
         Assert.DoesNotContain("GrantAmmoClamped", orchestrate, StringComparison.Ordinal);
         Assert.DoesNotContain("SetEquipmentPreview(!disable)", orchestrate, StringComparison.Ordinal);
     }
@@ -136,16 +136,16 @@ public sealed class Rac1WeaponPreviewPlayerOwnershipTests
         })
             Assert.Empty(root.GetMembers(name));
 
-        string weapons = Script("OBPGame.Rac1Weapons.cs");
-        string combat = Script("OBPGame.Rac1Combat.cs");
+        string weapons = Script("Rac1WeaponUsePresentationHost.cs");
+        string combat = Script("OBPGame.cs");
         string composition = Script("OBPGame.cs");
-        Assert.Contains("_equipmentPresentation.WeaponAudio.Reset()", weapons, StringComparison.Ordinal);
+        Assert.Contains("Equipment.WeaponAudio.Reset()", weapons, StringComparison.Ordinal);
         Assert.Contains("_equipmentPresentation.WeaponAudio.Reset()", combat, StringComparison.Ordinal);
         Assert.Contains("_equipmentPresentation.WeaponAudio.Reset(freeImmediately: true)", composition, StringComparison.Ordinal);
         Assert.Contains("_equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), _args.Rac1WeaponsSmoke)", composition, StringComparison.Ordinal);
         Assert.Equal(2, composition.Split("_equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), _args.Rac1WeaponsSmoke)").Length - 1);
-        Assert.Contains("_equipmentPresentation.WeaponAudio.Step(new(", weapons, StringComparison.Ordinal);
-        Assert.Contains("_equipmentPresentation.WeaponAudio.SetPaused(paused)", weapons, StringComparison.Ordinal);
+        Assert.Contains("Equipment.WeaponAudio.Step(new(", weapons, StringComparison.Ordinal);
+        Assert.Contains("equipment.WeaponAudio.SetPaused(paused)", weapons, StringComparison.Ordinal);
         Assert.DoesNotContain("ResetRac1WeaponAudio(", weapons, StringComparison.Ordinal);
         Assert.DoesNotContain("RecordRac1WeaponSound(", weapons, StringComparison.Ordinal);
     }

@@ -32,7 +32,8 @@ public sealed class Rac1WrenchWorldOwnershipTests
 
         string host = Script("Rac1WrenchHost.cs");
         string module = Script("Rac1WorldModule.cs");
-        string entry = Script("OBPGame.Rac1Wrench.cs");
+        Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1Wrench.cs")));
+        string entry = Script("OBPGame.cs") + Script("OBPGame.WorldEntry.cs");
 
         Assert.Contains("Wrench = new(wrenchFrame, wrenchContact)", module, StringComparison.Ordinal);
         Assert.Contains("Wrench.Reset()", module, StringComparison.Ordinal);
@@ -40,9 +41,10 @@ public sealed class Rac1WrenchWorldOwnershipTests
         Assert.Contains("if (_disposed) return;", host, StringComparison.Ordinal);
         Assert.DoesNotContain("_reset.Wrench()", module, StringComparison.Ordinal);
         Assert.DoesNotContain("Action Wrench", Script("Rac1WorldPorts.cs"), StringComparison.Ordinal);
-        Assert.Contains("gameplay.Wrench.Reset()", entry, StringComparison.Ordinal);
-        Assert.Contains("GodotRac1PlayerAudioPlayback.ResetWrench(_playerAudio)", entry, StringComparison.Ordinal);
-        Assert.Contains("if (_player is not null) _player.Rac1WrenchThrown = false", entry, StringComparison.Ordinal);
+        Assert.Contains("Rac1WrenchHost.ResetOrFallback(", entry, StringComparison.Ordinal);
+        Assert.Contains("if (wrench is not null) wrench.Reset()", host, StringComparison.Ordinal);
+        Assert.Contains("GodotRac1PlayerAudioPlayback.ResetWrench(audio)", host, StringComparison.Ordinal);
+        Assert.Contains("if (player is not null) player.Rac1WrenchThrown = false", host, StringComparison.Ordinal);
         Assert.Contains("_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.OnPhysicsUpdated(frame)", entry, StringComparison.Ordinal);
         Assert.Contains("Rac1WrenchThrowSession _throw = new()", host, StringComparison.Ordinal);
         Assert.Contains("HashSet<Rac1MobyRuntimeKey> _victims = []", host, StringComparison.Ordinal);
