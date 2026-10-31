@@ -3,6 +3,7 @@ using OBP.Fusion;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.RAC1.Presentation;
+using OBP.RAC1.Progression;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Player;
 
@@ -12,6 +13,14 @@ namespace OBP.Game;
 /// Sole persistent ordinary-player owner: native state and progression outlive
 /// worlds, destinations, and menu pages. WorldEntrySession is a lease, not a new player.
 /// </summary>
+internal interface IRac1WeaponPlayerInput
+{
+    void PrimaryAttack();
+    void StepInput();
+    void Select(Rac1WeaponId weapon);
+    void Cycle(int direction);
+}
+
 internal sealed class PlayerSessionHost
 {
     // Original shared native effect RNG continues across world leases and replay resets.
@@ -34,7 +43,47 @@ internal sealed class PlayerSessionHost
 
     internal Rac1RatchetNanotechSession ParityHealth { get; private set; } = new();
     internal Rac1HeldItemSession ParityHeld { get; } = new();
+    internal Rac1AdditionalUseHost Rac1Use { get; } = new();
+    internal IRac1WeaponPlayerInput? CombatInput { get; set; }
+
+    internal int SelectRac1CrateReward(int centre, int? seed)
+    {
+        var range = Rac1BoltCrate.RewardRange(centre);
+        return range.Maximum == 0 ? 0 : Rac1EffectRandom(seed).Inclusive(range.Minimum, range.Maximum);
+    }
     internal Rac1WeaponInventory? WeaponPreview { get; set; }
+
+    /// <summary>
+    /// Enter or leave the development arsenal using the existing player-native
+    /// preview controller and its current inventory. Returns whether the
+    /// world presentation/use lease needs its original reset. Refill of the
+    /// same preview inventory must not erase live cargo.
+    /// </summary>
+    internal bool UpdateRac1WeaponPreview(bool disable, Func<Rac1WeaponInventory> currentInventory,
+        Rac1WeaponInventory campaignInventory)
+    {
+        // Native preview can swap the inventory identity. Resolve current
+        // inventory only afterwards, matching the original root ordering.
+        Native?.SetEquipmentPreview(!disable);
+        if (disable)
+        {
+            WeaponPreview = null;
+            return true;
+        }
+
+        WeaponPreview ??= Native?.Inventory ?? new(campaignInventory.CapturePersistentState(), currentInventory().CurrentItemId);
+        // _rac1Weapons resolves to the new preview inventory after the above
+        // assignment in parity mode. Never grant development items to campaign.
+        var inventory = currentInventory();
+        inventory.AcquireNativeItem(Rac1MetalDetectorSession.NativeGadgetItem);
+        foreach (var weapon in Rac1WeaponProfiles.Additional.Select(profile => profile.Item).Append(Rac1WeaponId.FirstRanged))
+        {
+            inventory.AcquireNativeItem((int)weapon);
+            inventory.GrantAmmoClamped((int)weapon, Rac1ItemAmmoDescriptors.Get((int)weapon).MaxAmmo);
+        }
+        return Rac1Use.BoundInventory != currentInventory();
+    }
+
     internal Rac1WrenchCombatController Wrench { get; } = new();
     internal Rac1BoltWallet Rac1Wallet(Rac1BoltWallet parityWallet) => Native?.Wallet ?? parityWallet;
     internal Rac1RatchetNanotechSession Rac1Health => Native?.Health ?? ParityHealth;

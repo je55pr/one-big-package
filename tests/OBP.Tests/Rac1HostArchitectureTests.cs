@@ -139,7 +139,7 @@ public sealed class Rac1HostArchitectureTests
             RepoPaths.Root,
             "game",
             "scripts",
-            "OBPGame.Rac1Combat.cs"));
+            "Rac1WeaponPlayerInputHost.cs"));
 
         Assert.DoesNotContain(
             "Rac1Class749Hostile.TerminalNativeStateFd",
@@ -153,7 +153,17 @@ public sealed class Rac1HostArchitectureTests
             "CompleteRecoveredDamageReaction",
             combat,
             StringComparison.Ordinal);
-        Assert.Contains("ApplyRac1EnemyWeaponDamage", combat, StringComparison.Ordinal);
+        string damage = File.ReadAllText(Path.Combine(
+            RepoPaths.Root, "game", "scripts", "Rac1WeaponDamageHost.cs"));
+        Assert.DoesNotContain("Rac1Class749Hostile.TerminalNativeStateFd", damage, StringComparison.Ordinal);
+        Assert.DoesNotContain("Rac1Class749Hostile.TerminalNativeStateFe", damage, StringComparison.Ordinal);
+        Assert.DoesNotContain("CompleteRecoveredDamageReaction", damage, StringComparison.Ordinal);
+        string wrenchDamage = File.ReadAllText(Path.Combine(
+            RepoPaths.Root, "game", "scripts", "Rac1WrenchDamageHost.cs"));
+        Assert.DoesNotContain("Rac1Class749Hostile.TerminalNativeStateFd", wrenchDamage, StringComparison.Ordinal);
+        Assert.DoesNotContain("Rac1Class749Hostile.TerminalNativeStateFe", wrenchDamage, StringComparison.Ordinal);
+        Assert.DoesNotContain("CompleteRecoveredDamageReaction", wrenchDamage, StringComparison.Ordinal);
+        Assert.Contains("ApplyRac1EnemyWeaponDamage", wrenchDamage, StringComparison.Ordinal);
     }
 
     [Fact]

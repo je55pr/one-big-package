@@ -51,9 +51,10 @@ public sealed class FusionWeaponOwnershipArchitectureTests
     {
         string attach = Method("OBPGame.WorldEntry.cs", "AttachPlayerAvatarVisual").ToString();
         Assert.Contains("FusionWeapons.AttachViews(view)", attach, StringComparison.Ordinal);
-        Assert.True(attach.IndexOf("FusionWeapons.AttachViews(view)", StringComparison.Ordinal) >
-            attach.IndexOf("AttachRac1EquipmentViews(view)", StringComparison.Ordinal));
-        Assert.DoesNotContain("FusionWeapons.AttachViews", Method("OBPGame.Rac1Weapons.cs", "AttachRac1EquipmentViews").ToString(),
+        int nativeViews = attach.IndexOf("UsePresentation.AttachViews(view)", StringComparison.Ordinal);
+        Assert.True(nativeViews >= 0, "R&C1 view attachment is missing.");
+        Assert.True(attach.IndexOf("FusionWeapons.AttachViews(view)", StringComparison.Ordinal) > nativeViews);
+        Assert.DoesNotContain("FusionWeapons.AttachViews", Method("Rac1WeaponUsePresentationHost.cs", "AttachViews").ToString(),
             StringComparison.Ordinal);
         string clear = Method("FusionWeaponHost.cs", "ClearTransients").ToString();
         Assert.Contains("player.ClearNativeTransients(freeImmediately)", clear, StringComparison.Ordinal);

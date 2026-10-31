@@ -19,7 +19,8 @@ internal sealed record Rac1MovementWorldPorts(
     Func<Rac1AdditionalWeaponSession?> AdditionalWeapons,
     Func<bool> WeaponPreview,
     Func<IReadOnlyList<Rac1MobyRuntimeKey>> MorphedMobies,
-    ISet<Rac1MobyRuntimeKey> ChickenCargo,
+    Action ClearChickenCargo,
+    Action<Rac1MobyRuntimeKey> RememberChickenCargo,
     Action RetireCapturedCargoPresentation,
     Func<int?> HeldItemId,
     Action<RuntimeWorldScene.DynamicObjectNode> MorphEnemy,
@@ -68,12 +69,12 @@ internal sealed class Rac1MovementWorldStateAdapter(Rac1MovementWorldPorts ports
         // Restoration replaces, rather than accumulates, captured cargo and its
         // presentation/morph metadata. Retire stale visuals before importing the save.
         ports.RetireCapturedCargoPresentation();
-        ports.ChickenCargo.Clear();
+        ports.ClearChickenCargo();
         ports.AdditionalWeapons()?.RestoreCargo(world.CapturedMobies ?? []);
         foreach (var key in world.MorphedMobies ?? [])
         {
             var enemy = enemies.Roster[key.InstanceIndex];
-            if (world.CapturedMobies?.Contains(key) == true) ports.ChickenCargo.Add(key);
+            if (world.CapturedMobies?.Contains(key) == true) ports.RememberChickenCargo(key);
             else ports.MorphEnemy(enemy.Node);
         }
 

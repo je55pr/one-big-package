@@ -37,6 +37,37 @@ public sealed class Rac1ExplosionPresenterTests
     }
 
     [Fact]
+    public void NativeEquipmentTintUsesOriginalHalfRangeScaling()
+    {
+        var color = Rac1ExplosionPresenter.EquipmentColor(0x80402010);
+        Assert.Equal(.125f, color.R);
+        Assert.Equal(.25f, color.G);
+        Assert.Equal(.5f, color.B);
+        Assert.Equal(1f, color.A);
+    }
+
+    [Fact]
+    public void EquipmentMotesUseTheExistingWorldParticlePresenterRatherThanRootMeshConstruction()
+    {
+        var rootType = HostOwnershipAudit.Host.Value.GetTypeByMetadataName("OBP.Game.OBPGame")!;
+        Assert.Empty(rootType.GetMembers("EquipmentParticle"));
+        Assert.Empty(rootType.GetMembers("GetRac1ParticleMesh"));
+        Assert.Empty(rootType.GetMembers("EquipmentColor"));
+
+        string world = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Rac1WeaponEffectsHost.cs"));
+        string factory = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
+        string presenter = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Rac1ExplosionPresenter.cs"));
+        Assert.Contains("Explosions.CreateEquipmentParticle(type, color, size", world, StringComparison.Ordinal);
+        Assert.Contains("Explosions.CreateEquipmentParticle(27, new(.3f, .7f, 1, .6f), .6f", factory, StringComparison.Ordinal);
+        Assert.Contains("Mesh = GetParticleMesh(poolType, assets?.ParticleTextures, gloveTextures)", presenter, StringComparison.Ordinal);
+        Assert.Contains("Scale = Vector3.One * size", presenter, StringComparison.Ordinal);
+        Assert.Contains("CastShadow = GeometryInstance3D.ShadowCastingSetting.Off", presenter, StringComparison.Ordinal);
+        Assert.Contains("node.SetInstanceShaderParameter(\"tint\", color)", presenter, StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.Projectiles.AddFlash(node, ticks, size)", world, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.Weapons.Projectiles.AddMote(ring, forward * .25f)", factory, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ExplosionHistoryIsSourceQualifiedBoundedCopiedAndClearedOnRetirement()
     {
         var presenter = new Rac1ExplosionPresenter();

@@ -34,6 +34,11 @@ internal sealed class GodotRac1PlayerAudioPlayback(Node reactionOwner, Func<Node
             loading || player.DevelopmentControls.FlyEnabled, player.Rac1GameplayAlive);
     }
 
+    // Wrench reset keeps reaction voices alive across attack-state retirement.
+    // The world host asks through this audio adapter, not through a player-source selector.
+    internal static void ResetWrench(Rac1PlayerAudioPresenter? audio) =>
+        audio?.Reset(includeReactions: false);
+
     internal static void StepWrench(Rac1PlayerAudioPresenter? audio, IPlayerAnimationPresentationController? presentation,
         Rac1WrenchAttackSession.Frame attack, Rac1WrenchThrowSession thrown, Vector3 hand, Vector3 wrench)
     {

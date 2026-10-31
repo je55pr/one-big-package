@@ -83,18 +83,19 @@ public sealed class SourceNeutralHostArchitectureTests
     }
 
     [Fact]
-    public void RemovedGadgetOriginGateCannotBeReintroduced()
+    public void GadgetToggleCannotRegainRootOrWorldOriginSelection()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.Rac1MetalDetector.cs");
-        string source = original.GetText().ToString().Replace("if (OrdinaryPlayerSession)",
-            "if (_world?.Game != ObpSourceGame.Rac1) return false;\nif (OrdinaryPlayerSession)", StringComparison.Ordinal);
-        Assert.NotEqual(original.GetText().ToString(), source);
-        var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
-            CSharpSyntaxTree.ParseText(source, path: original.FilePath))), HostOwnershipAudit.Policy());
-        Assert.Single(errors);
-        Assert.Contains("TryToggleRac1MetalDetector", errors[0]);
-        Assert.Contains("unapproved world-origin", errors[0]);
+        var tree = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1MetalDetectorHost.cs");
+        var method = tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
+            .Single(method => method.Identifier.ValueText == "Toggle");
+        Assert.Contains("ports.Ordinary()", method.ToString(), StringComparison.Ordinal);
+        Assert.Contains("ports.OwnsGadget()", method.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(method.DescendantNodes().OfType<IdentifierNameSyntax>(),
+            name => name.Identifier.ValueText is "OBPGame" or "UseRac1Gameplay");
+        Assert.DoesNotContain(method.DescendantNodes().OfType<MemberAccessExpressionSyntax>(),
+            access => access.Name.Identifier.ValueText == "Game");
+        Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1MetalDetector.cs")));
     }
 
     [Fact]
@@ -135,7 +136,7 @@ public sealed class SourceNeutralHostArchitectureTests
     }
 
     [Theory]
-    [InlineData("game/scripts/OBPGame.Rac1MetalDetector.cs", "_world?.Game != ObpSourceGame.Rac1")]
+    [InlineData("game/scripts/Rac1MetalDetectorHost.cs", "if (ports.Ordinary())")]
     [InlineData("game/scripts/Rac1NovalisWaterMechanism.cs", "_water = Rac1NovalisWaterSurfaces.FromWorld(world);")]
     public void FrozenBaselinesIgnoreCommentsAndCheckoutLineEndings(string path, string anchor)
     {
@@ -208,13 +209,13 @@ public sealed class SourceNeutralHostArchitectureTests
     {
         var (compilation, tree) = InsertAdapterStatement("game/scripts/OBPGame.WorldEntry.cs", "WorldOptions", """
             if (world.Game == ObpSourceGame.Rac1)
-                OnRac1WeaponSelectionRequested(OBP.RAC1.Gameplay.Rac1WeaponId.Blaster);
+                Rac1CombatInput.Select(OBP.RAC1.Gameplay.Rac1WeaponId.Blaster);
             """);
         var call = tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>()
-            .Single(invocation => invocation.Expression.ToString() == "OnRac1WeaponSelectionRequested");
+            .Single(invocation => invocation.Expression.ToString() == "Rac1CombatInput.Select");
         var bound = Assert.IsAssignableFrom<IMethodSymbol>(compilation.GetSemanticModel(tree).GetSymbolInfo(call).Symbol);
-        Assert.Equal("OBPGame", bound.ContainingType.Name);
-        Assert.NotEmpty(bound.DeclaringSyntaxReferences); // The real host method, not an unresolved or test-only stub.
+        Assert.Equal("IRac1WeaponPlayerInput", bound.ContainingType.Name);
+        Assert.NotEmpty(bound.DeclaringSyntaxReferences); // The real player-session contract, not an unresolved or test-only stub.
 
         var usages = HostOwnershipAudit.Scan(compilation);
         var adapter = usages.Single(usage => usage.Key.EndsWith("::OBPGame.WorldOptions(RuntimeWorld)", StringComparison.Ordinal));

@@ -151,6 +151,7 @@
     <Compile Include="../../game/diagnostics/ControllerWeaponInputRegression.cs" Link="Diagnostics/ControllerWeaponInputRegression.cs" />
     <Compile Include="../../game/scripts/Rac1CampaignHost.cs" Link="Game/Rac1CampaignHost.cs" />
     <Compile Include="../../game/scripts/Rac1WorldContext.cs" Link="Game/Rac1WorldContext.cs" />
+    <Compile Include="../../game/scripts/Rac1ThrownEquipmentAnimationHost.cs" Link="Game/Rac1ThrownEquipmentAnimationHost.cs" />
     <Compile Include="../../game/scripts/Rac3Class500WorldRuntime.cs" Link="Game/Rac3Class500WorldRuntime.cs" />
     <Compile Include="../../game/scripts/WorldSceneLifetime.cs" Link="Game/WorldSceneLifetime.cs" />
     <Compile Include="../../game/scripts/HostOperationScope.cs" Link="Game/HostOperationScope.cs" />
@@ -168,6 +169,7 @@
     <Compile Include="../../game/scripts/Rac1FusionCampaignIsolation.cs" Link="Game/Rac1FusionCampaignIsolation.cs" />
     <Compile Include="../../game/scripts/PlayerSessionNativeState.cs" Link="Game/PlayerSessionNativeState.cs" />
     <Compile Include="../../game/scripts/PlayerSessionHost.cs" Link="Game/PlayerSessionHost.cs" />
+    <Compile Include="../../game/scripts/Rac1AdditionalUseHost.cs" Link="Game/Rac1AdditionalUseHost.cs" />
     <Compile Include="../../game/scripts/PlayerLifecycleBridge.cs" Link="Game/PlayerLifecycleBridge.cs" />
     <Compile Include="../../game/scripts/ProfileCoordinator.cs" Link="Game/ProfileCoordinator.cs" />
     <Compile Include="../../game/scripts/PlayerEquipmentRegistrations.cs" Link="Game/PlayerEquipmentRegistrations.cs" />
