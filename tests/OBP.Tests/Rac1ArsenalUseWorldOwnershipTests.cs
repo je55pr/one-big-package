@@ -136,6 +136,5 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
         Assert.Contains("Arsenal.Dispose()", parent, StringComparison.Ordinal);
         Assert.Contains("Weapons.Arsenal.SetHeld(false)", root, StringComparison.Ordinal);
         Assert.Contains("world.Weapons.Arsenal.Held", weapons, StringComparison.Ordinal);
-        Assert.Contains("world.Weapons.Arsenal.Held", weapons, StringComparison.Ordinal);
     }
 }

@@ -34,7 +34,8 @@ public class HostCoordinatorArchitectureTests
         Assert.DoesNotContain("private void TickRac1Pickups(", core, StringComparison.Ordinal);
 
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac1Combat.cs")));
-        Assert.Contains("static _ => { }", File.ReadAllText(Path.Combine(scripts, "OBPGame.cs")), StringComparison.Ordinal);
+        Assert.DoesNotContain("Action<double> Swing", File.ReadAllText(Path.Combine(scripts, "Rac1WorldPorts.cs")), StringComparison.Ordinal);
+        Assert.DoesNotContain("_ticks.Swing(delta)", File.ReadAllText(Path.Combine(scripts, "Rac1WorldModule.cs")), StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac1Projectiles.cs")));
         Assert.Contains("Rac1Gameplay?.Bombs.StepPhysics()",
             File.ReadAllText(Path.Combine(scripts, "OBPGame.WorldEntry.cs")), StringComparison.Ordinal);

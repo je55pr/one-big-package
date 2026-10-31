@@ -137,10 +137,9 @@ public sealed class Rac1WeaponPreviewPlayerOwnershipTests
             Assert.Empty(root.GetMembers(name));
 
         string weapons = Script("Rac1WeaponUsePresentationHost.cs");
-        string combat = Script("OBPGame.cs");
         string composition = Script("OBPGame.cs");
         Assert.Contains("Equipment.WeaponAudio.Reset()", weapons, StringComparison.Ordinal);
-        Assert.Contains("_equipmentPresentation.WeaponAudio.Reset()", combat, StringComparison.Ordinal);
+        Assert.Contains("_equipmentPresentation.WeaponAudio.Reset()", composition, StringComparison.Ordinal);
         Assert.Contains("_equipmentPresentation.WeaponAudio.Reset(freeImmediately: true)", composition, StringComparison.Ordinal);
         Assert.Contains("_equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), _args.Rac1WeaponsSmoke)", composition, StringComparison.Ordinal);
         Assert.Equal(2, composition.Split("_equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), _args.Rac1WeaponsSmoke)").Length - 1);

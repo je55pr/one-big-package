@@ -22,7 +22,6 @@ internal sealed record Rac1WorldActorPorts(Action<RuntimeWorld> Pickups,
     Action<RuntimeWorld, RuntimeWorldScene.Result> GoldBolts);
 
 internal sealed record Rac1WorldTickPorts(Func<bool> Suspended,
-    Action<double> Swing,
     Action Checkpoints, Action<double> Pickups, Action GoldBolts, Action<double> Missions);
 
 internal sealed record Rac1PlayerGameplayPorts(Func<bool> Ordinary, Func<bool> Persistent, Func<bool> Alive,

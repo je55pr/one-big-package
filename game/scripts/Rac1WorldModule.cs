@@ -157,7 +157,6 @@ internal sealed class Rac1WorldModule : IDisposable
         }
         Taxis.Tick(delta);
         Mechanisms.Tick(delta, Rac1AuthoredTickPhase.Music);
-        _ticks.Swing(delta);
         if (!_playerPorts.Ordinary()) Enemies.TickRac1Hostiles(delta);
         Mechanisms.Tick(delta, Rac1AuthoredTickPhase.Visual);
         Breakables.TickExplosives(delta);

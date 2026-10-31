@@ -50,6 +50,23 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
     }
 
     [Fact]
+    public void ClearingViewsRetiresAvatarChildrenAndTheirStagedAttachments()
+    {
+        string views = Script("Rac1EquipmentViewPresentation.cs");
+        int start = views.IndexOf("internal void ClearViews()", StringComparison.Ordinal);
+        int end = views.IndexOf("internal void RetireWorld()", StringComparison.Ordinal);
+        Assert.True(start >= 0 && end > start);
+        string clear = views[start..end];
+        AssertIncreasing(clear,
+            "foreach (var view in _views.Values)",
+            "GodotObject.IsInstanceValid(view)",
+            "view.QueueFree()",
+            "_views.Clear()",
+            "_staged.Clear()");
+        Assert.Contains("view.AddChild(staged)", views, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ModelsAndStagedEquipmentPreserveSourceCacheAndWorldAttachmentOrder()
     {
         string views = Script("Rac1EquipmentViewPresentation.cs");
@@ -111,7 +128,6 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
         string root = Script("Rac1WeaponUsePresentationHost.cs");
         Assert.Contains("State.Player()!, State.Fusion().PlayNativeSound", root, StringComparison.Ordinal);
         Assert.Contains("Equipment.Assets(Environment.Ordinary(), world.Loot.PickupAssets)", root, StringComparison.Ordinal);
-        Assert.Contains("world.Loot.PickupAssets", root, StringComparison.Ordinal);
     }
 
     [Fact]

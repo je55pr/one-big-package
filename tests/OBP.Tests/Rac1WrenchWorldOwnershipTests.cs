@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace OBP.Tests;
 
@@ -11,6 +12,11 @@ public sealed class Rac1WrenchWorldOwnershipTests
 {
     private static string Script(string file) =>
         File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", file));
+
+    private static string Method(string file, string name) =>
+        HostOwnershipAudit.Host.Value.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/" + file)
+            .GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
+            .Single(method => method.Identifier.ValueText == name).ToString();
 
     [Fact]
     public void WrenchStateAndContactBelongToTheWorldLeaseInsteadOfRoot()
@@ -41,7 +47,9 @@ public sealed class Rac1WrenchWorldOwnershipTests
         Assert.Contains("if (_disposed) return;", host, StringComparison.Ordinal);
         Assert.DoesNotContain("_reset.Wrench()", module, StringComparison.Ordinal);
         Assert.DoesNotContain("Action Wrench", Script("Rac1WorldPorts.cs"), StringComparison.Ordinal);
-        Assert.Contains("Rac1WrenchHost.ResetOrFallback(", entry, StringComparison.Ordinal);
+        Assert.Contains("Rac1WrenchHost.ResetOrFallback(", Method("OBPGame.cs", "CreatePlayerLifecycle"), StringComparison.Ordinal);
+        Assert.Contains("Rac1WrenchHost.ResetOrFallback(", Method("OBPGame.cs", "CreateRac1WorldModule"), StringComparison.Ordinal);
+        Assert.Contains("Rac1WrenchHost.ResetOrFallback(", Method("OBPGame.WorldEntry.cs", "ResetPlayerAvatarPhysics"), StringComparison.Ordinal);
         Assert.Contains("if (wrench is not null) wrench.Reset()", host, StringComparison.Ordinal);
         Assert.Contains("GodotRac1PlayerAudioPlayback.ResetWrench(audio)", host, StringComparison.Ordinal);
         Assert.Contains("if (player is not null) player.Rac1WrenchThrown = false", host, StringComparison.Ordinal);

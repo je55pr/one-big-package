@@ -280,7 +280,6 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
     public void MorphConsumersBorrowReadOnlyIdentitiesViewsAndDiagnostics()
     {
         string root = Script("OBPGame.cs");
-        string wrench = Script("OBPGame.cs");
         string host = Script("Rac1MorphHost.cs");
         Assert.Contains("MorphedMobies: () => Rac1World.Weapons.Morph.ActiveKeys()", root, StringComparison.Ordinal);
         Assert.Contains(".Concat(Rac1World.Weapons.SuckCannon.ChickenCargoKeys).Distinct().ToArray()", root, StringComparison.Ordinal);
@@ -289,7 +288,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
         Assert.Contains("id => Rac1World.Weapons.Morph.Contains(id)", root, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Weapons.Morph.Project((enemy, view)", root, StringComparison.Ordinal);
         Assert.Contains("contactPorts.MorphView(target.Source.InstanceIndex)", Script("Rac1WrenchHost.cs"), StringComparison.Ordinal);
-        Assert.Contains("_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.OnPhysicsUpdated(frame)", wrench, StringComparison.Ordinal);
+        Assert.Contains("_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.OnPhysicsUpdated(frame)", root, StringComparison.Ordinal);
         Assert.Contains("internal IReadOnlyList<Rac1MobyRuntimeKey> ActiveKeys()", host, StringComparison.Ordinal);
         Assert.Contains("!chicken.Enemy.RewardEmitted", host, StringComparison.Ordinal);
         Assert.Contains("internal Rac1EquipmentView? ViewFor(int instanceIndex)", host, StringComparison.Ordinal);

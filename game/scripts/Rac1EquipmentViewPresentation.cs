@@ -33,6 +33,12 @@ internal sealed class Rac1EquipmentViewPresentation
 
     internal void ClearViews()
     {
+        // The views are children of the avatar, but attaching a replacement
+        // must also retire old views if the avatar itself remains alive.
+        // Staged attachments are children of their owning view.
+        foreach (var view in _views.Values)
+            if (GodotObject.IsInstanceValid(view) && !view.IsQueuedForDeletion())
+                view.QueueFree();
         _views.Clear();
         _staged.Clear();
     }

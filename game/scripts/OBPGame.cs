@@ -342,7 +342,7 @@ public partial class OBPGame : Node3D
             (world, result) => Rac1World.Loot.ConfigureRac1PlacedBolts(world, result),
             (world, result) => Rac1World.Loot.ConfigureRac1GoldBolts(world, result)),
         new Rac1WorldTickPorts(() => MovementReproduction.IsLoading,
-            static _ => { }, TickRac1CheckpointTriggers,
+            TickRac1CheckpointTriggers,
             delta => Rac1World.Loot.TickRac1Pickups(delta), () => Rac1World.Loot.TickRac1GoldBolts(), TickRac1Missions),
 
         new Rac1PlayerGameplayPorts(() => OrdinaryPlayerSession, () => _playerNative is not null, () => PlayerLife.Alive,
