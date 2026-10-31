@@ -81,8 +81,7 @@ public sealed class Rac1MissionWorldOwnershipTests
         Assert.Contains("finally", dispatch, StringComparison.Ordinal);
         Assert.Contains("if (!started && !_disposed && generation == _generation) _exitQueued = false;",
             dispatch, StringComparison.Ordinal);
-        Assert.Single(System.Text.RegularExpressions.Regex.Matches(
-            dispatch, @"\bports\.Navigate\s*\(").Cast<System.Text.RegularExpressions.Match>());
+        Assert.Equal(1, dispatch.Split("ports.Navigate(", StringSplitOptions.None).Length - 1);
     }
 
     [Fact]
