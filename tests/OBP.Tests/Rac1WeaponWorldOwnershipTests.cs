@@ -109,6 +109,23 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
     }
 
     [Fact]
+    public void RetiredContactLeaseRejectsLineOfSightBeforeBorrowingPlayerOrRayState()
+    {
+        // The previous combined guard returned true for a disposed host.
+        // An in-flight callback could therefore treat the retired scene as
+        // unobstructed. This fail-closed check must precede all borrowed ports.
+        string sight = Method("Rac1WeaponContactHost.cs", "HasLineOfSight");
+        int disposalGuard = sight.IndexOf("if (_disposed) return false;", StringComparison.Ordinal);
+        int playerBorrow = sight.IndexOf("physics.Player()", StringComparison.Ordinal);
+        Assert.True(disposalGuard >= 0 && playerBorrow > disposalGuard,
+            "Disposed contact leases must reject LOS before borrowing the old player.");
+        Assert.DoesNotContain("if (_disposed ||", sight, StringComparison.Ordinal);
+        Assert.Contains("if (player is null || from.DistanceSquaredTo(to) < .0001f) return true;", sight,
+            StringComparison.Ordinal); // Preserve live-world degenerate/no-player policy.
+        Assert.Contains("query.Exclude = RayExclusions()", sight, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ContactTargetGeometryAndOcclusionAreOwnedByTheSameWorldLease()
     {
         var compilation = HostOwnershipAudit.Host.Value;
