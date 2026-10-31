@@ -162,8 +162,11 @@ internal sealed class Rac1WeaponContactHost(
 
     internal bool HasLineOfSight(Vector3 from, Vector3 to)
     {
+        // Retired world contacts must never admit a hit via a stale callback.
+        // Keep the existing no-player and degenerate-ray behaviour while live.
+        if (_disposed) return false;
         var player = physics.Player();
-        if (_disposed || player is null || from.DistanceSquaredTo(to) < .0001f) return true;
+        if (player is null || from.DistanceSquaredTo(to) < .0001f) return true;
         var query = PhysicsRayQueryParameters3D.Create(from, to);
         query.Exclude = RayExclusions();
         return player.GetWorld3D().DirectSpaceState.IntersectRay(query).Count == 0;
