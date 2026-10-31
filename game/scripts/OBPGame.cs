@@ -157,7 +157,7 @@ public partial class OBPGame : Node3D
         node => node.Source.SourceGame == ObpSourceGame.Rac1
             ? Rac1World.Context.MobyRuntime.TryGet(new(node.Source.NativeClassId, node.Source.InstanceIndex), out var native) && native!.IsActive
             : _worldScenes?.Current?.Resources.Rac2Gameplay?.IsLiveHostile(node) == true,
-        () => _rac1CombatRetry is not null,
+        () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Lifecycle.RetryPanel is not null,
         () => { FusionWeapons.ClearOnDeath(); Rac1WrenchHost.ResetOrFallback(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench, _playerAudio, _player); },
         (before, after) => _playerAudio?.NotifyDamage(before, after), () => RefreshRac1HudState(), _hudState,
         () => Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, capturedMobyCount: _persistentPlayer.Rac1Use.Session?.Cargo.Count ?? 0,
@@ -330,7 +330,7 @@ public partial class OBPGame : Node3D
                 else _playerNative.EndWorld();
             },
             Wheel: () => { _lastQuickSelectTap = 0; _previousSelectedWeapon = null; },
-            Retry: ResetRac1CombatRetry, Pickups: () => Rac1World.Loot.ResetRac1PickupPresentation(),
+            Pickups: () => Rac1World.Loot.ResetRac1PickupPresentation(),
             GoldBolts: () => Rac1World.Loot.ResetRac1GoldBolts(),
             AdditionalWeapons: () => Rac1World.UsePresentation.ResetAdditional(),
 
@@ -352,6 +352,20 @@ public partial class OBPGame : Node3D
             AttachScene: sceneUi => AddChild(sceneUi),
             Persist: PersistRac1CampaignState, RefreshHud: () => RefreshRac1HudState(),
             Navigate: destination => OnDestinationChosen(destination),
+            WorldStillCurrent: () => ReferenceEquals(_world, world)),
+        new Rac1LifecycleWorldPorts(
+            Ordinary: () => OrdinaryPlayerSession,
+            Player: () => _player, Health: () => _rac1Nanotech,
+            Campaign: () => _rac1Campaign,
+            ActiveDestination: () => _activeDestination,
+            Navigate: destination => OnDestinationChosen(destination),
+            ClearFusionTransients: () => FusionWeapons.ClearTransients(),
+            ResetHeldItem: _rac1HeldItem.ResetForLevelEntry,
+            RefreshWrenchPresentation: RefreshRac1WrenchPresentationVisibility,
+            RefreshHud: () => RefreshRac1HudState(),
+            ResetPlayerRetry: () => PlayerLife.ResetRetry(),
+            AttachRetry: panel => _ui.AddChild(panel),
+            WindowUnfocusable: () => GetWindow().Unfocusable,
             WorldStillCurrent: () => ReferenceEquals(_world, world)),
 
         new Rac1PlayerGameplayPorts(() => OrdinaryPlayerSession, () => _playerNative is not null, () => PlayerLife.Alive,
@@ -1733,7 +1747,8 @@ public partial class OBPGame : Node3D
         var environment = new DiagnosticEnvironmentalDeathFixture(() => new(_rac1Nanotech.EnvironmentalDeathGeneration,
             _rac1Nanotech.EnvironmentalRestartGeneration, _rac1Nanotech.Probe(), Rac1World.Context.LastEnvironmentalDeathBoundary,
             GodotMovementPlayer.Copy(Rac1World.Presentation.LastEnvironmentalDeathPosition), Rac1World.Context.LastEnvironmentalDeathContactSeparation,
-            MeasureRac1ContactSeparation(), _rac1Campaign.Session.LevelCheckpoint?.AuthoredClass0.Yaw));
+            _player is { } measured ? Rac1LifecycleWorldHost.MeasureContactSeparation(measured) : double.NaN,
+            _rac1Campaign.Session.LevelCheckpoint?.AuthoredClass0.Yaw));
         var equipment = new DiagnosticControllerEquipmentFixture(() =>
         {
             var player = _player ?? throw new DiagnosticUnavailableException("The controller fixture player is unavailable.");
@@ -1971,7 +1986,7 @@ public partial class OBPGame : Node3D
             () => Rac1World.Enemies.Class1440, () => Rac1World.Enemies.Peckbots, () => Rac1World.Enemies.Birdbots, () => Rac1World.Context.Hostiles,
             () => new(Rac1World.Enemies.Roster.Count, Rac1World.Enemies.Class1440?.RegisteredCount ?? 0, Rac1World.Enemies.Peckbots?.RegisteredCount ?? 0,
                 Rac1World.Enemies.Birdbots?.RegisteredCount ?? 0, Rac1World.Enemies.BirdbotShotCount, _rac1Nanotech.Probe().Nanotech,
-                _worldSwitches, (_rac1CombatRetry ?? PlayerLife.RetryPanel)?.Visible == true), () => _player, node => Rac1World.WrenchDamage.TryStrikeHostile(node),
+                _worldSwitches, (_worldScenes?.Current?.Resources.Rac1Gameplay?.Lifecycle.RetryPanel ?? PlayerLife.RetryPanel)?.Visible == true), () => _player, node => Rac1World.WrenchDamage.TryStrikeHostile(node),
             Rac1World.Enemies.TryGroundRac1Enemy, Rac1EnemyHost.EnemyForward, Rac1World.Enemies.EnemySocket, Rac1World.Enemies.EnemyRayTouchesPlayer,
             id => Rac1World.Enemies.HasBirdbotShot(id)), new GodotDiagnosticWorldObservations(WorldScenes));
         var movement = CreateMovementDiagnosticHarness();
@@ -1979,7 +1994,7 @@ public partial class OBPGame : Node3D
             [.. Rac1World.Loot.PickupMotions.Select(pair => new Rac1DiagnosticPickup(pair.Key, pair.Value.NativeClassId,
                 pair.Value.Position, pair.Value.NativeState, pair.Value.CollectionStep))],
             [.. Rac1World.Loot.Debris.Select(piece => piece.Motion.NativeClassId)]));
-        var lifecycle = new GodotRac1EncounterLifecycle(() => _rac1Nanotech.Probe(), Rac1World.Enemies.ApplyRac1EnemyPlayerDamage, () => _rac1CombatRetry ?? PlayerLife.RetryPanel);
+        var lifecycle = new GodotRac1EncounterLifecycle(() => _rac1Nanotech.Probe(), Rac1World.Enemies.ApplyRac1EnemyPlayerDamage, () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Lifecycle.RetryPanel ?? PlayerLife.RetryPanel);
         var approach = new GodotRac1WrenchApproachFixture(() => _player, _persistentPlayer.Wrench.ResolveFirstSwingFacing, Rac1WorldPresentation.WrenchHostRootHeight);
         var combat = new Rac1CombatScenarioPorts(actors, actors, CreateRac1CombatDiagnosticFixture(actors), approach, movement.Equipment,
             new DiagnosticNavigationActions(destination => { OpenDestinationFromBootstrap(destination); return _world is not null && _currentDestinationId == destination; }),
@@ -2773,6 +2788,17 @@ public partial class OBPGame : Node3D
         else if (firstDirty)
             GD.Print($"[rac1-campaign] save queued ({reason})");
     }
+
+    // Source-world retry/environment callbacks resolve the current lease only.
+    // Native player life and campaign checkpoint authority remain separate.
+    private bool TryCompleteRac1EnvironmentalRestart(bool automatic) =>
+        _worldScenes?.Current?.Resources.Rac1Gameplay?.Lifecycle.TryCompleteEnvironmentalRestart(automatic) == true;
+
+    private void TickRac1VeldinEnvironmentalDeath() =>
+        _worldScenes?.Current?.Resources.Rac1Gameplay?.Lifecycle.TickEnvironmentalDeath();
+
+    private void ShowRac1CombatRetry() =>
+        _worldScenes?.Current?.Resources.Rac1Gameplay?.Lifecycle.ShowCombatRetry();
 
     /// <summary>
     /// Feed a recovered progression-dispatch value into the destination admission

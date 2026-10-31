@@ -11,7 +11,7 @@ namespace OBP.Game;
 // Temporary bindings to the existing mechanic owners. These ports carry no root
 // reference and can be supplied by the independently extracted source modules.
 internal sealed record Rac1WorldResetPorts(Action Player, Action Wheel,
-    Action Retry, Action Pickups, Action GoldBolts,
+    Action Pickups, Action GoldBolts,
     Action AdditionalWeapons, Action BombPresentation);
 
 internal sealed record Rac1WorldActorPorts(Action<RuntimeWorld> Pickups,
@@ -33,6 +33,17 @@ internal sealed record Rac1MissionWorldPorts(
     Func<bool> Paused, Action<bool> Pause,
     Action<Label> AttachPrompt, Action<Rac1MissionSceneUi> AttachScene,
     Action<string> Persist, Action RefreshHud, Action<ObpDestination> Navigate,
+    Func<bool> WorldStillCurrent);
+
+// The world owns retry UI and environmental contact presentation; parity
+// health and checkpoint authority stay with the selected player/source session.
+internal sealed record Rac1LifecycleWorldPorts(
+    Func<bool> Ordinary, Func<PlayerHost?> Player,
+    Func<Rac1RatchetNanotechSession> Health, Func<Rac1CampaignHost> Campaign,
+    Func<ObpDestination?> ActiveDestination, Action<ObpDestination> Navigate,
+    Action ClearFusionTransients, Action ResetHeldItem,
+    Action RefreshWrenchPresentation, Action RefreshHud, Action ResetPlayerRetry,
+    Action<PanelContainer> AttachRetry, Func<bool> WindowUnfocusable,
     Func<bool> WorldStillCurrent);
 
 internal sealed record Rac1PlayerGameplayPorts(Func<bool> Ordinary, Func<bool> Persistent, Func<bool> Alive,

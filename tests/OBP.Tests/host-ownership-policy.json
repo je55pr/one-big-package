@@ -54,18 +54,6 @@
     "Hash": "bcee12d3fce2c52446debae2cf982904e248d9eda6a77cbed843e5b35bd7e094"
   },
   {
-    "Key": "game/scripts/OBPGame.Rac1Lifecycle.cs::OBPGame.TickRac1VeldinEnvironmentalDeath()",
-    "Kind": "adapter",
-    "Reason": "Recovered Veldin death-plane context; #270 adapts its consequence to the selected player health policy. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "2e25c726147e10f2e7bef76edd03e47e65a42ccf8895234197da7cd299c8b4a0"
-  },
-  {
-    "Key": "game/scripts/OBPGame.Rac1Lifecycle.cs::OBPGame.ResolveRac1EnvironmentalRestart()",
-    "Kind": "adapter",
-    "Reason": "Read-only native source checkpoint/death admission. Returns a source placement; explicit parity policy applies it, while ordinary life uses the persistent player health session. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "554c2371fabb258649d2a7c587c7afd1d90e250e146857859a2e36be9c025298"
-  },
-  {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.BeginSourceWorldEntry(RuntimeWorld)",
     "Kind": "adapter",
     "Reason": "Begin the matching original source campaign checkpoint; never selects a player profile. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
@@ -172,5 +160,17 @@
     "Kind": "adapter",
     "Reason": "Constructor qualifies authored R&C2 objects to own native opening context only. The player provider and inventory remain independent of world origin. #373 source-world lease tests protect this boundary. #365 also composes the separate R&C2 class-500 receipt/visual owner without selecting a player capability.",
     "Hash": "87974ac1d1df25ccd128203ba55a8d659de189ec9ab56ee0c6b658e944e01210"
+  },
+  {
+    "Key": "game/scripts/Rac1LifecycleWorldHost.cs::Rac1LifecycleWorldHost.ResolveEnvironmentalRestart()",
+    "Kind": "adapter",
+    "Reason": "Native R&C1 source/checkpoint and environmental-death admission belongs to this disposable world lease. Explicit parity policy and player health are selected separately; world origin never chooses a player service. Original native checkpoint level/respawn facts and player health gates are preserved.",
+    "Hash": "984ba1cbc7e6fce0b7e3fb51106254c749aac9e2be08059969bf007bad1da058"
+  },
+  {
+    "Key": "game/scripts/Rac1LifecycleWorldHost.cs::Rac1LifecycleWorldHost.TickEnvironmentalDeath()",
+    "Kind": "adapter",
+    "Reason": "World-scoped original Veldin death-plane contact facts, native state witness and 60Hz callback. Player health authority is borrowed from the selected player; no avatar/equipment selection occurs from source origin. Authored death threshold/ray inputs and retry policy are unchanged.",
+    "Hash": "9bb7f4d94e741e6ed5b2f8af653bbe7a756368d32b91bae9f1e05870a50bdb17"
   }
 ]
