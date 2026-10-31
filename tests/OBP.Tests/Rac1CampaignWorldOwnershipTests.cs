@@ -38,7 +38,7 @@ public sealed class Rac1CampaignWorldOwnershipTests
     }
 
     [Fact]
-    public void CheckpointsOwnOnlyWorldVolumesAndRejectRetiredOrCrossLevelCallbacks()
+    public void CheckpointHostStructureIsWorldScoped()
     {
         Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1Checkpoints.cs")));
         var root = HostOwnershipAudit.Host.Value.GetTypeByMetadataName("OBP.Game.OBPGame")!;

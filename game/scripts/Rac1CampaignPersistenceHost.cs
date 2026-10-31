@@ -11,6 +11,8 @@ namespace OBP.Game;
 /// </summary>
 internal sealed class Rac1CampaignPersistenceHost(Rac1CampaignHost campaign)
 {
+    internal const string TravelPersistenceReason = "completed campaign travel";
+
     private Rac1CampaignSaveBatcher? _batcher;
     private string? _reportedFailure;
     private Rac1CampaignSessionPersistence _persistence = Rac1CampaignSessionPersistence.Ephemeral();
@@ -39,11 +41,7 @@ internal sealed class Rac1CampaignPersistenceHost(Rac1CampaignHost campaign)
         _batcher = Rac1CampaignSaveWriterFactory.CreateIfEnabled(_persistence);
         RestoreWarning = attempt.Warning;
         var restored = attempt.Restored;
-        campaign.Session = new Rac1CampaignRuntimeSession(
-            restored.Campaign, restored.Weapons,
-            Rac1BuriedBoltProgress.Restore(restored.BuriedBoltHistory));
-        campaign.Wallet = new Rac1BoltWallet(restored.Bolts);
-        campaign.CollectedNovalisGoldBolts.UnionWith(restored.NovalisGoldBoltInstances);
+        campaign.Restore(restored);
         RestoreKind = restored.Kind;
         Initialized = true;
     }

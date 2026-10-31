@@ -15,4 +15,15 @@ internal sealed class Rac1CampaignHost
     internal Rac1CampaignPersistenceHost Persistence { get; }
 
     internal Rac1CampaignHost() => Persistence = new(this);
+
+    /// <summary>Restore native campaign and owned collectibles as one authority.</summary>
+    internal void Restore(Rac1CampaignRestoreResult restored)
+    {
+        Session = new Rac1CampaignRuntimeSession(
+            restored.Campaign, restored.Weapons,
+            Rac1BuriedBoltProgress.Restore(restored.BuriedBoltHistory));
+        Wallet = new Rac1BoltWallet(restored.Bolts);
+        CollectedNovalisGoldBolts.Clear();
+        CollectedNovalisGoldBolts.UnionWith(restored.NovalisGoldBoltInstances);
+    }
 }

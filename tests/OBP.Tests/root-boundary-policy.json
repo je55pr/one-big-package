@@ -3382,9 +3382,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:Profiles:ProfileCoordinator:get/:private",
       "Owner": "#349",
-      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Integration with #356 retains the capture/replay coordinator and reads the same source-qualified facts through the lease/persistent owners; no player policy is added. #372 binds campaign saves to the existing persistent source owner and authored checkpoint volumes to the current world lease, without new native policy or global mutable state.",
+      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Integration with #356 retains the capture/replay coordinator and reads the same source-qualified facts through the lease/persistent owners; no player policy is added. #372 binds campaign saves to the existing persistent source owner and authored checkpoint volumes to the current world lease, without new native policy or global mutable state. #372 review: unify native campaign restore ownership and share a typed constant for the explicit campaign-travel durability boundary; no save policy or format change.",
       "ExpiresWith": "#376",
-      "Hash": "3eeaf9a8a37304692c7f6b8ead37aa0f0585582a659d4c7457614efc2027cf2d"
+      "Hash": "0eb088e270845b7de8b717dd37723ade91a348d3d2511a40361c1e81c7b1a548"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:QuickSelectOpen:bool:get/:private",
@@ -3865,9 +3865,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:PersistRac1CampaignState(:string):void:private",
       "Owner": "#372",
-      "Rationale": "Thin app-facing R&C1 campaign persistence/public API binding to the persistent Rac1CampaignHost. Native save policy, restore, batcher, wallet and collected-bolt state have moved to their source owner. Root only bridges explicit mode, shared player wallet, Godot notices or public API side effects. Retire with the final root composition.",
+      "Rationale": "Thin app-facing R&C1 campaign persistence/public API binding to the persistent Rac1CampaignHost. Native save policy, restore, batcher, wallet and collected-bolt state have moved to their source owner. Root only bridges explicit mode, shared player wallet, Godot notices or public API side effects. Retire with the final root composition. #372 review: unify native campaign restore ownership and share a typed constant for the explicit campaign-travel durability boundary; no save policy or format change.",
       "ExpiresWith": "#376",
-      "Hash": "8b805f351507150c63dd7495e2fc9e723d628215887175c1c74d8a618dfbab8f"
+      "Hash": "21fdb7ad08a2af8d51432d1e2527f89040bab51bf0643f1b85744ec133bef201"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:TickRac1CampaignSaves(:double):void:private",

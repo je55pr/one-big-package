@@ -679,13 +679,7 @@ public partial class OBPGame : Node3D
             JsonSerializer.SerializeToElement(Rac1CampaignSavePolicy.Capture(_rac1Campaign.Session.Campaign,
                 _rac1Campaign.Session.Weapons, _rac1Campaign.Wallet, _rac1Campaign.CollectedNovalisGoldBolts,
                 _rac1Campaign.Session.BuriedBolts))).RetainUnknownFields(previous),
-        RestoreCampaign: restored =>
-        {
-            _rac1Campaign.Session = new(restored.Campaign, restored.Weapons, Rac1BuriedBoltProgress.Restore(restored.BuriedBoltHistory));
-            _rac1Campaign.Wallet = new(restored.Bolts);
-            _rac1Campaign.CollectedNovalisGoldBolts.Clear();
-            _rac1Campaign.CollectedNovalisGoldBolts.UnionWith(restored.NovalisGoldBoltInstances);
-        },
+        RestoreCampaign: _rac1Campaign.Restore,
         RefreshPlayerSources: RefreshPlayerSourceAvailability,
         WritesSuspended: () => Sources.Setup.ProfileSuspended,
         PlaytestActive: () => _captureReplay?.Recorder is not null,
@@ -2764,7 +2758,7 @@ public partial class OBPGame : Node3D
         EnsureRac1CampaignPersistenceInitialized();
         if (!_rac1Campaign.Persistence.HasWriter) return;
         bool firstDirty = _rac1Campaign.Persistence.MarkDirty();
-        if (reason == "completed campaign travel")
+        if (reason == Rac1CampaignPersistenceHost.TravelPersistenceReason)
             FlushRac1CampaignSaves("campaign travel");
         else if (firstDirty)
             GD.Print($"[rac1-campaign] save queued ({reason})");

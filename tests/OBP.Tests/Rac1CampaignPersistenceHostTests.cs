@@ -151,6 +151,88 @@ public sealed class Rac1CampaignPersistenceHostTests
     }
 
     [Fact]
+    public void RestoringAnotherProfileClearsPriorSourceGoldBolts()
+    {
+        var owner = new Rac1CampaignHost();
+        owner.CollectedNovalisGoldBolts.Add(19);
+        owner.Wallet.Credit(77);
+        owner.Restore(Rac1CampaignSessionPersistence.Ephemeral().Restore());
+        Assert.Empty(owner.CollectedNovalisGoldBolts);
+        Assert.Equal(0, owner.Wallet.Balance);
+        Assert.Equal(0, owner.Session.Campaign.CurrentLevel);
+    }
+
+    [Fact]
+    public void TickQueuesDirtyParityStateWithoutFusionAndFlushPersistsIt()
+    {
+        string path = TemporaryPath();
+        try
+        {
+            var owner = new Rac1CampaignHost();
+            owner.Persistence.Initialize(requested: true, requestedPath: path, defaultPath: path);
+            owner.Wallet.Credit(47);
+            Assert.True(owner.Persistence.MarkDirty());
+            Assert.Null(owner.Persistence.Tick(Rac1CampaignSaveBatcher.QuietSeconds,
+                () => owner.Wallet, fusionTestActive: false));
+            Assert.True(owner.Persistence.Flush(() => owner.Wallet,
+                previewActive: false, fusionTestActive: false, out _));
+            Assert.Equal(47, Rac1CampaignSaveFile.LoadOrDefault(path).Bolts);
+        }
+        finally
+        {
+            if (Directory.Exists(Path.GetDirectoryName(path)!))
+                Directory.Delete(Path.GetDirectoryName(path)!, true);
+        }
+    }
+
+    [Fact]
+    public void TickReportsRepeatedSaveFailureOnlyAfterAnObservedRecovery()
+    {
+        string path = TemporaryPath();
+        var parent = Path.GetDirectoryName(path)!;
+        try
+        {
+            var owner = new Rac1CampaignHost();
+            owner.Persistence.Initialize(requested: true, requestedPath: path, defaultPath: path);
+            Directory.CreateDirectory(path); // A directory cannot be replaced by a save file.
+            owner.Persistence.MarkDirty();
+            owner.Persistence.Tick(Rac1CampaignSaveBatcher.QuietSeconds,
+                () => owner.Wallet, fusionTestActive: false);
+            string? first = null;
+            Assert.True(SpinWait.SpinUntil(() =>
+            {
+                first = owner.Persistence.Tick(0, () => owner.Wallet, fusionTestActive: false);
+                return first is not null;
+            }, TimeSpan.FromSeconds(8)), "Expected a deterministic save-path collision.");
+            Assert.Null(owner.Persistence.Tick(0, () => owner.Wallet, fusionTestActive: false));
+
+            Directory.Delete(path);
+            Assert.True(owner.Persistence.Flush(() => owner.Wallet,
+                previewActive: false, fusionTestActive: false, out Exception? error));
+            Assert.Null(error);
+            Assert.Null(owner.Persistence.Tick(0, () => owner.Wallet, fusionTestActive: false));
+
+            File.Delete(path);
+            Directory.CreateDirectory(path);
+            owner.Persistence.MarkDirty();
+            owner.Persistence.Tick(Rac1CampaignSaveBatcher.QuietSeconds,
+                () => owner.Wallet, fusionTestActive: false);
+            string? repeated = null;
+            Assert.True(SpinWait.SpinUntil(() =>
+            {
+                repeated = owner.Persistence.Tick(0, () => owner.Wallet, fusionTestActive: false);
+                return repeated is not null;
+            }, TimeSpan.FromSeconds(8)), "A recovered failure should be reported if it recurs.");
+            Assert.Equal(first, repeated);
+            Assert.Null(owner.Persistence.Tick(0, () => owner.Wallet, fusionTestActive: false));
+        }
+        finally
+        {
+            if (Directory.Exists(parent)) Directory.Delete(parent, true);
+        }
+    }
+
+    [Fact]
     public void SecondInitializeDoesNotRecreateWriterOrReplaceLiveCampaignSession()
     {
         var owner = new Rac1CampaignHost();

@@ -80,8 +80,8 @@
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.CommitSourceWorldEntry(RuntimeWorld)",
     "Kind": "adapter",
-    "Reason": "Commit recovered original-world campaign travel after successful shared activation. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "b77ddf7bf76aa39c24081126824f52444e3e81c5524125327efba042142f7e0f"
+    "Reason": "Commit recovered original-world campaign travel after successful shared activation. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected. #372 review: the same source-level campaign travel commit now uses the shared native-parity durability reason; source admission and player selection remain unchanged.",
+    "Hash": "b0613f0e94ec5e31bc2ef422b52e33e0c7d13832185f546c7287c084a9acac83"
   },
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.SourceEntrySnapReach(RuntimeWorld)",
