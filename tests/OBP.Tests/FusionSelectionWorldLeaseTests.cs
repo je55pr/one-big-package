@@ -30,6 +30,27 @@ public sealed class FusionSelectionWorldLeaseTests
     }
 
     [Fact]
+    public void OptionalDiagnosticGuidedCamerasSurviveRac1WorldRetirement()
+    {
+        // These diagnostic delegates can outlive their world, and the original
+        // camera fields were nullable before the weapon owner extraction.
+        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
+        var syntax = CSharpSyntaxTree.ParseText(source).GetRoot();
+        foreach (string name in new[]
+        {
+            "CreateRac1AdditionalWeaponDiagnosticFixture",
+            "CreateRac1QueenDiagnosticBindings",
+        })
+        {
+            var method = Assert.Single(syntax.DescendantNodes().OfType<MethodDeclarationSyntax>(),
+                method => method.Identifier.ValueText == name).ToString();
+            Assert.Contains("_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.GuidedCamera.Camera",
+                method, StringComparison.Ordinal);
+            Assert.DoesNotContain("Rac1World.Weapons.GuidedCamera.Camera", method, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
     public void SelectionCancellationDoesNotDereferenceAnUnboundRac1World()
     {
         string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));

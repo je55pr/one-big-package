@@ -1914,8 +1914,8 @@ public partial class OBPGame : Node3D
         return new(new(
         () => new(_persistentPlayer.WeaponPreview is not null, _rac1Campaign.Session.Weapons.Owns(Rac1WeaponId.Blaster), _persistentPlayer.Rac1Use.Session?.Cargo.Count ?? 0,
             _persistentPlayer.Rac1Use.UseTicks, _persistentPlayer.Rac1Use.ShotsFired, _persistentPlayer.Rac1Use.PyroEmitting, _equipmentPresentation.WeaponAudio.Loop, _hudState.Current.CurrentWeapon,
-            GodotMovementPlayer.Copy(Rac1WeaponUsePresentationHost.EquipmentForward(_player)), _player?.Rac1RemoteControlActive == true, Rac1World.Weapons.GuidedCamera.Camera is not null,
-            Rac1World.Weapons.GuidedCamera.Camera?.Current == true, _player?.Camera.Current == true, _equipmentPresentation.Explosions.RenderedCount, _equipmentPresentation.Explosions.DrawCalls),
+            GodotMovementPlayer.Copy(Rac1WeaponUsePresentationHost.EquipmentForward(_player)), _player?.Rac1RemoteControlActive == true, _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.GuidedCamera.Camera is not null,
+            _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.GuidedCamera.Camera?.Current == true, _player?.Camera.Current == true, _equipmentPresentation.Explosions.RenderedCount, _equipmentPresentation.Explosions.DrawCalls),
         weapon => _equipmentPresentation.NativeViews.View(weapon), weapon => Rac1WeaponUsePresentationHost.EquipmentMuzzle(weapon, 0, _equipmentPresentation, _avatarPresentation, _player), item => _rac1Weapons.GetAmmo(item),
         (nativeClass, sound) => Rac1World.Loot.PickupAssets?.Sounds?.TryGetValue((nativeClass, sound), out var voice) == true && voice.Clip.InterleavedPcm16.Any(sample => sample != 0),
         () => [.. _equipmentPresentation.WeaponAudio.Events.Select(cue => new Rac1WeaponAudioDiagnostic(ObpSourceGame.Rac1, cue.Tick, cue.Class, cue.Sound, cue.Loop))],
@@ -2082,7 +2082,7 @@ public partial class OBPGame : Node3D
             Player = () => _player,
             ActiveCamera = () => _activeCamera,
             QueenCamera = () => encounter()?.QueenCamera,
-            GuidedCamera = () => Rac1World.Weapons.GuidedCamera.Camera,
+            GuidedCamera = () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.GuidedCamera.Camera,
             DamageSequence = () => Rac1World.Context.DamageTransport.Sequence,
             ForgetWrenchContact = key => Rac1World.Wrench.ForgetVictim(key),
             ResolveWrench = (previousHand, previousTip, hand, tip, radius, result) =>
