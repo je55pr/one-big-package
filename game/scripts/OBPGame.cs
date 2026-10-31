@@ -219,7 +219,7 @@ public partial class OBPGame : Node3D
         },
         IsolateCampaign: start =>
         {
-            var isolated = new Rac1FusionCampaignIsolation(_rac1Campaign, _rac1CollectedNovalisGoldBolts, start);
+            var isolated = new Rac1FusionCampaignIsolation(_rac1Campaign, _rac1Campaign.CollectedNovalisGoldBolts, start);
             _persistentPlayer.WeaponPreview = null;
             return isolated;
         },
@@ -314,7 +314,7 @@ public partial class OBPGame : Node3D
             () => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path, _worldHost.PlayEffect,
             () => _playerAudio?.RetireWorld(), PersistRac1CampaignState,
             () => RefreshRac1HudState(), value => RefreshRac1HudState(Rac1HudProjection.CollectedBoltFeedback(value)),
-            (nativeClass, localSound) => _equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), _args.Rac1WeaponsSmoke), () => _rac1CollectedNovalisGoldBolts),
+            (nativeClass, localSound) => _equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), _args.Rac1WeaponsSmoke), () => _rac1Campaign.CollectedNovalisGoldBolts),
         new Rac1BreakablePorts(() => _player,
             owner => ReferenceEquals(_worldScenes?.Current?.Resources.Rac1Gameplay, owner),
             (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Inclusive(min, max),
@@ -330,7 +330,6 @@ public partial class OBPGame : Node3D
                 else _playerNative.EndWorld();
             },
             Wheel: () => { _lastQuickSelectTap = 0; _previousSelectedWeapon = null; },
-            Checkpoints: ResetRac1CheckpointTriggers,
             Missions: ResetRac1Missions,
             Retry: ResetRac1CombatRetry, Pickups: () => Rac1World.Loot.ResetRac1PickupPresentation(),
             GoldBolts: () => Rac1World.Loot.ResetRac1GoldBolts(),
@@ -338,11 +337,11 @@ public partial class OBPGame : Node3D
 
             BombPresentation: () => Rac1WeaponEffectsHost.ResetOrFallback(_worldScenes?.Current?.Resources.Rac1Gameplay, _equipmentPresentation)),
         new Rac1WorldActorPorts(world => Rac1World.Loot.ConfigureRac1PickupPresentation(world), node => Rac1World.Loot.AddRac1CrateCollider(node),
-            ConfigureRac1CheckpointTriggers, ConfigureRac1Missions,
+            checkpoints => checkpoints.Configure(() => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path), ConfigureRac1Missions,
             (world, result) => Rac1World.Loot.ConfigureRac1PlacedBolts(world, result),
             (world, result) => Rac1World.Loot.ConfigureRac1GoldBolts(world, result)),
         new Rac1WorldTickPorts(() => MovementReproduction.IsLoading,
-            TickRac1CheckpointTriggers,
+            checkpoints => checkpoints.Tick(_player, _rac1Campaign.Session.LevelCheckpoint),
             delta => Rac1World.Loot.TickRac1Pickups(delta), () => Rac1World.Loot.TickRac1GoldBolts(), TickRac1Missions),
 
         new Rac1PlayerGameplayPorts(() => OrdinaryPlayerSession, () => _playerNative is not null, () => PlayerLife.Alive,
@@ -678,14 +677,14 @@ public partial class OBPGame : Node3D
         LegacyCampaignExists: () => File.Exists(ProjectSettings.GlobalizePath("user://rac1-campaign.json")),
         CaptureCampaign: previous => new ProfilePayload("rac1/campaign", 1,
             JsonSerializer.SerializeToElement(Rac1CampaignSavePolicy.Capture(_rac1Campaign.Session.Campaign,
-                _rac1Campaign.Session.Weapons, _rac1Campaign.Wallet, _rac1CollectedNovalisGoldBolts,
+                _rac1Campaign.Session.Weapons, _rac1Campaign.Wallet, _rac1Campaign.CollectedNovalisGoldBolts,
                 _rac1Campaign.Session.BuriedBolts))).RetainUnknownFields(previous),
         RestoreCampaign: restored =>
         {
             _rac1Campaign.Session = new(restored.Campaign, restored.Weapons, Rac1BuriedBoltProgress.Restore(restored.BuriedBoltHistory));
             _rac1Campaign.Wallet = new(restored.Bolts);
-            _rac1CollectedNovalisGoldBolts.Clear();
-            _rac1CollectedNovalisGoldBolts.UnionWith(restored.NovalisGoldBoltInstances);
+            _rac1Campaign.CollectedNovalisGoldBolts.Clear();
+            _rac1Campaign.CollectedNovalisGoldBolts.UnionWith(restored.NovalisGoldBoltInstances);
         },
         RefreshPlayerSources: RefreshPlayerSourceAvailability,
         WritesSuspended: () => Sources.Setup.ProfileSuspended,
@@ -736,7 +735,7 @@ public partial class OBPGame : Node3D
         () => new(_currentDestinationId!, _world!.BuildId, GetWindow().Size.X, GetWindow().Size.Y,
             OrdinaryPlayerSession ? JsonSerializer.SerializeToElement(new { }) : JsonSerializer.SerializeToElement(
                 Rac1CampaignSavePolicy.Capture(_rac1Campaign.Session.Campaign, _rac1Campaign.Session.Weapons,
-                    _rac1BoltWallet, _rac1CollectedNovalisGoldBolts, _rac1Campaign.Session.BuriedBolts)),
+                    _rac1BoltWallet, _rac1Campaign.CollectedNovalisGoldBolts, _rac1Campaign.Session.BuriedBolts)),
             JsonSerializer.SerializeToElement(CameraSettingsStore.Current), FusionWeapons.Configuration, OrdinaryPlayerSession ? CaptureSharedProfile() : null),
         () => new(_currentDestinationId, GetTree().Paused, GetWindow().Size.X, GetWindow().Size.Y,
             PauseMenuOpen, QuickSelectOpen, Rac1PlanetMapOpen, ControllerSettingsOpen,
@@ -1822,8 +1821,8 @@ public partial class OBPGame : Node3D
             return new(dead.Nanotech, dead.IsDead, dead.HasRecoveredEnvironmentalRespawn, _rac1Nanotech.EnvironmentalDeathGeneration);
         }, () => TryCompleteRac1EnvironmentalRestart(automatic: false));
         var save = new Rac1CampaignSaveDiagnostics(() => new(ObpSourceGame.Rac1, Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Identity.BuildId,
-            !string.IsNullOrWhiteSpace(_args.Rac1CampaignSavePath), OrdinaryPlayerSession, _rac1CampaignPersistence.Enabled, _rac1SaveBatcher is not null,
-            _rac1CampaignRestoreWarning is not null, _rac1CampaignRestoreKind), () => _args.Rac1CampaignSavePath, () => _rac1CampaignPersistence.SavePath);
+            !string.IsNullOrWhiteSpace(_args.Rac1CampaignSavePath), OrdinaryPlayerSession, _rac1Campaign.Persistence.Enabled, _rac1Campaign.Persistence.HasWriter,
+            _rac1CampaignRestoreWarning is not null, _rac1CampaignRestoreKind), () => _args.Rac1CampaignSavePath, () => _rac1Campaign.Persistence.SavePath);
         return new(movement.Ports, new(facts, actions, checkpoints, save, new GodotRac1MissionDiagnosticUi(() => _ui)));
     }
 
@@ -1993,7 +1992,7 @@ public partial class OBPGame : Node3D
             Hostiles = () => [.. Rac1World.Presentation.HostileNodes.Values],
             World = () => _world,
             Player = () => _player,
-            Opening = () => new(_args.Rac1CampaignPersistenceRequested, _rac1CampaignPersistence.Enabled, _rac1CampaignRestoreKind,
+            Opening = () => new(_args.Rac1CampaignPersistenceRequested, _rac1Campaign.Persistence.Enabled, _rac1CampaignRestoreKind,
                 _rac1Campaign.Session.Campaign.CurrentLevel, _rac1Campaign.Session.Campaign.AdmittedDestinationCount, _rac1Weapons.OwnsFirstRanged),
             Population = () => new(_world?.DynamicObjects?.Count(source => source.NativeClassId == Rac1Class749Hostile.NativeClassId) ?? 0,
                 Rac1World.Presentation.Class749Nodes.Count(node => IsInstanceValid(node.Root) && node.Root.Visible), Rac1World.Presentation.HostileNodes.Count, Rac1World.Context.Hostiles.RegisteredCount),
@@ -2720,4 +2719,119 @@ public partial class OBPGame : Node3D
         }
         return entries;
     }
+
+    // Persistent source campaign save policy is distinct from ordinary player-profile
+    // persistence. The application only supplies its input mode, notifications and
+    // the shared wallet selected by the current player entry policy.
+    private string? _rac1CampaignRestoreWarning => _rac1Campaign.Persistence.RestoreWarning;
+    private Rac1CampaignRestoreKind _rac1CampaignRestoreKind => _rac1Campaign.Persistence.RestoreKind;
+
+    private void EnsureRac1CampaignPersistenceInitialized()
+    {
+        var saves = _rac1Campaign.Persistence;
+        if (saves.Initialized) return;
+        saves.Initialize(_args.Rac1CampaignPersistenceRequested, _args.Rac1CampaignSavePath,
+            ProjectSettings.GlobalizePath("user://rac1-campaign.json"));
+        if (saves.RestoreWarning is { } warning)
+            GD.PushWarning($"[rac1-campaign] {warning}");
+        string persistenceMode = saves.Enabled ? $"persistent:{saves.SavePath}" : "ephemeral";
+        var restored = _rac1Campaign.Session;
+        GD.Print($"[rac1-campaign] host state {saves.RestoreKind} ({persistenceMode}): current={restored.Campaign.CurrentLevel}, " +
+            $"admitted={restored.Campaign.AdmittedDestinationCount}, " +
+            $"item10-owned={restored.Weapons.OwnsFirstRanged}, ammo={restored.Weapons.FirstRangedAmmo}");
+    }
+
+    private void TickRac1CampaignSaves(double delta)
+    {
+        string? failure = _rac1Campaign.Persistence.Tick(delta, () => _rac1BoltWallet, FusionWeapons.TestActive);
+        if (failure is not null)
+            GD.PushWarning($"[rac1-campaign] save failed; latest progress retained for retry: {failure}");
+    }
+
+    private void FlushRac1CampaignSaves(string boundary)
+    {
+        bool? result = _rac1Campaign.Persistence.Flush(() => _rac1BoltWallet,
+            _persistentPlayer.WeaponPreview is not null, FusionWeapons.TestActive, out Exception? error);
+        if (result is false)
+            GD.PushWarning($"[rac1-campaign] {boundary} save failed; progress remains unsaved: {error!.Message}");
+        else if (result is true)
+            GD.Print($"[rac1-campaign] {boundary} save flush complete");
+    }
+
+    private void PersistRac1CampaignState(string reason)
+    {
+        if (_persistentPlayer.WeaponPreview is not null || FusionWeapons.TestActive) return;
+        EnsureRac1CampaignPersistenceInitialized();
+        if (!_rac1Campaign.Persistence.HasWriter) return;
+        bool firstDirty = _rac1Campaign.Persistence.MarkDirty();
+        if (reason == "completed campaign travel")
+            FlushRac1CampaignSaves("campaign travel");
+        else if (firstDirty)
+            GD.Print($"[rac1-campaign] save queued ({reason})");
+    }
+
+    /// <summary>
+    /// Feed a recovered progression-dispatch value into the destination admission
+    /// branch. No host location, objective, or completion trigger is inferred.
+    /// </summary>
+    public Rac1DestinationDiscoveryResult ApplyRac1CampaignProgressionEvent(
+        int progressionEventId)
+    {
+        Sources.Initialize();
+        Rac1DestinationDiscoveryResult result =
+            _rac1Campaign.Session.Campaign.ApplyProgressionEvent(progressionEventId);
+
+        if (result == Rac1DestinationDiscoveryResult.Discovered)
+            PersistRac1CampaignState($"discovery event 0x{progressionEventId:x}");
+
+        return result;
+    }
+
+    /// <summary>
+    /// Apply an already-identified native item-acquisition event. This is the
+    /// recovered common acquisition prefix only; vendor price/payment and the
+    /// unresolved quick-select insertion predicate stay outside this boundary.
+    /// </summary>
+    public Rac1ItemAcquisitionResult ApplyRac1ItemAcquisition(int nativeItemId)
+    {
+        Sources.Initialize();
+        EnsureRac1CampaignPersistenceInitialized();
+
+        Rac1ItemAcquisitionResult result =
+            (_playerNative?.Inventory ?? _rac1Campaign.Session.Weapons).AcquireNativeItem(nativeItemId);
+        if (_player is { } player)
+            player.Rac1MovementEquipment = Rac1MovementCapabilities.FromInventory(_rac1Weapons);
+        _persistentPlayer.Equipment.RefreshMovementEquipment();
+        PersistRac1CampaignState($"item acquisition {nativeItemId}");
+
+        if (nativeItemId == (int)Rac1WeaponId.FirstRanged && result.IsFirstAcquisition)
+        {
+            RefreshRac1HudState(Rac1HudProjection.BombGloveAcquiredFeedback(result.AmmoGranted));
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Apply an already-recovered native ammo amount through the generic retail
+    /// clamp helper. Selection of which pickup refills which item, and by how
+    /// much, remains a separate class-511 recovery problem.
+    /// </summary>
+    public Rac1AmmoGrantResult ApplyRac1AmmoGrant(int nativeItemId, int amount)
+    {
+        Sources.Initialize();
+        EnsureRac1CampaignPersistenceInitialized();
+
+        Rac1AmmoGrantResult result =
+            (_playerNative?.Inventory ?? _rac1Campaign.Session.Weapons).GrantAmmoClamped(nativeItemId, amount);
+        if (result.Changed)
+        {
+            PersistRac1CampaignState($"ammo grant item {nativeItemId}");
+            if (nativeItemId == (int)Rac1WeaponId.FirstRanged)
+                RefreshRac1HudState(Rac1HudProjection.BombGloveAmmoPickupFeedback(result.AmmoGranted));
+        }
+
+        return result;
+    }
+
 }
