@@ -38,6 +38,32 @@ public sealed class Rac1CampaignWorldOwnershipTests
     }
 
     [Fact]
+    public void CheckpointRegistrationFollowsEntryResetAndIsNotClearedMidWorld()
+    {
+        // World module reset happens before actor registration during Configure,
+        // and again only when the world retires. A second live Configure is rejected.
+        // This guards the reset/registration concern without claiming live retail replay.
+        string configure = Method("Rac1WorldModule.cs", "Configure");
+        int reset = configure.IndexOf("ResetBindings();", StringComparison.Ordinal);
+        int actors = configure.IndexOf("ConfigureActors(_world, _scene);", StringComparison.Ordinal);
+        Assert.True(reset >= 0 && actors > reset,
+            "Checkpoint volumes must register after the one-time entry reset.");
+        Assert.Contains("if (_configured) throw", configure, StringComparison.Ordinal);
+
+        string module = Script("Rac1WorldModule.cs");
+        Assert.Equal(3, System.Text.RegularExpressions.Regex.Matches(
+            module, @"\bResetBindings\s*\(").Count);
+        Assert.Contains("ResetBindings(retiring: true)", Method("Rac1WorldModule.cs", "Dispose"),
+            StringComparison.Ordinal);
+        Assert.Contains("Checkpoints.Reset()", Method("Rac1WorldModule.cs", "ResetBindings"),
+            StringComparison.Ordinal);
+        Assert.Contains("_actors.Checkpoints(Checkpoints)", Method("Rac1WorldModule.cs", "ConfigureActors"),
+            StringComparison.Ordinal);
+        Assert.Contains("_triggers = new(Rac1ClipVolumes.Read(gameplay))",
+            Method("Rac1CheckpointHost.cs", "Configure"), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CheckpointHostStructureIsWorldScoped()
     {
         Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1Checkpoints.cs")));
