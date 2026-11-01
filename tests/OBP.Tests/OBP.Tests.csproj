@@ -150,6 +150,7 @@
     <Compile Include="../../game/diagnostics/Rac1TraversalContactRegression.cs" Link="Diagnostics/Rac1TraversalContactRegression.cs" />
     <Compile Include="../../game/diagnostics/ControllerWeaponInputRegression.cs" Link="Diagnostics/ControllerWeaponInputRegression.cs" />
     <Compile Include="../../game/scripts/Rac1CampaignHost.cs" Link="Game/Rac1CampaignHost.cs" />
+    <Compile Include="../../game/scripts/Rac1CampaignPersistenceHost.cs" Link="Game/Rac1CampaignPersistenceHost.cs" />
     <Compile Include="../../game/scripts/Rac1WorldContext.cs" Link="Game/Rac1WorldContext.cs" />
     <Compile Include="../../game/scripts/Rac1ThrownEquipmentAnimationHost.cs" Link="Game/Rac1ThrownEquipmentAnimationHost.cs" />
     <Compile Include="../../game/scripts/Rac3Class500WorldRuntime.cs" Link="Game/Rac3Class500WorldRuntime.cs" />

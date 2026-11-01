@@ -275,7 +275,7 @@ public partial class OBPGame
         if (world.Game != ObpSourceGame.Rac1) return;
         var entry = _rac1Campaign.Session.CommitLoadedLevel(world.LevelId);
         _rac1Campaign.Session.FinishLoadedLevel(entry);
-        if (entry == Rac1LevelEntryKind.CampaignTravel) PersistRac1CampaignState("completed campaign travel");
+        if (entry == Rac1LevelEntryKind.CampaignTravel) PersistRac1CampaignState(Rac1CampaignPersistenceHost.TravelPersistenceReason);
     }
 
 

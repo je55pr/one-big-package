@@ -42,6 +42,7 @@ internal sealed class Rac1WorldModule : IDisposable
         Wrench = new(wrenchFrame, wrenchContact);
         Taxis = new(taxis);
         Enemies = enemies(this);
+        Checkpoints = new(world, Context, Loot, Enemies);
         Breakables = new(world, Context, Presentation, Loot, Enemies, () => breakables.Current(this), breakables);
         WrenchDamage = new(Context, Breakables, Enemies, Loot, wrenchDamage);
         WeaponDamage = new(Context, Enemies, Breakables, WrenchDamage, Weapons.Contacts);
@@ -63,6 +64,7 @@ internal sealed class Rac1WorldModule : IDisposable
     internal Rac1WorldPresentation Presentation { get; } = new();
     internal Rac1GameplayHudPresenter Hud { get; }
     internal Rac1EnemyHost Enemies { get; }
+    internal Rac1CheckpointHost Checkpoints { get; }
     internal Rac1MetropolisTaxiHost Taxis { get; }
     internal Rac1WeaponHost Weapons { get; }
     internal Rac1WrenchHost Wrench { get; }
@@ -98,7 +100,7 @@ internal sealed class Rac1WorldModule : IDisposable
         Context.EquipmentUsePressed = false;
         _reset.Wheel();
         Breakables.Reset();
-        _reset.Checkpoints();
+        Checkpoints.Reset();
         _reset.Missions();
         Wrench.Reset();
         _reset.Retry();
@@ -160,7 +162,7 @@ internal sealed class Rac1WorldModule : IDisposable
         if (!_playerPorts.Ordinary()) Enemies.TickRac1Hostiles(delta);
         Mechanisms.Tick(delta, Rac1AuthoredTickPhase.Visual);
         Breakables.TickExplosives(delta);
-        _ticks.Checkpoints();
+        _ticks.Checkpoints(Checkpoints);
         Weapons.Tick(delta);
         Loot.TickRac1Pickups(delta);
         Loot.TickRac1GoldBolts();
@@ -227,6 +229,7 @@ internal sealed class Rac1WorldModule : IDisposable
                                 try { Presentation.Dispose(); }
                                 finally
                                 {
+                                    Checkpoints.Dispose();
                                     Context.BombGlove = null;
                                     Context.BombFireRequested = false;
                                     Context.CombatStatus = "off";
@@ -279,7 +282,7 @@ internal sealed class Rac1WorldModule : IDisposable
         }
 
         Breakables.ConfigureExplosives(world, result);
-        _actors.Checkpoints(world);
+        _actors.Checkpoints(Checkpoints);
         _actors.Missions(world, result);
         Weapons.Configure(world);
         Loot.ConfigureRac1PlacedBolts(world, result);

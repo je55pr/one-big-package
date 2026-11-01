@@ -39,6 +39,25 @@ public sealed class Rac1CheckpointTriggerTests
     }
 
     [Fact]
+    public void ResetKeepsAuthoredCheckpointMarkersAndRestartsNativeEntryState()
+    {
+        var region = new Rac1ClipVolume(0, new(10, 20, 30),
+            Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
+        var session = new Rac1CheckpointTriggerSession([region]);
+        session.Register(Placement(7, 805, region.Centre, 0),
+            new Rac1CheckpointMarkerAuthored(0, 0, false, -1));
+
+        Assert.Empty(session.Step(region.Centre));
+        Assert.Single(session.Step(region.Centre));
+        session.Reset();
+
+        Assert.Equal(1, session.RegisteredCount);
+        Assert.Equal(1, session.UngatedCount);
+        Assert.Empty(session.Step(region.Centre)); // first native update initializes
+        Assert.Single(session.Step(region.Centre)); // trigger still exists after reset
+    }
+
+    [Fact]
     public void UnknownGlobalModesSpawnSlotOrMissingVolumeCannotInventCheckpoint()
     {
         var region = new Rac1ClipVolume(0, new(10, 20, 30),
