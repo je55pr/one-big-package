@@ -1436,73 +1436,6 @@ public partial class OBPGame : Node3D
         }
     }
 
-    /// <summary>
-    /// Per-planet establishing shot for the regression capture set: a fixed
-    /// camera at the native ship point, lifted and pulled back, looking at the
-    /// trusted-geometry centre. Deterministic — no player, no physics settle.
-    /// </summary>
-    private void FrameShowcaseCamera(RuntimeWorld world)
-    {
-        RuntimeWorldScene.FrameCamera(_camera, world.Bounds, azimuthDegrees: 38f, elevationDegrees: 26f);
-        // Pull back a touch and aim slightly above centre so the horizon / sky
-        // reads instead of just the ground under the camera.
-        var b = world.Bounds;
-        var centre = RuntimeWorldScene.ToScene(
-            (b.Min.X + b.Max.X) * 0.5, (b.Min.Y + b.Max.Y) * 0.5, (b.Min.Z + b.Max.Z) * 0.5);
-        _camera.Position = centre + (_camera.Position - centre) * 1.15f;
-        _camera.LookAt(centre + Vector3.Up * (float)((b.Max.Y - b.Min.Y) * 0.15), Vector3.Up);
-        _camera.Current = true;
-        _activeCamera = _camera;
-        GD.Print($"[OBPGame] showcase camera at {_camera.Position}");
-    }
-
-    /// <summary>
-    /// MobySequence showcase (<c>--anim-solo</c>): park a static camera on the
-    /// bounds of the animated mobies alone. Deterministic, no world geometry.
-    /// </summary>
-    private void FrameAnimatedMobies(RuntimeWorld world)
-    {
-        var anim = world.AnimatedMeshes;
-        double minX = double.PositiveInfinity, minY = double.PositiveInfinity, minZ = double.PositiveInfinity;
-        double maxX = double.NegativeInfinity, maxY = double.NegativeInfinity, maxZ = double.NegativeInfinity;
-        if (anim is { Count: > 0 })
-        {
-            // Frame the first instance only — a tight shot, not the whole spread.
-            string firstInstance = anim[0].Name.Split("_t")[0];
-            foreach (var am in anim.Where(a => a.Name.StartsWith(firstInstance)))
-            {
-                foreach (var frame in am.Frames)
-                {
-                    for (int i = 0; i + 3 <= frame.Length; i += 3)
-                    {
-                        minX = System.Math.Min(minX, frame[i]);
-                        maxX = System.Math.Max(maxX, frame[i]);
-                        minY = System.Math.Min(minY, frame[i + 1]);
-                        maxY = System.Math.Max(maxY, frame[i + 1]);
-                        minZ = System.Math.Min(minZ, frame[i + 2]);
-                        maxZ = System.Math.Max(maxZ, frame[i + 2]);
-                    }
-                }
-            }
-        }
-        else
-        {
-            minX = minY = minZ = -1;
-            maxX = maxY = maxZ = 1;
-        }
-
-        var bounds = new OBP.Core.Math.ObpBounds(
-            new OBP.Core.Math.Vec3(minX, minY, minZ),
-            new OBP.Core.Math.Vec3(maxX, maxY, maxZ));
-        RuntimeWorldScene.FrameCamera(_camera, bounds, azimuthDegrees: 35f, elevationDegrees: 18f);
-        var centre = RuntimeWorldScene.ToScene((minX + maxX) * 0.5, (minY + maxY) * 0.5, (minZ + maxZ) * 0.5);
-        _camera.Position = centre + (_camera.Position - centre) * 0.55f;
-        _camera.LookAt(centre, Vector3.Up);
-        _camera.Current = true;
-        _activeCamera = _camera;
-        GD.Print($"[OBPGame] anim-solo camera at {_camera.Position}, {anim?.Count ?? 0} animated mobies");
-    }
-
     private void SpawnPlayer(RuntimeWorld world)
     {
         var b = world.Bounds;
@@ -2365,7 +2298,9 @@ public partial class OBPGame : Node3D
 
     private ShotListCliService CreateShotListCliService() => new(_args, (game, path) => RememberCommandLineSource(game, path),
         new GodotShotListCaptureFixture(this, _camera, camera => _activeCamera = camera, OpenDestinationFromBootstrap,
-            () => _mode == Mode.World ? _world : null, FrameShowcaseCamera, ApplyOverlaySpec, UpdateWorldHud, CapturePresentation.Metadata),
+            () => _mode == Mode.World ? _world : null,
+            world => { GodotWorldCaptureCamera.FrameShowcase(_camera, world); _activeCamera = _camera; },
+            ApplyOverlaySpec, UpdateWorldHud, CapturePresentation.Metadata),
         (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.Print(message), message => GD.PrintErr(message));
 
     private StressSwitchCliService CreateStressSwitchCliService() => new(
