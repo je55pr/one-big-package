@@ -35,6 +35,17 @@ public sealed class Rac1CheckpointTriggerSession
     public int RegisteredCount => _entries.Count;
     public int UngatedCount => _entries.Count(entry => entry.Authored.Flags == 0 && entry.Authored.SpawnSlot == -1 && entry.Volume is not null);
 
+    /// <summary>Restart native entry/arming state while retaining authored checkpoint definitions.</summary>
+    public void Reset()
+    {
+        foreach (var entry in _entries)
+        {
+            entry.Initialized = false;
+            entry.WasInside = false;
+            entry.WasArmed = false;
+        }
+    }
+
     public void Register(Rac1Instances.MobyInstance instance, Rac1CheckpointMarkerAuthored authored)
     {
         if (instance.OClass != Rac1CommonMobyAuthored.CheckpointMarker)

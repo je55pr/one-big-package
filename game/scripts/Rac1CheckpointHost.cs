@@ -25,7 +25,9 @@ internal sealed class Rac1CheckpointHost(
 
     internal void Reset()
     {
-        if (!_disposed) _triggers = null;
+        // A rebind resets native entry state, not the current world's authored markers.
+        // Only world disposal tears down the registrations.
+        if (!_disposed) _triggers?.Reset();
     }
 
     internal void Configure(Func<string?> sourcePath)

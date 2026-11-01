@@ -56,6 +56,9 @@ public sealed class Rac1CampaignWorldOwnershipTests
             StringComparison.Ordinal);
         Assert.Contains("Checkpoints.Reset()", Method("Rac1WorldModule.cs", "ResetBindings"),
             StringComparison.Ordinal);
+        string checkpointReset = Method("Rac1CheckpointHost.cs", "Reset");
+        Assert.Contains("_triggers?.Reset()", checkpointReset, StringComparison.Ordinal);
+        Assert.DoesNotContain("_triggers = null", checkpointReset, StringComparison.Ordinal);
         Assert.Contains("_actors.Checkpoints(Checkpoints)", Method("Rac1WorldModule.cs", "ConfigureActors"),
             StringComparison.Ordinal);
         Assert.Contains("_triggers = new(Rac1ClipVolumes.Read(gameplay))",
