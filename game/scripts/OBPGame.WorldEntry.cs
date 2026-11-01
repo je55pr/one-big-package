@@ -326,7 +326,7 @@ public partial class OBPGame
         player.ConfigureAvatarPresentation((float)avatar.AnimationBounds.Height);
         _avatarPresentation.Subscribe(player, StepPlayerAvatarPhysics, ResetPlayerAvatarPhysics);
         _equipmentPresentation.BindSelected(_avatarPresentation, _persistentPlayer.Equipment.Sources, _equipmentPresentation.NativeViews.Assets, FusionWeapons.Sources.Assets);
-        RefreshRac1WrenchPresentationVisibility();
+        _equipmentPresentation.RefreshRac1HandVisibility(Rac1HandPresentation, _avatarPresentation);
         _avatarPresentation.HideAuthoredWorldRatchetPresentation(_activeDestination, _sceneResult);
         GD.Print($"[player-avatar] attached selected {avatar.Identity.ModelId}: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
     }
@@ -349,10 +349,10 @@ public partial class OBPGame
 
         bool holdGun = _persistentPlayer.Rac1Use.UseTicks > 0 && OBP.RAC1.Gameplay.Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped) &&
             OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence is > 0 and not 44 &&
-            IsRac1HandEquipmentVisible(_rac1Weapons.Equipped) && input.Traversal is null &&
+            PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(_rac1Weapons.Equipped, Rac1HandPresentation) && input.Traversal is null &&
             PlayerLife.Alive;
         int walloperAge = _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Walloper.Age ?? 0;
-        bool walloper = IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.Walloper) && walloperAge > 0;
+        bool walloper = PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.Walloper, Rac1HandPresentation) && walloperAge > 0;
         bool moving = input.Active || state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.JumpRise or PlayerAnimationState.Fall;
         int? equipmentPose = walloper ? OBP.RAC1.Gameplay.Rac1ArsenalRules.WalloperSequence :
             holdGun ? (moving ? OBP.RAC1.Gameplay.Rac1ArsenalRules.MovingBodySequence(_rac1Weapons.Equipped) :
@@ -387,7 +387,7 @@ public partial class OBPGame
         _worldScenes?.Current?.Resources.Rac1Gameplay?.Effects.StepAdditionalWeaponWorld();
         _worldScenes?.Current?.Resources.Rac1Gameplay?.Effects.StepBombEffectsPhysics();
         _avatarPresentation.SampleClock();
-        RefreshRac1WrenchPresentationVisibility();
+        _equipmentPresentation.RefreshRac1HandVisibility(Rac1HandPresentation, _avatarPresentation);
     }
 
 
@@ -411,43 +411,6 @@ public partial class OBPGame
         _equipmentPresentation.ClearBindings();
     }
 
-
-    private void HoldSelectedRac1HandItem()
-    {
-        int? previous = _rac1HeldItem.NativeItemId;
-        _rac1HeldItem.HoldSelected(_rac1Weapons);
-        RefreshRac1HeldItem(previous);
-    }
-
-    private void RefreshRac1HeldItem(int? previous)
-    {
-        if (previous != _rac1HeldItem.NativeItemId &&
-            _avatarPresentation.Controller is Rac1PlayerAnimationPresentationController controller)
-            _equipmentPresentation.NativeViews.RefreshAttachment(_rac1Weapons.Equipped, controller);
-        RefreshRac1WrenchPresentationVisibility();
-    }
-
-    private bool IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId item) =>
-        FusionWeapons.Session?.Selected.SourceGame is not (ObpSourceGame.Rac2 or ObpSourceGame.Rac3) &&
-        _rac1HeldItem.Hand.IsHolding(new(ObpSourceGame.Rac1, (int)item)) &&
-        _player?.Rac1WaterHandItemHidden != true &&
-        _player?.Rac1WrenchFrame.Active != true && !(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true);
-
-    private void RefreshRac1WrenchPresentationVisibility()
-    {
-        _equipmentPresentation.NativeViews.RefreshVisibility(IsRac1HandEquipmentVisible);
-        bool bombVisible = IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.FirstRanged);
-        if (_avatarPresentation.GloveView is not null && IsInstanceValid(_avatarPresentation.GloveView))
-            _avatarPresentation.GloveView.Visible = bombVisible;
-        if (_avatarPresentation.StagedBombView is not null && IsInstanceValid(_avatarPresentation.StagedBombView))
-            _avatarPresentation.StagedBombView.Visible = bombVisible && _rac1Weapons.FirstRangedAmmo > 0;
-        if (_avatarPresentation.WrenchView is null || !GodotObject.IsInstanceValid(_avatarPresentation.WrenchView))
-            return;
-        _avatarPresentation.WrenchView.Visible =
-            _player?.Rac1WaterHandItemHidden != true &&
-            (_rac1HeldItem.Hand.WrenchHeld ||
-             _player?.Rac1WrenchFrame.Active == true || (_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true));
-    }
 
 
 }

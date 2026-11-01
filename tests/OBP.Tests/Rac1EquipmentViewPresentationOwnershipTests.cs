@@ -197,8 +197,9 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
             "_avatarPresentation.Retire()",
             "_equipmentPresentation.NativeViews.ClearViews()",
             "_equipmentPresentation.ClearBindings()");
-        Assert.Contains("NativeViews.RefreshAttachment(_rac1Weapons.Equipped, controller)", entry, StringComparison.Ordinal);
-        Assert.Contains("NativeViews.RefreshVisibility(IsRac1HandEquipmentVisible)", entry, StringComparison.Ordinal);
+        string binder = Script("PlayerEquipmentPresentationBinder.cs");
+        Assert.Contains("NativeViews.RefreshAttachment(state.Inventory.Equipped, controller)", binder, StringComparison.Ordinal);
+        Assert.Contains("NativeViews.RefreshVisibility(item => IsRac1HandEquipmentVisible(item, state))", binder, StringComparison.Ordinal);
         Assert.Contains("_equipmentPresentation.NativeViews.Assets", Script("OBPGame.cs"), StringComparison.Ordinal);
         Assert.Contains("_equipmentPresentation.NativeViews.View(weapon)", Script("OBPGame.cs"), StringComparison.Ordinal);
     }

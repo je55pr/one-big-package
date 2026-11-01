@@ -12,11 +12,38 @@ using Godot;
 namespace OBP.Game;
 
 /// <summary>
+/// Borrowed player inventory and the current world/pose visibility facts.
+/// The binder never owns these mutable player and world authorities.
+/// </summary>
+internal readonly record struct Rac1HandPresentationContext(
+    Rac1HeldItemSession Held,
+    Rac1WeaponInventory Inventory,
+    FusionWeaponSession? Fusion,
+    bool WaterHandItemHidden,
+    bool WrenchFrameActive,
+    bool WrenchThrowActive);
+
+/// <summary>
 /// Selected source-bank data lives beyond worlds. Effect meshes, material factories
 /// and resolved hand sockets belong to one world/presentation binding only.
 /// </summary>
 internal sealed class PlayerEquipmentPresentationBinder
 {
+    // The avatar host owns these world-scoped views; this presentation port
+    // borrows them at refresh time without retaining nodes across world changes.
+    private readonly Func<PlayerAvatarPresentationHost, (Node3D? Glove, Node3D? StagedBomb, Node3D? Wrench)> _avatarViews;
+
+    internal PlayerEquipmentPresentationBinder()
+        : this(avatar => (avatar.GloveView, avatar.StagedBombView, avatar.WrenchView))
+    {
+    }
+
+    internal PlayerEquipmentPresentationBinder(
+        Func<PlayerAvatarPresentationHost, (Node3D? Glove, Node3D? StagedBomb, Node3D? Wrench)> avatarViews)
+    {
+        _avatarViews = avatarViews ?? throw new ArgumentNullException(nameof(avatarViews));
+    }
+
     internal Rac1ExplosionPresenter Explosions { get; } = new();
     internal Rac1EquipmentViewPresentation NativeViews { get; } = new();
     internal Rac1WeaponAudioPresenter WeaponAudio { get; } = new();
@@ -108,6 +135,52 @@ internal sealed class PlayerEquipmentPresentationBinder
     {
         RetireWorld();
         EffectMaterials = assets is null ? null : new(world with { Textures = assets.Textures });
+    }
+
+    /// <summary>Preserve held-weapon mutation and first-attachment refresh order.</summary>
+    internal void HoldSelectedRac1HandItem(
+        Rac1HandPresentationContext state, PlayerAvatarPresentationHost avatar)
+    {
+        int? previous = state.Held.NativeItemId;
+        state.Held.HoldSelected(state.Inventory);
+        RefreshRac1HeldItem(previous, state, avatar);
+    }
+
+    internal void RefreshRac1HeldItem(
+        int? previous, Rac1HandPresentationContext state, PlayerAvatarPresentationHost avatar)
+    {
+        if (previous != state.Held.NativeItemId &&
+            avatar.Controller is Rac1PlayerAnimationPresentationController controller)
+            NativeViews.RefreshAttachment(state.Inventory.Equipped, controller);
+        RefreshRac1HandVisibility(state, avatar);
+    }
+
+    internal static bool IsRac1HandEquipmentVisible(Rac1WeaponId item, Rac1HandPresentationContext state) =>
+        state.Fusion?.Selected.SourceGame is not (ObpSourceGame.Rac2 or ObpSourceGame.Rac3) &&
+        state.Held.Hand.IsHolding(new(ObpSourceGame.Rac1, (int)item)) &&
+        !state.WaterHandItemHidden && !state.WrenchFrameActive && !state.WrenchThrowActive;
+
+    internal void RefreshRac1HandVisibility(Rac1HandPresentationContext state, PlayerAvatarPresentationHost avatar)
+    {
+        NativeViews.RefreshVisibility(item => IsRac1HandEquipmentVisible(item, state));
+        var (glove, stagedBomb, wrench) = _avatarViews(avatar);
+        RefreshRac1HandNodes(state, glove, stagedBomb, wrench);
+    }
+
+    // The Godot node boundary is also exercised with source-free scene nodes.
+    // All three views stay owned by the existing player-avatar presentation.
+    internal static void RefreshRac1HandNodes(Rac1HandPresentationContext state,
+        Node3D? glove, Node3D? stagedBomb, Node3D? wrench)
+    {
+        bool bombVisible = IsRac1HandEquipmentVisible(Rac1WeaponId.FirstRanged, state);
+        if (glove is not null && GodotObject.IsInstanceValid(glove))
+            glove.Visible = bombVisible;
+        if (stagedBomb is not null && GodotObject.IsInstanceValid(stagedBomb))
+            stagedBomb.Visible = bombVisible && state.Inventory.FirstRangedAmmo > 0;
+        if (wrench is null || !GodotObject.IsInstanceValid(wrench))
+            return;
+        wrench.Visible = !state.WaterHandItemHidden &&
+            (state.Held.Hand.WrenchHeld || state.WrenchFrameActive || state.WrenchThrowActive);
     }
 
     internal void ClearBindings() => _bindings.Clear();
