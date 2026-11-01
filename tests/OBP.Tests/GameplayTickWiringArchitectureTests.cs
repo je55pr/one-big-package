@@ -53,6 +53,7 @@ public sealed class GameplayTickWiringArchitectureTests
         int native = rac1Registrations.IndexOf("\"rac1-native\"", StringComparison.Ordinal);
         Assert.True(effects >= 0 && sourceGate > effects && native > sourceGate,
             "Shared post-death Bomb Glove effects must tick in all worlds, but R&C1 native clocks must not.");
+        Assert.DoesNotContain("ObpSourceGame", rac1Registrations[..effects], StringComparison.Ordinal);
         Assert.Contains("if (playerDead()) Effects.StepBombEffectsPhysics()", rac1Registrations);
         Assert.Contains("ticks.RegisterInput(\"rac1-taxi-input\"", one);
         Assert.Contains("GameplayTickPhase.NativeWorld, \"rac1-native\"", one);
