@@ -10,17 +10,18 @@ public sealed class GameplayTickSchedulerTests
         using var lifetime = new CancellationTokenSource();
         using var schedule = new GameplayTickScheduler<string>(lifetime.Token);
         var calls = new List<string>();
-        schedule.Register(GameplayTickPhase.Hud, "hud", "ui", 0, value => calls.Add($"hud:{value}"));
+        static string Record(string name, double value) => name + ":" + value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        schedule.Register(GameplayTickPhase.Hud, "hud", "ui", 0, value => calls.Add(Record("hud", value)));
         schedule.Register(GameplayTickPhase.NativeWorld, "second-source", "source-b", 20,
-            value => calls.Add($"second:{value}"));
+            value => calls.Add(Record("second", value)));
         schedule.Register(GameplayTickPhase.Presentation, "effects", "effects", 20,
-            value => calls.Add($"effects:{value}"));
+            value => calls.Add(Record("effects", value)));
         schedule.Register(GameplayTickPhase.NativeWorld, "first-source", "source-a", 10,
-            value => calls.Add($"first:{value}"));
+            value => calls.Add(Record("first", value)));
         schedule.Register(GameplayTickPhase.Presentation, "scene", "scene", 10,
-            value => calls.Add($"scene:{value}"));
+            value => calls.Add(Record("scene", value)));
         schedule.Register(GameplayTickPhase.Prepare, "prepare", "effects", 0,
-            value => calls.Add($"prepare:{value}"));
+            value => calls.Add(Record("prepare", value)));
         schedule.Activate();
 
         schedule.Run(GameplayTickPhase.Prepare, .017);
@@ -28,7 +29,7 @@ public sealed class GameplayTickSchedulerTests
 
         Assert.Equal(["prepare:0.017", "scene:0.017", "effects:0.017",
             "first:0.017", "second:0.017", "hud:0.017"], calls);
-        Assert.Equal(6, schedule.Registrations.Count);
+        Assert.Equal(6, schedule.SnapshotRegistrations().Count);
     }
 
     [Fact]
@@ -144,7 +145,7 @@ public sealed class GameplayTickSchedulerTests
         Assert.Throws<FormatException>(() => schedule.RunWorldFrame(0));
         schedule.RunWorldFrame(0);
         Assert.Equal(2, attempts);
-        Assert.Single(schedule.Registrations);
+        Assert.Single(schedule.SnapshotRegistrations());
     }
 
     [Fact]

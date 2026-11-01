@@ -32,11 +32,14 @@ public sealed class GameplayTickScheduler<TInput>(CancellationToken lifetime) : 
     private bool _dispatching;
     private bool _retired;
 
-    public IReadOnlyList<GameplayTickRegistration> Registrations =>
+    public IReadOnlyList<GameplayTickRegistration> SnapshotRegistrations() =>
         _ticks.Select(tick => tick.Metadata).ToArray();
 
     public void Register(GameplayTickPhase phase, string key, string owner, int order,
-        Action<double> callback, Func<bool>? available = null)
+        Action<double> callback) => Register(phase, key, owner, order, callback, null);
+
+    public void Register(GameplayTickPhase phase, string key, string owner, int order,
+        Action<double> callback, Func<bool>? available)
     {
         ArgumentNullException.ThrowIfNull(callback);
         if (!Enum.IsDefined(phase)) throw new ArgumentOutOfRangeException(nameof(phase));
@@ -44,8 +47,11 @@ public sealed class GameplayTickScheduler<TInput>(CancellationToken lifetime) : 
         _ticks.Add(new(new(key, owner, phase, order), callback, available));
     }
 
+    public void RegisterInput(string key, string owner, int order, Func<TInput, bool> callback) =>
+        RegisterInput(key, owner, order, callback, null);
+
     public void RegisterInput(string key, string owner, int order, Func<TInput, bool> callback,
-        Func<bool>? available = null)
+        Func<bool>? available)
     {
         ArgumentNullException.ThrowIfNull(callback);
         CheckRegistration(key, owner);
