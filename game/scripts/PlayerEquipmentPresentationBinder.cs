@@ -29,6 +29,21 @@ internal readonly record struct Rac1HandPresentationContext(
 /// </summary>
 internal sealed class PlayerEquipmentPresentationBinder
 {
+    // The avatar host owns these world-scoped views; this presentation port
+    // borrows them at refresh time without retaining nodes across world changes.
+    private readonly Func<PlayerAvatarPresentationHost, (Node3D? Glove, Node3D? StagedBomb, Node3D? Wrench)> _avatarViews;
+
+    internal PlayerEquipmentPresentationBinder()
+        : this(avatar => (avatar.GloveView, avatar.StagedBombView, avatar.WrenchView))
+    {
+    }
+
+    internal PlayerEquipmentPresentationBinder(
+        Func<PlayerAvatarPresentationHost, (Node3D? Glove, Node3D? StagedBomb, Node3D? Wrench)> avatarViews)
+    {
+        _avatarViews = avatarViews ?? throw new ArgumentNullException(nameof(avatarViews));
+    }
+
     internal Rac1ExplosionPresenter Explosions { get; } = new();
     internal Rac1EquipmentViewPresentation NativeViews { get; } = new();
     internal Rac1WeaponAudioPresenter WeaponAudio { get; } = new();
@@ -148,7 +163,8 @@ internal sealed class PlayerEquipmentPresentationBinder
     internal void RefreshRac1HandVisibility(Rac1HandPresentationContext state, PlayerAvatarPresentationHost avatar)
     {
         NativeViews.RefreshVisibility(item => IsRac1HandEquipmentVisible(item, state));
-        RefreshRac1HandNodes(state, avatar.GloveView, avatar.StagedBombView, avatar.WrenchView);
+        var (glove, stagedBomb, wrench) = _avatarViews(avatar);
+        RefreshRac1HandNodes(state, glove, stagedBomb, wrench);
     }
 
     // The Godot node boundary is also exercised with source-free scene nodes.

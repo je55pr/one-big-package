@@ -20,8 +20,12 @@ public partial class Rac1HandPresentationProbe : Node
             var inventory = new Rac1WeaponInventory(ownsFirstRanged: true,
                 equipped: Rac1WeaponId.FirstRanged, firstRangedAmmo: 6);
             var held = new Rac1HeldItemSession();
-            var binder = new PlayerEquipmentPresentationBinder();
             var avatar = new PlayerAvatarPresentationHost();
+            var glove = new Node3D { Name = "FixtureGlove" };
+            var stagedBomb = new Node3D { Name = "FixtureStagedBomb" };
+            var wrench = new Node3D { Name = "FixtureWrench" };
+            Node3D? activeGlove = glove, activeStagedBomb = stagedBomb, activeWrench = wrench;
+            var binder = new PlayerEquipmentPresentationBinder(_ => (activeGlove, activeStagedBomb, activeWrench));
             var state = new Rac1HandPresentationContext(held, inventory, null, false, false, false);
 
             // Install a real native view without loading retail assets. Keep the
@@ -34,20 +38,12 @@ public partial class Rac1HandPresentationProbe : Node
                 ?? throw new InvalidOperationException("Native equipment view registry was not found.");
             registry.Add(Rac1WeaponId.Blaster, view);
 
-            var glove = new Node3D { Name = "FixtureGlove" };
-            var stagedBomb = new Node3D { Name = "FixtureStagedBomb" };
-            var wrench = new Node3D { Name = "FixtureWrench" };
             AddChild(glove);
             AddChild(stagedBomb);
             AddChild(wrench);
 
-            void Refresh(Rac1HandPresentationContext current)
-            {
-                // The binder's production method updates registered native views
-                // and calls the same node implementation for avatar-owned views.
+            void Refresh(Rac1HandPresentationContext current) =>
                 binder.RefreshRac1HandVisibility(current, avatar);
-                PlayerEquipmentPresentationBinder.RefreshRac1HandNodes(current, glove, stagedBomb, wrench);
-            }
 
             Require(!PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(Rac1WeaponId.FirstRanged, state),
                 "An undrawn first-ranged item must stay hidden.");
@@ -118,9 +114,10 @@ public partial class Rac1HandPresentationProbe : Node
             // Both absent and freed nodes must be skipped without reading them.
             PlayerEquipmentPresentationBinder.RefreshRac1HandNodes(state, null, null, null);
             glove.Free(); stagedBomb.Free(); wrench.Free();
-            PlayerEquipmentPresentationBinder.RefreshRac1HandNodes(state, glove, stagedBomb, wrench);
+            binder.RefreshRac1HandVisibility(state, avatar); // Freed nodes through the injected binder view port.
+            activeGlove = activeStagedBomb = activeWrench = null;
             view.Free();
-            binder.RefreshRac1HandVisibility(state, avatar);
+            binder.RefreshRac1HandVisibility(state, avatar); // Absent views through the same production call.
 
             GD.Print("[rac1-hand-presentation-smoke] PASS: native view, glove, bomb/ammo, wrench, water, invalid nodes, mixed-source selection");
             GetTree().Quit(0);

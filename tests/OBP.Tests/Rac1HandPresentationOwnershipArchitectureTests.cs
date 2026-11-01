@@ -25,7 +25,9 @@ public sealed class Rac1HandPresentationOwnershipArchitectureTests
         Assert.Contains("state.Held.HoldSelected(state.Inventory)", binder);
         Assert.Contains("NativeViews.RefreshAttachment(state.Inventory.Equipped, controller)", binder);
         Assert.Contains("NativeViews.RefreshVisibility(", binder);
-        Assert.Contains("RefreshRac1HandNodes(state, avatar.GloveView, avatar.StagedBombView, avatar.WrenchView)", binder);
+        Assert.Contains("this(avatar => (avatar.GloveView, avatar.StagedBombView, avatar.WrenchView))", binder);
+        Assert.Contains("var (glove, stagedBomb, wrench) = _avatarViews(avatar)", binder);
+        Assert.Contains("RefreshRac1HandNodes(state, glove, stagedBomb, wrench)", binder);
         Assert.Contains("glove.Visible = bombVisible", binder);
         Assert.Contains("stagedBomb.Visible = bombVisible && state.Inventory.FirstRangedAmmo > 0", binder);
         Assert.Contains("wrench.Visible = !state.WaterHandItemHidden", binder);
