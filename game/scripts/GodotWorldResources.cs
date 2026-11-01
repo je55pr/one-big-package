@@ -4,6 +4,7 @@ using OBP.Runtime;
 using OBP.Fusion;
 using OBP.Game.Diagnostics;
 using OBP.RAC2.Gameplay;
+using OBP.Runtime.Gameplay;
 
 namespace OBP.Game;
 
@@ -25,6 +26,20 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
     public Rac3WorldModule? Rac3Gameplay { get; set; }
     public IDisposable? FusionWeapons { get; set; }
     public IDisposable? PlayerLife { get; set; }
+    internal GameplayTickScheduler<InputEvent>? GameplayTicks { get; private set; }
+
+    internal void BindGameplayTicks(GameplayTickScheduler<InputEvent> ticks)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (GameplayTicks is not null) throw new InvalidOperationException("World ticks already bound.");
+        GameplayTicks = ticks;
+    }
+
+    internal void RetireGameplayTicks()
+    {
+        GameplayTicks?.Dispose();
+        GameplayTicks = null;
+    }
 
     private void DisposeSourceGameplay()
     {
@@ -46,6 +61,7 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
     {
         if (_disposed) return;
         _disposed = true;
+        RetireGameplayTicks();
         try
         {
             try

@@ -131,6 +131,18 @@ public partial class OBPGame
         entry.Resources.Rac3Gameplay = Rac3WorldModule.CreateForWorld(entry.Plan.Prepared.World, entry.Resources.Scene);
         ActivateWorld(entry.Plan.Prepared.World, entry.Resources, entry.NativeDestination, entry.Lab);
         entry.Resources.BindPlayer(_player);
+        WorldGameplayTickBindings.Activate(entry, new(
+            MovementSuspended: () => MovementReproduction.IsLoading,
+            ReplayWaitingForEntry: () => _captureReplay?.Recorder is { WaitingForEntry: true },
+            PlayerDead: () => _player?.Rac1GameplayAlive == false,
+            PlayerReactions: () => _playerAudio?.StepReactions(),
+            ActorPhysics: _ =>
+            {
+                if (_player is { } player)
+                    ActorHost.Step(ToNumerics(player.GlobalPosition), PlayerLife.Alive, MovementReproduction.IsLoading);
+            },
+            ScenePresentation: delta => _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero),
+            HudPresentation: () => { UpdatePlayerHud(); UpdateWorldHud(); }));
     }
 
     private void ReportWorldPreparationFailure(Exception error, bool superseded)

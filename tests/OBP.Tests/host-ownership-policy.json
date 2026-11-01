@@ -172,5 +172,17 @@
     "Kind": "adapter",
     "Reason": "World-scoped original Veldin death-plane contact facts, native state witness and 60Hz callback. Player health authority is borrowed from the selected player; no avatar/equipment selection occurs from source origin. Authored death threshold/ray inputs and retry policy are unchanged.",
     "Hash": "9bb7f4d94e741e6ed5b2f8af653bbe7a756368d32b91bae9f1e05870a50bdb17"
+  },
+  {
+    "Key": "game/scripts/Rac1WorldModule.cs::Rac1WorldModule.RegisterTicks(GameplayTickScheduler<InputEvent>,Func<bool>,Func<bool>,Func<bool>)",
+    "Kind": "adapter",
+    "Reason": "#375: register only source-matching R&C1 world callbacks on this world lease. The existing native R&C1 module owns its clock and the player selection remains independent of source-game origin. GameplayTickSchedulerTests and GameplayTickWiringArchitectureTests guard ordering, source admission, cancellation and late dispatch.",
+    "Hash": "11205eac02aef501833bffd9c7dbc0a6d7973023497ac0d0686b22a224619f92"
+  },
+  {
+    "Key": "game/scripts/Rac2WorldModule.cs::Rac2WorldModule.RegisterTicks(GameplayTickScheduler<InputEvent>)",
+    "Kind": "adapter",
+    "Reason": "#375: register the source-matching R&C2 world adapter once per scene lease, retaining its existing Rac2WorldLeaseClock fractional native tick without choosing avatar or player services from the source identity. Scheduler and host-wiring regressions exercise this boundary.",
+    "Hash": "4434f50450cb0a4464d6d0eb9804ba44f0c8c6aaf60c4a84f35c850b27d94bbf"
   }
 ]
