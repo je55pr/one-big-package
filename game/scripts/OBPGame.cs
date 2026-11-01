@@ -2772,6 +2772,7 @@ public partial class OBPGame : Node3D
         int progressionEventId)
     {
         Sources.Initialize();
+        EnsureRac1CampaignPersistenceInitialized();
         Rac1DestinationDiscoveryResult result =
             _rac1Campaign.Session.Campaign.ApplyProgressionEvent(progressionEventId);
 

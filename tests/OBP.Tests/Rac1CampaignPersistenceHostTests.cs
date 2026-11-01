@@ -37,6 +37,18 @@ public sealed class Rac1CampaignPersistenceHostTests
     }
 
     [Fact]
+    public void DiscoveryAfterInitialisationSurvivesRepeatedInitialisation()
+    {
+        var owner = new Rac1CampaignHost();
+        owner.Persistence.Initialize(requested: false, requestedPath: null, defaultPath: "unused");
+        Assert.Equal(Rac1DestinationDiscoveryResult.Discovered,
+            owner.Session.Campaign.ApplyProgressionEvent(0x25));
+
+        owner.Persistence.Initialize(requested: false, requestedPath: null, defaultPath: "unused");
+        Assert.True(owner.Session.Campaign.CanSelectDestination(1));
+    }
+
+    [Fact]
     public void CorruptedParitySaveNeverAcquiresAWriterOrOverwritesOriginalBytes()
     {
         string path = TemporaryPath();

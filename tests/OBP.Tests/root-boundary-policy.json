@@ -3837,9 +3837,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ApplyRac1CampaignProgressionEvent(:int):Rac1DestinationDiscoveryResult:public",
       "Owner": "#372",
-      "Rationale": "Thin app-facing R&C1 campaign persistence/public API binding to the persistent Rac1CampaignHost. Native save policy, restore, batcher, wallet and collected-bolt state have moved to their source owner. Root only bridges explicit mode, shared player wallet, Godot notices or public API side effects. Retire with the final root composition.",
+      "Rationale": "Thin app-facing R&C1 campaign persistence/public API binding to the persistent Rac1CampaignHost. Native save policy, restore, batcher, wallet and collected-bolt state have moved to their source owner. Root only bridges explicit mode, shared player wallet, Godot notices or public API side effects. Retire with the final root composition. #372 review: ensure the source campaign is restored before applying native progression events so initialisation cannot discard a new destination discovery.",
       "ExpiresWith": "#376",
-      "Hash": "8fe7ae8b79857d8e5477e3fe2cadcbe1f0d95da6104a45536dd6228ad2ede7bf"
+      "Hash": "dee997f8d43958aeaefdce3caf83e0f5ce5ebd5e5efebbcf30f3a572b32f885e"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ApplyRac1ItemAcquisition(:int):Rac1ItemAcquisitionResult:public",
