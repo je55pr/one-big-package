@@ -264,7 +264,7 @@ public partial class OBPGame : Node3D
                 var source = Sources.Setup.Library.Get(ObpSourceGame.Rac1);
                 _playerAudio!.Bind(new(new(ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId, "player-audio"),
                     OrdinaryPlayerSession ? 0 : world.LevelId,
-                    OrdinaryPlayerSession ? _avatarSourceStamp : SourceFileStamp(source?.Path),
+                    OrdinaryPlayerSession ? _avatarSourceStamp : WorldEntryPreparationPolicy.SourceFileStamp(source?.Path),
                     WorldScenes.Current!.Plan.Request), source is null ? null : assets, _args.FixedSeed,
                     _args.Rac1WrenchSmoke || _args.Rac1WeaponsSmoke || _args.Rac1PlayerAudioSmoke, _args.Rac1PlayerAudioSmoke);
             }));
@@ -2211,7 +2211,7 @@ public partial class OBPGame : Node3D
     });
 
     private ActorWorldHost CreateActorHost() => new(_hostOperations, new(
-        () => Sources.Setup.Library, SourceFileStamp, key => _persistentPlayer.Equipment.Sources.GetValueOrDefault(key.SourceGame),
+        () => Sources.Setup.Library, WorldEntryPreparationPolicy.SourceFileStamp, key => _persistentPlayer.Equipment.Sources.GetValueOrDefault(key.SourceGame),
         (live, total, problems) => _navigation.UpdateLabStatus(live, total, problems),
         PlayerLife.RetireActor,
         PlayerLife.Contains, () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Contacts.Invalidate(),

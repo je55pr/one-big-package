@@ -205,25 +205,25 @@ public sealed class SourceNeutralHostArchitectureTests
     }
 
     [Fact]
-    public void ApprovedWorldAdapterCannotAcquireTheReportedEquipmentSelectionCall()
+    public void PreparedWorldPolicyCannotSelectThePlayerAvatarByWorldOrigin()
     {
-        var (compilation, tree) = InsertAdapterStatement("game/scripts/OBPGame.WorldEntry.cs", "WorldOptions", """
+        var (compilation, tree) = InsertAdapterStatement("game/scripts/WorldEntryPreparationPolicy.cs", "WorldOptions", """
             if (world.Game == ObpSourceGame.Rac1)
-                Rac1CombatInput.Select(OBP.RAC1.Gameplay.Rac1WeaponId.Blaster);
+                PlayerAvatarPresentationHost.Provider(OBP.Core.ObpSourceGame.Rac1);
             """);
         var call = tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>()
-            .Single(invocation => invocation.Expression.ToString() == "Rac1CombatInput.Select");
+            .Single(invocation => invocation.Expression.ToString() == "PlayerAvatarPresentationHost.Provider");
         var bound = Assert.IsAssignableFrom<IMethodSymbol>(compilation.GetSemanticModel(tree).GetSymbolInfo(call).Symbol);
-        Assert.Equal("IRac1WeaponPlayerInput", bound.ContainingType.Name);
-        Assert.NotEmpty(bound.DeclaringSyntaxReferences); // The real player-session contract, not an unresolved or test-only stub.
+        Assert.Equal("PlayerAvatarPresentationHost", bound.ContainingType.Name);
+        Assert.NotEmpty(bound.DeclaringSyntaxReferences); // The real production avatar provider, not a test-only stub.
 
         var usages = HostOwnershipAudit.Scan(compilation);
-        var adapter = usages.Single(usage => usage.Key.EndsWith("::OBPGame.WorldOptions(RuntimeWorld)", StringComparison.Ordinal));
-        Assert.False(adapter.PlayerSelection); // Fingerprinting closes gaps beyond the known-sink heuristic.
+        var adapter = usages.Single(usage => usage.Key.EndsWith("::WorldEntryPreparationPolicy.WorldOptions(RuntimeWorld,CommandLineArgs)", StringComparison.Ordinal));
+        Assert.True(adapter.PlayerSelection);
         var errors = HostOwnershipAudit.Violations(usages, HostOwnershipAudit.Policy());
         Assert.Single(errors);
         Assert.Contains("WorldOptions", errors[0]);
-        Assert.Contains("approved source-world adapter changed", errors[0]);
+        Assert.Contains("source-world adapter selects a player service", errors[0]);
     }
 
     [Fact]

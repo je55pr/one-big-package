@@ -33,23 +33,23 @@ public partial class OBPGame
         if (!Sources.RequireOrdinary("world entry")) return false;
         try
         {
-            var worldSourceStamp = SourceFileStamp(sourcePath);
+            var worldSourceStamp = WorldEntryPreparationPolicy.SourceFileStamp(sourcePath);
             PrepareSelectedPlayerAssets();
             CaptureReplay.PrepareControllers(() => { _playerNative!.ResetReplayControllers(); FusionWeapons.BindPersistent(_playerNative.Weapons); });
             var request = _worldEntries!.Request(destinationId, PlayerEntryMode);
             var source = new WorldSource(entry =>
             {
                 var world = load();
-                var spawn = ValidateSourceEntry(world);
+                var spawn = WorldEntryPreparationPolicy.ValidateSourceEntry(world);
                 return new(world, spawn, []); // Mixed native actor adapters are registered by #256.
             });
             var plan = _worldEntries.Prepare(request, source, PlayerAvatarPresentationHost.Registry);
-            using var staged = WorldScenes.Prepare(plan, nativeDestination, lab, SourceEntrySnapReach(plan.Prepared.World),
-                () => new GodotWorldResources(WorldHost.PrepareScene(plan.Prepared.World, destinationId, WorldOptions(plan.Prepared.World))));
+            using var staged = WorldScenes.Prepare(plan, nativeDestination, lab, WorldEntryPreparationPolicy.SourceEntrySnapReach(plan.Prepared.World),
+                () => new GodotWorldResources(WorldHost.PrepareScene(plan.Prepared.World, destinationId, WorldEntryPreparationPolicy.WorldOptions(plan.Prepared.World, _args))));
             // Recheck attachments before the destructive boundary. Native source
             // data and selected player assets are independent dependencies.
             PrepareSelectedPlayerAssets();
-            if (SourceFileStamp(sourcePath) != worldSourceStamp)
+            if (WorldEntryPreparationPolicy.SourceFileStamp(sourcePath) != worldSourceStamp)
                 throw new InvalidDataException("The world source changed during preparation. Reattach it in Game Sources.");
             if (!Sources.RequireOrdinary("world activation"))
                 return false;
@@ -151,37 +151,18 @@ public partial class OBPGame
         if (!superseded && IsInsideTree()) ApplicationLifecycle.RequestQuit(this, "world-preparation-failed", 2);
     }
 
-    private static (long Length, long Written)? SourceFileStamp(string? path)
-    {
-        if (path is null) return null;
-        var file = new FileInfo(path);
-        if (!file.Exists) throw new FileNotFoundException("The world source is missing. Reattach it in Game Sources.");
-        return (file.Length, file.LastWriteTimeUtc.Ticks);
-    }
-
     private void StartRequestedSourceVerification(ObpDestination destination, string sourcePath)
     {
         if (_args.VerifyHash && _worldSwitches == 1 && destination.Game == ObpSourceGame.Rac2)
             SourceVerification.Start(ObpSourceGame.Rac2);
     }
 
-    private static RuntimeSpawn ValidateSourceEntry(RuntimeWorld world)
-    {
-        if (world.Game == ObpSourceGame.Rac1 && world.PlayerStart is null)
-            throw new InvalidDataException("R&C1 world is missing its authored player start.");
-        return WorldEntryPlanning.ResolveEntryPoint(world);
-    }
-
-    // World-local authored placement clearance, not a player capability/profile.
-    private static float SourceEntrySnapReach(RuntimeWorld world) =>
-        world.Game == WorldContentIdentity.FusionLab || (world.Game == ObpSourceGame.Rac2 && world.LevelId == 0 && world.PlayerStart is not null) ? .75f : 8f;
-
     private void ActivateWorld(RuntimeWorld world, GodotWorldResources resources,
         ObpDestination? destination, FusionLabDefinition? lab)
     {
         _worldSwitches++;
         BeginSourceWorldEntry(world);
-        resources.Load(this, _worldRoot, world, _currentDestinationId!, WorldOptions(world));
+        resources.Load(this, _worldRoot, world, _currentDestinationId!, WorldEntryPreparationPolicy.WorldOptions(world, _args));
         SetupOverlay(resources.Scene, world);
         resources.Rac2Gameplay?.Configure();
         bool staticCamera = _args.ShotsPath is not null || _args.CaptureFrame is not null &&
@@ -253,26 +234,6 @@ public partial class OBPGame
         }
         _loadSummary = $"✓ {destination?.DisplayName ?? (lab is not null ? "Fusion Lab" : world.DisplayName)} · {resources.Scene.MeshInstances} meshes";
         GD.Print($"[destinations] world ready — {_loadSummary} (switch #{_worldSwitches}, player generation {_playerSession!.Capture().Generation})");
-    }
-
-    private WorldHost.Options WorldOptions(RuntimeWorld world)
-    {
-        bool framedCapture = _args.CaptureFrame is not null
-            && (_args.DirectLoad || _args.Destination is not null)
-            && _args.TestScene != "player"
-            && !_args.AnimSolo
-            && !_args.CrateFocus && !_args.CrateAutoStrike;
-        return new WorldHost.Options
-        {
-            IncludeMobyMarkers = !(_args.CaptureFrame is not null && !framedCapture),
-            IncludeSky = !_args.AnimSolo,
-            IncludeCollision = true,
-            AdmitCollisionFace = world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 1 }
-                ? Rac1NovalisWaterMechanism.AdmitCollisionFace
-                : null,
-            ShowCollisionDebug = _args.CollisionDebug,
-            OnlyAnimatedMobies = _args.AnimSolo,
-        };
     }
 
     private void BeginSourceWorldEntry(RuntimeWorld world)
@@ -358,7 +319,7 @@ public partial class OBPGame
         _avatarPresentation.Subscribe(player, StepPlayerAvatarPhysics, ResetPlayerAvatarPhysics);
         _equipmentPresentation.BindSelected(_avatarPresentation, _persistentPlayer.Equipment.Sources, _equipmentPresentation.NativeViews.Assets, FusionWeapons.Sources.Assets);
         RefreshRac1WrenchPresentationVisibility();
-        HideAuthoredWorldRatchetPresentation();
+        _avatarPresentation.HideAuthoredWorldRatchetPresentation(_activeDestination, _sceneResult);
         GD.Print($"[player-avatar] attached selected {avatar.Identity.ModelId}: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
     }
 
@@ -480,34 +441,5 @@ public partial class OBPGame
              _player?.Rac1WrenchFrame.Active == true || (_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true));
     }
 
-    /// <summary>
-    /// R&C1 still exposes the authored class-0 standing Ratchet through the world
-    /// importer for archaeology/equivalence. Once a player avatar is attached,
-    /// hide that duplicate Godot presentation only; RuntimeWorld stays untouched.
-    /// </summary>
-    private void HideAuthoredWorldRatchetPresentation()
-    {
-        if (_activeDestination?.Game != ObpSourceGame.Rac1 || _sceneResult?.AnimatedMeshes is null)
-        {
-            return;
-        }
-
-        int hidden = 0;
-        foreach (var animated in _sceneResult.AnimatedMeshes)
-        {
-            if (!animated.Name.StartsWith("ratchet_i", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            animated.Instance.Visible = false;
-            hidden++;
-        }
-
-        if (hidden > 0)
-        {
-            GD.Print($"[player-avatar] hid {hidden} authored Ratchet surface(s) from world presentation");
-        }
-    }
 
 }
