@@ -7,7 +7,7 @@ This is an ownership and file accounting snapshot, not a claim that final root c
 | Metric | Frozen origin | Current checkpoint |
 | --- | ---: | ---: |
 | Root-declaring files | 122 | 2 |
-| Root-declaring file lines | 27362 | 3303 |
+| Root-declaring file lines | 27362 | 3248 |
 
 File-by-file inventory. Ownership references are **original migration issue assignments**, not claims about the destination class:
 
@@ -67,7 +67,7 @@ File-by-file inventory. Ownership references are **original migration issue assi
 | `game/scripts/OBPGame.CaptureSession.cs` | #356 | 84 | Retired | 0 |
 | `game/scripts/OBPGame.ControllerSettings.cs` | #348 | 306 | Retired | 0 |
 | `game/scripts/OBPGame.CrateBolts.cs` | #365 | 108 | Retired | 0 |
-| `game/scripts/OBPGame.cs` | #376 | 840 | Active | 2858 |
+| `game/scripts/OBPGame.cs` | #376 | 840 | Active | 2794 |
 | `game/scripts/OBPGame.Destinations.cs` | #347 | 353 | Retired | 0 |
 | `game/scripts/OBPGame.EquipmentPresentation.cs` | #350 | 151 | Retired | 0 |
 | `game/scripts/OBPGame.FusionLab.cs` | #347 | 100 | Retired | 0 |
@@ -134,6 +134,6 @@ File-by-file inventory. Ownership references are **original migration issue assi
 | `game/scripts/OBPGame.Sources.cs` | #346 | 316 | Retired | 0 |
 | `game/scripts/OBPGame.SourceSetup.cs` | #346 | 82 | Retired | 0 |
 | `game/scripts/OBPGame.StressDiagnostics.cs` | #345 | 114 | Retired | 0 |
-| `game/scripts/OBPGame.WorldEntry.cs` | #376 | 178 | Active | 445 |
+| `game/scripts/OBPGame.WorldEntry.cs` | #376 | 178 | Active | 454 |
 
 The remaining root files still contain host composition and world-entry glue. The rest of #376 requires migrating those members to existing owners, deleting the WorldEntry partial, tightening architecture guards and validating the full 17-phase authorised real-input suite.

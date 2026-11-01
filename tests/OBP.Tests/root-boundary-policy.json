@@ -2866,7 +2866,7 @@
       "Owner": "#356",
       "Rationale": "Focused final-composition binding only: snapshot reads and existing scenario/camera/navigation actions; the capture owner now retains the harness and presentation metadata. Remove this factory with final root wiring #376.",
       "ExpiresWith": "#376",
-      "Hash": "b60e55a573112c05e21a5c16b497cf3bb51ecc898eaa62e83c7db05002eb2b67"
+      "Hash": "4969f661acd7421e80d9f4555ac7041ea1457f3595b3f870abf64401f533bbc1"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateSourceSetup():SourceSetupController:private",
@@ -5386,7 +5386,9 @@
     "game/scripts/OBPGame.cs::OBPGame::field:_verification:SourceVerificationOperation ?:private",
     "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:SourceEntrySnapReach(:RuntimeWorld):float:private,static",
     "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:SourceFileStamp(:string ?):( long Length , long Written ) ?:private,static",
-    "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:ValidateSourceEntry(:RuntimeWorld):RuntimeSpawn:private,static"
+    "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:ValidateSourceEntry(:RuntimeWorld):RuntimeSpawn:private,static",
+    "game/scripts/OBPGame.cs::OBPGame::method:FrameAnimatedMobies(:RuntimeWorld):void:private",
+    "game/scripts/OBPGame.cs::OBPGame::method:FrameShowcaseCamera(:RuntimeWorld):void:private"
   ],
   "RetiredAccess": [
     "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()"

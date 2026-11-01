@@ -174,8 +174,16 @@ public partial class OBPGame
             resources.Rac3Gameplay?.Configure();
         }
         resources.FusionWeapons = FusionWeapons.BindWorld(resources.Scene.Root);
-        if (_args.AnimSolo) FrameAnimatedMobies(world);
-        else if (staticCamera) FrameShowcaseCamera(world);
+        if (_args.AnimSolo)
+        {
+            GodotWorldCaptureCamera.FrameAnimated(_camera, world);
+            _activeCamera = _camera;
+        }
+        else if (staticCamera)
+        {
+            GodotWorldCaptureCamera.FrameShowcase(_camera, world);
+            _activeCamera = _camera;
+        }
         else
         {
             SpawnPlayer(world);
