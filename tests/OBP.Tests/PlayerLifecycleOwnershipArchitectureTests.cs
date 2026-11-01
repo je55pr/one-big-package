@@ -48,6 +48,8 @@ public sealed class PlayerLifecycleOwnershipArchitectureTests
             Assert.DoesNotContain(native, bridge, StringComparison.Ordinal);
         Assert.Contains("ports.EnterWorld()", bridge, StringComparison.Ordinal);
         Assert.Contains("session.Restore(before)", bridge, StringComparison.Ordinal);
-        Assert.Contains("ResolveEnvironmentalRestart", Read("OBPGame.Rac1Lifecycle.cs"), StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1Lifecycle.cs")));
+        Assert.Contains("ResolveEnvironmentalRestart", Read("Rac1LifecycleWorldHost.cs"), StringComparison.Ordinal);
+        Assert.Contains("checkpoint.ResolveEnvironmentalRestart()", Read("Rac1LifecycleWorldHost.cs"), StringComparison.Ordinal);
     }
 }

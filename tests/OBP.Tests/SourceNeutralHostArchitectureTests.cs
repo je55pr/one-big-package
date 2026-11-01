@@ -102,11 +102,11 @@ public sealed class SourceNeutralHostArchitectureTests
     public void CheckpointSourceAdmissionCannotAcquirePlayerSelection()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.Rac1Lifecycle.cs");
-        var method = original.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>().Single(method => method.Identifier.Text == "ResolveRac1EnvironmentalRestart");
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1LifecycleWorldHost.cs");
+        var method = original.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>().Single(method => method.Identifier.Text == "ResolveEnvironmentalRestart");
         Assert.Empty(method.DescendantNodes().OfType<AssignmentExpressionSyntax>());
         Assert.All(method.DescendantNodes().OfType<InvocationExpressionSyntax>(), call =>
-            Assert.Contains(call.Expression.ToString(), new[] { "_rac1Nanotech.Probe", "checkpoint.ResolveEnvironmentalRestart" }));
+            Assert.Contains(call.Expression.ToString(), new[] { "ports.Health", "ports.Health().Probe", "ports.WorldStillCurrent", "ports.Campaign", "checkpoint.ResolveEnvironmentalRestart" }));
         string source = original.GetText().ToString().Replace("return checkpoint.ResolveEnvironmentalRestart();",
             "var wrongProvider = OBP.Game.PlayerAvatarPresentationHost.Provider(OBP.Core.ObpSourceGame.Rac1);\nreturn checkpoint.ResolveEnvironmentalRestart();", StringComparison.Ordinal);
         Assert.NotEqual(original.GetText().ToString(), source);
