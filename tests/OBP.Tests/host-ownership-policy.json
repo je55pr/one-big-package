@@ -24,18 +24,6 @@
     "Hash": "d050d38bb7705b85385e02ec6136f22060d498b67c3977b1ac5f21ab3c3cee40"
   },
   {
-    "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.WorldOptions(RuntimeWorld)",
-    "Kind": "adapter",
-    "Reason": "Novalis source water collision-face admission; environment semantics must remain source-qualified. #370 keeps authored level contact, presentation and music admission in its scoped world lease; the root has only typed bindings, and the separately disposed adapters do not select any player service.",
-    "Hash": "7a0b36d5cac95c99a5faa5e3b6eebe316b054fd2ddead0ecc530f57eddf48682"
-  },
-  {
-    "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.HideAuthoredWorldRatchetPresentation()",
-    "Kind": "adapter",
-    "Reason": "Hide duplicate R&C1 authored class-0 world surfaces; does not select the player avatar/provider.",
-    "Hash": "637c9917e01f004025325d024952d7ece8c6ad83fbb62a1b3e13db5d9cdea1c6"
-  },
-  {
     "Key": "game/scripts/Rac1CheckpointHost.cs::Rac1CheckpointHost.Tick(PlayerHost?,Rac1LevelCheckpointSession?)",
     "Kind": "adapter",
     "Reason": "World lease R&C1 authored checkpoint volume and grounded placement only. The current player is borrowed and original native level identity must agree with the owning world; no player service is selected, and the source campaign retains checkpoint authority. #372 source/world boundary reviewed with focused checkpoint ownership regressions.",
@@ -66,22 +54,10 @@
     "Hash": "b0613f0e94ec5e31bc2ef422b52e33e0c7d13832185f546c7287c084a9acac83"
   },
   {
-    "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.SourceEntrySnapReach(RuntimeWorld)",
-    "Kind": "adapter",
-    "Reason": "World-local authored entry clearance for the supported Aranos start/custom Lab; not player movement capability.",
-    "Hash": "21d4715b4a30d722c8b00f5a2e3c3fcf3fe2f65b0717301d2dbfb903eeaa1888"
-  },
-  {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.StartRequestedSourceVerification(ObpDestination,string)",
     "Kind": "adapter",
     "Reason": "Opt-in original GC source verification; no player service choice. #356 starts the optional verification owner for the same admitted source; its task scope is independent of critical startup/capture work.",
     "Hash": "cdd268364d23df0f2fe394489d3ec6b0a5fbc541df3952541a07af0d6a349db9"
-  },
-  {
-    "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.ValidateSourceEntry(RuntimeWorld)",
-    "Kind": "adapter",
-    "Reason": "Require the recovered R&C1 authored start, then resolve neutral authored/ship/bounds entry facts before teardown. PlayerSessionLifetimeTests covers authored headings and invalid ship fallback.",
-    "Hash": "01ac2b2a6c1739b2dae7ac168adf2be1f90330a1cdf7a4850295ee081a84154a"
   },
   {
     "Key": "src/OBP.Godot/DebugOverlay.cs::DebugOverlay.BuildEnvGizmos()",
@@ -184,5 +160,29 @@
     "Kind": "adapter",
     "Reason": "#375: register the source-matching R&C2 world adapter once per scene lease, retaining its existing Rac2WorldLeaseClock fractional native tick without choosing avatar or player services from the source identity. Scheduler and host-wiring regressions exercise this boundary.",
     "Hash": "4434f50450cb0a4464d6d0eb9804ba44f0c8c6aaf60c4a84f35c850b27d94bbf"
+  },
+  {
+    "Key": "game/scripts/WorldEntryPreparationPolicy.cs::WorldEntryPreparationPolicy.WorldOptions(RuntimeWorld,CommandLineArgs)",
+    "Kind": "adapter",
+    "Reason": "#376: native Novalis water collision-face admission and capture display configuration are world-source presentation facts. They cannot select a player avatar or equipment. The existing frame/collision configuration is moved unchanged from the root into a stateless source preparation policy.",
+    "Hash": "9f98bab3802c297747362e0bbcce576029f8a682b08faf9f79029cc9e175d8c3"
+  },
+  {
+    "Key": "game/scripts/WorldEntryPreparationPolicy.cs::WorldEntryPreparationPolicy.ValidateSourceEntry(RuntimeWorld)",
+    "Kind": "adapter",
+    "Reason": "#376: source-owned authored R&C1 player-start validation and neutral entry placement run before the world switch. The selected player service remains independent and the world-entry policy has no root access.",
+    "Hash": "4e8555e2fff369cb3689cc4944fcfc0fe1a6ad16c064174717912e600c1d4302"
+  },
+  {
+    "Key": "game/scripts/WorldEntryPreparationPolicy.cs::WorldEntryPreparationPolicy.SourceEntrySnapReach(RuntimeWorld)",
+    "Kind": "adapter",
+    "Reason": "#376: authored R&C2 starting clearance and Fusion Lab snap reach remain world-local placement facts, never a selected player capability.",
+    "Hash": "ea7a881eeb0e36c96d6c5d16c6d38c3e336b88dd265b7a0247ace6d575f3c94a"
+  },
+  {
+    "Key": "game/scripts/PlayerAvatarPresentationHost.cs::PlayerAvatarPresentationHost.HideAuthoredWorldRatchetPresentation(ObpDestination?,RuntimeWorldScene.Result?)",
+    "Kind": "adapter",
+    "Reason": "#376: hide the duplicate authored class-0 Ratchet mesh in the currently presented R&C1 scene. It alters no source data, provider selection, player equipment or profile.",
+    "Hash": "4d4a6397ebeb257f171829292dc9cf7095fc7dc304c64ed2733d81371d4b70c4"
   }
 ]

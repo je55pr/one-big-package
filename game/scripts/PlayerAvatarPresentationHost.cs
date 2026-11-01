@@ -272,6 +272,25 @@ internal sealed class PlayerAvatarPresentationHost
         return container;
     }
 
+    /// <summary>Only the imported duplicate world actor is hidden; source data stays intact.</summary>
+    internal void HideAuthoredWorldRatchetPresentation(ObpDestination? destination, RuntimeWorldScene.Result? scene)
+    {
+        if (destination?.Game != ObpSourceGame.Rac1 || scene?.AnimatedMeshes is null)
+            return;
+
+        int hidden = 0;
+        foreach (var animated in scene.AnimatedMeshes)
+        {
+            if (!animated.Name.StartsWith("ratchet_i", StringComparison.Ordinal))
+                continue;
+            animated.Instance.Visible = false;
+            hidden++;
+        }
+
+        if (hidden > 0)
+            GD.Print($"[player-avatar] hid {hidden} authored Ratchet surface(s) from world presentation");
+    }
+
     internal void Retire()
     {
         if (_physicsPlayer is not null && GodotObject.IsInstanceValid(_physicsPlayer))
