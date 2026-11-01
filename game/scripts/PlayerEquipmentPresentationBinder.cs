@@ -148,15 +148,22 @@ internal sealed class PlayerEquipmentPresentationBinder
     internal void RefreshRac1HandVisibility(Rac1HandPresentationContext state, PlayerAvatarPresentationHost avatar)
     {
         NativeViews.RefreshVisibility(item => IsRac1HandEquipmentVisible(item, state));
+        RefreshRac1HandNodes(state, avatar.GloveView, avatar.StagedBombView, avatar.WrenchView);
+    }
+
+    // The Godot node boundary is also exercised with source-free scene nodes.
+    // All three views stay owned by the existing player-avatar presentation.
+    internal static void RefreshRac1HandNodes(Rac1HandPresentationContext state,
+        Node3D? glove, Node3D? stagedBomb, Node3D? wrench)
+    {
         bool bombVisible = IsRac1HandEquipmentVisible(Rac1WeaponId.FirstRanged, state);
-        if (avatar.GloveView is not null && GodotObject.IsInstanceValid(avatar.GloveView))
-            avatar.GloveView.Visible = bombVisible;
-        if (avatar.StagedBombView is not null && GodotObject.IsInstanceValid(avatar.StagedBombView))
-            avatar.StagedBombView.Visible = bombVisible && state.Inventory.FirstRangedAmmo > 0;
-        if (avatar.WrenchView is null || !GodotObject.IsInstanceValid(avatar.WrenchView))
+        if (glove is not null && GodotObject.IsInstanceValid(glove))
+            glove.Visible = bombVisible;
+        if (stagedBomb is not null && GodotObject.IsInstanceValid(stagedBomb))
+            stagedBomb.Visible = bombVisible && state.Inventory.FirstRangedAmmo > 0;
+        if (wrench is null || !GodotObject.IsInstanceValid(wrench))
             return;
-        avatar.WrenchView.Visible =
-            !state.WaterHandItemHidden &&
+        wrench.Visible = !state.WaterHandItemHidden &&
             (state.Held.Hand.WrenchHeld || state.WrenchFrameActive || state.WrenchThrowActive);
     }
 
