@@ -3,6 +3,7 @@ using Godot;
 using OBP.Godot;
 using OBP.RAC2.Gameplay;
 using OBP.Runtime;
+using OBP.Runtime.Gameplay;
 
 namespace OBP.Game;
 
@@ -310,6 +311,14 @@ internal sealed partial class Rac2WorldModule : IDisposable
         GD.Print($"[gc-damage] seq={dispatch.Sequence} {target.Source.InteractionId} " +
                  $"state20 flags=0x{damageEvent.Damage.DamageFlags:X8} hp={damageEvent.Damage.DamageHp:0.###} " +
                  $"PVar+C8={c8} => state {Rac2CrateInteraction.BreakTransitionState} -> {route}");
+    }
+
+    /// <summary>Keep the existing fractional R&C2 native clock inside this lease.</summary>
+    internal void RegisterTicks(GameplayTickScheduler<InputEvent> ticks)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (_world.Game == ObpSourceGame.Rac2)
+            ticks.Register(GameplayTickPhase.NativeWorld, "rac2-native", "Rac2WorldModule", 10, Tick);
     }
 
     internal void Tick(double delta)

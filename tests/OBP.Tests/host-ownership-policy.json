@@ -172,5 +172,17 @@
     "Kind": "adapter",
     "Reason": "World-scoped original Veldin death-plane contact facts, native state witness and 60Hz callback. Player health authority is borrowed from the selected player; no avatar/equipment selection occurs from source origin. Authored death threshold/ray inputs and retry policy are unchanged.",
     "Hash": "9bb7f4d94e741e6ed5b2f8af653bbe7a756368d32b91bae9f1e05870a50bdb17"
+  },
+  {
+    "Key": "game/scripts/Rac1WorldModule.cs::Rac1WorldModule.RegisterTicks(GameplayTickScheduler<InputEvent>,Func<bool>,Func<bool>,Func<bool>)",
+    "Kind": "adapter",
+    "Reason": "#375: preserve the old shared post-death Bomb Glove effect physics step even in mixed-source worlds; the selected player may retain R&C1 equipment when the world is not R&C1. Only R&C1 mechanisms, native simulation and taxi input remain source-qualified. No avatar or equipment selection is added. GameplayTickWiringArchitectureTests guards this cross-world exception, while GameplayTickSchedulerTests guard ordering, cancellation and late dispatch.",
+    "Hash": "c4a265da27b1aa47c50d6304a610ccbf6c1d2cbc994d30c0af3ee5801f27c8ff"
+  },
+  {
+    "Key": "game/scripts/Rac2WorldModule.cs::Rac2WorldModule.RegisterTicks(GameplayTickScheduler<InputEvent>)",
+    "Kind": "adapter",
+    "Reason": "#375: register the source-matching R&C2 world adapter once per scene lease, retaining its existing Rac2WorldLeaseClock fractional native tick without choosing avatar or player services from the source identity. Scheduler and host-wiring regressions exercise this boundary.",
+    "Hash": "4434f50450cb0a4464d6d0eb9804ba44f0c8c6aaf60c4a84f35c850b27d94bbf"
   }
 ]

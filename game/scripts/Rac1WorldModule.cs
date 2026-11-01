@@ -3,6 +3,7 @@ using OBP.Core;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
+using OBP.Runtime.Gameplay;
 
 namespace OBP.Game;
 
@@ -171,6 +172,22 @@ internal sealed class Rac1WorldModule : IDisposable
         Loot.TickRac1Pickups(delta);
         Loot.TickRac1GoldBolts();
         Missions.Tick(delta);
+    }
+
+    /// <summary>Native R&C1 clocks remain in their existing world owners.</summary>
+    internal void RegisterTicks(GameplayTickScheduler<InputEvent> ticks,
+        Func<bool> movementSuspended, Func<bool> replayWaiting, Func<bool> playerDead)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        // The player can retain R&C1 Bomb Glove effects in mixed-source worlds.
+        // Avatar physics stops on death, so its effects still need this world physics tick.
+        ticks.Register(GameplayTickPhase.Physics, "rac1-dead-bomb-effects", "Rac1WorldModule", 20,
+            _ => { if (playerDead()) Effects.StepBombEffectsPhysics(); });
+        if (_world.Game != ObpSourceGame.Rac1) return;
+        ticks.Register(GameplayTickPhase.Physics, "rac1-mechanisms-physics", "Rac1WorldModule", 0,
+            _ => PhysicsStep(movementSuspended(), replayWaiting()));
+        ticks.Register(GameplayTickPhase.NativeWorld, "rac1-native", "Rac1WorldModule", 20, Tick);
+        ticks.RegisterInput("rac1-taxi-input", "Rac1WorldModule", 0, Taxis.TryHandleInput);
     }
 
     internal void PhysicsStep(bool suspended, bool waitingForReplay) =>

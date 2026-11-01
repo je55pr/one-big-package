@@ -1063,12 +1063,7 @@ public partial class OBPGame : Node3D
     public override void _PhysicsProcess(double delta)
     {
         if (_mode != Mode.World || MovementReproduction.IsLoading || _player is null || _player.DevelopmentControls.FlyEnabled) return;
-        _worldScenes?.Current?.Resources.Rac1Gameplay?.PhysicsStep(MovementReproduction.IsLoading,
-            _captureReplay?.Recorder is { WaitingForEntry: true });
-        _playerAudio?.StepReactions();
-        // Avatar updates stop at death; detached source particles still age out.
-        if (!_player.Rac1GameplayAlive) Rac1World.Effects.StepBombEffectsPhysics();
-        ActorHost.Step(ToNumerics(_player.GlobalPosition), PlayerLife.Alive, MovementReproduction.IsLoading);
+        _worldScenes?.Current?.Resources.GameplayTicks?.Run(GameplayTickPhase.Physics, delta);
     }
 
     public override void _Process(double delta)
@@ -1079,21 +1074,14 @@ public partial class OBPGame : Node3D
         Sources.Tick(delta, _mode is Mode.World or Mode.Selector or Mode.Title);
         FusionWeapons.TickPreparation();
         ActorHost.PollPreparation();
-        _worldScenes?.Current?.Resources.Effects?.PrepareTick();
+        _worldScenes?.Current?.Resources.GameplayTicks?.Run(GameplayTickPhase.Prepare, delta);
         TickSharedProfile(delta);
         TickRac1CampaignSaves(delta);
 
         if (_mode == Mode.World)
         {
             if (_captureReplay?.Recorder is { WaitingForEntry: true } or { PreparingWorld: true }) return;
-            // Sky-follow, animated mobies and per-region hero light / fog.
-            _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
-            _worldScenes?.Current?.Resources.Effects?.Render();
-            _worldScenes?.Current?.Resources.Rac2Gameplay?.Tick(delta);
-            _worldScenes?.Current?.Resources.Rac1Gameplay?.Tick(delta);
-            // R&C3 class-500 is an event-driven native consumer; no host frame tick.
-            UpdatePlayerHud();
-            UpdateWorldHud();
+            _worldScenes?.Current?.Resources.GameplayTicks?.RunWorldFrame(delta);
         }
 
         _sourceVerification?.Tick(Time.GetTicksMsec());
@@ -1101,7 +1089,7 @@ public partial class OBPGame : Node3D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if ((_worldScenes?.Current?.Resources.Rac1Gameplay?.Taxis)?.TryHandleInput(@event) == true)
+        if (_worldScenes?.Current?.Resources.GameplayTicks?.TryHandleInput(@event) == true)
         {
             GetViewport().SetInputAsHandled();
             return;
@@ -1351,6 +1339,8 @@ public partial class OBPGame : Node3D
 
     private void RetireWorldBindings()
     {
+        // Prevent in-flight source ticks from continuing through a retired world.
+        _worldScenes?.Current?.Resources.RetireGameplayTicks();
         FlushRac1CampaignSaves("world teardown");
         ActorHost.Reset();
         PlayerLife.RetireWorld();
