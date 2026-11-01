@@ -176,8 +176,8 @@
   {
     "Key": "game/scripts/Rac1WorldModule.cs::Rac1WorldModule.RegisterTicks(GameplayTickScheduler<InputEvent>,Func<bool>,Func<bool>,Func<bool>)",
     "Kind": "adapter",
-    "Reason": "#375: register only source-matching R&C1 world callbacks on this world lease. The existing native R&C1 module owns its clock and the player selection remains independent of source-game origin. GameplayTickSchedulerTests and GameplayTickWiringArchitectureTests guard ordering, source admission, cancellation and late dispatch.",
-    "Hash": "11205eac02aef501833bffd9c7dbc0a6d7973023497ac0d0686b22a224619f92"
+    "Reason": "#375: preserve the old shared post-death Bomb Glove effect physics step even in mixed-source worlds; the selected player may retain R&C1 equipment when the world is not R&C1. Only R&C1 mechanisms, native simulation and taxi input remain source-qualified. No avatar or equipment selection is added. GameplayTickWiringArchitectureTests guards this cross-world exception, while GameplayTickSchedulerTests guard ordering, cancellation and late dispatch.",
+    "Hash": "c4a265da27b1aa47c50d6304a610ccbf6c1d2cbc994d30c0af3ee5801f27c8ff"
   },
   {
     "Key": "game/scripts/Rac2WorldModule.cs::Rac2WorldModule.RegisterTicks(GameplayTickScheduler<InputEvent>)",

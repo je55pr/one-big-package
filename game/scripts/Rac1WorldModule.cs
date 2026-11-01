@@ -179,11 +179,13 @@ internal sealed class Rac1WorldModule : IDisposable
         Func<bool> movementSuspended, Func<bool> replayWaiting, Func<bool> playerDead)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        // The player can retain R&C1 Bomb Glove effects in mixed-source worlds.
+        // Avatar physics stops on death, so its effects still need this world physics tick.
+        ticks.Register(GameplayTickPhase.Physics, "rac1-dead-bomb-effects", "Rac1WorldModule", 20,
+            _ => { if (playerDead()) Effects.StepBombEffectsPhysics(); });
         if (_world.Game != ObpSourceGame.Rac1) return;
         ticks.Register(GameplayTickPhase.Physics, "rac1-mechanisms-physics", "Rac1WorldModule", 0,
             _ => PhysicsStep(movementSuspended(), replayWaiting()));
-        ticks.Register(GameplayTickPhase.Physics, "rac1-dead-bomb-effects", "Rac1WorldModule", 20,
-            _ => { if (playerDead()) Effects.StepBombEffectsPhysics(); });
         ticks.Register(GameplayTickPhase.NativeWorld, "rac1-native", "Rac1WorldModule", 20, Tick);
         ticks.RegisterInput("rac1-taxi-input", "Rac1WorldModule", 0, Taxis.TryHandleInput);
     }

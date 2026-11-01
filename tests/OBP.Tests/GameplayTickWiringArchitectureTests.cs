@@ -47,7 +47,13 @@ public sealed class GameplayTickWiringArchitectureTests
         string one = Script("Rac1WorldModule.cs");
         string two = Script("Rac2WorldModule.cs");
         string binder = Script("WorldGameplayTickBindings.cs");
-        Assert.Contains("if (_world.Game != ObpSourceGame.Rac1) return", one);
+        string rac1Registrations = Between(one, "internal void RegisterTicks(", "internal void PhysicsStep(");
+        int effects = rac1Registrations.IndexOf("\"rac1-dead-bomb-effects\"", StringComparison.Ordinal);
+        int sourceGate = rac1Registrations.IndexOf("if (_world.Game != ObpSourceGame.Rac1) return", StringComparison.Ordinal);
+        int native = rac1Registrations.IndexOf("\"rac1-native\"", StringComparison.Ordinal);
+        Assert.True(effects >= 0 && sourceGate > effects && native > sourceGate,
+            "Shared post-death Bomb Glove effects must tick in all worlds, but R&C1 native clocks must not.");
+        Assert.Contains("if (playerDead()) Effects.StepBombEffectsPhysics()", rac1Registrations);
         Assert.Contains("ticks.RegisterInput(\"rac1-taxi-input\"", one);
         Assert.Contains("GameplayTickPhase.NativeWorld, \"rac1-native\"", one);
         Assert.Contains("if (_world.Game == ObpSourceGame.Rac2)", two);
