@@ -80,7 +80,7 @@ public partial class OBPGame : Node3D
         OpenDestination: OpenDestinationFromBootstrap,
         PauseMenuOpen: () => PauseMenuOpen, ClosePauseMenu: ClosePauseMenu,
         ClearSmokeInput: ClearMovementSmokeInput, SetAnalogueSmokeInput: SetAnalogueSmokeInput,
-        RefreshWrench: RefreshRac1WrenchPresentationVisibility, RefreshHud: () => RefreshRac1HudState(),
+        RefreshWrench: () => _equipmentPresentation.RefreshRac1HandVisibility(Rac1HandPresentation, _avatarPresentation), RefreshHud: () => RefreshRac1HudState(),
         WorldLifetime: () => _worldScenes?.Current?.Lifetime ??
             throw new InvalidOperationException("Replay world lease is missing."),
         Frame: () => _frame,
@@ -183,7 +183,9 @@ public partial class OBPGame : Node3D
                     return (entry?.Selectable == true, entry?.Reason);
                 },
                 () => QuickSelectOpen, message => MovementReproduction.Report(message)),
-            new(RefreshRac1HeldItem, HoldSelectedRac1HandItem, () => RefreshRac1HudState(),
+            new(previous => _equipmentPresentation.RefreshRac1HeldItem(previous, Rac1HandPresentation, _avatarPresentation),
+                () => _equipmentPresentation.HoldSelectedRac1HandItem(Rac1HandPresentation, _avatarPresentation),
+                () => RefreshRac1HudState(),
                 () => _equipmentPresentation.WeaponAudio.Reset(),
                 weapon => _equipmentPresentation.NativeViews.PlaySelection(weapon)));
 
@@ -195,7 +197,8 @@ public partial class OBPGame : Node3D
             _player?.Rac1WrenchFrame.Active == true, (_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true), _player?.Rac1WaterHandItemHidden == true,
             QuickSelectOpen, _player?.Rac1EquippedItemHeld == true),
         Inventory: () => _rac1Weapons, Hand: () => _rac1HeldItem.Hand, Equipment: ReadPlayerEquipment,
-        SelectNative: Rac1CombatInput.Select, HoldNative: HoldSelectedRac1HandItem,
+        SelectNative: Rac1CombatInput.Select,
+        HoldNative: () => _equipmentPresentation.HoldSelectedRac1HandItem(Rac1HandPresentation, _avatarPresentation),
         SelectionChanged: previous =>
         {
             _previousSelectedWeapon = previous;
@@ -208,7 +211,7 @@ public partial class OBPGame : Node3D
             _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.ThrownAnimation.Stop();
         },
         RefreshAvailability: () => _persistentPlayer.Equipment.RefreshAvailability(),
-        RefreshHeldVisibility: RefreshRac1WrenchPresentationVisibility, RefreshHud: () => RefreshRac1HudState(),
+        RefreshHeldVisibility: () => _equipmentPresentation.RefreshRac1HandVisibility(Rac1HandPresentation, _avatarPresentation), RefreshHud: () => RefreshRac1HudState(),
         ClearNativeTransients: _ =>
         {
             if (_worldScenes?.Current?.Resources.Rac1Gameplay is null) return;
@@ -361,7 +364,7 @@ public partial class OBPGame : Node3D
             Navigate: destination => OnDestinationChosen(destination),
             ClearFusionTransients: () => FusionWeapons.ClearTransients(),
             ResetHeldItem: _rac1HeldItem.ResetForLevelEntry,
-            RefreshWrenchPresentation: RefreshRac1WrenchPresentationVisibility,
+            RefreshWrenchPresentation: () => _equipmentPresentation.RefreshRac1HandVisibility(Rac1HandPresentation, _avatarPresentation),
             RefreshHud: () => RefreshRac1HudState(),
             ResetPlayerRetry: () => PlayerLife.ResetRetry(),
             AttachRetry: panel => _ui.AddChild(panel),
@@ -567,7 +570,7 @@ public partial class OBPGame : Node3D
             () => _playerAudio?.WrenchImpactAdmitted == true,
             (frame, thrown, hand, position) => GodotRac1PlayerAudioPlayback.StepWrench(
                 _playerAudio, _avatarPresentation.Controller, frame, thrown, hand, position),
-            RefreshRac1WrenchPresentationVisibility),
+            () => _equipmentPresentation.RefreshRac1HandVisibility(Rac1HandPresentation, _avatarPresentation)),
         new Rac1WrenchContactPorts(
             (previousHand, previousTip, hand, tip, radius, damage, result) =>
             {
@@ -642,8 +645,10 @@ public partial class OBPGame : Node3D
             new(() => OrdinaryPlayerSession, () => MovementReproduction.IsLoading, () => PlayerLife.Alive,
                 () => _args.Rac1WeaponsSmoke, () => _args.FixedSeed),
             new(MovementReproduction.Report, PersistRac1CampaignState,
-                () => RefreshRac1HudState(), HoldSelectedRac1HandItem,
-                RefreshRac1WrenchPresentationVisibility, IsRac1HandEquipmentVisible)));
+                () => RefreshRac1HudState(),
+                () => _equipmentPresentation.HoldSelectedRac1HandItem(Rac1HandPresentation, _avatarPresentation),
+                () => _equipmentPresentation.RefreshRac1HandVisibility(Rac1HandPresentation, _avatarPresentation),
+                item => PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(item, Rac1HandPresentation))));
 
     private Rac1EnemyHost CreateRac1EnemyHost(RuntimeWorld world, RuntimeWorldScene.Result scene, Rac1WorldModule owner) => new(
         world, scene, owner.Context, owner.Presentation, new(
@@ -687,6 +692,11 @@ public partial class OBPGame : Node3D
 
     private readonly PlayerAvatarPresentationHost _avatarPresentation = new();
     private readonly PlayerEquipmentPresentationBinder _equipmentPresentation = new();
+    // Borrowed source/player/world facts only. Equipment presentation owns the visibility rules.
+    private Rac1HandPresentationContext Rac1HandPresentation => new(
+        _rac1HeldItem, _rac1Weapons, FusionWeapons.Session,
+        _player?.Rac1WaterHandItemHidden == true, _player?.Rac1WrenchFrame.Active == true,
+        _worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true);
     private ProfileCoordinator? _profileCoordinator;
     private ProfileCoordinator Profiles => _profileCoordinator ??= new(new(
         ProfilePath: () => _args.NoProfile || !OrdinaryPlayerSession ? null :
@@ -935,7 +945,7 @@ public partial class OBPGame : Node3D
                 _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Arsenal.SetHeld(false);
                 _persistentPlayer.Rac1Use.StopPyro();
                 _equipmentPresentation.WeaponAudio.Reset(); FusionWeapons.ResetHeldUse();
-                RefreshRac1WrenchPresentationVisibility(); RefreshRac1HudState();
+                _equipmentPresentation.RefreshRac1HandVisibility(Rac1HandPresentation, _avatarPresentation); RefreshRac1HudState();
             },
             ApplyMovementEquipment: (movement, backpack) => _player?.ApplyPlayerEquipment(movement, backpack),
             Record: command => CaptureReplay.RecordCommand(command)));

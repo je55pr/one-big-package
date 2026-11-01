@@ -12,6 +12,18 @@ using Godot;
 namespace OBP.Game;
 
 /// <summary>
+/// Borrowed player inventory and the current world/pose visibility facts.
+/// The binder never owns these mutable player and world authorities.
+/// </summary>
+internal readonly record struct Rac1HandPresentationContext(
+    Rac1HeldItemSession Held,
+    Rac1WeaponInventory Inventory,
+    FusionWeaponSession? Fusion,
+    bool WaterHandItemHidden,
+    bool WrenchFrameActive,
+    bool WrenchThrowActive);
+
+/// <summary>
 /// Selected source-bank data lives beyond worlds. Effect meshes, material factories
 /// and resolved hand sockets belong to one world/presentation binding only.
 /// </summary>
@@ -108,6 +120,44 @@ internal sealed class PlayerEquipmentPresentationBinder
     {
         RetireWorld();
         EffectMaterials = assets is null ? null : new(world with { Textures = assets.Textures });
+    }
+
+    /// <summary>Preserve held-weapon mutation and first-attachment refresh order.</summary>
+    internal void HoldSelectedRac1HandItem(
+        Rac1HandPresentationContext state, PlayerAvatarPresentationHost avatar)
+    {
+        int? previous = state.Held.NativeItemId;
+        state.Held.HoldSelected(state.Inventory);
+        RefreshRac1HeldItem(previous, state, avatar);
+    }
+
+    internal void RefreshRac1HeldItem(
+        int? previous, Rac1HandPresentationContext state, PlayerAvatarPresentationHost avatar)
+    {
+        if (previous != state.Held.NativeItemId &&
+            avatar.Controller is Rac1PlayerAnimationPresentationController controller)
+            NativeViews.RefreshAttachment(state.Inventory.Equipped, controller);
+        RefreshRac1HandVisibility(state, avatar);
+    }
+
+    internal static bool IsRac1HandEquipmentVisible(Rac1WeaponId item, Rac1HandPresentationContext state) =>
+        state.Fusion?.Selected.SourceGame is not (ObpSourceGame.Rac2 or ObpSourceGame.Rac3) &&
+        state.Held.Hand.IsHolding(new(ObpSourceGame.Rac1, (int)item)) &&
+        !state.WaterHandItemHidden && !state.WrenchFrameActive && !state.WrenchThrowActive;
+
+    internal void RefreshRac1HandVisibility(Rac1HandPresentationContext state, PlayerAvatarPresentationHost avatar)
+    {
+        NativeViews.RefreshVisibility(item => IsRac1HandEquipmentVisible(item, state));
+        bool bombVisible = IsRac1HandEquipmentVisible(Rac1WeaponId.FirstRanged, state);
+        if (avatar.GloveView is not null && GodotObject.IsInstanceValid(avatar.GloveView))
+            avatar.GloveView.Visible = bombVisible;
+        if (avatar.StagedBombView is not null && GodotObject.IsInstanceValid(avatar.StagedBombView))
+            avatar.StagedBombView.Visible = bombVisible && state.Inventory.FirstRangedAmmo > 0;
+        if (avatar.WrenchView is null || !GodotObject.IsInstanceValid(avatar.WrenchView))
+            return;
+        avatar.WrenchView.Visible =
+            !state.WaterHandItemHidden &&
+            (state.Held.Hand.WrenchHeld || state.WrenchFrameActive || state.WrenchThrowActive);
     }
 
     internal void ClearBindings() => _bindings.Clear();
