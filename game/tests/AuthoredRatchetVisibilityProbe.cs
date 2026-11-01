@@ -20,6 +20,10 @@ public partial class AuthoredRatchetVisibilityProbe : Node
             var meshes = scene.AnimatedMeshes ?? throw new InvalidOperationException("Animated scene was not built.");
             Require(meshes.Count == 4 && meshes.All(mesh => mesh.Instance.Visible),
                 "Expected four initially visible authored mesh instances.");
+            Require(meshes.Count(mesh => mesh.Name.StartsWith("ratchet_i", StringComparison.Ordinal)) == 2 &&
+                    meshes.Any(mesh => mesh.Name == "ratchet_i0_t0") &&
+                    meshes.Any(mesh => mesh.Name == "ratchet_i1_t0"),
+                "Two explicitly named authored Ratchet duplicates are required to exercise hiding.");
 
             var avatar = new PlayerAvatarPresentationHost();
             avatar.HideAuthoredWorldRatchetPresentation(Destination(ObpSourceGame.Rac1), scene);
