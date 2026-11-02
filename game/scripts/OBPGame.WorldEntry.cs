@@ -250,28 +250,16 @@ public partial class OBPGame
     {
         EnsurePlayerSession();
         RefreshPlayerSourceAvailability();
-        var selected = _playerSession!.Capture().Configuration;
         _persistentPlayer.ResolvePresentationProfiles();
+        var identity = _playerSession!.Capture().Configuration.Avatar;
         if (Engine.PhysicsTicksPerSecond != _playerAnimationProfile!.NativeTicksPerSecond)
             throw new InvalidOperationException($"Selected player animation requires {_playerAnimationProfile.NativeTicksPerSecond} physics ticks per second.");
-        var identity = selected.Avatar;
         if (identity.SourceGame == ObpSourceGame.Synthetic) return;
         var availability = _playerSession.Availability(identity.SourceGame, identity.BuildId, true, true);
         if (!availability.Usable) throw new InvalidOperationException(availability.Reason);
-        var source = Sources.Setup.Library.Get(identity.SourceGame)!;
-        var file = new FileInfo(source.Path);
-        if (!file.Exists || file.Length != source.SizeBytes)
-            throw new InvalidOperationException("The selected avatar source is missing or has changed size. Reattach it in Game Sources.");
-        using (var reader = new FileRandomAccessReader(source.Path))
-        {
-            var probe = Sources.Setup.Library.Probe(reader);
-            if (!probe.Supported || probe.Definition?.Authority.BuildId != identity.BuildId)
-                throw new InvalidOperationException("The selected avatar source no longer identifies as the selected supported build.");
-        }
-        _avatarPresentation.Prepare(identity, source.Path, (file.Length, file.LastWriteTimeUtc.Ticks));
-        if (identity.SourceGame == ObpSourceGame.Rac1)
-            _equipmentPresentation.PrepareSelectedBank(source.Path, OrdinaryPlayerSession,
-                _avatarPresentation.PreparedSourceChanged);
+        var source = Sources.Setup.VerifySelectedSourceFile(identity.SourceGame, identity.BuildId);
+        _avatarPresentation.PrepareSelected(identity, source.Path, source.Stamp,
+            _equipmentPresentation, OrdinaryPlayerSession);
     }
 
 
@@ -333,31 +321,11 @@ public partial class OBPGame
         _avatarPresentation.StepNative(state, input);
 
 
-        bool holdGun = _persistentPlayer.Rac1Use.UseTicks > 0 && OBP.RAC1.Gameplay.Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped) &&
-            OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence is > 0 and not 44 &&
-            PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(_rac1Weapons.Equipped, Rac1HandPresentation) && input.Traversal is null &&
-            PlayerLife.Alive;
-        int walloperAge = _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Walloper.Age ?? 0;
-        bool walloper = PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.Walloper, Rac1HandPresentation) && walloperAge > 0;
-        bool moving = input.Active || state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.JumpRise or PlayerAnimationState.Fall;
-        int? equipmentPose = walloper ? OBP.RAC1.Gameplay.Rac1ArsenalRules.WalloperSequence :
-            holdGun ? (moving ? OBP.RAC1.Gameplay.Rac1ArsenalRules.MovingBodySequence(_rac1Weapons.Equipped) :
-                OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence) : null;
-        // Jump/traversal clocks still own the body. Evaluate equipment from
-        // that clock too, including the attachment when no arm bank applies.
-        bool fusionPose = FusionWeapons.Session is { Selected.SourceGame: not ObpSourceGame.Rac1 } && FusionWeapons.Session.Hand.IsHolding(FusionWeapons.Session.Selected) &&
-            PlayerLife.Alive && _player?.Rac1WrenchFrame.Active != true && _player?.Rac1WaterHandItemHidden != true;
-        if (equipmentPose < 0) equipmentPose = null;
-        if (fusionPose && FusionWeapons.Sources.Assets?.AvatarAnimations.TryGetValue(FusionWeapons.Session!.Selected, out var sourceAnimation) == true)
-            _avatarPresentation.Sink?.SetAnimationPresentation(controller.ApplySourceEquipment(sourceAnimation,
-                moving, input.CrouchHeld, FusionWeapons.Pose.UseStarted, FusionWeapons.Pose.TriggerHeld));
-        else
-        {
-            controller.ClearSourceEquipment();
-            _avatarPresentation.Sink?.SetAnimationPresentation(controller.ApplyEquipmentPose(equipmentPose,
-                walloper ? walloperAge / 60d : _persistentPlayer.Rac1Use.UseAge / 60d, !walloper, fullBody: walloper || !moving));
-        }
-
+        _equipmentPresentation.ApplyAvatarEquipmentPose(_avatarPresentation, controller, state, input,
+            new(Rac1HandPresentation, _persistentPlayer.Rac1Use.UseTicks, _persistentPlayer.Rac1Use.UseAge,
+                _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Walloper.Age ?? 0,
+                PlayerLife.Alive, FusionWeapons.Sources.Assets,
+                FusionWeapons.Pose.UseStarted, FusionWeapons.Pose.TriggerHeld));
         if (_avatarPresentation.PhysicsPlayer is { } player)
         {
             _avatarPresentation.StepHandAttachments(controller, player.Rac1WrenchFrame,

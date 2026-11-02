@@ -80,6 +80,14 @@ internal sealed class PlayerAvatarPresentationHost
     internal static IPlayerAvatarProvider Provider(ObpSourceGame game) =>
         Providers.Get(game) ?? throw new InvalidOperationException($"No provider for selected avatar source {game}.");
 
+    /// <summary>Stage presentation from a source already verified by the source owner.</summary>
+    internal void PrepareSelected(PlayerAvatarIdentity identity, string path,
+        (long Length, long Written) stamp, PlayerEquipmentPresentationBinder equipment, bool ordinary)
+    {
+        Prepare(identity, path, stamp);
+        if (identity.SourceGame == ObpSourceGame.Rac1)
+            equipment.PrepareSelectedBank(path, ordinary, PreparedSourceChanged);
+    }
     /// <summary>
     /// Decode a pending candidate without touching the live visual or its callbacks.
     /// Failure before world activation must leave the active player unchanged.

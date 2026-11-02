@@ -35,7 +35,9 @@ public sealed class Rac1HandPresentationOwnershipArchitectureTests
         Assert.Contains("_equipmentPresentation.HoldSelectedRac1HandItem(Rac1HandPresentation, _avatarPresentation)", root);
         Assert.Contains("_equipmentPresentation.RefreshRac1HeldItem(previous, Rac1HandPresentation, _avatarPresentation)", root);
         Assert.Contains("_equipmentPresentation.RefreshRac1HandVisibility(Rac1HandPresentation, _avatarPresentation)", root);
-        Assert.Contains("PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(", entry);
+        Assert.Contains("PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(", binder);
+        Assert.Contains("_equipmentPresentation.ApplyAvatarEquipmentPose(", entry);
+        Assert.DoesNotContain("PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(", entry);
     }
 
     [Fact]

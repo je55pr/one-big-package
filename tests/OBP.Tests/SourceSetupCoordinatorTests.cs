@@ -175,6 +175,34 @@ public sealed class SourceSetupCoordinatorTests
         Assert.True(setup.Due(.25, true)); Assert.False(setup.Due(.25, true));
     }
 
+    [Fact]
+    public void SelectedSourceVerificationRechecksRealFileSizeAndExactBuildBeforePresentationStaging()
+    {
+        using var f = new Fixture();
+        var setup = f.Create(SourceAccessMode.ExplicitDiagnostic);
+        Assert.Throws<InvalidOperationException>(() => setup.VerifySelectedSourceFile(ObpSourceGame.Rac1, "fixture"));
+        string path = f.Materialize(ObpSourceGame.Rac1);
+        Assert.True(setup.Attach(ObpSourceGame.Rac1, path, persist: false).Accepted);
+
+        var verified = setup.VerifySelectedSourceFile(ObpSourceGame.Rac1, "fixture");
+        Assert.Equal(path, verified.Path);
+        Assert.Equal(new FileInfo(path).Length, verified.Stamp.Length);
+        Assert.Equal(new FileInfo(path).LastWriteTimeUtc.Ticks, verified.Stamp.Written);
+        Assert.Throws<InvalidOperationException>(() => setup.VerifySelectedSourceFile(ObpSourceGame.Rac1, "wrong-build"));
+
+        var original = f.Files.Entries[path];
+        f.Files.Entries[path] = original with { Bytes = new byte[original.Bytes.Length] };
+        Assert.Throws<InvalidOperationException>(() => setup.VerifySelectedSourceFile(ObpSourceGame.Rac1, "fixture"));
+        f.Files.Entries[path] = original;
+
+        using (var stream = new FileStream(path, FileMode.Append, FileAccess.Write))
+            stream.WriteByte(42);
+        Assert.Throws<InvalidOperationException>(() => setup.VerifySelectedSourceFile(ObpSourceGame.Rac1, "fixture"));
+
+        File.Delete(path);
+        Assert.Throws<InvalidOperationException>(() => setup.VerifySelectedSourceFile(ObpSourceGame.Rac1, "fixture"));
+    }
+
     private sealed class Fixture : IDisposable
     {
         private readonly string _directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "obp-source-owner-" + Guid.NewGuid().ToString("N"));
@@ -192,6 +220,14 @@ public sealed class SourceSetupCoordinatorTests
                 Files.Entries[game + ".iso"] = new(bytes, new(bytes.Length, 1, 1));
                 return new ObpSourceDefinition(game.ToString(), new(game, "fixture", Serial: serials[index].Replace('_', '-').Replace(".", "")), bytes.Length);
             }).ToArray();
+        }
+        public string Materialize(ObpSourceGame game)
+        {
+            string path = System.IO.Path.Combine(_directory, game + ".iso");
+            var source = Files.Entries[game + ".iso"];
+            File.WriteAllBytes(path, source.Bytes);
+            Files.Entries[path] = source;
+            return path;
         }
         public SourceSetupCoordinator Create(SourceAccessMode access = SourceAccessMode.OrdinaryPlay) => new(Definitions, Path, access, Files, Consumers, _ => { }, _ => { });
         public IEnumerable<(ObpSourceGame, string?)> Arguments(int count) => Definitions.Take(count).Select(source => (source.Game, (string?)(source.Game + ".iso")));

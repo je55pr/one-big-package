@@ -5,6 +5,9 @@ using OBP.PS2;
 namespace OBP.Game;
 
 public enum SourceAccessMode { OrdinaryPlay, ExplicitDiagnostic }
+
+/// <summary>Verified attachment details borrowed by a selected presentation.</summary>
+internal readonly record struct VerifiedSourceFile(string Path, (long Length, long Written) Stamp);
 public sealed record SourceSetupOperation(bool Accepted, string Message, string? Warning = null)
 {
     public bool PersistenceFailed { get; init; }
@@ -57,6 +60,27 @@ public sealed class SourceSetupCoordinator
         ConfigurationPath = configurationPath; Access = access; _storage = storage; _consumers = consumers; _log = log; _error = error;
         _readiness = new(Library, _authorities, storage);
     }
+    /// <summary>
+    /// Recheck one already-selected source at the prepare boundary. Never selects
+    /// the player's avatar or stages presentation nodes and equipment.
+    /// </summary>
+    internal VerifiedSourceFile VerifySelectedSourceFile(ObpSourceGame game, string buildId)
+    {
+        var source = Library.Get(game) ??
+            throw new InvalidOperationException("The selected avatar source is missing or has changed size. Reattach it in Game Sources.");
+        var file = new FileInfo(source.Path);
+        if (!file.Exists || file.Length != source.SizeBytes)
+            throw new InvalidOperationException("The selected avatar source is missing or has changed size. Reattach it in Game Sources.");
+        var reader = _storage.Open(source.Path);
+        using (var owned = reader as IDisposable)
+        {
+            var probe = Library.Probe(reader);
+            if (!probe.Supported || probe.Definition?.Authority.BuildId != buildId)
+                throw new InvalidOperationException("The selected avatar source no longer identifies as the selected supported build.");
+        }
+        return new(source.Path, (file.Length, file.LastWriteTimeUtc.Ticks));
+    }
+
     public void Initialize()
     {
         if (_initialized) return;

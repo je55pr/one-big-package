@@ -138,8 +138,11 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
         Assert.Contains("_persistentPlayer.Rac1Use.StopPyro()", root, StringComparison.Ordinal);
         Assert.Contains("_persistentPlayer.Rac1Use.UseTicks, _persistentPlayer.Rac1Use.ShotsFired", root, StringComparison.Ordinal);
         Assert.Contains("_persistentPlayer.Rac1Use.PyroEmitting", root, StringComparison.Ordinal);
-        Assert.Contains("_persistentPlayer.Rac1Use.UseTicks > 0", worldEntry, StringComparison.Ordinal);
-        Assert.Contains("_persistentPlayer.Rac1Use.UseAge / 60d", worldEntry, StringComparison.Ordinal);
+        Assert.Contains("_persistentPlayer.Rac1Use.UseTicks, _persistentPlayer.Rac1Use.UseAge", worldEntry, StringComparison.Ordinal);
+        Assert.Contains("_equipmentPresentation.ApplyAvatarEquipmentPose(", worldEntry, StringComparison.Ordinal);
+        var equipment = Script("PlayerEquipmentPresentationBinder.cs");
+        Assert.Contains("bool holdGun = useTicks > 0", equipment, StringComparison.Ordinal);
+        Assert.Contains("walloper ? walloperAge / 60d : useAge / 60d", equipment, StringComparison.Ordinal);
         Assert.Contains("ports.PyroEmitting()", Script("Rac1WeaponEffectsHost.cs"), StringComparison.Ordinal);
 
         AssertIncreasing(weapons,
