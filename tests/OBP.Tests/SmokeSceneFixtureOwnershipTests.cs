@@ -47,6 +47,11 @@ public sealed class SmokeSceneFixtureOwnershipTests
         string pureFixture = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/SmokeHudFixtureState.cs"));
         Assert.DoesNotContain("using Godot;", pureFixture, StringComparison.Ordinal);
         Assert.DoesNotContain("Node3D", pureFixture, StringComparison.Ordinal);
+        var syntax = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(pureFixture).GetRoot();
+        Assert.DoesNotContain(
+            syntax.DescendantNodes()
+                .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax>(),
+            identifier => identifier.Identifier.ValueText == "Godot");
         HudPresentationState state = SmokeHudFixtureState.Create();
 
         Assert.Equal(new HudHealth(3, 6, "nanotech", HudLifeState.Alive), state.Health);
