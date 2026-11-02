@@ -126,7 +126,7 @@ public partial class OBPGame : Node3D
         {
             _navigation.CancelNavigation(); _navigation.RetireMenuPages(); _mode = Mode.Picker; _sceneKind = "sources";
             _modals?.RetireAll();
-            TeardownWorld(); EnsurePlainEnvironment();
+            TeardownWorld(); GodotSmokeSceneFixture.EnsurePlainEnvironment(this);
             _navigation.RetireSelector();
             if (_worldHud is not null && IsInstanceValid(_worldHud)) _worldHud.Visible = false;
             _camera.Current = true; _activeCamera = _camera;
@@ -1004,7 +1004,7 @@ public partial class OBPGame : Node3D
                 _mode = isTitle ? Mode.Title : Mode.Selector;
                 _sceneKind = isTitle ? "title" : "destinations";
                 TeardownWorld();
-                EnsurePlainEnvironment();
+                GodotSmokeSceneFixture.EnsurePlainEnvironment(this);
                 Sources.RetireView();
                 if (_worldHud is not null && IsInstanceValid(_worldHud)) _worldHud.Visible = false;
                 _camera.Current = true;
@@ -1056,7 +1056,7 @@ public partial class OBPGame : Node3D
         {
             // Production/navigation startup is owned by SourceManagerBootstrap.
             // Keep only a neutral background until its deferred route is ready.
-            EnsurePlainEnvironment();
+            GodotSmokeSceneFixture.EnsurePlainEnvironment(this);
         }
 
         GD.Print($"[OBPGame] ready — mode={_mode} scene='{_sceneKind}' " +
@@ -1330,20 +1330,6 @@ public partial class OBPGame : Node3D
         _activeCamera = _camera;
     }
 
-    /// <summary>
-    /// Remove deterministic smoke/bootstrap presentation before a production
-    /// provider world is adopted. These nodes are not part of RuntimeWorld and
-    /// must never leak into a direct destination capture.
-    /// </summary>
-    private void ClearBootstrapSceneArtifacts()
-    {
-        GetNodeOrNull<Node>("PlainEnvironment")?.QueueFree();
-        GetNodeOrNull<Node>("Sun")?.QueueFree();
-        _worldRoot.GetNodeOrNull<Node>("Floor")?.QueueFree();
-        _worldRoot.GetNodeOrNull<Node>("SmokeCube")?.QueueFree();
-        _ui.GetNodeOrNull<Node>("Banner")?.QueueFree();
-    }
-
     /// <summary>Free the current world sub-tree and everything it owns. Safe to call when nothing is loaded.</summary>
     private void TeardownWorld() => WorldScenes.Retire();
 
@@ -1517,27 +1503,6 @@ public partial class OBPGame : Node3D
     }
 
     // --- smoke / plain scenes -------------------------------------------
-
-    private void EnsurePlainEnvironment()
-    {
-        if (GetNodeOrNull("PlainEnvironment") is not null)
-        {
-            return;
-        }
-
-        AddChild(new WorldEnvironment
-        {
-            Name = "PlainEnvironment",
-            Environment = new global::Godot.Environment
-            {
-                BackgroundMode = global::Godot.Environment.BGMode.Color,
-                BackgroundColor = new Color(0.04f, 0.05f, 0.08f),
-                AmbientLightSource = global::Godot.Environment.AmbientSource.Color,
-                AmbientLightColor = new Color(1, 1, 1),
-                AmbientLightEnergy = 1.0f,
-            },
-        });
-    }
 
     // Temporary composition for retained Phase 1 callers. #340/#343 remove the nested pause entrypoints;
     // #346/#347/#348 move these bindings to their source/navigation/pause owners.
@@ -2217,7 +2182,7 @@ public partial class OBPGame : Node3D
     {
         _mode = Mode.Smoke;
         _sceneKind = scene;
-        EnsurePlainEnvironment();
+        GodotSmokeSceneFixture.EnsurePlainEnvironment(this);
         GodotSmokeSceneFixture.Build(this, _worldRoot, _ui, _camera, scene);
         if (scene.Equals("hud", StringComparison.OrdinalIgnoreCase))
         {

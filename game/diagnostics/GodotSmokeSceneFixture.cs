@@ -3,11 +3,41 @@ using Godot;
 namespace OBP.Game;
 
 /// <summary>
-/// Asset-free host smoke-scene geometry. HUD fixture values live in an engine-free owner.
-/// Application mode, scene-tree lifetime and HUD session remain with the root.
+/// Asset-free bootstrap environment and smoke-scene geometry.
+/// Application mode, world-lease lifetime and HUD session remain with the root.
 /// </summary>
 internal static class GodotSmokeSceneFixture
 {
+    /// <summary>Create the plain bootstrap backdrop only if it does not already exist.</summary>
+    internal static void EnsurePlainEnvironment(Node3D root)
+    {
+        if (root.GetNodeOrNull("PlainEnvironment") is not null)
+            return;
+
+        root.AddChild(new WorldEnvironment
+        {
+            Name = "PlainEnvironment",
+            Environment = new global::Godot.Environment
+            {
+                BackgroundMode = global::Godot.Environment.BGMode.Color,
+                BackgroundColor = new Color(0.04f, 0.05f, 0.08f),
+                AmbientLightSource = global::Godot.Environment.AmbientSource.Color,
+                AmbientLightColor = new Color(1, 1, 1),
+                AmbientLightEnergy = 1.0f,
+            },
+        });
+    }
+
+    /// <summary>Retire only bootstrap-owned nodes before a prepared world is activated.</summary>
+    internal static void RetireBootstrap(Node3D root, Node3D worldRoot, CanvasLayer ui)
+    {
+        root.GetNodeOrNull<Node>("PlainEnvironment")?.QueueFree();
+        root.GetNodeOrNull<Node>("Sun")?.QueueFree();
+        worldRoot.GetNodeOrNull<Node>("Floor")?.QueueFree();
+        worldRoot.GetNodeOrNull<Node>("SmokeCube")?.QueueFree();
+        ui.GetNodeOrNull<Node>("Banner")?.QueueFree();
+    }
+
     internal static void Build(Node3D root, Node3D worldRoot, CanvasLayer ui, Camera3D camera, string scene)
     {
         var sun = new DirectionalLight3D { Name = "Sun", RotationDegrees = new Vector3(-55, -35, 0) };
