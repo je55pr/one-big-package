@@ -3,6 +3,8 @@ using OBP.Core.Math;
 using OBP.Game;
 using OBP.RAC1.Progression;
 using OBP.Runtime;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace OBP.Tests;
 
@@ -85,13 +87,18 @@ public sealed class Rac1CampaignWorldEntryHostTests
     public void OtherSourceWorldsCannotStartOrCommitTheRac1Campaign(ObpSourceGame game)
     {
         var campaign = new Rac1CampaignHost();
-        var world = new RuntimeWorld(game, "fixture", 0, null, null, [], [], 0, [],
+        campaign.Session.Campaign.AdmitDestination(1);
+        Assert.Equal(Rac1PlanetTravelStartResult.Started, campaign.Session.BeginTravel(1));
+        var world = new RuntimeWorld(game, "fixture", 1, null, null, [], [], 0, [],
             new ObpBounds(Vec3.Zero, Vec3.Zero), null, null, PlayerStart: new RuntimeSpawn(1, 2, 3, 0));
 
         Assert.Null(campaign.BeginWorldEntry(world));
         Assert.False(campaign.FinishWorldEntry(world));
         Assert.Null(campaign.Session.LevelCheckpoint);
         Assert.Equal(0, campaign.Session.Campaign.CurrentLevel);
+        Assert.True(campaign.Session.Travel.TransitionActive);
+        Assert.False(campaign.Session.Travel.CurrentLevelCommitted);
+        Assert.Equal(1, campaign.Session.Travel.LoaderDestination);
     }
 
     [Fact]
@@ -121,6 +128,18 @@ public sealed class Rac1CampaignWorldEntryHostTests
         Assert.Contains("_rac1Campaign.BeginWorldEntry(world)", root, StringComparison.Ordinal);
         Assert.Contains("_rac1Campaign.FinishWorldEntry(world)", root, StringComparison.Ordinal);
         Assert.DoesNotContain("if (world.Game == ObpSourceGame.Rac1)", root, StringComparison.Ordinal);
+
+        // A source that cannot commit travel must not trigger a campaign parity save.
+        var activate = CSharpSyntaxTree.ParseText(root).GetRoot().DescendantNodes()
+            .OfType<MethodDeclarationSyntax>().Single(method => method.Identifier.ValueText == "ActivateWorld");
+        var persist = Assert.Single(activate.DescendantNodes().OfType<InvocationExpressionSyntax>(),
+            call => call.Expression.ToString() == "PersistRac1CampaignState");
+        var guard = Assert.IsType<IfStatementSyntax>(persist.Ancestors()
+            .First(node => node is IfStatementSyntax or MethodDeclarationSyntax));
+        Assert.Equal("_rac1Campaign.FinishWorldEntry(world)", guard.Condition.ToString());
+        Assert.Null(guard.Else);
+        Assert.Equal("Rac1CampaignPersistenceHost.TravelPersistenceReason",
+            Assert.Single(persist.ArgumentList.Arguments).Expression.ToString());
         Assert.Contains("Session.StartLevelCheckpointSession(levelId, authoredStart)", owner, StringComparison.Ordinal);
         Assert.Contains("Session.CommitLoadedLevel(levelId)", owner, StringComparison.Ordinal);
         Assert.Contains("Session.FinishLoadedLevel(entry)", owner, StringComparison.Ordinal);
