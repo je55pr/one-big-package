@@ -251,10 +251,15 @@ public partial class OBPGame
         EnsurePlayerSession();
         RefreshPlayerSourceAvailability();
         _persistentPlayer.ResolvePresentationProfiles();
-        _avatarPresentation.PrepareSelected(
-            _playerSession!.Capture().Configuration.Avatar, _playerSession,
-            Sources.Setup.Library, _equipmentPresentation, OrdinaryPlayerSession,
-            Engine.PhysicsTicksPerSecond, _playerAnimationProfile!.NativeTicksPerSecond);
+        var identity = _playerSession!.Capture().Configuration.Avatar;
+        if (Engine.PhysicsTicksPerSecond != _playerAnimationProfile!.NativeTicksPerSecond)
+            throw new InvalidOperationException($"Selected player animation requires {_playerAnimationProfile.NativeTicksPerSecond} physics ticks per second.");
+        if (identity.SourceGame == ObpSourceGame.Synthetic) return;
+        var availability = _playerSession.Availability(identity.SourceGame, identity.BuildId, true, true);
+        if (!availability.Usable) throw new InvalidOperationException(availability.Reason);
+        var source = Sources.Setup.VerifySelectedSourceFile(identity.SourceGame, identity.BuildId);
+        _avatarPresentation.PrepareSelected(identity, source.Path, source.Stamp,
+            _equipmentPresentation, OrdinaryPlayerSession);
     }
 
 
@@ -317,10 +322,10 @@ public partial class OBPGame
 
 
         _equipmentPresentation.ApplyAvatarEquipmentPose(_avatarPresentation, controller, state, input,
-            Rac1HandPresentation, _persistentPlayer.Rac1Use.UseTicks, _persistentPlayer.Rac1Use.UseAge,
-            _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Walloper.Age ?? 0,
-            PlayerLife.Alive, FusionWeapons.Sources.Assets,
-            FusionWeapons.Pose.UseStarted, FusionWeapons.Pose.TriggerHeld);
+            new(Rac1HandPresentation, _persistentPlayer.Rac1Use.UseTicks, _persistentPlayer.Rac1Use.UseAge,
+                _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Walloper.Age ?? 0,
+                PlayerLife.Alive, FusionWeapons.Sources.Assets,
+                FusionWeapons.Pose.UseStarted, FusionWeapons.Pose.TriggerHeld));
         if (_avatarPresentation.PhysicsPlayer is { } player)
         {
             _avatarPresentation.StepHandAttachments(controller, player.Rac1WrenchFrame,

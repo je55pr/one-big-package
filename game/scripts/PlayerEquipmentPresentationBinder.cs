@@ -24,6 +24,20 @@ internal readonly record struct Rac1HandPresentationContext(
     bool WrenchThrowActive);
 
 /// <summary>
+/// One borrowed equipment-pose observation at the current avatar animation tick.
+/// It carries no independent inventory, weapon clock or player authority.
+/// </summary>
+internal readonly record struct AvatarEquipmentPoseFrame(
+    Rac1HandPresentationContext Hand,
+    int UseTicks,
+    int UseAge,
+    int WalloperAge,
+    bool Alive,
+    FusionWeaponAssets? SharedAssets,
+    bool FusionUseStarted,
+    bool FusionTriggerHeld);
+
+/// <summary>
 /// Selected source-bank data lives beyond worlds. Effect meshes, material factories
 /// and resolved hand sockets belong to one world/presentation binding only.
 /// </summary>
@@ -163,10 +177,9 @@ internal sealed class PlayerEquipmentPresentationBinder
     /// <summary>Evaluate and present the selected equipment body pose at the borrowed avatar clock.</summary>
     internal void ApplyAvatarEquipmentPose(PlayerAvatarPresentationHost avatar,
         Rac1PlayerAnimationPresentationController controller, PlayerAnimationState state,
-        Rac1LocomotionAnimationInput input, Rac1HandPresentationContext hand,
-        int useTicks, int useAge, int walloperAge, bool alive, FusionWeaponAssets? sharedAssets,
-        bool fusionUseStarted, bool fusionTriggerHeld)
+        Rac1LocomotionAnimationInput input, AvatarEquipmentPoseFrame frame)
     {
+        var (hand, useTicks, useAge, walloperAge, alive, sharedAssets, fusionUseStarted, fusionTriggerHeld) = frame;
         bool holdGun = useTicks > 0 && OBP.RAC1.Gameplay.Rac1WeaponProfiles.IsAdditional(hand.Inventory.Equipped) &&
             OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(hand.Inventory.Equipped).BodySequence is > 0 and not 44 &&
             PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(hand.Inventory.Equipped, hand) && input.Traversal is null &&

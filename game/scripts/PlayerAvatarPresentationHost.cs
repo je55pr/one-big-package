@@ -1,7 +1,5 @@
 using OBP.Core;
 using OBP.Fusion;
-using OBP.IO;
-using OBP.PS2;
 using OBP.Godot;
 using OBP.Godot.Player;
 using OBP.RAC1.Gameplay;
@@ -82,32 +80,13 @@ internal sealed class PlayerAvatarPresentationHost
     internal static IPlayerAvatarProvider Provider(ObpSourceGame game) =>
         Providers.Get(game) ?? throw new InvalidOperationException($"No provider for selected avatar source {game}.");
 
-    /// <summary>
-    /// Validate and stage the session-selected avatar from an attached source.
-    /// The caller already selected the player; this host never owns that session.
-    /// </summary>
-    internal void PrepareSelected(PlayerAvatarIdentity identity, ObpPlayerSession session,
-        ObpSourceLibrary library, PlayerEquipmentPresentationBinder equipment, bool ordinary,
-        int physicsTicks, int nativeTicks)
+    /// <summary>Stage presentation from a source already verified by the source owner.</summary>
+    internal void PrepareSelected(PlayerAvatarIdentity identity, string path,
+        (long Length, long Written) stamp, PlayerEquipmentPresentationBinder equipment, bool ordinary)
     {
-        if (physicsTicks != nativeTicks)
-            throw new InvalidOperationException($"Selected player animation requires {nativeTicks} physics ticks per second.");
-        if (identity.SourceGame == ObpSourceGame.Synthetic) return;
-        var availability = session.Availability(identity.SourceGame, identity.BuildId, true, true);
-        if (!availability.Usable) throw new InvalidOperationException(availability.Reason);
-        var source = library.Get(identity.SourceGame)!;
-        var file = new FileInfo(source.Path);
-        if (!file.Exists || file.Length != source.SizeBytes)
-            throw new InvalidOperationException("The selected avatar source is missing or has changed size. Reattach it in Game Sources.");
-        using (var reader = new FileRandomAccessReader(source.Path))
-        {
-            var probe = library.Probe(reader);
-            if (!probe.Supported || probe.Definition?.Authority.BuildId != identity.BuildId)
-                throw new InvalidOperationException("The selected avatar source no longer identifies as the selected supported build.");
-        }
-        Prepare(identity, source.Path, (file.Length, file.LastWriteTimeUtc.Ticks));
+        Prepare(identity, path, stamp);
         if (identity.SourceGame == ObpSourceGame.Rac1)
-            equipment.PrepareSelectedBank(source.Path, ordinary, PreparedSourceChanged);
+            equipment.PrepareSelectedBank(path, ordinary, PreparedSourceChanged);
     }
     /// <summary>
     /// Decode a pending candidate without touching the live visual or its callbacks.

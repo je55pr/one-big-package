@@ -7,7 +7,7 @@ This is an ownership and file accounting snapshot, not a claim that final root c
 | Metric | Frozen origin | Current checkpoint |
 | --- | ---: | ---: |
 | Root-declaring files | 122 | 2 |
-| Root-declaring file lines | 27362 | 3046 |
+| Root-declaring file lines | 27362 | 3051 |
 
 File-by-file inventory. Ownership references are **original migration issue assignments**, not claims about the destination class:
 
@@ -134,10 +134,10 @@ File-by-file inventory. Ownership references are **original migration issue assi
 | `game/scripts/OBPGame.Sources.cs` | #346 | 316 | Retired | 0 |
 | `game/scripts/OBPGame.SourceSetup.cs` | #346 | 82 | Retired | 0 |
 | `game/scripts/OBPGame.StressDiagnostics.cs` | #345 | 114 | Retired | 0 |
-| `game/scripts/OBPGame.WorldEntry.cs` | #376 | 178 | Active | 365 |
+| `game/scripts/OBPGame.WorldEntry.cs` | #376 | 178 | Active | 370 |
 
 #376 now delegates world-debug HUD rendering to `WorldHud`, original-order player-spawn placement selection to `GodotPlayerSpawnPlacement`, and overlay command parsing to the existing `DebugOverlay`. `OBPGame` still owns live player construction, world-lease integration and host wiring; no new all-capabilities controller was introduced.
 
-The next #376 extraction delegates selected-avatar source verification/staging to `PlayerAvatarPresentationHost` and native equipment body-pose presentation to `PlayerEquipmentPresentationBinder`. `OBPGame.WorldEntry.cs` now supplies selected-player and current-world facts without owning source probing or equipment pose rules.
+The next #376 extraction delegates already-selected source-file size and build verification to the existing `SourceSetupCoordinator`, validated avatar and R&C1 equipment-bank staging to `PlayerAvatarPresentationHost`, and native equipment body-pose presentation to `PlayerEquipmentPresentationBinder`. `OBPGame.WorldEntry.cs` retains player-profile selection, animation rate validation and current-world integration without owning source IO or equipment pose rules.
 
 The remaining root files still contain host composition and world-entry glue. The rest of #376 requires migrating those members to existing owners, deleting the WorldEntry partial, tightening architecture guards and validating the full 17-phase authorised real-input suite.
