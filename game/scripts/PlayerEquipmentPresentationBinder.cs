@@ -160,6 +160,38 @@ internal sealed class PlayerEquipmentPresentationBinder
         state.Held.Hand.IsHolding(new(ObpSourceGame.Rac1, (int)item)) &&
         !state.WaterHandItemHidden && !state.WrenchFrameActive && !state.WrenchThrowActive;
 
+    /// <summary>Evaluate and present the selected equipment body pose at the borrowed avatar clock.</summary>
+    internal void ApplyAvatarEquipmentPose(PlayerAvatarPresentationHost avatar,
+        Rac1PlayerAnimationPresentationController controller, PlayerAnimationState state,
+        Rac1LocomotionAnimationInput input, Rac1HandPresentationContext hand,
+        int useTicks, int useAge, int walloperAge, bool alive, FusionWeaponAssets? sharedAssets,
+        bool fusionUseStarted, bool fusionTriggerHeld)
+    {
+        bool holdGun = useTicks > 0 && OBP.RAC1.Gameplay.Rac1WeaponProfiles.IsAdditional(hand.Inventory.Equipped) &&
+            OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(hand.Inventory.Equipped).BodySequence is > 0 and not 44 &&
+            PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(hand.Inventory.Equipped, hand) && input.Traversal is null &&
+            alive;
+        bool walloper = PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.Walloper, hand) && walloperAge > 0;
+        bool moving = input.Active || state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.JumpRise or PlayerAnimationState.Fall;
+        int? equipmentPose = walloper ? OBP.RAC1.Gameplay.Rac1ArsenalRules.WalloperSequence :
+            holdGun ? (moving ? OBP.RAC1.Gameplay.Rac1ArsenalRules.MovingBodySequence(hand.Inventory.Equipped) :
+                OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(hand.Inventory.Equipped).BodySequence) : null;
+        // Jump/traversal clocks still own the body. Evaluate equipment from
+        // that clock too, including the attachment when no arm bank applies.
+        bool fusionPose = hand.Fusion is { Selected.SourceGame: not ObpSourceGame.Rac1 } && hand.Fusion.Hand.IsHolding(hand.Fusion.Selected) &&
+            alive && !hand.WrenchFrameActive && !hand.WaterHandItemHidden;
+        if (equipmentPose < 0) equipmentPose = null;
+        if (fusionPose && sharedAssets?.AvatarAnimations.TryGetValue(hand.Fusion!.Selected, out var sourceAnimation) == true)
+            avatar.Sink?.SetAnimationPresentation(controller.ApplySourceEquipment(sourceAnimation,
+                moving, input.CrouchHeld, fusionUseStarted, fusionTriggerHeld));
+        else
+        {
+            controller.ClearSourceEquipment();
+            avatar.Sink?.SetAnimationPresentation(controller.ApplyEquipmentPose(equipmentPose,
+                walloper ? walloperAge / 60d : useAge / 60d, !walloper, fullBody: walloper || !moving));
+        }
+    }
+
     internal void RefreshRac1HandVisibility(Rac1HandPresentationContext state, PlayerAvatarPresentationHost avatar)
     {
         NativeViews.RefreshVisibility(item => IsRac1HandEquipmentVisible(item, state));
