@@ -17,6 +17,9 @@ public sealed class WorldSmokeArchitectureTests
 
         Assert.Contains("_ports.EnterWorld(destination.DestinationId", loader, StringComparison.Ordinal);
         Assert.Contains("WorldSmokeHarness.Create(", entry, StringComparison.Ordinal);
+        Assert.Contains("WorldSmokeHarness.Bind(new WorldSmokeHarness.Factories(", entry, StringComparison.Ordinal);
+        Assert.DoesNotContain("new WorldSmokeHarness.Entrypoints(", entry, StringComparison.Ordinal);
+        Assert.Contains("internal static Entrypoints Bind(", harness, StringComparison.Ordinal);
         Assert.Contains("DiagnosticScenarioDispatch.Start(", entry, StringComparison.Ordinal);
         Assert.DoesNotContain("partial class OBPGame", harness, StringComparison.Ordinal);
         foreach (string flag in new[]
@@ -29,6 +32,46 @@ public sealed class WorldSmokeArchitectureTests
         })
             Assert.DoesNotContain(flag, loader, StringComparison.Ordinal);
 
+    }
+
+    [Fact]
+    public void WorldSmokeBindingsPreserveCreatorSpecificSlots()
+    {
+        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "WorldSmokeHarness.cs"));
+        string bind = source.Split("internal static Entrypoints Bind(Factories factories) => new(", StringSplitOptions.None)[1]
+            .Split("private sealed record Entry(", StringSplitOptions.None)[0];
+        // Slot order matches Entrypoints. Detect swaps between creators on the same harness;
+        // the runtime registry test independently verifies the scenario IDs and owner factories.
+        string[] expected =
+        [
+            "definition => factories.Encounter().CreateVeldin(definition)",
+            "definition => factories.Encounter().CreateMovementContact(definition)",
+            "definition => factories.Encounter().CreateCombat(definition)",
+            "definition => factories.Campaign().CreateCampaign(definition)",
+            "definition => factories.Movement().CreateMovement(definition)",
+            "definition => factories.Loot().CreateCrates(definition)",
+            "definition => factories.Loot().CreatePlacedBolts(definition)",
+            "definition => factories.Weapons().CreateWrench(definition)",
+            "definition => factories.Encounter().CreateEnemies(definition)",
+            "definition => factories.Capture().CreateMovement(definition)",
+            "definition => factories.Weapons().CreateBomb(definition)",
+            "definition => factories.Movement().CreateSwim(definition)",
+            "definition => factories.Encounter().CreatePeckbot(definition)",
+            "definition => factories.Encounter().CreateBirdbot(definition)",
+            "definition => factories.Routes().CreateMusic(definition)",
+            "definition => factories.Weapons().CreateWeapons(definition)",
+            "definition => factories.Player().CreateAudio(definition)",
+            "definition => factories.Routes().CreateTaxi(definition)",
+            "definition => factories.Campaign().CreateMission(definition)",
+            "definition => factories.Routes().CreateRoute(definition)",
+            "definition => factories.Encounter().CreateFrogs(definition)",
+            "factories.Rac3SeedAudit",
+        ];
+        var actual = System.Text.RegularExpressions.Regex.Matches(bind,
+            @"definition => factories\.\w+\(\)\.\w+\(definition\)|factories\.Rac3SeedAudit",
+            System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromSeconds(1))
+            .Select(match => match.Value).ToArray();
+        Assert.Equal(expected, actual);
     }
 
     [Fact]

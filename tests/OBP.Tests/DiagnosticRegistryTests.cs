@@ -54,6 +54,62 @@ public sealed class DiagnosticRegistryTests
     }
 
     [Fact]
+    public void WorldSmokeHarnessBindingsRouteEveryScenarioToItsOwningFactoryLazily()
+    {
+        var bindings = WorldSmokeHarness.Bind(new WorldSmokeHarness.Factories(
+            () => throw new InvalidOperationException("encounter"),
+            () => throw new InvalidOperationException("campaign"),
+            () => throw new InvalidOperationException("movement"),
+            () => throw new InvalidOperationException("loot"),
+            () => throw new InvalidOperationException("weapons"),
+            () => throw new InvalidOperationException("capture"),
+            () => throw new InvalidOperationException("route"),
+            () => throw new InvalidOperationException("player"),
+            _ => throw new InvalidOperationException("rac3")));
+        (string Id, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Create, string Owner)[] routes =
+        [
+            ("rac1-veldin-play-smoke", bindings.VeldinPlay, "encounter"),
+            ("rac1-movement-contact-smoke", bindings.MovementContact, "encounter"),
+            ("rac1-combat-contract-smoke", bindings.CombatContract, "encounter"),
+            ("rac1-wrench-smoke", bindings.Wrench, "weapons"),
+            ("rac1-bomb-glove-smoke", bindings.BombGlove, "weapons"),
+            ("rac1-novalis-swim-smoke", bindings.NovalisSwim, "movement"),
+            ("rac1-novalis-route-smoke", bindings.NovalisRoute, "route"),
+            ("rac1-novalis-peckbot-smoke", bindings.NovalisPeckbot, "encounter"),
+            ("rac1-novalis-birdbot-smoke", bindings.NovalisBirdbot, "encounter"),
+            ("rac1-novalis-music-smoke", bindings.NovalisMusic, "route"),
+            ("rac1-metropolis-taxi-smoke", bindings.MetropolisTaxi, "route"),
+            ("rac1-weapons-smoke", bindings.Weapons, "weapons"),
+            ("rac1-player-audio-smoke", bindings.PlayerAudio, "player"),
+            ("rac1-crate-smoke", bindings.Crates, "loot"),
+            ("rac1-enemy-smoke", bindings.Enemies, "encounter"),
+            ("rac1-frog-smoke", bindings.Frogs, "encounter"),
+            ("movement-state-smoke", bindings.MovementState, "capture"),
+            ("rac1-placed-bolt-smoke", bindings.PlacedBolts, "loot"),
+            ("rac1-campaign-smoke", bindings.Campaign, "campaign"),
+            ("rac1-mission-play-smoke", bindings.MissionPlay, "campaign"),
+            ("movement-smoke", bindings.Movement, "movement"),
+            ("rac3-target-seed-audit", bindings.Rac3SeedAudit, "rac3"),
+        ];
+        Assert.Equal(WorldSmokeHarness.Registry.Registrations.Select(registration => registration.Id),
+            routes.Select(route => route.Id));
+        foreach (var (id, create, owner) in routes)
+        {
+            Assert.NotNull(create);
+            Assert.Equal(owner, Assert.Throws<InvalidOperationException>(() => create!(Definition)).Message);
+
+            // Exercise the registry selection and dispatch, not just the binding property.
+            var registration = WorldSmokeHarness.Registry.Find(id);
+            var args = CommandLineArgs.Parse([Assert.Single(registration.Aliases)]);
+            var game = registration.WorldSource ?? ObpSourceGame.Rac1;
+            var destination = new ObpDestination(id, game, "synthetic-v1",
+                "fixture", null, "Fixture", null, null, ObpDestinationKind.Planet);
+            Assert.Equal(owner, Assert.Throws<InvalidOperationException>(() =>
+                WorldSmokeHarness.Create(args, destination, 1, bindings, false, [])).Message);
+        }
+    }
+
+    [Fact]
     public void UnknownScenariosAndAmbiguousAliasesFailExplicitly()
     {
         Assert.Contains("Unknown diagnostic scenario", Assert.Throws<DiagnosticUnavailableException>(() => WorldSmokeHarness.Registry.Find("unknown")).Message, StringComparison.Ordinal);
