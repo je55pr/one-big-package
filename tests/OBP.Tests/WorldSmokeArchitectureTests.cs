@@ -68,7 +68,8 @@ public sealed class WorldSmokeArchitectureTests
             "factories.Rac3SeedAudit",
         ];
         var actual = System.Text.RegularExpressions.Regex.Matches(bind,
-            @"definition => factories\.\w+\(\)\.\w+\(definition\)|factories\.Rac3SeedAudit")
+            @"definition => factories\.\w+\(\)\.\w+\(definition\)|factories\.Rac3SeedAudit",
+            System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromSeconds(1))
             .Select(match => match.Value).ToArray();
         Assert.Equal(expected, actual);
     }
