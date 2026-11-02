@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../../game/diagnostics/SmokeHudFixtureState.cs" Link="Diagnostics/SmokeHudFixtureState.cs" />
     <Compile Include="../../game/scripts/GodotPlayerSpawnPlacement.cs" Link="Game/GodotPlayerSpawnPlacement.cs" />
     <Compile Include="../../game/scripts/WorldHud.cs" Link="Game/WorldHud.cs" />
     <Compile Include="../../game/scripts/Rac1PlayerAudioPresenter.cs" Link="Game/Rac1PlayerAudioPresenter.cs" />
