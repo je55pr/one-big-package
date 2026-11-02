@@ -2218,50 +2218,12 @@ public partial class OBPGame : Node3D
         _mode = Mode.Smoke;
         _sceneKind = scene;
         EnsurePlainEnvironment();
-
-        var sun = new DirectionalLight3D { Name = "Sun", RotationDegrees = new Vector3(-55, -35, 0) };
-        AddChild(sun);
-
-        _worldRoot.AddChild(new MeshInstance3D
-        {
-            Name = "Floor",
-            Mesh = new PlaneMesh { Size = new Vector2(12, 12) },
-            MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.18f, 0.2f, 0.24f) },
-        });
-        _worldRoot.AddChild(new MeshInstance3D
-        {
-            Name = "SmokeCube",
-            Mesh = new BoxMesh { Size = new Vector3(2, 2, 2) },
-            Position = new Vector3(0, 1, 0),
-            MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.9f, 0.45f, 0.15f) },
-        });
-
-        _camera.Position = new Vector3(4.5f, 3.5f, 5.5f);
-        _camera.LookAt(new Vector3(0, 0.8f, 0), Vector3.Up);
-        _ui.AddChild(new Label { Name = "Banner", Text = $"One Big Package — {scene}", Position = new Vector2(16, 12) });
-
+        GodotSmokeSceneFixture.Build(this, _worldRoot, _ui, _camera, scene);
         if (scene.Equals("hud", StringComparison.OrdinalIgnoreCase))
         {
-            BuildHudFixture();
+            EnsurePlayerHud();
+            _playerHud!.Render(_hudState.BeginSession(GodotSmokeSceneFixture.HudState()));
         }
-    }
-
-    private void BuildHudFixture()
-    {
-        EnsurePlayerHud();
-        var snapshot = _hudState.BeginSession(new HudPresentationState(
-            Health: new HudHealth(3, 6, "nanotech", HudLifeState.Alive),
-            Bolts: new HudCurrency("bolts", 12_450),
-            CurrentWeapon: new HudWeapon(
-                PresentationKey: "hud.fixture.vector-blaster",
-                NameKey: "Vector Blaster",
-                Ammo: new HudAmmo(7, 12)),
-            ContextPrompt: new HudContextPrompt(
-                PromptId: "hud-fixture-console",
-                ActionId: "interact",
-                MessageKey: "Activate test console",
-                Progress: 0.42)));
-        _playerHud!.Render(snapshot);
     }
 
 
