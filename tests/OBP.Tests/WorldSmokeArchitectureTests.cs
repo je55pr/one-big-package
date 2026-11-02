@@ -35,6 +35,45 @@ public sealed class WorldSmokeArchitectureTests
     }
 
     [Fact]
+    public void WorldSmokeBindingsPreserveCreatorSpecificSlots()
+    {
+        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "WorldSmokeHarness.cs"));
+        string bind = source.Split("internal static Entrypoints Bind(Factories factories) => new(", StringSplitOptions.None)[1]
+            .Split("private sealed record Entry(", StringSplitOptions.None)[0];
+        // Slot order matches Entrypoints. Detect swaps between creators on the same harness;
+        // the runtime registry test independently verifies the scenario IDs and owner factories.
+        string[] expected =
+        [
+            "definition => factories.Encounter().CreateVeldin(definition)",
+            "definition => factories.Encounter().CreateMovementContact(definition)",
+            "definition => factories.Encounter().CreateCombat(definition)",
+            "definition => factories.Campaign().CreateCampaign(definition)",
+            "definition => factories.Movement().CreateMovement(definition)",
+            "definition => factories.Loot().CreateCrates(definition)",
+            "definition => factories.Loot().CreatePlacedBolts(definition)",
+            "definition => factories.Weapons().CreateWrench(definition)",
+            "definition => factories.Encounter().CreateEnemies(definition)",
+            "definition => factories.Capture().CreateMovement(definition)",
+            "definition => factories.Weapons().CreateBomb(definition)",
+            "definition => factories.Movement().CreateSwim(definition)",
+            "definition => factories.Encounter().CreatePeckbot(definition)",
+            "definition => factories.Encounter().CreateBirdbot(definition)",
+            "definition => factories.Routes().CreateMusic(definition)",
+            "definition => factories.Weapons().CreateWeapons(definition)",
+            "definition => factories.Player().CreateAudio(definition)",
+            "definition => factories.Routes().CreateTaxi(definition)",
+            "definition => factories.Campaign().CreateMission(definition)",
+            "definition => factories.Routes().CreateRoute(definition)",
+            "definition => factories.Encounter().CreateFrogs(definition)",
+            "factories.Rac3SeedAudit",
+        ];
+        var actual = System.Text.RegularExpressions.Regex.Matches(bind,
+            @"definition => factories\.\w+\(\)\.\w+\(definition\)|factories\.Rac3SeedAudit")
+            .Select(match => match.Value).ToArray();
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
     public void GameSpecificSmokeImplementationsLiveOnlyUnderDiagnostics()
     {
         string root = Path.Combine(RepoPaths.Root, "game");
