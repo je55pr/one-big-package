@@ -122,7 +122,7 @@ public partial class OBPGame
         _avatarSourceStamp = _avatarPresentation.CommittedSourceStamp;
         if (OrdinaryPlayerSession) _equipmentPresentation.ApplyPreparedBank();
         entry.Resources.EffectScope = entry.Plan.Request;
-        ClearBootstrapSceneArtifacts();
+        GodotSmokeSceneFixture.RetireBootstrap(this, _worldRoot, _ui);
         entry.Resources.PlayerLife = PlayerLife.BindWorld(entry.Plan.Request.WorldInstanceId, entry.Plan.Request.Generation, entry.Resources.Scene.Root);
         _navigation.RetireMenuPages();
         Sources.RetireView();
