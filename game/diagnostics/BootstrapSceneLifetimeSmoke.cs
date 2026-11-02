@@ -22,6 +22,13 @@ public partial class BootstrapSceneLifetimeSmoke : Node3D
             AddChild(ui);
 
             GodotSmokeSceneFixture.EnsurePlainEnvironment(this);
+            var camera = new Camera3D { Name = "Camera3D" };
+            AddChild(camera);
+            GodotSmokeSceneFixture.Build(this, worldRoot, ui, camera, "lifetime");
+            var sun = GetNode<DirectionalLight3D>("Sun");
+            var floor = worldRoot.GetNode<MeshInstance3D>("Floor");
+            var smokeCube = worldRoot.GetNode<MeshInstance3D>("SmokeCube");
+            var banner = ui.GetNode<Label>("Banner");
             var first = GetNode<WorldEnvironment>(EnvironmentName);
             Require(!first.IsQueuedForDeletion(), "new environment was queued for deletion");
             GodotSmokeSceneFixture.EnsurePlainEnvironment(this);
@@ -30,6 +37,9 @@ public partial class BootstrapSceneLifetimeSmoke : Node3D
 
             GodotSmokeSceneFixture.RetireBootstrap(this, worldRoot, ui);
             Require(first.IsQueuedForDeletion(), "bootstrap cleanup did not queue the environment");
+            Require(sun.IsQueuedForDeletion() && floor.IsQueuedForDeletion()
+                && smokeCube.IsQueuedForDeletion() && banner.IsQueuedForDeletion(),
+                "bootstrap cleanup did not queue every fixture-owned node");
             GodotSmokeSceneFixture.EnsurePlainEnvironment(this);
 
             var second = GetNode<WorldEnvironment>(EnvironmentName);
@@ -43,6 +53,9 @@ public partial class BootstrapSceneLifetimeSmoke : Node3D
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             Require(!GodotObject.IsInstanceValid(first), "old queued environment survived frame cleanup");
+            Require(!GodotObject.IsInstanceValid(sun) && !GodotObject.IsInstanceValid(floor)
+                && !GodotObject.IsInstanceValid(smokeCube) && !GodotObject.IsInstanceValid(banner),
+                "a retired fixture-owned node survived frame cleanup");
             Require(GodotObject.IsInstanceValid(second) && !second.IsQueuedForDeletion()
                 && ReferenceEquals(second, GetNode<WorldEnvironment>(EnvironmentName)),
                 "replacement was lost after deferred cleanup");
