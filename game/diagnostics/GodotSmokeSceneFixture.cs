@@ -11,8 +11,15 @@ internal static class GodotSmokeSceneFixture
     /// <summary>Create the plain bootstrap backdrop only if it does not already exist.</summary>
     internal static void EnsurePlainEnvironment(Node3D root)
     {
-        if (root.GetNodeOrNull("PlainEnvironment") is not null)
-            return;
+        var existing = root.GetNodeOrNull<Node>("PlainEnvironment");
+        if (existing is not null)
+        {
+            if (!existing.IsQueuedForDeletion())
+                return;
+            // QueueFree is deferred. Detach the old node now so its name can
+            // be reused when the title/source picker opens in the same frame.
+            root.RemoveChild(existing);
+        }
 
         root.AddChild(new WorldEnvironment
         {

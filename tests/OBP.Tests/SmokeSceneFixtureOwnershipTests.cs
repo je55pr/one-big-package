@@ -53,8 +53,12 @@ public sealed class SmokeSceneFixtureOwnershipTests
         Assert.DoesNotContain("new WorldEnvironment", root, StringComparison.Ordinal);
         Assert.Equal(4, root.Split("GodotSmokeSceneFixture.EnsurePlainEnvironment(this);", StringSplitOptions.None).Length - 1);
 
-        Assert.Contains("if (root.GetNodeOrNull(\"PlainEnvironment\") is not null)", fixture, StringComparison.Ordinal);
-        Assert.Contains("root.AddChild(new WorldEnvironment", fixture, StringComparison.Ordinal);
+        Assert.Contains("var existing = root.GetNodeOrNull<Node>(\"PlainEnvironment\");", fixture, StringComparison.Ordinal);
+        int queuedGuard = fixture.IndexOf("if (!existing.IsQueuedForDeletion())", StringComparison.Ordinal);
+        int detach = fixture.IndexOf("root.RemoveChild(existing);", StringComparison.Ordinal);
+        int create = fixture.IndexOf("root.AddChild(new WorldEnvironment", StringComparison.Ordinal);
+        Assert.True(queuedGuard >= 0 && detach > queuedGuard && create > detach,
+            "Same-frame bootstrap reentry must detach queued nodes before reusing the PlainEnvironment name.");
         Assert.Contains("BackgroundColor = new Color(0.04f, 0.05f, 0.08f)", fixture, StringComparison.Ordinal);
         Assert.Contains("AmbientLightEnergy = 1.0f", fixture, StringComparison.Ordinal);
 
