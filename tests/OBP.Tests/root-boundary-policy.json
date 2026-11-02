@@ -5363,6 +5363,8 @@
     "game/scripts/OBPGame.StressDiagnostics.cs::OBPGame::method:CountDescendants(:Node):int:private,static",
     "game/scripts/OBPGame.StressDiagnostics.cs::OBPGame::method:RunStressSwitchAsync(:string,:CancellationToken):System . Threading . Tasks . Task:async,private",
     "game/scripts/OBPGame.cs::OBPGame::field:_verification:SourceVerificationOperation ?:private",
+    "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:BeginSourceWorldEntry(:RuntimeWorld):void:private",
+    "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:CommitSourceWorldEntry(:RuntimeWorld):void:private",
     "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:SourceEntrySnapReach(:RuntimeWorld):float:private,static",
     "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:SourceFileStamp(:string ?):( long Length , long Written ) ?:private,static",
     "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:ValidateSourceEntry(:RuntimeWorld):RuntimeSpawn:private,static",

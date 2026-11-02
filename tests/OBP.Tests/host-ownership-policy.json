@@ -42,16 +42,16 @@
     "Hash": "bcee12d3fce2c52446debae2cf982904e248d9eda6a77cbed843e5b35bd7e094"
   },
   {
-    "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.BeginSourceWorldEntry(RuntimeWorld)",
+    "Key": "game/scripts/Rac1CampaignHost.cs::Rac1CampaignHost.BeginWorldEntry(RuntimeWorld)",
     "Kind": "adapter",
-    "Reason": "Begin the matching original source campaign checkpoint; never selects a player profile. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "9b83732e9e0d046119d8f593a276dfdecd3ff03cda585257d91786e761a2f581"
+    "Reason": "The persistent R&C1 campaign owner admits only a source-qualified R&C1 world to its checkpoint session. It never selects the shared player/avatar or reads ordinary-player capability; Rac1CampaignWorldEntryHostTests exercises native, foreign-source and reload paths under #376.",
+    "Hash": "b037bb5f017d8d0981450b530cbe905272769980ca7c53abc9f2b141cee29d9b"
   },
   {
-    "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.CommitSourceWorldEntry(RuntimeWorld)",
+    "Key": "game/scripts/Rac1CampaignHost.cs::Rac1CampaignHost.FinishWorldEntry(RuntimeWorld)",
     "Kind": "adapter",
-    "Reason": "Commit recovered original-world campaign travel after successful shared activation. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected. #372 review: the same source-level campaign travel commit now uses the shared native-parity durability reason; source admission and player selection remain unchanged.",
-    "Hash": "b0613f0e94ec5e31bc2ef422b52e33e0c7d13832185f546c7287c084a9acac83"
+    "Reason": "The persistent R&C1 campaign owner admits only its source world to late travel commit and reports whether native campaign parity persistence is required. Foreign-source worlds leave the campaign unchanged; the shared player is not selected. #376 campaign entry tests cover the boundary.",
+    "Hash": "fd72e166578f668651d7223b3559093b84ba1e54c044c9901b5711f4adf04824"
   },
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.StartRequestedSourceVerification(ObpDestination,string)",

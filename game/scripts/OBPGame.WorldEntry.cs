@@ -161,7 +161,8 @@ public partial class OBPGame
         ObpDestination? destination, FusionLabDefinition? lab)
     {
         _worldSwitches++;
-        BeginSourceWorldEntry(world);
+        if (_rac1Campaign.BeginWorldEntry(world) is { } authoredEntry)
+            WorldScenes.OverrideAuthoredEntry(authoredEntry);
         resources.Load(this, _worldRoot, world, _currentDestinationId!, WorldEntryPreparationPolicy.WorldOptions(world, _args));
         SetupOverlay(resources.Scene, world);
         resources.Rac2Gameplay?.Configure();
@@ -218,7 +219,8 @@ public partial class OBPGame
         EnsurePlayerHud(); EnsureWorldHud();
         if (OrdinaryPlayerSession) PlayerLife.PublishHud();
         UpdatePlayerHud(); UpdateWorldHud();
-        CommitSourceWorldEntry(world);
+        if (_rac1Campaign.FinishWorldEntry(world))
+            PersistRac1CampaignState(Rac1CampaignPersistenceHost.TravelPersistenceReason);
         if (_args.EffectsSmoke && !_args.PlaytestRequested && _worldSwitches == 1)
         {
             string report = _args.AcceptanceOut ?? ProjectSettings.GlobalizePath("res://captures/effects-285/report.json");
@@ -243,22 +245,6 @@ public partial class OBPGame
         _loadSummary = $"✓ {destination?.DisplayName ?? (lab is not null ? "Fusion Lab" : world.DisplayName)} · {resources.Scene.MeshInstances} meshes";
         GD.Print($"[destinations] world ready — {_loadSummary} (switch #{_worldSwitches}, player generation {_playerSession!.Capture().Generation})");
     }
-
-    private void BeginSourceWorldEntry(RuntimeWorld world)
-    {
-        if (world.Game != ObpSourceGame.Rac1) return;
-        _rac1Campaign.Session.StartLevelCheckpointSession(world.LevelId, world.PlayerStart!);
-        WorldScenes.OverrideAuthoredEntry(_rac1Campaign.Session.LevelCheckpoint!.AuthoredClass0);
-    }
-
-    private void CommitSourceWorldEntry(RuntimeWorld world)
-    {
-        if (world.Game != ObpSourceGame.Rac1) return;
-        var entry = _rac1Campaign.Session.CommitLoadedLevel(world.LevelId);
-        _rac1Campaign.Session.FinishLoadedLevel(entry);
-        if (entry == Rac1LevelEntryKind.CampaignTravel) PersistRac1CampaignState(Rac1CampaignPersistenceHost.TravelPersistenceReason);
-    }
-
 
     private void PrepareSelectedPlayerAssets()
     {
