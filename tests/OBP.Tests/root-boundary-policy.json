@@ -3445,7 +3445,7 @@
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:PrepareSelectedPlayerAssets():void:private",
       "Owner": "#350",
-      "Rationale": "#376 retains selection of the persistent player profile and source availability refresh at the root boundary; source-size verification, exact build probing, staged avatar decoding and equipment bank staging now belong to the existing PlayerAvatarPresentationHost. No player identity, source attachment authority or world lease was transferred. This adapter expires with the final WorldEntry retirement.",
+      "Rationale": "#376 retains selection of the persistent player profile and source availability refresh at the root boundary; source-size verification and exact build probing now belong to SourceSetupCoordinator.VerifySelectedSourceFile; staged avatar decoding and R&C1 equipment bank staging belong to the existing PlayerAvatarPresentationHost after verification. No player identity, source attachment authority or world lease was transferred. This adapter expires with the final WorldEntry retirement.",
       "ExpiresWith": "#376",
       "Hash": "5e01a1cf172c9e13cacf3aeedc01d55be9fe1210c9a54bf1d54d8db6873fb752"
     },
