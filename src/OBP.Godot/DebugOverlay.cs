@@ -108,6 +108,31 @@ public sealed class DebugOverlay
         Apply();
     }
 
+    /// <summary>Apply the existing debug overlay command syntax without involving the world root.</summary>
+    public void ApplySpec(string? spec, Action<string> reportError)
+    {
+        Clear();
+        if (spec is not { Length: > 0 }) return;
+
+        foreach (string token in spec.Split(',', System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries))
+        {
+            if (token.StartsWith("isolate:", System.StringComparison.OrdinalIgnoreCase))
+            {
+                string want = token["isolate:".Length..];
+                if (!TryIsolateKind(want))
+                    reportError($"[OBPGame] unknown --overlay isolate kind '{want}' (valid: {string.Join(", ", IsolationCycle[1..])})");
+            }
+            else if (System.Enum.TryParse<Layer>(token, ignoreCase: true, out var layer))
+            {
+                Set(layer, true);
+            }
+            else
+            {
+                reportError($"[OBPGame] unknown --overlay token '{token}'");
+            }
+        }
+    }
+
     public void Clear()
     {
         _active = Layer.None;
