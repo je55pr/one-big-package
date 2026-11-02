@@ -24,6 +24,15 @@ public sealed class SmokeSceneFixtureOwnershipTests
         Assert.DoesNotContain("new MeshInstance3D", glue, StringComparison.Ordinal);
         Assert.DoesNotContain("new DirectionalLight3D", glue, StringComparison.Ordinal);
         Assert.DoesNotContain("new HudHealth(", glue, StringComparison.Ordinal);
+        var syntax = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(glue).GetRoot();
+        Assert.DoesNotContain(
+            syntax.DescendantNodes()
+                .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.VariableDeclarationSyntax>(),
+            declaration =>
+                declaration.Type.ToString() is "MeshInstance3D" or "DirectionalLight3D" or "HudHealth" &&
+                declaration.DescendantNodes()
+                    .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ImplicitObjectCreationExpressionSyntax>()
+                    .Any());
         Assert.DoesNotContain("BuildHudFixture(", root, StringComparison.Ordinal);
 
         Assert.Contains("root.AddChild(sun)", fixture, StringComparison.Ordinal);
