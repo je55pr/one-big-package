@@ -21,6 +21,43 @@ internal static class WorldSmokeHarness
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisRoute = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Frogs = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Rac3SeedAudit = null);
 
+    // Keep Godot's host factories at the composition seam; scenario-to-harness
+    // registration stays in the diagnostic owner, not the world-entry root.
+    internal sealed record Factories(
+        Func<Rac1EncounterDiagnosticHarness> Encounter,
+        Func<Rac1CampaignDiagnosticHarness> Campaign,
+        Func<MovementDiagnosticHarness> Movement,
+        Func<Rac1LootDiagnosticHarness> Loot,
+        Func<WeaponDiagnosticHarness> Weapons,
+        Func<CaptureDiagnosticHarness> Capture,
+        Func<Rac1WorldRouteDiagnosticHarness> Routes,
+        Func<PlayerSessionDiagnosticHarness> Player,
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario> Rac3SeedAudit);
+
+    internal static Entrypoints Bind(Factories factories) => new(
+        definition => factories.Encounter().CreateVeldin(definition),
+        definition => factories.Encounter().CreateMovementContact(definition),
+        definition => factories.Encounter().CreateCombat(definition),
+        definition => factories.Campaign().CreateCampaign(definition),
+        definition => factories.Movement().CreateMovement(definition),
+        definition => factories.Loot().CreateCrates(definition),
+        definition => factories.Loot().CreatePlacedBolts(definition),
+        definition => factories.Weapons().CreateWrench(definition),
+        definition => factories.Encounter().CreateEnemies(definition),
+        definition => factories.Capture().CreateMovement(definition),
+        definition => factories.Weapons().CreateBomb(definition),
+        definition => factories.Movement().CreateSwim(definition),
+        definition => factories.Encounter().CreatePeckbot(definition),
+        definition => factories.Encounter().CreateBirdbot(definition),
+        definition => factories.Routes().CreateMusic(definition),
+        definition => factories.Weapons().CreateWeapons(definition),
+        definition => factories.Player().CreateAudio(definition),
+        definition => factories.Routes().CreateTaxi(definition),
+        definition => factories.Campaign().CreateMission(definition),
+        definition => factories.Routes().CreateRoute(definition),
+        definition => factories.Encounter().CreateFrogs(definition),
+        factories.Rac3SeedAudit);
+
     private sealed record Entry(DiagnosticRegistration Registration, Func<Entrypoints, ObpDestination, DiagnosticRunContext, Task?>? Invoke,
         Func<Entrypoints, DiagnosticScenarioDefinition, IDiagnosticScenario>? Create = null);
     private static Entry Case(string id, Func<CommandLineArgs, bool> requested,

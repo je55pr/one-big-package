@@ -54,6 +54,52 @@ public sealed class DiagnosticRegistryTests
     }
 
     [Fact]
+    public void WorldSmokeHarnessBindingsRouteEveryScenarioToItsOwningFactoryLazily()
+    {
+        var bindings = WorldSmokeHarness.Bind(new WorldSmokeHarness.Factories(
+            () => throw new InvalidOperationException("encounter"),
+            () => throw new InvalidOperationException("campaign"),
+            () => throw new InvalidOperationException("movement"),
+            () => throw new InvalidOperationException("loot"),
+            () => throw new InvalidOperationException("weapons"),
+            () => throw new InvalidOperationException("capture"),
+            () => throw new InvalidOperationException("route"),
+            () => throw new InvalidOperationException("player"),
+            _ => throw new InvalidOperationException("rac3")));
+        (Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Create, string Owner)[] routes =
+        [
+            (bindings.VeldinPlay, "encounter"),
+            (bindings.MovementContact, "encounter"),
+            (bindings.CombatContract, "encounter"),
+            (bindings.Campaign, "campaign"),
+            (bindings.Movement, "movement"),
+            (bindings.Crates, "loot"),
+            (bindings.PlacedBolts, "loot"),
+            (bindings.Wrench, "weapons"),
+            (bindings.Enemies, "encounter"),
+            (bindings.MovementState, "capture"),
+            (bindings.BombGlove, "weapons"),
+            (bindings.NovalisSwim, "movement"),
+            (bindings.NovalisPeckbot, "encounter"),
+            (bindings.NovalisBirdbot, "encounter"),
+            (bindings.NovalisMusic, "route"),
+            (bindings.Weapons, "weapons"),
+            (bindings.PlayerAudio, "player"),
+            (bindings.MetropolisTaxi, "route"),
+            (bindings.MissionPlay, "campaign"),
+            (bindings.NovalisRoute, "route"),
+            (bindings.Frogs, "encounter"),
+            (bindings.Rac3SeedAudit, "rac3"),
+        ];
+        Assert.Equal(WorldSmokeHarness.Registry.Registrations.Length, routes.Length);
+        foreach (var (create, owner) in routes)
+        {
+            Assert.NotNull(create);
+            Assert.Equal(owner, Assert.Throws<InvalidOperationException>(() => create!(Definition)).Message);
+        }
+    }
+
+    [Fact]
     public void UnknownScenariosAndAmbiguousAliasesFailExplicitly()
     {
         Assert.Contains("Unknown diagnostic scenario", Assert.Throws<DiagnosticUnavailableException>(() => WorldSmokeHarness.Registry.Find("unknown")).Message, StringComparison.Ordinal);

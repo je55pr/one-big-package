@@ -58,21 +58,14 @@ public partial class OBPGame
             if (nativeDestination is not null)
             {
                 var scenarios = WorldSmokeHarness.Create(_args, nativeDestination, _worldSwitches,
-                    new WorldSmokeHarness.Entrypoints(definition => CreateRac1EncounterDiagnosticHarness().CreateVeldin(definition),
-                        definition => CreateRac1EncounterDiagnosticHarness().CreateMovementContact(definition),
-                        definition => CreateRac1EncounterDiagnosticHarness().CreateCombat(definition),
-                        definition => CreateRac1CampaignDiagnosticHarness().CreateCampaign(definition), definition => CreateMovementDiagnosticHarness().CreateMovement(definition),
-                        definition => CreateRac1LootDiagnosticHarness().CreateCrates(definition), definition => CreateRac1LootDiagnosticHarness().CreatePlacedBolts(definition), definition => CreateWeaponDiagnosticHarness().CreateWrench(definition),
-                        definition => CreateRac1EncounterDiagnosticHarness().CreateEnemies(definition), definition => CreateCaptureDiagnosticHarness().CreateMovement(definition), definition => CreateWeaponDiagnosticHarness().CreateBomb(definition),
-                        definition => CreateMovementDiagnosticHarness().CreateSwim(definition),
-                        definition => CreateRac1EncounterDiagnosticHarness().CreatePeckbot(definition),
-                        definition => CreateRac1EncounterDiagnosticHarness().CreateBirdbot(definition),
-                        definition => CreateRac1WorldRouteDiagnosticHarness().CreateMusic(definition), definition => CreateWeaponDiagnosticHarness().CreateWeapons(definition), definition => CreatePlayerDiagnosticHarness().CreateAudio(definition),
-                        definition => CreateRac1WorldRouteDiagnosticHarness().CreateTaxi(definition), definition => CreateRac1CampaignDiagnosticHarness().CreateMission(definition), definition => CreateRac1WorldRouteDiagnosticHarness().CreateRoute(definition),
-                        definition => CreateRac1EncounterDiagnosticHarness().CreateFrogs(definition),
+                    WorldSmokeHarness.Bind(new WorldSmokeHarness.Factories(
+                        CreateRac1EncounterDiagnosticHarness, CreateRac1CampaignDiagnosticHarness,
+                        CreateMovementDiagnosticHarness, CreateRac1LootDiagnosticHarness,
+                        CreateWeaponDiagnosticHarness, CreateCaptureDiagnosticHarness,
+                        CreateRac1WorldRouteDiagnosticHarness, CreatePlayerDiagnosticHarness,
                         definition => new Rac3RatchetSeedScenario(definition,
                             new GodotRac3RatchetSeedFixture(_worldScenes?.Current?.Resources.Rac3Gameplay, () => _player).Sample,
-                            message => GD.Print(message))), Sources.Setup.Access != SourceAccessMode.ExplicitDiagnostic, TrilogySourceDefinitions.All);
+                            message => GD.Print(message)))), Sources.Setup.Access != SourceAccessMode.ExplicitDiagnostic, TrilogySourceDefinitions.All);
                 var runner = new DiagnosticScenarioRunner(
                     new GodotDiagnosticSources(() => [.. Sources.Setup.Library.Attached.Values.Select(source =>
                         new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),

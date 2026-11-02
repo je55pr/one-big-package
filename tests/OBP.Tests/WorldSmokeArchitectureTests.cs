@@ -17,6 +17,9 @@ public sealed class WorldSmokeArchitectureTests
 
         Assert.Contains("_ports.EnterWorld(destination.DestinationId", loader, StringComparison.Ordinal);
         Assert.Contains("WorldSmokeHarness.Create(", entry, StringComparison.Ordinal);
+        Assert.Contains("WorldSmokeHarness.Bind(new WorldSmokeHarness.Factories(", entry, StringComparison.Ordinal);
+        Assert.DoesNotContain("new WorldSmokeHarness.Entrypoints(", entry, StringComparison.Ordinal);
+        Assert.Contains("internal static Entrypoints Bind(", harness, StringComparison.Ordinal);
         Assert.Contains("DiagnosticScenarioDispatch.Start(", entry, StringComparison.Ordinal);
         Assert.DoesNotContain("partial class OBPGame", harness, StringComparison.Ordinal);
         foreach (string flag in new[]
