@@ -1,10 +1,9 @@
 using Godot;
-using OBP.Runtime.Presentation;
 
 namespace OBP.Game;
 
 /// <summary>
-/// Asset-free host smoke-scene geometry and deterministic HUD fixture facts.
+/// Asset-free host smoke-scene geometry. HUD fixture values live in an engine-free owner.
 /// Application mode, scene-tree lifetime and HUD session remain with the root.
 /// </summary>
 internal static class GodotSmokeSceneFixture
@@ -34,19 +33,4 @@ internal static class GodotSmokeSceneFixture
 
     }
 
-    internal static HudPresentationState HudState()
-    {
-        return new(
-            Health: new HudHealth(3, 6, "nanotech", HudLifeState.Alive),
-            Bolts: new HudCurrency("bolts", 12_450),
-            CurrentWeapon: new HudWeapon(
-                PresentationKey: "hud.fixture.vector-blaster",
-                NameKey: "Vector Blaster",
-                Ammo: new HudAmmo(7, 12)),
-            ContextPrompt: new HudContextPrompt(
-                PromptId: "hud-fixture-console",
-                ActionId: "interact",
-                MessageKey: "Activate test console",
-                Progress: 0.42));
-    }
 }

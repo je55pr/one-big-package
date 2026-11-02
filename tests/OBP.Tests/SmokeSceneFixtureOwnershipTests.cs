@@ -20,7 +20,7 @@ public sealed class SmokeSceneFixtureOwnershipTests
         Assert.Contains("EnsurePlainEnvironment();", glue, StringComparison.Ordinal);
         Assert.Contains("GodotSmokeSceneFixture.Build(this, _worldRoot, _ui, _camera, scene)", glue, StringComparison.Ordinal);
         Assert.Contains("EnsurePlayerHud();", glue, StringComparison.Ordinal);
-        Assert.Contains("_playerHud!.Render(_hudState.BeginSession(GodotSmokeSceneFixture.HudState()))", glue, StringComparison.Ordinal);
+        Assert.Contains("_playerHud!.Render(_hudState.BeginSession(SmokeHudFixtureState.Create()))", glue, StringComparison.Ordinal);
         Assert.DoesNotContain("new MeshInstance3D", glue, StringComparison.Ordinal);
         Assert.DoesNotContain("new DirectionalLight3D", glue, StringComparison.Ordinal);
         Assert.DoesNotContain("new HudHealth(", glue, StringComparison.Ordinal);
@@ -44,7 +44,10 @@ public sealed class SmokeSceneFixtureOwnershipTests
     [Fact]
     public void SmokeHudStatePreservesTheOriginalDeterministicFixture()
     {
-        HudPresentationState state = GodotSmokeSceneFixture.HudState();
+        string pureFixture = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/SmokeHudFixtureState.cs"));
+        Assert.DoesNotContain("using Godot;", pureFixture, StringComparison.Ordinal);
+        Assert.DoesNotContain("Node3D", pureFixture, StringComparison.Ordinal);
+        HudPresentationState state = SmokeHudFixtureState.Create();
 
         Assert.Equal(new HudHealth(3, 6, "nanotech", HudLifeState.Alive), state.Health);
         Assert.Equal(new HudCurrency("bolts", 12_450), state.Bolts);

@@ -140,6 +140,6 @@ File-by-file inventory. Ownership references are **original migration issue assi
 
 The next #376 extraction delegates already-selected source-file size and build verification to the existing `SourceSetupCoordinator`, validated avatar and R&C1 equipment-bank staging to `PlayerAvatarPresentationHost`, and native equipment body-pose presentation to `PlayerEquipmentPresentationBinder`. `OBPGame.WorldEntry.cs` retains player-profile selection, animation rate validation and current-world integration without owning source IO or equipment pose rules.
 
-The synthetic `--test-scene` geometry and deterministic HUD-fixture values now live in `GodotSmokeSceneFixture`; `OBPGame` retains only smoke mode/environment selection, scene-tree wiring and the existing HUD session. The former root `BuildHudFixture` member is retired in the frozen boundary ledger.
+The synthetic `--test-scene` geometry now lives in Godot-only `GodotSmokeSceneFixture`, while deterministic HUD observations live in the engine-free `SmokeHudFixtureState` compiled by portable tests. `OBPGame` retains smoke mode/environment selection, scene-tree wiring and the existing HUD session. The former root `BuildHudFixture` member is retired in the frozen boundary ledger.
 
 The remaining root files still contain host composition and world-entry glue. The rest of #376 requires migrating those members to existing owners, deleting the WorldEntry partial, tightening architecture guards and validating the full 17-phase authorised real-input suite.

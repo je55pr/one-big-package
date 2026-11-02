@@ -2222,7 +2222,7 @@ public partial class OBPGame : Node3D
         if (scene.Equals("hud", StringComparison.OrdinalIgnoreCase))
         {
             EnsurePlayerHud();
-            _playerHud!.Render(_hudState.BeginSession(GodotSmokeSceneFixture.HudState()));
+            _playerHud!.Render(_hudState.BeginSession(SmokeHudFixtureState.Create()));
         }
     }
 
