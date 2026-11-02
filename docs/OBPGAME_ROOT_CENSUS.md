@@ -7,7 +7,7 @@ This is an ownership and file accounting snapshot, not a claim that final root c
 | Metric | Frozen origin | Current checkpoint |
 | --- | ---: | ---: |
 | Root-declaring files | 122 | 2 |
-| Root-declaring file lines | 27362 | 3079 |
+| Root-declaring file lines | 27362 | 3083 |
 
 File-by-file inventory. Ownership references are **original migration issue assignments**, not claims about the destination class:
 
@@ -67,7 +67,7 @@ File-by-file inventory. Ownership references are **original migration issue assi
 | `game/scripts/OBPGame.CaptureSession.cs` | #356 | 84 | Retired | 0 |
 | `game/scripts/OBPGame.ControllerSettings.cs` | #348 | 306 | Retired | 0 |
 | `game/scripts/OBPGame.CrateBolts.cs` | #365 | 108 | Retired | 0 |
-| `game/scripts/OBPGame.cs` | #376 | 840 | Active | 2677 |
+| `game/scripts/OBPGame.cs` | #376 | 840 | Active | 2681 |
 | `game/scripts/OBPGame.Destinations.cs` | #347 | 353 | Retired | 0 |
 | `game/scripts/OBPGame.EquipmentPresentation.cs` | #350 | 151 | Retired | 0 |
 | `game/scripts/OBPGame.FusionLab.cs` | #347 | 100 | Retired | 0 |

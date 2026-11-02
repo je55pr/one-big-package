@@ -19,7 +19,9 @@ public sealed class DebugOverlaySpecOwnershipTests
         int clear = owner.IndexOf("public void Clear()", parser, StringComparison.Ordinal);
         Assert.True(parser >= 0 && clear > parser);
         string policy = owner[parser..clear];
-        Assert.True(policy.IndexOf("Clear();", StringComparison.Ordinal) < policy.IndexOf("foreach (string token", StringComparison.Ordinal));
+        int clearCall = policy.IndexOf("Clear();", StringComparison.Ordinal);
+        int tokenLoop = policy.IndexOf("foreach (string token", StringComparison.Ordinal);
+        Assert.True(clearCall >= 0 && tokenLoop > clearCall);
         Assert.Contains("TryIsolateKind(want)", policy, StringComparison.Ordinal);
         Assert.Contains("System.Enum.TryParse<Layer>", policy, StringComparison.Ordinal);
         Assert.Contains("Set(layer, true)", policy, StringComparison.Ordinal);

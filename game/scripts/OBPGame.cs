@@ -1496,7 +1496,11 @@ public partial class OBPGame : Node3D
             hud.Render(null, false);
             return;
         }
-        if (_world is not { } world || _sceneResult is not { } scene) return;
+        if (_world is not { } world || _sceneResult is not { } scene)
+        {
+            hud.Render(null, false);
+            return;
+        }
 
         var player = _player is { } candidate && IsInstanceValid(candidate) ? candidate : null;
         var resources = _worldScenes?.Current?.Resources;

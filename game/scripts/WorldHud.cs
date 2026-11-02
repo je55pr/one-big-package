@@ -45,7 +45,11 @@ internal partial class WorldHud : Label
             return;
         }
         if (frame is null) return;
+        Text = Format(frame);
+    }
 
+    internal static string Format(WorldHudFrame frame)
+    {
         var w = frame.World;
         var r = frame.Scene;
         var rac2Entry = w.Game == ObpSourceGame.Rac2 ? Rac2PlanetCatalogue.Find(w.LevelId) : null;
@@ -68,7 +72,7 @@ internal partial class WorldHud : Label
             ground = frame.PlayerOnFloor ? "grounded" : "air";
         }
 
-        Text =
+        return
             $"Game: {gameLabel}   Build: {w.BuildId}\n" +
             $"Destination: {destinationName}\n" +
             $"Level id: {w.LevelId}   Container: {container}   (switch #{frame.Switches})\n" +

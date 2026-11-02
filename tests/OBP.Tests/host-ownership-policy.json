@@ -6,10 +6,10 @@
     "Hash": "f43664300f28c86f0c14e3dcd91890c6f79954b97b49d3a26174deed65de3977"
   },
   {
-    "Key": "game/scripts/WorldHud.cs::WorldHud.Render(WorldHudFrame?,bool)",
+    "Key": "game/scripts/WorldHud.cs::WorldHud.Format(WorldHudFrame)",
     "Kind": "adapter",
     "Reason": "Read-only world-debug UI formats the exact source/level provenance from its copied WorldHudFrame, and never selects the shared player or holds a world lease. #376 removes provenance selection and debug text formatting from OBPGame; source, scene, native debug and player-position observations are bound independently by the existing root. WorldHudOwnershipTests and source-neutral guard protect the boundary.",
-    "Hash": "34ee6705d226c20589d31591bcbb72c97f883771be4e7e8b18bca0e06e0385c3"
+    "Hash": "ee182ebe877fab1fc73e4fc747750a41cb9fb9337e4e3c9e481ae8155e4e950a"
   },
   {
     "Key": "game/scripts/ApplicationNavigationCoordinator.cs::ApplicationNavigationCoordinator.Choose(ObpDestination)",
