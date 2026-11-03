@@ -21,11 +21,6 @@ public partial class OBPGame
     private RuntimeSpawn? _worldPlayerEntry => _worldScenes?.PlayerEntry;
     private float _worldEntrySnapReach => _worldScenes?.EntrySnapReach ?? 8;
 
-    private sealed class WorldSource(Func<WorldEntryRequest, PreparedWorldEntry> prepare) : IWorldEntrySource
-    {
-        public PreparedWorldEntry Prepare(WorldEntryRequest request) => prepare(request);
-    }
-
     private bool EnterWorld(string destinationId, Func<RuntimeWorld> load, ObpDestination? nativeDestination,
         string? sourcePath, FusionLabDefinition? lab = null)
     {
@@ -37,20 +32,14 @@ public partial class OBPGame
             PrepareSelectedPlayerAssets();
             CaptureReplay.PrepareControllers(() => { _playerNative!.ResetReplayControllers(); FusionWeapons.BindPersistent(_playerNative.Weapons); });
             var request = _worldEntries!.Request(destinationId, PlayerEntryMode);
-            var source = new WorldSource(entry =>
-            {
-                var world = load();
-                var spawn = WorldEntryPreparationPolicy.ValidateSourceEntry(world);
-                return new(world, spawn, []); // Mixed native actor adapters are registered by #256.
-            });
-            var plan = _worldEntries.Prepare(request, source, PlayerAvatarPresentationHost.Registry);
+            var plan = _worldEntries.Prepare(request,
+                WorldEntryPreparationPolicy.CreateWorldSource(load), PlayerAvatarPresentationHost.Registry);
             using var staged = WorldScenes.Prepare(plan, nativeDestination, lab, WorldEntryPreparationPolicy.SourceEntrySnapReach(plan.Prepared.World),
                 () => new GodotWorldResources(WorldHost.PrepareScene(plan.Prepared.World, destinationId, WorldEntryPreparationPolicy.WorldOptions(plan.Prepared.World, _args))));
             // Recheck attachments before the destructive boundary. Native source
             // data and selected player assets are independent dependencies.
             PrepareSelectedPlayerAssets();
-            if (WorldEntryPreparationPolicy.SourceFileStamp(sourcePath) != worldSourceStamp)
-                throw new InvalidDataException("The world source changed during preparation. Reattach it in Game Sources.");
+            WorldEntryPreparationPolicy.RequireUnchangedSourceFile(sourcePath, worldSourceStamp);
             if (!Sources.RequireOrdinary("world activation"))
                 return false;
             _worldEntries.Commit(plan, WorldScenes);

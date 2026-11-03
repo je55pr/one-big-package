@@ -5366,6 +5366,8 @@
     "game/scripts/OBPGame.cs::OBPGame::method:BuildHudFixture():void:private",
     "game/scripts/OBPGame.cs::OBPGame::method:ClearBootstrapSceneArtifacts():void:private",
     "game/scripts/OBPGame.cs::OBPGame::method:EnsurePlainEnvironment():void:private",
+    "game/scripts/OBPGame.WorldEntry.cs::OBPGame+WorldSource::declaration:ClassDeclaration:private,sealed:: IWorldEntrySource::( Func < WorldEntryRequest , PreparedWorldEntry > prepare )",
+    "game/scripts/OBPGame.WorldEntry.cs::OBPGame+WorldSource::method:Prepare(:WorldEntryRequest):PreparedWorldEntry:public",
     "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:BeginSourceWorldEntry(:RuntimeWorld):void:private",
     "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:CommitSourceWorldEntry(:RuntimeWorld):void:private",
     "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:SourceEntrySnapReach(:RuntimeWorld):float:private,static",

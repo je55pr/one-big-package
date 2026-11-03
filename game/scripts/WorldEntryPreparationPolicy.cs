@@ -20,6 +20,26 @@ internal static class WorldEntryPreparationPolicy
         return (file.Length, file.LastWriteTimeUtc.Ticks);
     }
 
+    // Source preparation owns the native world loading adapter, not the Godot
+    // composition root. Validation still runs before a prepared plan is staged.
+    private sealed class PlannedWorldSource(Func<RuntimeWorld> load) : IWorldEntrySource
+    {
+        public PreparedWorldEntry Prepare(WorldEntryRequest request)
+        {
+            var world = load();
+            var spawn = ValidateSourceEntry(world);
+            return new(world, spawn, []); // Mixed native actor adapters are registered by #256.
+        }
+    }
+
+    internal static IWorldEntrySource CreateWorldSource(Func<RuntimeWorld> load) => new PlannedWorldSource(load);
+
+    internal static void RequireUnchangedSourceFile(string? path, (long Length, long Written)? expected)
+    {
+        if (SourceFileStamp(path) != expected)
+            throw new InvalidDataException("The world source changed during preparation. Reattach it in Game Sources.");
+    }
+
     internal static RuntimeSpawn ValidateSourceEntry(RuntimeWorld world)
     {
         if (world.Game == ObpSourceGame.Rac1 && world.PlayerStart is null)
