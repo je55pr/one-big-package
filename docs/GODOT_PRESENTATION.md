@@ -39,8 +39,9 @@ The single owner of one loaded world's Godot side:
   ambient / fog via `EnvResolver`.
 
 API: `Load(hostNode, sceneParent, world, name, options, preparedScene = null)` /
-`Unload()` (frees everything + `GC.Collect`, leak-verified by the stress
-harness) / `Tick(...)`.
+`Unload()` (frees the world's owned scene resources + `GC.Collect`; the stress
+harness observes zero orphan nodes, but GPU-resource leak status is unproven, see
+[AVATAR_MESH_PROFILING.md](AVATAR_MESH_PROFILING.md)) / `Tick(...)`.
 
 Each world lease's `GodotWorldResources` owns its own `WorldHost` (not one
 session-wide host). During staged world entry `WorldHost.PrepareScene` builds the

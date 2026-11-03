@@ -3,8 +3,8 @@
 **Audit bases:** issue freeze `3d9c4b5` (49 files), current dev `1aab1b4` (159 files).
 **Disposition:** retain the 49 frozen links, remove no links, add no projects, and harden coverage attribution plus future compilation-mode guards.
 
-> **Snapshot note:** the counts in this audit are as of its stated bases. At the
-> time of the docs audit on `dev`, `tests/OBP.Tests/OBP.Tests.csproj` links 170
+> **Snapshot note:** the counts in this audit (49 frozen, 159 at `1aab1b4`) are as of
+> their stated bases. At the time of the later docs audit on `dev` @ `8993418`, `tests/OBP.Tests/OBP.Tests.csproj` links 170
 > host files (59 under `game/scripts`, 111 under `game/diagnostics`); the
 > re-audit after host decomposition is tracked by #485. The guards described
 > below evaluate all current links, not these totals.
