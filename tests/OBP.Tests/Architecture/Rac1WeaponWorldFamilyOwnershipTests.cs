@@ -22,7 +22,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
         string family = Script("Rac1TeslaHost.cs");
         string parent = Script("Rac1WeaponHost.cs");
         string arsenal = Script("Rac1ArsenalUseHost.cs");
-        string rootComposition = Script("OBPGame.cs");
+        string rootComposition = CompositionSources.Application;
 
         Assert.Contains("Tesla = new(arsenal.Tesla, Contacts, Beams)", parent, StringComparison.Ordinal);
         Assert.Contains("Tesla.Reset()", parent, StringComparison.Ordinal);
@@ -72,7 +72,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
         string parent = Script("Rac1WeaponHost.cs");
         string rootArsenal = Script("Rac1ArsenalUseHost.cs");
         string deployable = Script("Rac1ArsenalDeployableHost.cs");
-        string application = Script("OBPGame.cs");
+        string application = CompositionSources.Application;
 
         Assert.Contains("Taunter = new(arsenal.Taunter, Contacts)", parent, StringComparison.Ordinal);
         Assert.Contains("Deployables = new(arsenal.Deployables, NextArsenalId, Taunter)", parent, StringComparison.Ordinal);
@@ -91,7 +91,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
     public void TaunterPreservesSourceNativeConeDurationAndHitCadence()
     {
         string family = Script("Rac1TaunterHost.cs");
-        string application = Script("OBPGame.cs");
+        string application = CompositionSources.Application;
         Assert.Contains("_taunts.GetValueOrDefault(instanceIndex) > ports.WorldTick()", family, StringComparison.Ordinal);
         Assert.Contains("_taunts[node.Source.InstanceIndex] = tick + 60", family, StringComparison.Ordinal);
         Assert.Contains("tick % 8 == 0", family, StringComparison.Ordinal);
@@ -123,7 +123,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
 
         string host = Script("Rac1WalloperHost.cs");
         string parent = Script("Rac1WeaponHost.cs");
-        string world = Script("OBPGame.cs");
+        string world = CompositionSources.Application;
         string arsenal = Script("Rac1ArsenalUseHost.cs");
         Assert.Contains("Walloper = new(arsenal.Walloper, Contacts)", parent, StringComparison.Ordinal);
         Assert.Contains("Walloper.Reset()", parent, StringComparison.Ordinal);
@@ -177,7 +177,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
         string host = Script("Rac1ArsenalDeployableHost.cs");
         string weapon = Script("Rac1WeaponHost.cs");
         string arsenal = Script("Rac1ArsenalUseHost.cs");
-        string rootComposition = Script("OBPGame.cs");
+        string rootComposition = CompositionSources.Application;
         Assert.Contains("Deployables = new(arsenal.Deployables, NextArsenalId, Taunter)", weapon, StringComparison.Ordinal);
         Assert.Contains("Deployables.Reset()", weapon, StringComparison.Ordinal);
         Assert.Contains("Deployables.Dispose()", weapon, StringComparison.Ordinal);
@@ -195,7 +195,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
     public void ArsenalDeployablesPreserveNativeMovementAdmissionAndLiveDiagnostics()
     {
         string host = Script("Rac1ArsenalDeployableHost.cs");
-        string root = Script("OBPGame.cs");
+        string root = CompositionSources.Application;
         Assert.Contains("Rac1ArsenalRules.DecoyGrowthPerTick", host, StringComparison.Ordinal);
         Assert.Contains("Rac1ArsenalRules.DecoyLifetime", host, StringComparison.Ordinal);
         Assert.Contains("Rac1ArsenalRules.DroneCapacity", host, StringComparison.Ordinal);
@@ -262,7 +262,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
     {
         string family = Script("Rac1ArsenalMissileHost.cs");
         string owner = Script("Rac1WeaponHost.cs");
-        string application = Script("OBPGame.cs");
+        string application = CompositionSources.Application;
         Assert.Contains("Missiles = new(arsenal.Missiles, GuidedCamera, NextArsenalId)", owner, StringComparison.Ordinal);
         Assert.Contains("camera.Begin(ports.SceneRoot(), player)", family, StringComparison.Ordinal);
         Assert.Contains("camera.Step(to,", family, StringComparison.Ordinal);
@@ -281,22 +281,22 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
     [Fact]
     public void ContactCallbacksDoNotResolveTheWorldDuringHostConstruction()
     {
-        var tree = HostOwnershipAudit.Host.Value.SyntaxTrees
-            .Single(tree => tree.FilePath == "game/scripts/OBPGame.cs");
+        var trees = HostOwnershipAudit.Host.Value.SyntaxTrees
+            .Where(tree => tree.FilePath is "game/scripts/OBPGame.cs" or "game/diagnostics/ApplicationDiagnostics.cs").ToArray();
         foreach (string name in new[]
         {
             "CreateFusionWeaponHost", "CreateRac1WorldModule",
             "CreateRac1EnemyHost", "CreateActorHost", "CreateWeaponDiagnosticHarness"
         })
         {
-            var factory = tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
+            var factory = trees.SelectMany(tree => tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>())
                 .Single(method => method.Identifier.ValueText == name);
             var contacts = factory.DescendantNodes().OfType<MemberAccessExpressionSyntax>()
                 .Where(access => access.ToString().StartsWith("Rac1World.Weapons.Contacts.", StringComparison.Ordinal));
             Assert.All(contacts, access => Assert.Contains(access.Ancestors(),
                 ancestor => ancestor is AnonymousFunctionExpressionSyntax));
         }
-        string composition = Script("OBPGame.cs");
+        string composition = CompositionSources.Application;
         Assert.Contains("node => Rac1World.Enemies.IsRac1GameplayActive(node)", composition, StringComparison.Ordinal);
         Assert.Contains("node => Rac1World.Enemies.Frogs.IsQueenNode(node)", composition, StringComparison.Ordinal);
         Assert.DoesNotContain("Rac1World.Weapons.Contacts.RayExclusions,", composition, StringComparison.Ordinal);

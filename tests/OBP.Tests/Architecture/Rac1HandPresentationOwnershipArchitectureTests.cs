@@ -10,7 +10,7 @@ public sealed class Rac1HandPresentationOwnershipArchitectureTests
     public void HandVisibilityAndAttachmentMutationBelongToTheExistingEquipmentBinder()
     {
         string entry = Script("PlayerAvatarPresentationHost.cs");
-        string root = Script("OBPGame.cs");
+        string root = CompositionSources.Application;
         string binder = Script("PlayerEquipmentPresentationBinder.cs");
 
         Assert.DoesNotContain("private void HoldSelectedRac1HandItem(", entry, StringComparison.Ordinal);
@@ -43,7 +43,7 @@ public sealed class Rac1HandPresentationOwnershipArchitectureTests
     [Fact]
     public void WorldFlagsAreBorrowedWithoutMovingInventoriesOrNativeWorldOwnership()
     {
-        string root = Script("OBPGame.cs");
+        string root = CompositionSources.Application;
         string binder = Script("PlayerEquipmentPresentationBinder.cs");
 
         Assert.Contains("private Rac1HandPresentationContext Rac1HandPresentation => new(", root);

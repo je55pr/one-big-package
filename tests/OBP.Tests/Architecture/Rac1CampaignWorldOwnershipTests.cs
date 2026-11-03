@@ -34,7 +34,7 @@ public sealed class Rac1CampaignWorldOwnershipTests
         Assert.Contains("campaign.CollectedNovalisGoldBolts", persistent, StringComparison.Ordinal);
         Assert.Contains("Rac1CampaignSaveBatcher? _batcher", persistent, StringComparison.Ordinal);
         Assert.Contains("new(this)", Script("Rac1CampaignHost.cs"), StringComparison.Ordinal);
-        Assert.Contains("() => _rac1BoltWallet", Script("OBPGame.cs"), StringComparison.Ordinal);
+        Assert.Contains("() => _rac1BoltWallet", CompositionSources.Application, StringComparison.Ordinal);
     }
 
     [Fact]

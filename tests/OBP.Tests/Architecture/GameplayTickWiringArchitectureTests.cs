@@ -9,7 +9,7 @@ public sealed class GameplayTickWiringArchitectureTests
     [Fact]
     public void RootPhysicsProcessAndRenderProcessDispatchToOneWorldLeaseSchedule()
     {
-        string root = Script("OBPGame.cs");
+        string root = CompositionSources.Application;
         string physics = Between(root, "public override void _PhysicsProcess", "public override void _Process");
         string frame = Between(root, "public override void _Process", "public override void _UnhandledInput");
         Assert.Contains("GameplayTicks?.Run(GameplayTickPhase.Physics, delta)", physics);
@@ -27,7 +27,7 @@ public sealed class GameplayTickWiringArchitectureTests
     public void WorldActivationRegistersOnceAndRetirementStopsCallbacksBeforeTeardown()
     {
         string entry = Between(Script("GodotWorldResources.cs"), "internal void Activate(", "internal void BindGameplayTicks(");
-        string root = Script("OBPGame.cs");
+        string root = CompositionSources.Application;
         string retire = Between(root, "private void RetireWorldBindings", "private void ApplyOverlaySpec");
         Assert.Contains("WorldGameplayTickBindings.Activate(entry", entry);
         Assert.Contains("BindPlayer(application.Player)", entry);
@@ -61,7 +61,7 @@ public sealed class GameplayTickWiringArchitectureTests
         Assert.Contains("resources.Rac1Gameplay?.RegisterTicks", binder);
         Assert.Contains("resources.Rac2Gameplay?.RegisterTicks", binder);
         Assert.DoesNotContain("Rac3Gameplay?.RegisterTicks", binder, StringComparison.Ordinal);
-        Assert.Contains("GameplayTicks?.TryHandleInput(@event)", Script("OBPGame.cs"));
+        Assert.Contains("GameplayTicks?.TryHandleInput(@event)", CompositionSources.Application);
     }
 
     private static string Between(string text, string begin, string end)

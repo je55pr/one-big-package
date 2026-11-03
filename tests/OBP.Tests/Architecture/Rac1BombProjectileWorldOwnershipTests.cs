@@ -27,7 +27,7 @@ public sealed class Rac1BombProjectileWorldOwnershipTests
         string host = Script("Rac1BombProjectileHost.cs");
         Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1Projectiles.cs")));
         string entry = Script("PlayerAvatarPresentationHost.cs");
-        string application = Script("OBPGame.cs");
+        string application = CompositionSources.Application;
 
         Assert.Contains("Bombs = new(Context, Presentation, Weapons, Enemies, Breakables, bomb)", module, StringComparison.Ordinal);
         Assert.Contains("Bombs.Reset()", module, StringComparison.Ordinal);
@@ -69,7 +69,7 @@ public sealed class Rac1BombProjectileWorldOwnershipTests
     public void NativeDamageAndHostEffectsRemainBehindExistingAuthorities()
     {
         string host = Script("Rac1BombProjectileHost.cs");
-        string root = Script("OBPGame.cs");
+        string root = CompositionSources.Application;
         Assert.Contains("_breakables.ResolveNovalisBombBreakables(origin, motion.BlastRadius)", host, StringComparison.Ordinal);
         Assert.Contains("_context.BombGlove!.ResolveExplosionVolume(id, facts)", host, StringComparison.Ordinal);
         Assert.Contains("ports.ActorBlast(generation, id, origin, motion.BlastRadius)", host, StringComparison.Ordinal);

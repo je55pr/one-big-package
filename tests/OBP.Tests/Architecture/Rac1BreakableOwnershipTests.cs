@@ -34,7 +34,7 @@ public sealed class Rac1BreakableOwnershipTests
     {
         string explosive = Script("Rac1ExplosiveCrateAdapter.cs");
         string novalis = Script("Rac1NovalisBreakableAdapter.cs");
-        string root = Script("OBPGame.cs");
+        string root = CompositionSources.Application;
         Assert.Contains("source.SourceGame != ObpSourceGame.Rac1", explosive, StringComparison.Ordinal);
         Assert.Contains("new(context.MobyRuntime, ports.ChooseFrames)", explosive, StringComparison.Ordinal);
         Assert.Contains("context.MobyRuntime.CanDispatchDamage(damage)", explosive, StringComparison.Ordinal);

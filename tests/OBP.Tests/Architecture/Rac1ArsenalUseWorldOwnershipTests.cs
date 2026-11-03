@@ -93,7 +93,7 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
     public void BeamAndUseAdmissionRetainNativeGatesAndBorrowedPlayerInputs()
     {
         string host = Script("Rac1ArsenalUseHost.cs");
-        string root = Script("OBPGame.cs");
+        string root = CompositionSources.Application;
         string weapons = Script("Rac1WeaponUsePresentationHost.cs");
 
         Assert.Contains("Func<Rac1WeaponId> Equipped", host, StringComparison.Ordinal);
@@ -125,7 +125,7 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
     {
         string host = Script("Rac1ArsenalUseHost.cs");
         string parent = Script("Rac1WeaponHost.cs");
-        string root = Script("OBPGame.cs");
+        string root = CompositionSources.Application;
         string weapons = Script("Rac1WeaponUsePresentationHost.cs");
 
         Assert.Contains("internal bool Held => !_disposed && _held", host, StringComparison.Ordinal);

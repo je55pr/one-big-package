@@ -24,7 +24,7 @@ public sealed class FusionSelectionWorldLeaseTests
         Assert.Contains("world.UsePresentation.SetPreview(disable)", leaseGuard.Statement.ToString(), StringComparison.Ordinal);
         Assert.Contains("report(", leaseGuard.Else!.Statement.ToString(), StringComparison.Ordinal);
 
-        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
+        string root = CompositionSources.Application;
         Assert.Equal(4, root.Split("Rac1WeaponUsePresentationHost.RequestPreview(", StringSplitOptions.None).Length - 1);
         Assert.DoesNotContain("Rac1World.UsePresentation.SetPreview", root, StringComparison.Ordinal);
         string menu = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PauseMenuUi.cs"));
@@ -36,7 +36,7 @@ public sealed class FusionSelectionWorldLeaseTests
     {
         // These diagnostic delegates can outlive their world, and the original
         // camera fields were nullable before the weapon owner extraction.
-        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
+        string source = CompositionSources.Diagnostics;
         var syntax = CSharpSyntaxTree.ParseText(source).GetRoot();
         foreach (string name in new[]
         {

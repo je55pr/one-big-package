@@ -95,7 +95,7 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
         Assert.Contains("_materials = null", views, StringComparison.Ordinal);
         string root = Script("Rac1WeaponUsePresentationHost.cs");
         Assert.Contains("Equipment.NativeViews.Attach(State.SourcePath(), State.CurrentWorld()!, avatarView, ports.Avatar.Avatar)", root, StringComparison.Ordinal);
-        Assert.Contains("Sources.Setup.Library.Get(ObpSourceGame.Rac1)!.Path", Script("OBPGame.cs"), StringComparison.Ordinal);
+        Assert.Contains("Sources.Setup.Library.Get(ObpSourceGame.Rac1)!.Path", CompositionSources.Application, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -191,7 +191,7 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
 
         string combat = Script("Rac1WeaponPlayerInputHost.cs");
         Assert.Contains("views.PlaySelection(weapon)", combat, StringComparison.Ordinal);
-        Assert.Contains("weapon => _equipmentPresentation.NativeViews.PlaySelection(weapon)", Script("OBPGame.cs"), StringComparison.Ordinal);
+        Assert.Contains("weapon => _equipmentPresentation.NativeViews.PlaySelection(weapon)", CompositionSources.Application, StringComparison.Ordinal);
         string entry = Script("PlayerAvatarPresentationHost.cs");
         int cleanup = entry.IndexOf("internal void ClearWorldVisual(", StringComparison.Ordinal);
         int subscription = entry.IndexOf("internal void Subscribe(", cleanup, StringComparison.Ordinal);
@@ -203,7 +203,7 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
         string binder = Script("PlayerEquipmentPresentationBinder.cs");
         Assert.Contains("NativeViews.RefreshAttachment(state.Inventory.Equipped, controller)", binder, StringComparison.Ordinal);
         Assert.Contains("NativeViews.RefreshVisibility(item => IsRac1HandEquipmentVisible(item, state))", binder, StringComparison.Ordinal);
-        Assert.Contains("_equipmentPresentation.NativeViews.Assets", Script("OBPGame.cs"), StringComparison.Ordinal);
-        Assert.Contains("_equipmentPresentation.NativeViews.View(weapon)", Script("OBPGame.cs"), StringComparison.Ordinal);
+        Assert.Contains("_equipmentPresentation.NativeViews.Assets", CompositionSources.Application, StringComparison.Ordinal);
+        Assert.Contains("_equipmentPresentation.NativeViews.View(weapon)", CompositionSources.Application, StringComparison.Ordinal);
     }
 }

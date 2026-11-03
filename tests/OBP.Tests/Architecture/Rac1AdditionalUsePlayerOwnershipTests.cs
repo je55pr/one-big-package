@@ -127,7 +127,7 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
     public void ReplaySelectionPreviewAndDiagnosticsBorrowTheSamePlayerState()
     {
         string host = Script("Rac1AdditionalUseHost.cs");
-        string root = Script("OBPGame.cs");
+        string root = CompositionSources.Application;
         string combat = Script("Rac1WeaponPlayerInputHost.cs");
         string weapons = Script("Rac1WeaponUsePresentationHost.cs");
         string worldEntry = Script("PlayerAvatarPresentationHost.cs");
