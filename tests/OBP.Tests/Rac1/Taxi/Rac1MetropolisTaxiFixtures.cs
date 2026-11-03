@@ -7,7 +7,10 @@ using OBP.Runtime;
 namespace OBP.Tests;
 
 /// <summary>
-/// Synthetic Kerwan taxi world shared by the Metropolis taxi tests. Synthetic data only; no retail content.
+/// Synthetic Kerwan taxi world shared by the Metropolis taxi tests. The world is built in code, not read from a
+/// disc, but <see cref="Placements"/> holds retail-derived Kerwan coordinates, classes and outbound point counts.
+/// <c>RetailKerwanPvarsSelectExactOutboundSplines</c> also uses them as the expected values for the retail import,
+/// so edit them only to correct the retail expectation, not to shape a synthetic scenario.
 /// </summary>
 internal static class Rac1MetropolisTaxiFixtures
 {

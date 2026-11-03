@@ -9,48 +9,64 @@ using static OBP.Tests.Rac1MetropolisTaxiFixtures;
 namespace OBP.Tests;
 
 /// <summary>
-/// Metropolis taxi checks against the retail Kerwan level (<c>OBP_RAC1_ISO</c>). Each test returns without
-/// asserting when the disc is not configured, exactly as before this file was split out.
+/// Retail Kerwan world for the taxi tests, built once per test class. Follows the other R&amp;C1 retail suites:
+/// the disc is opened through <see cref="Rac1VerifiedDisc"/> (authority size and SHA-256 are checked), and tests
+/// skip when <c>OBP_RAC1_ISO</c> is not set.
 /// </summary>
-public sealed class Rac1MetropolisTaxiRetailTests
+public sealed class Rac1KerwanRetailFixture : IDisposable
 {
-    private readonly ITestOutputHelper _output;
+    private readonly FileRandomAccessReader? _reader;
 
-    public Rac1MetropolisTaxiRetailTests(ITestOutputHelper output) => _output = output;
-
-    /// <summary>The imported retail Kerwan world; keeps the disc reader open for the test's lifetime.</summary>
-    private sealed class RetailKerwan : IDisposable
+    public Rac1KerwanRetailFixture()
     {
-        private readonly FileRandomAccessReader _reader;
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        if (string.IsNullOrWhiteSpace(iso)) return;
 
-        private RetailKerwan(FileRandomAccessReader reader, RuntimeWorld world)
+        _reader = Rac1VerifiedDisc.Open(iso);
+        try
         {
-            _reader = reader;
-            World = world;
+            World = Rac1WorldImport.Build(_reader, 3);
         }
-
-        public RuntimeWorld World { get; }
-
-        public static RetailKerwan? TryOpen()
+        catch
         {
-            string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
-            if (string.IsNullOrWhiteSpace(iso) || !File.Exists(iso)) return null;
-
-            var reader = new FileRandomAccessReader(iso);
-            try
-            {
-                return new RetailKerwan(reader, Rac1WorldImport.Build(reader, 3));
-            }
-            catch
-            {
-                reader.Dispose();
-                throw;
-            }
+            _reader.Dispose();
+            throw;
         }
-
-        public void Dispose() => _reader.Dispose();
     }
 
+    /// <summary>The imported Kerwan world, or <see langword="null"/> when <c>OBP_RAC1_ISO</c> is not set.</summary>
+    public RuntimeWorld? World { get; }
+
+    public void Dispose() => _reader?.Dispose();
+}
+
+/// <summary>
+/// Metropolis taxi checks against the retail Kerwan level (<c>OBP_RAC1_ISO</c>). Tests only read the shared world;
+/// every test builds its own <see cref="Rac1MetropolisTaxiSession"/>.
+/// </summary>
+public sealed class Rac1MetropolisTaxiRetailTests : IClassFixture<Rac1KerwanRetailFixture>
+{
+    private readonly ITestOutputHelper _output;
+    private readonly Rac1KerwanRetailFixture _kerwan;
+
+    public Rac1MetropolisTaxiRetailTests(ITestOutputHelper output, Rac1KerwanRetailFixture kerwan)
+    {
+        _output = output;
+        _kerwan = kerwan;
+    }
+
+    private RuntimeWorld KerwanWorld()
+    {
+        Skip.If(_kerwan.World is null, "OBP_RAC1_ISO not set");
+        return _kerwan.World!;
+    }
+
+    private static Rac1MetropolisTaxiSession NewSession(RuntimeWorld world)
+    {
+        var session = Rac1MetropolisTaxiSession.TryCreate(world);
+        Assert.NotNull(session);
+        return session;
+    }
     private static byte[] Pvar(RuntimeWorld world, int instance) =>
         world.DynamicObjects!.Single(o => o.InstanceIndex == instance)
             .NativePayloads!.Single(p => p.Format == "rac1-pvar").Data;
@@ -58,13 +74,11 @@ public sealed class Rac1MetropolisTaxiRetailTests
     private static int PvarInt(byte[] pvar, int offset) =>
         System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(offset, 4));
 
-    [Fact]
+    [SkippableFact]
     public void RetailTaxisLogNormalSpeedPathDurationsAndMeshDirection()
     {
-        using var retail = RetailKerwan.TryOpen();
-        if (retail is null) return;
-        var world = retail.World;
-        var session = Rac1MetropolisTaxiSession.TryCreate(world)!;
+        var world = KerwanWorld();
+        var session = NewSession(world);
         foreach (var stop in session.Stops.Where(s => s.OutboundPath.Count > 1))
         {
             var actor = world.DynamicObjects!.Single(o => o.InstanceIndex == stop.InstanceIndex);
@@ -109,12 +123,10 @@ public sealed class Rac1MetropolisTaxiRetailTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public void RetailKerwanTaxisUseNativeSeekingAndCompleteBothFlightFamilies()
     {
-        using var retail = RetailKerwan.TryOpen();
-        if (retail is null) return;
-        var session = Rac1MetropolisTaxiSession.TryCreate(retail.World)!;
+        var session = NewSession(KerwanWorld());
         Assert.All(session.Stops.Where(s => s.OutboundPath.Count > 1),
             stop => Assert.True(stop.NativeSeekEvidenced));
 
@@ -122,11 +134,11 @@ public sealed class Rac1MetropolisTaxiRetailTests
         Assert.NotNull(inbound.ApproachTrigger);
         session.TickTraffic(inbound.ApproachTrigger!.Center, 0);
         int frames = 0;
-        Rac1TaxiPoint last = inbound.ApproachPath![0];
+        Assert.NotEmpty(inbound.ApproachPath!);
         while (session.PhaseOf(919) != Rac1MetropolisTaxiSession.TrafficPhase.Docked &&
             frames++ < 24000)
-            last = session.TickTraffic(inbound.ApproachTrigger.Center, 1d / 60)
-                .Single(f => f.InstanceIndex == 919).Position;
+            _ = session.TickTraffic(inbound.ApproachTrigger.Center, 1d / 60)
+                .Single(f => f.InstanceIndex == 919);
         Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.Docked, session.PhaseOf(919));
         Assert.InRange(frames, 151, 24000);
 
@@ -156,21 +168,19 @@ public sealed class Rac1MetropolisTaxiRetailTests
         Assert.InRange(frames, 301, 24000);
     }
 
-    [Theory]
+    [SkippableTheory]
     [InlineData(961, 1, 2, 0x0bce, 0x0bcf)]
     [InlineData(962, 3, 4, 0x0bcb, 0x0bcd)]
     public void RetailClass1012HudMessagesFollowAuthoredNextSideSelectors(
         int instance, int sideZero, int sideOne,
         int sourceDockMessage, int otherEndMessage)
     {
-        using var retail = RetailKerwan.TryOpen();
-        if (retail is null) return;
-        var world = retail.World;
+        var world = KerwanWorld();
         var pvar = Pvar(world, instance);
         Assert.Equal(sideZero, PvarInt(pvar, 0x98));
         Assert.Equal(sideOne, PvarInt(pvar, 0x9c));
 
-        var taxis = Rac1MetropolisTaxiSession.TryCreate(world)!;
+        var taxis = NewSession(world);
         var stop = taxis.Stops.Single(s => s.InstanceIndex == instance);
         var lease = Assert.IsType<Rac1TaxiNativeHudElementLease>(stop.NativeHudElementLease);
         Assert.Equal(
@@ -194,15 +204,13 @@ public sealed class Rac1MetropolisTaxiRetailTests
             stop.NativeHudSelectors.Value.MessageForCurrentSide(0));
     }
 
-    [Theory]
+    [SkippableTheory]
     [InlineData(961, 0)]
     [InlineData(962, 1)]
     public void RetailClass1012RepositionsAlongCorrectUnoccupiedNativeLeg(
         int instance, int initialSide)
     {
-        using var retail = RetailKerwan.TryOpen();
-        if (retail is null) return;
-        var session = Rac1MetropolisTaxiSession.TryCreate(retail.World)!;
+        var session = NewSession(KerwanWorld());
         var stop = session.Stops.Single(s => s.InstanceIndex == instance);
         var dock = Assert.IsType<Rac1TaxiNativeShuttleDock>(stop.NativeShuttleDock);
         var autonomous = new Rac1TaxiNativeShuttleTraffic(dock);
@@ -222,12 +230,10 @@ public sealed class Rac1MetropolisTaxiRetailTests
         Assert.Equal(15d / 60, autonomous.FocusDelayRemaining, 10);
     }
 
-    [Fact]
+    [SkippableFact]
     public void RetailTaxiAdmissionSelectorsPreserveNativeMinusOneSentinels()
     {
-        using var retail = RetailKerwan.TryOpen();
-        if (retail is null) return;
-        var world = retail.World;
+        var world = KerwanWorld();
         foreach (var (index, activeCuboid) in new[] { (919, 10), (920, 28) })
         {
             byte[] pvar = Pvar(world, index);
@@ -245,14 +251,11 @@ public sealed class Rac1MetropolisTaxiRetailTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public void RetailClass1012ShuttleDocksStartOnNativeSideWithoutForcedStartOrCuboid()
     {
-        using var retail = RetailKerwan.TryOpen();
-        if (retail is null) return;
-        var world = retail.World;
-        var session = Rac1MetropolisTaxiSession.TryCreate(world);
-        Assert.NotNull(session);
+        var world = KerwanWorld();
+        var session = NewSession(world);
 
         // Native state-0 +0x80 side: initial path selector
         // comes from PVar+0x90+(side*4), not always the authored Moby origin.
@@ -284,14 +287,11 @@ public sealed class Rac1MetropolisTaxiRetailTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public void RetailKerwanTaxisCarryFiniteNativeHoverPhases()
     {
-        using var retail = RetailKerwan.TryOpen();
-        if (retail is null) return;
-        var world = retail.World;
-        var session = Rac1MetropolisTaxiSession.TryCreate(world);
-        Assert.NotNull(session);
+        var world = KerwanWorld();
+        var session = NewSession(world);
 
         Assert.All(session.Stops, stop =>
         {
@@ -302,14 +302,11 @@ public sealed class Rac1MetropolisTaxiRetailTests
         });
     }
 
-    [Fact]
+    [SkippableFact]
     public void RetailKerwanPvarsSelectExactOutboundSplines()
     {
-        using var retail = RetailKerwan.TryOpen();
-        if (retail is null) return;
-        var world = retail.World;
-        var session = Rac1MetropolisTaxiSession.TryCreate(world);
-        Assert.NotNull(session);
+        var world = KerwanWorld();
+        var session = NewSession(world);
 
         var expected = new (int Index, int PvarOffset, int NativePath, int Points, Rac1TaxiPoint End)[]
         {
@@ -339,14 +336,11 @@ public sealed class Rac1MetropolisTaxiRetailTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public void RetailClass816PvarsSelectApproachDepartureSelectorsAndTriggerCuboid()
     {
-        using var retail = RetailKerwan.TryOpen();
-        if (retail is null) return;
-        var world = retail.World;
-        var session = Rac1MetropolisTaxiSession.TryCreate(world);
-        Assert.NotNull(session);
+        var world = KerwanWorld();
+        var session = NewSession(world);
 
         foreach (var (instance, approachId, approachCount, cuboidId) in new[]
         {
@@ -377,14 +371,11 @@ public sealed class Rac1MetropolisTaxiRetailTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public void RetailClass1012ReturnSplinesChainOutboundEndToHome()
     {
-        using var retail = RetailKerwan.TryOpen();
-        if (retail is null) return;
-        var world = retail.World;
-        var session = Rac1MetropolisTaxiSession.TryCreate(world);
-        Assert.NotNull(session);
+        var world = KerwanWorld();
+        var session = NewSession(world);
 
         foreach (var (instance, nativePath, points) in new[]
         {
