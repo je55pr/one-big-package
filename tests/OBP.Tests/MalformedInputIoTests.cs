@@ -172,6 +172,8 @@ public sealed class MalformedInputIoTests
     [InlineData(256)]
     [InlineData(511)]
     [InlineData(3000)]
+    [InlineData(4096)]
+    [InlineData(32768)]
     [InlineData(65535)]
     public void NonPowerOfTwoOrTinyLogicalBlockSizesAreRejected(int blockSize)
     {
@@ -184,7 +186,6 @@ public sealed class MalformedInputIoTests
     [InlineData(512)]
     [InlineData(1024)]
     [InlineData(2048)]
-    [InlineData(32768)]
     public void ValidPowerOfTwoLogicalBlockSizesAreAccepted(int blockSize)
     {
         byte[] bytes = ValidIso();

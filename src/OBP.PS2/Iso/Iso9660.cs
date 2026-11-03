@@ -117,9 +117,12 @@ public sealed class Iso9660Filesystem
 
             long volumeSpaceSize = BothEndianUInt32(sector, 80, 84, "volume space size");
             int logicalBlockSize = BothEndianUInt16(sector, 128, 130, "logical block size");
-            if (logicalBlockSize < 512 || (logicalBlockSize & (logicalBlockSize - 1)) != 0)
+            // The PS2 ISO reader uses 2048-byte logical sectors. ECMA-119 6.2.2
+            // requires logical blocks to fit within a logical sector.
+            if (logicalBlockSize < 512 || logicalBlockSize > VolumeDescriptorBytes ||
+                (logicalBlockSize & (logicalBlockSize - 1)) != 0)
             {
-                throw new InvalidDataException($"ISO-9660 logical block size {logicalBlockSize} must be a power of two of at least 512.");
+                throw new InvalidDataException($"ISO-9660 logical block size {logicalBlockSize} must be a power of two between 512 and {VolumeDescriptorBytes}.");
             }
 
             var root = ParseDirectoryRecord(sector, 156);

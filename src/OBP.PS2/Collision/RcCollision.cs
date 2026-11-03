@@ -37,6 +37,8 @@ public static class RcCollision
     public static Mesh Read(byte[] bytes, Options? options = null)
     {
         options ??= new Options();
+        if (options.MaxGridCells < 0)
+            throw new ArgumentOutOfRangeException(nameof(options), "MaxGridCells must be non-negative.");
         if (bytes.Length < HeaderSize)
         {
             throw new InvalidDataException("RC collision source shorter than the 8-byte header.");

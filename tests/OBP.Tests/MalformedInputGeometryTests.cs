@@ -165,6 +165,7 @@ public sealed class MalformedInputGeometryTests
         Assert.Throws<InvalidDataException>(() => RcCollision.Read(b, new RcCollision.Options(MaxTriangles: 0)));
         Assert.Throws<InvalidDataException>(() => RcCollision.Read(b, new RcCollision.Options(MaxGridCells: 2)));
         Assert.Single(RcCollision.Read(b, new RcCollision.Options(MaxGridCells: 3)).Triangles);
+        Assert.Throws<ArgumentOutOfRangeException>(() => RcCollision.Read(b, new RcCollision.Options(MaxGridCells: long.MinValue)));
 
         byte[] badFace = ValidCollision();
         badFace[62] = 3; // vertex index == vertex count
