@@ -38,7 +38,7 @@ public sealed class Rac1TaxiHostOwnershipTests
     public void TaxiCabAndPassengerStateCannotLeakIntoTheRootPartial()
     {
         Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.Rac1MetropolisTaxis.cs")));
-        var root = Source("OBPGame.cs");
+        var root = CompositionSources.Application;
         Assert.DoesNotContain("_rac1MetropolisTaxis", root, StringComparison.Ordinal);
         Assert.DoesNotContain("_rac1TaxiNodes", root, StringComparison.Ordinal);
         Assert.DoesNotContain("_rac1TaxiCollisionBodies", root, StringComparison.Ordinal);

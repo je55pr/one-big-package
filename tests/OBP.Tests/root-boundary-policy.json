@@ -3338,13 +3338,6 @@
       "Hash": "8b2f57f13cfb667c2f7033e2b19dda2d2a559c91fef4e84376eaa5a6c45d8cbc"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1WorldModule(:RuntimeWorld,:RuntimeWorldScene . Result):Rac1WorldModule:private",
-      "Owner": "#360",
-      "Rationale": "Final #376 typed composition/delegation to the owning player, world, navigation, diagnostic, menu or persistence component. No native rules, resource ownership or diagnostic assertions belong in this bound root member. Its exact fingerprint remains reviewed.",
-      "ExpiresWith": "#376",
-      "Hash": "dbcce9881ccf75e09f80b9271353e090107f6dbafee47d5dbd74dc1ba97cc115"
-    },
-    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RefreshRac1HudState(params:HudFeedbackDraft [  ]):void:private",
       "Owner": "#360",
       "Rationale": "Temporary composition binding to the lease-owned R&C1 module or existing persistent player owner. No collection or native gameplay policy lives in the root; Rac1WorldContextTests and world/player lifecycle reconciliation cover isolation. #353 delegates the same health facts/actions to the scene-bound lifecycle owner.",
@@ -3448,20 +3441,6 @@
       "Rationale": "Lazy lifecycle-owner access only; no health state or destination-dependent player selection.",
       "ExpiresWith": "#376",
       "Hash": "42868dcd177ab57e1666359ece12f1d4dccaa88d37b4caf3a2b85720e3ed8065"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1EnemyHost(:RuntimeWorld,:RuntimeWorldScene . Result,:Rac1WorldModule):Rac1EnemyHost:private",
-      "Owner": "#361",
-      "Rationale": "Exact scene enemy composition: source path/random, current player contact facts, existing combat/reward presentation and bounded frog/Aridia neighbor callbacks. #364 moves amoeboid gates, contacts and family state into the world-scoped enemy adapter; existing native family and replay regressions guard its semantics. The world module owns the host and contacts; native controllers remain source-owned. Existing neighbor reset/state bindings expire as #362/#363/#368 migrate those owners; final composition removes this factory. No root reference or native algorithm escapes to the host. #362 moves all native frog/Queen/carrier state, contact, source timing and visual/camera leases into Rac1FrogEncounter; only guarded diagnostic composition and narrow camera/effect callbacks remain at the root. Native Frog/Queen checks and source-neutral player-selection rejection tests protect this intermediate boundary; #376 retires the remaining composition glue. #363 routes source-authored Aridia setup, script actors, 60Hz ticks, collision contacts, damage and retirement through Rac1EnemyHost.Aridia instead of reciprocal root delegates; only source-specific player damage descriptor binding remains in typed player ports. #367/#368 reviewed the migration to a world-scoped R&C1 weapon/gadget owner and camera lease; existing diagnostic factories now read those owned projections, with unchanged source-native identities and no new root mutable state. #367/#368 now obtains R&C1 target geometry and occlusion through world-scoped Rac1WeaponContactHost with per-physics-frame caches, while preserving the original host contact/ray and damage semantics; native player/equipment authority and replay IDs remain unchanged. #367/#368 defers the world-owned contact/target delegates until their owning R&C1 lease exists; host construction must not resolve Rac1World eagerly. The new ContactCallbacksDoNotResolveTheWorldDuringHostConstruction guard covers each factory. #367/#368 moves native Decoy Glove and Drone Device deployable state into the world-scoped Rac1ArsenalDeployableHost. Enemy decoy attraction, same-attacker cooldown, native movement/hit dispatch and live arsenal diagnostic witnesses are delegated through typed ports with no new root fields. Existing source-native rule constants and lease lifecycle/tick order remain unchanged. #366 forwards explosive admission only through that specific lease's breakable host, preserving the same R&C1 native contact consumer. Combined #366/#367/#368 merge review: source-world breakables and weapon contact/arsenal owners now coexist in the same lease; deferred line-of-sight, enemy admission and diagnostic reads retain their native policy and no new root mutable state is introduced. #367/#368 enemy/Suck Cannon eligibility observes morph identity through the scoped Morph host rather than a root collection. #368: the enemy/actor contact coalescing borrows the owning R&C1 world wrench hit-admission set, without a root mutable collection. #367/#368: native wrench damage admission and crate/hostile world dispatch moved into per-lease Rac1WrenchDamageHost. The persistent player's native wrench controller and reward RNG remain borrowed authorities through typed ports. Existing diagnostics, enemy/actor and bomb callbacks retain their entry points, now routed to the world owner; no duplicate native damage session or new root mutable state. #367/#368: world-scoped Rac1EquipmentProjectileHost now owns Blaster/Suck Cannon carriers, thrown mine/Doom projectiles, Doom agents, Taunter/Suck motes and shrinking flashes. Root use/input, native Pyrocitor particle damage and persistent ammo remain separate. Enemy, Taunter and diagnostic factories borrow typed world views by lease; shared contact and Moby damage rules are delegated unchanged. Retains reset, native movement, collision, sound, source IDs and emission ordering without adding root state. #367/#368 final player input extraction: native input, selection and equipment cycle now use the persistent PlayerSessionHost.Rac1WeaponPlayerInputHost with typed deferred world/source/UI ports; only the source-neutral composition borrow remains in OBPGame. The original root combat partial, no-op swing forwarding and random reward wrapper are retired. Native hand, damage and campaign authorities stay unchanged. #367/#368 final root cleanup: transient R&C1 effects and equipment-use forwarding now live in world-scoped hosts borrowing their original player, source, presentation and damage authorities. No duplicate native inventory, ammunition, persistent root state or runtime authority is introduced. The audited root weapon/weapon-world partials are retired.",
-      "ExpiresWith": "#376",
-      "Hash": "b8b98669ffea7ec6e52999a9c805e990a7526f7a72d5b1569017dc662654b358"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac2WorldModule(:RuntimeWorld,:GodotWorldResources):Rac2WorldModule:private",
-      "Owner": "#373",
-      "Rationale": "Lease-scoped source-world factory selects the existing scene resource, authentic R&C2 build and narrowly typed presentation/player damage ports. Native actor state remains source-owned; no player provider is selected. #373 native opening/actor tests and mixed-source acceptance protect this composition. #373 follow-up labels the individual port callbacks to prevent silent boolean delegate order mistakes; regression and mixed-source native smoke verified.",
-      "ExpiresWith": "#376",
-      "Hash": "99b11e41813764e1cfb2f100a420dca967b0bae1761514bc7b825cc03e364bae"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::field:_movementNotices:GodotMovementStateNotice ?:private",
@@ -3650,7 +3629,7 @@
       "Owner": "#376",
       "Rationale": "Final audited application composition: GodotApplicationPresentation owns scene/view/player nodes; WorldSceneLifetime and GodotWorldResources own world preparation, activation and retirement; navigation owns retained summary metadata; shutdown owns drain/audio policy. This member only binds or projects those existing owners and cannot acquire feature state.",
       "ExpiresWith": "#376",
-      "Hash": "306c6258a40d3c7c29f563fdfe09faff5799713b6c7e53c989c80025bf4d3a9d"
+      "Hash": "68b6d2b7fe76e86847db2188c9abc190c20f503031bc316762b4902973ea4bdc"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:EnterWorld(:string,:Func < RuntimeWorld >,:ObpDestination ?,:string ?,:FusionLabDefinition ?):bool:private",
@@ -3790,7 +3769,49 @@
       "Owner": "#376",
       "Rationale": "Composition-only reference to the diagnostic fixture catalogue in game/diagnostics/ApplicationDiagnostics.cs. The root supplies an explicit context of owned components and named actions; fixture binding, assertions and observation ports live with the diagnostics.",
       "ExpiresWith": "#376",
-      "Hash": "a7b90f47deae8a1e202f081b21ac8b48b1d6ed9e59cedf0d6627d7c3e710c49c"
+      "Hash": "e01e8620ef5174361f7221c99566c416dded5d8acdbf612addb7fb35387c77fa"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_components:ApplicationComponents ?:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition). The module binds owned components to narrow source-world ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "61c287bb947fccba8c6d686ace89b3993b6e12994270aa9df6ff0fb5c438febd"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_rac1Composition:Rac1WorldComposition ?:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition). The module binds owned components to narrow source-world ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "ded9c1dc80a837d737b2e7275f284f754f761c7d6756a60b7d3803b1f146ef11"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_rac2Composition:Rac2WorldComposition ?:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition). The module binds owned components to narrow source-world ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "c75e7a6b04270ad787ea05fff37906a5a5af5cce5a9f4a607d2044ea9b8230d6"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Components:ApplicationComponents:get/:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition). The module binds owned components to narrow source-world ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "45e70c9644f37719f26154c293cd55c62db71c6f7f7b5bd915c1949ded50737c"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Rac1Composition:Rac1WorldComposition:get/:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition). The module binds owned components to narrow source-world ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "97c94d81024905fc63fd127bdf1da18aa52f45adc81cd2f45b280cdefd2be4e7"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Rac2Composition:Rac2WorldComposition:get/:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition). The module binds owned components to narrow source-world ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "1081a87ef13617dfd864d6247a82a9899c9932cbdf170dec444320a751f0cefa"
     }
   ],
   "RetiredMembers": [

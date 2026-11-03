@@ -22,7 +22,7 @@ namespace OBP.Game.Diagnostics;
 /// observation and action ports over the owned application components. This is the
 /// only place those bindings live; <c>OBPGame</c> only supplies the context.
 /// </summary>
-internal sealed class ApplicationDiagnostics(ApplicationDiagnosticsContext context)
+internal sealed class ApplicationDiagnostics(ApplicationComponents context)
 {
     private Node3D _host => context.Host;
     private CommandLineArgs _args { get => context.Args(); set => context.ReplaceArgs(value); }
