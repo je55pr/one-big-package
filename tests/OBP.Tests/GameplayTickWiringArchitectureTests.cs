@@ -27,7 +27,7 @@ public sealed class GameplayTickWiringArchitectureTests
     public void WorldActivationRegistersOnceAndRetirementStopsCallbacksBeforeTeardown()
     {
         string entry = Between(Script("OBPGame.WorldEntry.cs"), "private void ActivateOwnedWorld",
-            "private void ReportWorldPreparationFailure");
+            "private void ActivateWorld");
         string root = Script("OBPGame.cs");
         string retire = Between(root, "private void RetireWorldBindings", "private void SetupOverlay");
         Assert.Contains("WorldGameplayTickBindings.Activate(entry", entry);
