@@ -20,6 +20,8 @@ public sealed class ReconciliationGateTests
         Assert.Equal(matrix.GetProperty("Movement").GetString(), PlayerHostProfiles.Native.Identity.ProfileId);
         Assert.Equal(ObpProfile.CurrentIntegration, matrix.GetProperty("OrdinaryProfile").GetString());
         Assert.DoesNotContain(HostOwnershipAudit.Policy(), entry => entry.Kind == "migration");
+        Assert.NotEmpty(matrix.GetProperty("ImplementedWeapons").EnumerateArray());
+        Assert.NotEmpty(matrix.GetProperty("UnavailableEquipment").EnumerateArray());
         foreach (var id in matrix.GetProperty("ImplementedWeapons").EnumerateArray())
             Assert.Equal(EquipmentImplementation.Implemented, PlayerEquipmentRegistrations.Catalog.Definitions.Single(entry => entry.Id == id.GetString()).Implementation);
         foreach (var id in matrix.GetProperty("UnavailableEquipment").EnumerateArray())
@@ -29,6 +31,7 @@ public sealed class ReconciliationGateTests
     [Fact]
     public void CaptureAndProfileFlagsNeverInferParityFromTheDestination()
     {
+        Assert.NotEmpty(Matrix.GetProperty("Route").EnumerateArray());
         foreach (var world in Matrix.GetProperty("Route").EnumerateArray())
         {
             var args = CommandLineArgs.Parse(["--destination", world.GetString()!, "--record-playtest", "fixture.run.jsonl.gz", "--profile", "fixture.json"]);

@@ -17,7 +17,9 @@ public sealed class WorldEntryContractTests
         var session = new TestSession(Snapshot(selectedAvatar));
         var providers = new PlayerAvatarProviderRegistry(Enum.GetValues<ObpSourceGame>()
             .Select(game => new TestAvatarProvider(game)));
-        foreach (var destination in ReconciliationGateTests.Matrix.GetProperty("Route").EnumerateArray())
+        var route = ReconciliationGateTests.Matrix.GetProperty("Route").EnumerateArray().ToArray();
+        Assert.NotEmpty(route);
+        foreach (var destination in route)
         {
             string id = destination.GetString()!;
             var game = SourceIdentityWire.ParseWorld(id.StartsWith("obp:", StringComparison.Ordinal) ? id : id.Split(':')[0]);

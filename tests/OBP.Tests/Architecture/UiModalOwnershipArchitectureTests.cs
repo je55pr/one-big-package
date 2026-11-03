@@ -91,16 +91,19 @@ public sealed class UiModalOwnershipArchitectureTests
         Assert.Contains("UiPointerModality.MenuClosed(_beforePauseMouse)", release, StringComparison.Ordinal);
         Assert.Contains("_pausePointerOpened = true", pause, StringComparison.Ordinal);
         Assert.Contains("_pausePointerOpened", release, StringComparison.Ordinal);
-        Assert.True(pause.IndexOf("UiPointerModality.MenuOpened()", StringComparison.Ordinal) <
+        int pointerOpened = pause.IndexOf("UiPointerModality.MenuOpened()", StringComparison.Ordinal);
+        Assert.True(pointerOpened >= 0 && pointerOpened <
             pause.IndexOf("_pausePointerOpened = true", StringComparison.Ordinal));
         Assert.Contains("MenuFocus.Restore(_settingsReturnFocus", owner, StringComparison.Ordinal);
         string failedSettings = Method(owner, "OpenSettings").ToFullString();
         Assert.Contains("RestoreSettingsParent()", failedSettings, StringComparison.Ordinal);
         Assert.Contains("MenuFocus.Restore(_settingsReturnFocus", failedSettings, StringComparison.Ordinal);
         Assert.Contains("ApplicationPointer.MouseMode = _beforeSettingsMouse", failedSettings, StringComparison.Ordinal);
-        Assert.True(wheel.IndexOf("_beforeWheelMouse = ApplicationPointer.MouseMode", StringComparison.Ordinal) <
+        int mouseSnapshot = wheel.IndexOf("_beforeWheelMouse = ApplicationPointer.MouseMode", StringComparison.Ordinal);
+        Assert.True(mouseSnapshot >= 0 && mouseSnapshot <
             wheel.IndexOf("equipment.WheelEntries()", StringComparison.Ordinal));
-        Assert.True(wheel.IndexOf("_beforeWheelButtons = player.MenuHeldButtons", StringComparison.Ordinal) <
+        int buttonsSnapshot = wheel.IndexOf("_beforeWheelButtons = player.MenuHeldButtons", StringComparison.Ordinal);
+        Assert.True(buttonsSnapshot >= 0 && buttonsSnapshot <
             wheel.IndexOf("equipment.WheelEntries()", StringComparison.Ordinal));
         Assert.True(wheel.IndexOf("equipment.WheelEntries()", StringComparison.Ordinal) <
             wheel.IndexOf("new WeaponQuickSelectUi", StringComparison.Ordinal));
