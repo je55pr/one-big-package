@@ -3,6 +3,8 @@ param(
     [Parameter(Mandatory=$true, Position=1)][string]$MoviePath
 )
 
+$ErrorActionPreference = 'Stop'
+
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type @'
 using System;
