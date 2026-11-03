@@ -1,6 +1,7 @@
 using Godot;
 using OBP.Godot;
 using OBP.Runtime;
+using OBP.Runtime.Camera;
 
 namespace OBP.Game;
 
@@ -28,42 +29,29 @@ internal static class GodotWorldCaptureCamera
     internal static void FrameAnimated(Camera3D camera, RuntimeWorld world)
     {
         var anim = world.AnimatedMeshes;
-        double minX = double.PositiveInfinity, minY = double.PositiveInfinity, minZ = double.PositiveInfinity;
-        double maxX = double.NegativeInfinity, maxY = double.NegativeInfinity, maxZ = double.NegativeInfinity;
-        if (anim is { Count: > 0 })
+        var measured = AnimatedMeshFraming.MeasureFirstInstance(anim);
+        if (measured.Bounds is not { } bounds)
         {
-            // Only the first instance is framed, not the entire moby spread.
-            string firstInstance = anim[0].Name.Split("_t")[0];
-            foreach (var am in anim.Where(a => a.Name.StartsWith(firstInstance)))
-            {
-                foreach (var frame in am.Frames)
-                {
-                    for (int i = 0; i + 3 <= frame.Length; i += 3)
-                    {
-                        minX = System.Math.Min(minX, frame[i]);
-                        maxX = System.Math.Max(maxX, frame[i]);
-                        minY = System.Math.Min(minY, frame[i + 1]);
-                        maxY = System.Math.Max(maxY, frame[i + 1]);
-                        minZ = System.Math.Min(minZ, frame[i + 2]);
-                        maxZ = System.Math.Max(maxZ, frame[i + 2]);
-                    }
-                }
-            }
-        }
-        else
-        {
-            minX = minY = minZ = -1;
-            maxX = maxY = maxZ = 1;
+            // Explicit failure: never hand invalid bounds to the camera; leave it untouched.
+            GD.PushError($"[OBPGame] anim-solo camera not framed ({measured.Status}): {measured.Detail}");
+            return;
         }
 
-        var bounds = new OBP.Core.Math.ObpBounds(
-            new OBP.Core.Math.Vec3(minX, minY, minZ),
-            new OBP.Core.Math.Vec3(maxX, maxY, maxZ));
+        var centre = RuntimeWorldScene.ToScene(bounds.Center.X, bounds.Center.Y, bounds.Center.Z);
+        var min = RuntimeWorldScene.ToScene(bounds.Min.X, bounds.Min.Y, bounds.Min.Z);
+        var max = RuntimeWorldScene.ToScene(bounds.Max.X, bounds.Max.Y, bounds.Max.Z);
+        if (!IsFinite(centre) || !IsFinite(min) || !IsFinite(max))
+        {
+            GD.PushError("[OBPGame] anim-solo camera not framed (bounds outside float range)");
+            return;
+        }
+
         RuntimeWorldScene.FrameCamera(camera, bounds, azimuthDegrees: 35f, elevationDegrees: 18f);
-        var centre = RuntimeWorldScene.ToScene((minX + maxX) * 0.5, (minY + maxY) * 0.5, (minZ + maxZ) * 0.5);
         camera.Position = centre + (camera.Position - centre) * 0.55f;
         camera.LookAt(centre, Vector3.Up);
         camera.Current = true;
-        GD.Print($"[OBPGame] anim-solo camera at {camera.Position}, {anim?.Count ?? 0} animated mobies");
+        GD.Print($"[OBPGame] anim-solo camera at {camera.Position}, {measured.MeshCount} meshes of {measured.Instance}");
     }
+
+    private static bool IsFinite(Vector3 v) => float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
 }

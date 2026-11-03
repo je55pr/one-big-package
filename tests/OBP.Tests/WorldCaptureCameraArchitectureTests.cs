@@ -26,7 +26,18 @@ public sealed class WorldCaptureCameraArchitectureTests
         Assert.Contains("azimuthDegrees: 35f, elevationDegrees: 18f", camera);
         Assert.Contains("(camera.Position - centre) * 1.15f", camera);
         Assert.Contains("(camera.Position - centre) * 0.55f", camera);
-        Assert.Contains("string firstInstance = anim[0].Name.Split(\"_t\")[0]", camera);
+        Assert.Contains("AnimatedMeshFraming.MeasureFirstInstance(anim)", camera);
+        Assert.DoesNotContain("StartsWith(firstInstance)", camera, StringComparison.Ordinal);
         Assert.Contains("camera.Current = true", camera);
+    }
+
+    [Fact]
+    public void AnimFocusSpawnUsesValidatedFramingAndReportsFailure()
+    {
+        string spawn = Script("GodotPlayerSpawnPlacement.cs");
+
+        Assert.Contains("AnimatedMeshFraming.MeasureFirstInstance(world.AnimatedMeshes)", spawn);
+        Assert.Contains("anim-focus spawn not applied", spawn);
+        Assert.DoesNotContain("Frames[0]", spawn, StringComparison.Ordinal);
     }
 }
