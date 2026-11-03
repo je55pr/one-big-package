@@ -26,6 +26,9 @@ public static class RandomAccessReaderExtensions
     /// <summary>Read <paramref name="length"/> bytes into a fresh array.</summary>
     public static byte[] Read(this IRandomAccessReader reader, long offset, int length)
     {
+        // Validate before allocating so a hostile length cannot force a huge
+        // allocation (or a negative-size OverflowException) ahead of the range check.
+        ValidateRange(reader.Name, reader.Length, offset, length);
         var buffer = new byte[length];
         reader.Read(offset, buffer);
         return buffer;

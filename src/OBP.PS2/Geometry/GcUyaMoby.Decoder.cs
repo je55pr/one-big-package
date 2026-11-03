@@ -94,12 +94,14 @@ public static partial class GcUyaMoby
         var state = new DecodeState(buf, allowSkinning, recoverPersistentVertexCache);
         for (int pkt = 0; pkt < state.HighLodCount; pkt++)
         {
-            int eo = state.PacketTableOffset + pkt * 0x10;
-            if (eo < 0 || eo + 0x10 > buf.Length)
+            long entryOffset = (long)state.PacketTableOffset + pkt * 0x10;
+            if (entryOffset < 0 || entryOffset + 0x10 > buf.Length)
             {
                 state.InvalidateSkippedPacket();
                 break;
             }
+
+            int eo = (int)entryOffset;
 
             var packet = ReadPacket(state, eo);
             if (packet is null) continue;

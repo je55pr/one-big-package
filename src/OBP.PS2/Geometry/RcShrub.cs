@@ -60,7 +60,7 @@ public static class RcShrub
 
             int offset = BinaryPrimitives.ReadInt32LittleEndian(buf[entryAt..]);
             int size = BinaryPrimitives.ReadInt32LittleEndian(buf[(entryAt + 4)..]);
-            if (offset <= 0 || size <= 0 || offset + size > buf.Length)
+            if (offset <= 0 || size <= 0 || (long)offset + size > buf.Length)
             {
                 continue;
             }
@@ -72,6 +72,11 @@ public static class RcShrub
             }
 
             var hd = unpacks[0].Data;
+            if (hd.Count < 12)
+            {
+                continue;
+            }
+
             int textureCount = BinaryPrimitives.ReadInt32LittleEndian(hd.AsSpan(0));
             int gifTagCount = BinaryPrimitives.ReadInt32LittleEndian(hd.AsSpan(4));
             int vertexCount = BinaryPrimitives.ReadInt32LittleEndian(hd.AsSpan(8));

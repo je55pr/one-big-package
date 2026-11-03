@@ -70,6 +70,13 @@ public static class WadLz
     /// <summary>Decompress a complete in-memory WAD LZ block.</summary>
     public static WadLzResult Decompress(byte[] bytes, long maxOutputBytes = DefaultMaxOutputBytes)
     {
+        if (maxOutputBytes < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxOutputBytes));
+        }
+
+        // A single .NET array cannot exceed Array.MaxLength, so that is the hard output ceiling.
+        maxOutputBytes = System.Math.Min(maxOutputBytes, Array.MaxLength);
         var header = ReadHeader(bytes);
         if (header.CompressedSize > bytes.Length)
         {
@@ -234,7 +241,7 @@ public static class WadLz
     /// <summary>Read a WAD LZ block from <paramref name="reader"/> at <paramref name="offset"/> and decompress it — only the block's own bytes are read.</summary>
     public static WadLzResult ReadBlock(IRandomAccessReader reader, long offset, long maxOutputBytes = DefaultMaxOutputBytes)
     {
-        if (offset < 0 || offset + HeaderSize > reader.Length)
+        if (offset < 0 || offset > reader.Length - HeaderSize)
         {
             throw new ArgumentOutOfRangeException(nameof(offset), $"WAD LZ offset {offset} lies outside '{reader.Name}'.");
         }

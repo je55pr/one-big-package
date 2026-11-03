@@ -78,13 +78,15 @@ public static class RcTie
                     break;
                 }
 
-                int packetData = tableBase + BinaryPrimitives.ReadInt32LittleEndian(buf[phOff..]);
+                long packetDataLong = (long)tableBase + BinaryPrimitives.ReadInt32LittleEndian(buf[phOff..]);
                 int vertOfs = buf[phOff + 0x08] * 0x10;
                 int vertSize = buf[phOff + 0x09] * 0x10;
-                if (packetData <= 0 || packetData + 0x2c > buf.Length)
+                if (packetDataLong <= 0 || packetDataLong + 0x2c > buf.Length)
                 {
                     continue;
                 }
+
+                int packetData = (int)packetDataLong;
 
                 var adGifDest = new int[4];
                 var adGifSrc = new int[4];

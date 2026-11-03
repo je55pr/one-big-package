@@ -32,11 +32,13 @@ public static class RcCollision
         ObpBounds Bounds,
         IReadOnlyList<int> MaterialIds);
 
-    public sealed record Options(int MaxOctants = 200_000, int MaxVertices = 8_000_000, int MaxTriangles = 8_000_000);
+    public sealed record Options(int MaxOctants = 200_000, int MaxVertices = 8_000_000, int MaxTriangles = 8_000_000, long MaxGridCells = 16_000_000);
 
     public static Mesh Read(byte[] bytes, Options? options = null)
     {
         options ??= new Options();
+        if (options.MaxGridCells < 0)
+            throw new ArgumentOutOfRangeException(nameof(options), "MaxGridCells must be non-negative.");
         if (bytes.Length < HeaderSize)
         {
             throw new InvalidDataException("RC collision source shorter than the 8-byte header.");
@@ -57,9 +59,9 @@ public static class RcCollision
         int meshEnd = heroGroupsOffset != 0 ? heroGroupsOffset : bytes.Length;
 
         byte U8(int at) => at >= 0 && at < bytes.Length ? bytes[at] : throw new InvalidDataException($"RC collision read past end at {at}.");
-        short S16(int at) => at >= 0 && at + 2 <= bytes.Length ? BinaryPrimitives.ReadInt16LittleEndian(bytes.AsSpan(at)) : throw new InvalidDataException($"RC collision read past end at {at}.");
-        ushort U16(int at) => at >= 0 && at + 2 <= bytes.Length ? BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(at)) : throw new InvalidDataException($"RC collision read past end at {at}.");
-        uint U32(int at) => at >= 0 && at + 4 <= bytes.Length ? BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(at)) : throw new InvalidDataException($"RC collision read past end at {at}.");
+        short S16(int at) => at >= 0 && at <= bytes.Length - 2 ? BinaryPrimitives.ReadInt16LittleEndian(bytes.AsSpan(at)) : throw new InvalidDataException($"RC collision read past end at {at}.");
+        ushort U16(int at) => at >= 0 && at <= bytes.Length - 2 ? BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(at)) : throw new InvalidDataException($"RC collision read past end at {at}.");
+        uint U32(int at) => at >= 0 && at <= bytes.Length - 4 ? BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(at)) : throw new InvalidDataException($"RC collision read past end at {at}.");
 
         var octants = new List<Octant>();
         var positionList = new List<double>();
@@ -68,12 +70,22 @@ public static class RcCollision
         double minX = double.PositiveInfinity, minY = double.PositiveInfinity, minZ = double.PositiveInfinity;
         double maxX = double.NegativeInfinity, maxY = double.NegativeInfinity, maxZ = double.NegativeInfinity;
 
+        // The tree is a DAG of offsets, so hostile nodes can share children and
+        // make the slot walk multiplicative. Legitimate trees visit about one
+        // slot per four input bytes; allow generous slack and fail beyond it.
+        long slotBudget = Math.Min(options.MaxGridCells, 16L * bytes.Length + 1_000_000);
+
         int zCoord = S16(meshOffset);
         int zCount = U16(meshOffset + 2);
         int zOffsets = meshOffset + 4;
 
         for (int z = 0; z < zCount; z++)
         {
+            if (--slotBudget < 0)
+            {
+                throw new InvalidDataException("RC collision octree exceeds its traversal budget.");
+            }
+
             int zByte = U16(zOffsets + z * 2) * 4;
             if (zByte == 0)
             {
@@ -87,10 +99,20 @@ public static class RcCollision
 
             for (int y = 0; y < yCount; y++)
             {
+                if (--slotBudget < 0)
+                {
+                    throw new InvalidDataException("RC collision octree exceeds its traversal budget.");
+                }
+
                 uint yByte = U32(yOffsets + y * 4);
                 if (yByte == 0)
                 {
                     continue;
+                }
+
+                if ((long)meshOffset + yByte >= bytes.Length)
+                {
+                    throw new InvalidDataException($"RC collision y-node offset 0x{yByte:x} is out of range.");
                 }
 
                 int yNode = meshOffset + (int)yByte;
@@ -100,6 +122,11 @@ public static class RcCollision
 
                 for (int x = 0; x < xCount; x++)
                 {
+                    if (--slotBudget < 0)
+                    {
+                        throw new InvalidDataException("RC collision octree exceeds its traversal budget.");
+                    }
+
                     uint octByte = U32(xOffsets + x * 4) >> 8;
                     if (octByte == 0)
                     {
