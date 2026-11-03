@@ -47,7 +47,7 @@ public sealed class Rac1HandPresentationOwnershipArchitectureTests
         string binder = Script("PlayerEquipmentPresentationBinder.cs");
 
         Assert.Contains("private Rac1HandPresentationContext Rac1HandPresentation => new(", root);
-        Assert.Contains("_rac1HeldItem, _rac1Weapons, FusionWeapons.Session", root);
+        Assert.Contains("_rac1HeldItem, _rac1Weapons, PlayerServices.Fusion.Session", root);
         Assert.Contains("_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true", root);
         Assert.Contains("state.Fusion?.Selected.SourceGame is not (ObpSourceGame.Rac2 or ObpSourceGame.Rac3)", binder);
         Assert.Contains("!state.WaterHandItemHidden && !state.WrenchFrameActive && !state.WrenchThrowActive", binder);

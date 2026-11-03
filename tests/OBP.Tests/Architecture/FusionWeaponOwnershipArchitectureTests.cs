@@ -18,7 +18,9 @@ public sealed class FusionWeaponOwnershipArchitectureTests
         Assert.False(File.Exists(path));
         Assert.False(File.Exists(path + ".uid"));
         var root = HostOwnershipAudit.Host.Value.GetTypeByMetadataName("OBP.Game.OBPGame")!;
-        var fields = root.GetMembers().OfType<IFieldSymbol>().Where(field => field.Name.StartsWith("_fusion", StringComparison.Ordinal)).ToArray();
+        Assert.DoesNotContain(root.GetMembers().OfType<IFieldSymbol>(), field => field.Name.StartsWith("_fusion", StringComparison.Ordinal));
+        var owners = HostOwnershipAudit.Host.Value.GetTypeByMetadataName("OBP.Game.PlayerServicesComposition")!;
+        var fields = owners.GetMembers().OfType<IFieldSymbol>().Where(field => field.Name.StartsWith("_fusion", StringComparison.Ordinal)).ToArray();
         var owner = Assert.Single(fields);
         Assert.Equal("FusionWeaponHost", owner.Type.Name);
         foreach (string file in new[] { "FusionWeaponHost.cs", "FusionWeaponSourceHost.cs", "FusionWeaponPresentationHost.cs", "FusionWeaponWorldActions.cs" })

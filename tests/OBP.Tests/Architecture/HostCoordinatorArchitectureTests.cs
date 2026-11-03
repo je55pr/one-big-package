@@ -8,7 +8,7 @@ public class HostCoordinatorArchitectureTests
     [Fact]
     public void ActorCompositionDefersWorldContextUntilALeaseExists()
     {
-        var source = CSharpSyntaxTree.ParseText(File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs")));
+        var source = CSharpSyntaxTree.ParseText(File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerServicesComposition.cs")));
         var factory = source.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
             .Single(method => method.Identifier.ValueText == "CreateActorHost");
         var reads = factory.DescendantNodes().OfType<IdentifierNameSyntax>()

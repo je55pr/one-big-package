@@ -35,7 +35,7 @@ public sealed class GameplayTickWiringArchitectureTests
             < entry.IndexOf("WorldGameplayTickBindings.Activate(", StringComparison.Ordinal));
         Assert.Contains("RetireGameplayTicks()", retire);
         Assert.True(retire.IndexOf("RetireGameplayTicks()", StringComparison.Ordinal)
-            < retire.IndexOf("ActorHost.Reset()", StringComparison.Ordinal));
+            < retire.IndexOf("PlayerServices.Actors.Reset()", StringComparison.Ordinal));
         Assert.Contains("GameplayTicks?.Dispose()", Script("GodotWorldResources.cs"));
         Assert.Contains("_lifetime.Cancel()", Script("WorldSceneLifetime.cs"));
     }

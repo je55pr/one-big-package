@@ -9,7 +9,7 @@ public sealed class AvatarWorldEntryOwnershipTests
         string owner = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerAvatarPresentationHost.cs"));
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
         Assert.DoesNotContain("private void StepPlayerAvatarPhysics", root, StringComparison.Ordinal);
-        Assert.Contains("Weapons: () => FusionWeapons, CombatInput: () => Rac1CombatInput", root, StringComparison.Ordinal);
+        Assert.Contains("Weapons: () => PlayerServices.Fusion, CombatInput: () => PlayerServices.CombatInput", root, StringComparison.Ordinal);
         Assert.DoesNotContain("private void ResetPlayerAvatarPhysics", root, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", owner, StringComparison.Ordinal);
 
