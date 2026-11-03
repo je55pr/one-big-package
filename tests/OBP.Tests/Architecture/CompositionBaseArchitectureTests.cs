@@ -58,7 +58,8 @@ public sealed class CompositionBaseArchitectureTests
         var path = Path.Combine(RepoPaths.Root, "game/scripts/CompositionBase.cs");
         var type = CSharpSyntaxTree.ParseText(File.ReadAllText(path)).GetRoot().DescendantNodes()
             .OfType<ClassDeclarationSyntax>().Single(candidate => candidate.Identifier.ValueText == "CompositionBase");
-        int members = type.Members.Count(member => member.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.ProtectedKeyword)));
+        int members = type.Members.Count(member => member.Modifiers.Any(modifier =>
+            modifier.IsKind(SyntaxKind.ProtectedKeyword) || modifier.IsKind(SyntaxKind.InternalKeyword) || modifier.IsKind(SyntaxKind.PublicKeyword)));
         Assert.True(members <= SharedMemberCeiling,
             $"CompositionBase has {members} shared members (ceiling {SharedMemberCeiling}); move single-module views into that module.");
     }
