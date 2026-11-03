@@ -21,10 +21,10 @@ internal static class Rac1Class749Fixtures
     internal static RuntimeDynamicObject Class749(
         int instanceIndex,
         float health,
-        int pvarSize = Rac1Class749Hostile.PVarSize,
         Rac1Class749WorldPoint targetDestination = default,
         int statusSentinel = 0,
-        Rac1Class749WorldPoint home = default)
+        Rac1Class749WorldPoint home = default,
+        int pvarSize = Rac1Class749Hostile.PVarSize)
     {
         var pvar = new byte[pvarSize];
         if (pvarSize >= Rac1Class749Hostile.HealthOffset + sizeof(int))

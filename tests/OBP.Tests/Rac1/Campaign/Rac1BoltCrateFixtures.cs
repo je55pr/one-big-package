@@ -13,11 +13,12 @@ internal static class Rac1BoltCrateFixtures
         var raw = new byte[0x78];
         BinaryPrimitives.WriteUInt16LittleEndian(raw.AsSpan(0x0c, 2), checked((ushort)uid));
         BinaryPrimitives.WriteInt32LittleEndian(raw.AsSpan(0x10, 4), rewardCentre);
-        BinaryPrimitives.WriteInt32LittleEndian(raw.AsSpan(0x18, 4), 500);
+        BinaryPrimitives.WriteInt32LittleEndian(raw.AsSpan(0x18, 4), Rac1BoltCrate.NativeClassId);
         var pvar = new byte[0x100];
 
         return new RuntimeDynamicObject(
-            ObpSourceGame.Rac1, 500, 89, uid, "moby:500", "moby:89",
+            ObpSourceGame.Rac1, Rac1BoltCrate.NativeClassId, 89, uid,
+            $"moby:{Rac1BoltCrate.NativeClassId}", "moby:89",
             new RuntimeObjectTransform(new double[16]), Array.Empty<RuntimeObjectMesh>(),
             [new RuntimeOpaquePayload(Rac1BoltCrate.InstancePayloadFormat, raw),
              new RuntimeOpaquePayload(Rac1BoltCrate.PVarPayloadFormat, pvar)]);
