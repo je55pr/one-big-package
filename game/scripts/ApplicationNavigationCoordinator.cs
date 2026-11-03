@@ -46,6 +46,8 @@ internal sealed class ApplicationNavigationCoordinator
             case ModalBackResult.PauseClosed:
                 ApplicationLifecycle.ReportNavigation("pause-menu-close");
                 return true;
+            default:
+                break;
         }
 
         if (TryClosePlanetMap())
