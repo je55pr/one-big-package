@@ -28,16 +28,17 @@ ports and staged migration ownership are in [PLAYER_WORLD_CONTRACT.md](PLAYER_WO
 Destination origin chooses world content, not player-global services. Source-native
 controllers stay in RAC modules; Fusion invokes neutral ports and applies explicitly
 labelled OBP policy. The Godot composition root wires those implementations without
-copying their rules. The contract PR establishes these seams; the linked follow-ups
-replace the current host couplings. Architecture tests freeze that migration debt
-and reject new player gates while allowing narrow world/campaign adapters.
+copying their rules. The reconciliation work (#264-#275) implemented these seams.
+Architecture tests reject new player gates keyed on world origin while allowing
+narrow, fingerprinted world/campaign adapters; the former migration ledger entries
+are retired.
 
 ## Naming and migration order
 
 Source-owned C# types, filenames and namespace segments use `Rac1`, `Rac2`,
 `Rac3`; the source assembly roots remain `OBP.RAC1`, `OBP.RAC2`, `OBP.RAC3`.
-For example, `GcLancerSession` / `GcLancerSession.cs` becomes
-`Rac2LancerSession` / `Rac2LancerSession.cs`; `IUyaMobyDamageConsumer` becomes
+For example, the former `GcLancerSession` / `GcLancerSession.cs` is now
+`Rac2LancerSession` / `Rac2LancerSession.cs`, and `IUyaMobyDamageConsumer` is now
 `IRac3MobyDamageConsumer`. Use source-neutral names only for genuinely shared
 contracts in the owning Core/Runtime/Fusion/PS2 layer. `Rac1RatchetNanotechSession`
 must not become `UniversalHealth` merely because an OBP player uses that policy.
@@ -76,7 +77,7 @@ passed separately from their world.
 Nested source records inherit their enclosing type's context, so names such as
 `Rac2LancerSession.State` stay useful. Neutral `RuntimeWorld`, `Moby`, and shared
 PS2/ISA types do not need a game prefix. Existing noncanonical public declarations
-are exact migration entries in `source-naming-legacy.json`; each entry must
+are exact entries in `tests/OBP.Tests/source-naming-legacy.json`; each entry must
 disappear when its declaration is renamed. New legacy aliases or moving one
 into a different file fail the check. The census is a reviewed policy artifact;
 changing it to admit new migration debt is prohibited and requires review just
@@ -89,32 +90,31 @@ exceptions. They describe the already evidenced cross-source codec, not a new
 Rac2/Rac3 gameplay branch. New cross-source APIs should use neutral names.
 
 The cleanup programme [#307](https://github.com/je55pr/one-big-package/issues/307)
-uses separate PRs with manual review/merge:
+used separate PRs with manual review/merge. All of its naming steps are complete
+(all issues below are closed); the order is retained as history:
+
+1. [#289](https://github.com/je55pr/one-big-package/issues/289) established this policy and guard.
+2. [#290](https://github.com/je55pr/one-big-package/issues/290) migrated source
+   identity while retaining wire formats.
+   [#174](https://github.com/je55pr/one-big-package/issues/174) added the single
+   strict CLI parser. The isolated UYA admission/audit fixes #175/#176 preceded
+   source renaming.
+3. [#291](https://github.com/je55pr/one-big-package/issues/291) and
+   [#292](https://github.com/je55pr/one-big-package/issues/292) renamed source
+   symbols/files mechanically after the typed contracts.
+4. [#293](https://github.com/je55pr/one-big-package/issues/293) moved the app to
+   `OBP.Game`; #294 migrated public source flags with explicit old aliases using
+   #174's parser; #295 retired the comparison viewer.
 
 The app project, assembly and C# namespace are `OBP.Game`. Direct builds use
-`dotnet build game/OBP.Game.csproj`; replace the former
-`game/OneBigPackage.csproj` path in local commands. The supported `tools/play`
+`dotnet build game/OBP.Game.csproj`; the former `game/OneBigPackage.csproj` path
+no longer exists. The supported `tools/play`
 and launch wrappers keep their existing entry points. The solution remains
 `OneBigPackage.sln`, the Godot directory remains `game/`, and the game brand,
 scene/script UIDs, resource paths and user-data location are unchanged. Existing
 recordings still parse; the renamed assembly is a different build for replay
 compatibility checks, just as any changed assembly is.
 
-1. [#289](https://github.com/je55pr/one-big-package/issues/289) establishes this policy and guard.
-2. After policy merge, [#290](https://github.com/je55pr/one-big-package/issues/290)
-   migrates source identity while retaining wire formats.
-   [#174](https://github.com/je55pr/one-big-package/issues/174) owns the single
-   strict CLI parser and can proceed once its interface assumptions agree.
-   The isolated UYA admission/audit fixes #175/#176 precede source renaming.
-3. [#291](https://github.com/je55pr/one-big-package/issues/291) and
-   [#292](https://github.com/je55pr/one-big-package/issues/292) rename source
-   symbols/files mechanically after typed contracts. Coordinate shared host edits.
-4. [#293](https://github.com/je55pr/one-big-package/issues/293) moves the app to
-   `OBP.Game`; #294 migrates public source flags with explicit old aliases and
-   uses #174's parser. #295 decides the comparison viewer's fate before flags
-   are removed. These are later migrations, not exceptions for new source APIs.
-
-Do not overlap these host-file renames with #308/#309 ownership/actor extraction.
 `OBP.Fusion` means cross-game integration. The legacy comparison viewer and its
 CLI/document path were retired under #295. Naming-only changes
 must leave native gameplay and all existing external contracts unchanged.
@@ -168,10 +168,11 @@ separate from an optional native terminal-state byte.
 The host supplies contacts and presentation facts. `Rac1PlayerContactResult`
 retains raw/effective material semantics, support identity, anchor carry and
 conveyor channels. `Rac1MobyPersistenceSession` is a per-level UID boundary,
-not a universal mission VM. Existing Godot partials still wire and coordinate
-these sessions; the reconciliation contract assigns engine-neutral gameplay
-coordination to Fusion and retains scene/contact plumbing in the host. The
-current mixed responsibilities have explicit migration owners. Neither layer
+not a universal mission VM. The Godot host still wires
+these sessions (through lease-scoped world modules and ports rather than the
+retired `OBPGame` feature partials); the reconciliation contract assigns
+engine-neutral gameplay coordination to Fusion and retains scene/contact
+plumbing in the host. Remaining root-collapse work is tracked by #376. Neither layer
 defines native constants or invents shared class semantics.
 
 ## Player movement, camera and animation
@@ -201,7 +202,7 @@ retain their own selector contracts. The selected avatar's actual source/provide
 must resolve independently of destination origin. The reconciliation contract
 selects genuine R&C1 Ratchet as the initial ordinary profile on every world;
 The shared entry path resolves that selected provider before unloading the world;
-a capsule requires explicit diagnostic mode. #268 owns complete profile admission.
+a capsule requires explicit diagnostic mode (#268, closed, implemented profile admission).
 GC/UYA skins are not admitted just because their skeletons are compatible.
 Missing selected assets must fail visibly. Movement is authoritative
 outside the animation mapping. Neutral skeleton metadata is optional until
@@ -210,7 +211,7 @@ its transform semantics are independently established.
 ## Host lifecycle and presentation
 
 The [host ownership map](OBPGAME_HOST_OWNERSHIP.md) records the field census and
-staged #308 extraction. `WorldSceneLifetime` owns candidate/live scene resources
+the #308 extraction; [the root census](OBPGAME_ROOT_CENSUS.md) tracks the #333/#376 decomposition. `WorldSceneLifetime` owns candidate/live scene resources
 and deferred navigation; Fusion retains player/entry policy and source adapters
 retain authored starts. Root world facts are read-only views of that owner.
 

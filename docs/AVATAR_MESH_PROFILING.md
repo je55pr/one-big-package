@@ -151,7 +151,8 @@ would be required before claiming leak-free GPU resource behaviour.
 
 The geometry contracts enforce stable vertex count between clips and stable
 indices, UVs, textures and material ownership per surface. A Godot-only
-`DynamicVertexSurfaceSet` prototype shares one packed XYZ stream and
+`DynamicVertexSurfaceSet` prototype (isolated-worktree experiment; it is not in
+the tree) shares one packed XYZ stream and
 per-pose AABB calculation between the avatar and the R&C1 wrench/bomb glove.
 The world dynamic-object renderer already has a similar vertex-region method,
 but its separate per-object surface layout and authored colours differ from

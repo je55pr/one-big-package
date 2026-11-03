@@ -5,6 +5,12 @@ contract in [PLAYER_WORLD_CONTRACT.md](PLAYER_WORLD_CONTRACT.md) remains authori
 for session boundaries. Native decoders/controllers remain in their source
 libraries; Godot observes contacts and renders their results.
 
+> **Status:** #308 and #309 are closed. The counts in this document are
+> point-in-time measurements from those extractions (121 partials then); the
+> current root is two files, see [OBPGAME_ROOT_CENSUS.md](OBPGAME_ROOT_CENSUS.md).
+> The `OBPGame.*` partial names in the ownership map below are the original
+> locations; most have since been retired into the owners named alongside them.
+
 ## Source census and first boundary
 
 At `fc2f529` there are 121 `OBPGame*.cs` partial files. A syntax census of field
@@ -121,12 +127,13 @@ cancellation. Successful waits retain the signal's callback phase, including
 Capture watchdog subscriptions are removed on every outcome, including IO failure
 and cancellation. Unsuccessful captures/reports remain failures, not silent passes.
 
-The remaining order is to move actor factories, source-stamped import caches and
-registration cleanup under #309 using this lease boundary, while #310 measures
-portable contracts independently. Actor imports retain their existing poll/reset
-behavior until that focused migration; do not claim they are already supervised
-by this step. Do not rename host files or absorb native enemy/weapon behavior
-changes into these extractions.
+At the time of this step the remaining order was to move actor factories,
+source-stamped import caches and registration cleanup under #309 using this lease
+boundary, while #310 measured portable contracts independently. Both are now
+closed: actor imports are owned by `ActorSourceCache`/`ActorWorldHost` (see
+[ACTOR_ADAPTERS.md](ACTOR_ADAPTERS.md)) and coverage is described in
+[TEST_COVERAGE.md](TEST_COVERAGE.md). Do not absorb native enemy/weapon behavior
+changes into host extractions.
 
 ## Validation
 

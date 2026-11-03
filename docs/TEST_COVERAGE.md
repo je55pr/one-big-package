@@ -57,6 +57,11 @@ remain necessary.
 
 ## Measured baseline and critical gaps
 
+> The table below is a dated baseline (26 October 2026). #308 and #309, which it
+> lists as pending work, are now closed; their scene-resource, supervision and
+> actor-factory tests exist in the portable suite. Re-measure with the command
+> above rather than relying on these percentages.
+
 The initial measurement uses production `dev@fc2f529` (26 October 2026), with
 portable collector/report tooling added. It measured 20,454/30,325 production
 lines across nine assemblies before the additional admission tests in this PR.

@@ -57,7 +57,8 @@ recipe references live in `game/data/effects_experiment.json`; native parameters
 remain with their source adapters. It retires only effects, independently of
 the mixed encounter and persistent player session.
 
-#255 supplies universal equipment, #256 mixed actor/combat adapters, #257
-reset/experiment UI, #258 mechanics gallery and #259 pause/loadout menu.
+#255 (universal equipment), #256 (mixed actor/combat adapters) and #259
+(pause/loadout menu) are closed; #257 (reset/experiment UI) and #258 (mechanics
+gallery) remain open, as does #254's broader custom-greybox goal.
 Additional rooms and stations should be described in authored data; no
 source-owned gameplay should be reinterpreted as a generic behaviour.
