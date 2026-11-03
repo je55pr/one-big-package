@@ -3,8 +3,10 @@
 This is the shared contract for the #264 reconciliation gate. It records OBP
 design, not recovered native equivalence. Version 1 defines executable ports;
 #266/#267 implemented the persistent session and shared native/custom lifecycle
-(#264-#275 are closed). The follow-up ownership table at the end is a historical
-record of that staging.
+(#264-#275 are closed on GitHub; the automated gate in
+[SHARED_PROFILE_REPLAY_GATE.md](SHARED_PROFILE_REPLAY_GATE.md) does not replace its
+separate human rendered/audible review). The follow-up ownership table at the end
+is a historical record of that staging.
 
 ## Ownership
 
