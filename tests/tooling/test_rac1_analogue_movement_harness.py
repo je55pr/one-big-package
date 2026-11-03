@@ -216,28 +216,53 @@ class Rac1AnalogueHarnessTests(unittest.TestCase):
         HARNESS.CAPTURES.mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=HARNESS.CAPTURES) as directory:
             root = pathlib.Path(directory)
-            movie = root / "trial.p2m2"
-            runner = root / "pwsh-runner.cmd"
-            helper = root / "picker.ps1"
+            movie = root / "trial & capture.p2m2"
+            runner = root / "pwsh runner.exe"
+            helper = root / "picker helper.ps1"
             movie.write_bytes(b"movie")
             runner.write_text("", encoding="utf-8")
             helper.write_text("", encoding="utf-8")
 
-            previous_runner = HARNESS.PWSH_RUNNER
-            previous_helper = HARNESS.PICKER_HELPER
-            try:
-                HARNESS.PWSH_RUNNER = runner
-                HARNESS.PICKER_HELPER = helper
-                completed = mock.Mock(returncode=0, stdout="", stderr="")
-                with mock.patch.object(HARNESS.subprocess, "run", return_value=completed) as run:
-                    HARNESS._invoke_picker_path(1234, movie)
+            completed = mock.Mock(returncode=0, stdout="", stderr="")
+            with mock.patch.dict(HARNESS.os.environ, {HARNESS.PWSH_RUNNER_ENV: str(runner)}), \
+                 mock.patch.object(HARNESS, "PICKER_HELPER", helper), \
+                 mock.patch.object(HARNESS.subprocess, "run", return_value=completed) as run:
+                HARNESS._invoke_picker_path(1234, movie)
 
-                argv = run.call_args.args[0]
-                self.assertEqual(argv[-1], str(movie.resolve()))
-                self.assertEqual(run.call_args.kwargs["cwd"], HARNESS.ROOT)
-            finally:
-                HARNESS.PWSH_RUNNER = previous_runner
-                HARNESS.PICKER_HELPER = previous_helper
+            argv = run.call_args.args[0]
+            self.assertEqual(argv[0], str(runner.resolve()))
+            self.assertEqual(argv[1:5], ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
+            self.assertEqual(argv[5:], [str(helper), "1234", str(movie.resolve())])
+            self.assertEqual(run.call_args.kwargs["cwd"], HARNESS.ROOT)
+
+    def test_picker_runner_relative_path_resolves_from_repo_root(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            runner = root / "runner with spaces.exe"
+            runner.write_text("", encoding="utf-8")
+            with mock.patch.object(HARNESS, "ROOT", root), \
+                 mock.patch.dict(HARNESS.os.environ, {HARNESS.PWSH_RUNNER_ENV: runner.name}):
+                command = HARNESS._picker_command(1234, root / "movie.p2m2")
+            self.assertEqual(str(runner.resolve()), command[0])
+
+    def test_picker_runner_rejects_missing_path_and_batch_wrappers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            runner = root / "runner.exe"
+            with mock.patch.dict(HARNESS.os.environ, {HARNESS.PWSH_RUNNER_ENV: str(runner)}):
+                with self.assertRaises(FileNotFoundError):
+                    HARNESS._picker_command(1234, root / "movie.p2m2")
+            batch = root / "runner.cmd"
+            batch.write_text("", encoding="utf-8")
+            with mock.patch.dict(HARNESS.os.environ, {HARNESS.PWSH_RUNNER_ENV: str(batch)}):
+                with self.assertRaisesRegex(ValueError, "batch wrappers are not supported"):
+                    HARNESS._picker_command(1234, root / "movie.p2m2")
+
+    def test_picker_fallback_uses_direct_powershell_execution(self):
+        with mock.patch.dict(HARNESS.os.environ, {HARNESS.PWSH_RUNNER_ENV: ""}), \
+             mock.patch.object(HARNESS.shutil, "which", side_effect=lambda name: "pwsh.exe" if name == "pwsh" else None):
+            command = HARNESS._picker_command(12, pathlib.Path("movie.p2m2"))
+        self.assertEqual(command[:5], ["pwsh.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
 
     def test_capture_paths_cannot_escape_ignored_capture_root(self):
         with self.assertRaises(ValueError):

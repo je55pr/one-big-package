@@ -31,8 +31,8 @@ READ32 = 2
 NEUTRAL = 127
 BUTTON_MASKS = {"cross": 0x4000}
 FRAME_ADVANCE_VK = 0x76  # F7
-# Optional wrapper (e.g. a .cmd shim) used to launch the picker helper; when
-# unset the helper is run through PowerShell found on PATH.
+# Optional direct PowerShell executable used to launch the picker helper; when
+# unset, PowerShell is resolved on PATH. Batch wrappers are unsafe for path arguments.
 PWSH_RUNNER_ENV = "OBP_PWSH_RUNNER"
 PICKER_HELPER = ROOT / "tools" / "rac1-pcsx2-input-recording-picker.ps1"
 KNOWN_FIELDS = {
@@ -425,13 +425,19 @@ def _wait_for_input_recording_picker(pid: int, timeout: float = 4.0) -> int:
 def _picker_command(dialog: int, movie: Path) -> list[str]:
     runner = os.environ.get(PWSH_RUNNER_ENV)
     if runner:
-        if not Path(runner).exists():
+        configured = Path(runner).expanduser()
+        runner_path = (ROOT / configured).resolve() if not configured.is_absolute() else configured.resolve()
+        if not runner_path.is_file():
             raise FileNotFoundError(f"PowerShell runner not found ({PWSH_RUNNER_ENV}): {runner}")
-        return ["cmd.exe", "/d", "/s", "/c", runner, "-File", str(PICKER_HELPER), str(dialog), str(movie)]
+        if runner_path.suffix.lower() != ".exe":
+            raise ValueError(f"{PWSH_RUNNER_ENV} must point to a PowerShell .exe; batch wrappers are not supported")
+        return [str(runner_path), "-NoProfile", "-ExecutionPolicy", "Bypass",
+                "-File", str(PICKER_HELPER), str(dialog), str(movie)]
     shell = shutil.which("pwsh") or shutil.which("powershell")
     if shell is None:
         raise FileNotFoundError(f"PowerShell not found on PATH; install it or set {PWSH_RUNNER_ENV}")
-    return [shell, "-NoProfile", "-File", str(PICKER_HELPER), str(dialog), str(movie)]
+    return [shell, "-NoProfile", "-ExecutionPolicy", "Bypass",
+            "-File", str(PICKER_HELPER), str(dialog), str(movie)]
 
 def _invoke_picker_path(dialog: int, movie: Path) -> None:
     absolute = movie.resolve()
