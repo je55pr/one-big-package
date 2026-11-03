@@ -236,7 +236,13 @@ public sealed class MalformedInputAudioTests
         var rendered = Ps2SoundRenderer989.TryRender(sound, _ => Sample());
         Assert.NotNull(rendered);
         // The voice starts far past the clamped render window, so nothing is audible and nothing is indexed out of range.
-        Assert.All(rendered!.Samples, sample => Assert.Equal(0, sample));
+        Assert.Equal(Ps2SoundRenderer989.SampleRate * 8, rendered!.Samples.Length);
+        Assert.All(rendered.Samples, sample => Assert.Equal(0, sample));
+
+        // An out-of-range looping start must not wrap to a negative int.
+        var repeating = new Ps2SpuAdpcm.DecodedSample(
+            Enumerable.Repeat((short)10000, 960).ToArray(), new(16, 1, 960, 0, 960, true));
+        Assert.Null(Ps2SoundRenderer989.TryRender(sound with { Flags = 1 }, _ => repeating));
 
         var voices = Ps2SoundRenderer989.TryRenderVoices(sound, _ => Sample());
         Assert.NotNull(voices);
@@ -250,6 +256,34 @@ public sealed class MalformedInputAudioTests
     {
         Assert.Null(Ps2SoundRenderer989.TryRender(Sound(G(1, delay, Tone())), _ => Sample()));
         Assert.Null(Ps2SoundRenderer989.TryRenderVoices(Sound(G(1, delay, Tone())), _ => Sample()));
+    }
+
+    [Theory]
+    [InlineData(4, 15)]
+    [InlineData(25, 3)]
+    [InlineData(26, 3)]
+    [InlineData(27, 1)]
+    [InlineData(28, 1)]
+    [InlineData(29, 1)]
+    [InlineData(30, 3)]
+    [InlineData(31, 5)]
+    [InlineData(32, 1)]
+    [InlineData(33, 1)]
+    [InlineData(34, 5)]
+    [InlineData(36, 1)]
+    public void RendererRejectsTruncatedGrainParametersWithoutCrashing(int type, int payloadLength)
+    {
+        var sound = Sound(G(type, 0, null, new byte[payloadLength]));
+        Assert.Null(Ps2SoundRenderer989.TryRender(sound, _ => Sample()));
+        Assert.Null(Ps2SoundRenderer989.TryRenderVoices(sound, _ => Sample()));
+    }
+
+    [Fact]
+    public void RendererRejectsTruncatedJumpMarker()
+    {
+        var jump = new byte[2];
+        Assert.Null(Ps2SoundRenderer989.TryRender(Sound(
+            G(35, 0, null, new byte[1]), G(36, 0, null, jump)), _ => Sample()));
     }
 
     [Fact]

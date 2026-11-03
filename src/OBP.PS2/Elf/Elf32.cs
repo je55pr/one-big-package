@@ -211,7 +211,7 @@ public static class Elf32Reader
         }
 
         var mapping = MapVirtualRange(programHeaders, virtualAddress, length);
-        if (mapping.Length > int.MaxValue)
+        if (mapping.Length > Array.MaxLength)
         {
             throw new ArgumentOutOfRangeException(nameof(length), $"ELF32 virtual range of {mapping.Length} bytes is too large to read into one array.");
         }

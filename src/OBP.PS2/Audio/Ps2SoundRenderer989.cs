@@ -99,22 +99,30 @@ public static class Ps2SoundRenderer989
                         BinaryPrimitives.ReadUInt32LittleEndian(p.AsSpan(12)), BinaryPrimitives.ReadUInt16LittleEndian(p.AsSpan(10)))); break;
                 case 24: pc = sound.Grains.Count; continue;
                 case 25:
+                    if (p.Length < 4) return null;
                     int options = Param(0), count = Param(1);
                     if (options <= 0 || count <= 0 || pc + 1 + options * count > sound.Grains.Count) return null;
                     int selected = random.Next(options);
                     skipAt = pc + 1 + (selected + 1) * count; skipTo = pc + 1 + options * count;
                     pc += selected * count; break;
                 case 26:
+                    if (p.Length < 4) return null;
                     int maximum = BinaryPrimitives.ReadInt32LittleEndian(p);
                     if (maximum <= 0) return null;
                     tick += random.Next(maximum); break;
-                case 27: bend = Param(0) * (random.NextDouble() * 2 - 1) / 100; break;
-                case 28: bend = Math.Clamp(bend + Param(0) / 127d, -1, 1); break;
-                case 29: bend = Param(0) / (Param(0) >= 0 ? 127d : 128d); break;
+                case 27:
+                case 28:
+                case 29:
+                    if (p.Length < 2) return null;
+                    if (grain.Type == 27) bend = Param(0) * (random.NextDouble() * 2 - 1) / 100;
+                    if (grain.Type == 28) bend = Math.Clamp(bend + Param(0) / 127d, -1, 1);
+                    if (grain.Type == 29) bend = Param(0) / (Param(0) >= 0 ? 127d : 128d);
+                    break;
                 case 30:
                 case 31:
                 case 32:
                 case 33:
+                    if (p.Length < (grain.Type == 31 ? 6 : grain.Type == 30 ? 4 : 2)) return null;
                     int register = Param(0);
                     if ((uint)register >= registers.Length) return null;
                     if (grain.Type == 30) registers[register] = Param(1);
@@ -126,15 +134,17 @@ public static class Ps2SoundRenderer989
                     if (grain.Type is 32 or 33) registers[register] = Math.Clamp(registers[register] + (grain.Type == 32 ? 1 : -1), -128, 127);
                     break;
                 case 34:
+                    if (p.Length < 6) return null;
                     int test = Param(0), action = Param(1), comparison = Param(2);
                     if ((uint)test >= registers.Length) return null;
                     if (action == 0 && registers[test] >= comparison || action == 1 && registers[test] != comparison ||
                         action >= 2 && comparison >= registers[test]) pc++;
                     break;
                 case 36:
+                    if (p.Length < 2) return null;
                     int marker = -1;
                     for (int index = 0; index < sound.Grains.Count; index++)
-                        if (sound.Grains[index] is { Type: 35, Parameters: { } mark } &&
+                        if (sound.Grains[index] is { Type: 35, Parameters: { Length: >= 2 } mark } &&
                             BinaryPrimitives.ReadInt16LittleEndian(mark) == Param(0)) { marker = index; break; }
                     if (marker < 0) return null;
                     pc = marker - 1; break;
@@ -163,12 +173,18 @@ public static class Ps2SoundRenderer989
         {
             var info = sustained.Source.Info; double rate = ToneRate(sustained.Tone, sustained.Bend, pitchModifier: pitchModifier);
             double cycle = (info.PcmSampleCount - (info.LoopStartSample ?? 0)) / rate;
+            if (!(cycle > 0) || !double.IsFinite(cycle)) return null;
             double start = sustained.Start + (info.LoopStartSample ?? 0) / rate;
             double stable = Math.Max(tick / GrainRate + .25, start + .25);
             start += Math.Ceiling((stable - start) / cycle) * cycle;
-            loopStart = (int)Math.Round(start * SampleRate); end = start + cycle;
+            double loopFrame = Math.Round(start * SampleRate);
+            if (!(loopFrame >= 0 && loopFrame < SampleRate * 8)) return null;
+            loopStart = (int)loopFrame;
+            end = start + cycle;
         }
-        int length = Math.Clamp((int)Math.Ceiling((end + (sound.Loop ? 0 : .3)) * SampleRate), 1, SampleRate * 8);
+        double requestedLength = Math.Ceiling((end + (sound.Loop ? 0 : .3)) * SampleRate);
+        if (double.IsNaN(requestedLength)) return null;
+        int length = (int)Math.Clamp(requestedLength, 1d, SampleRate * 8d);
         if (loopStart >= length) return null;
         var mix = new double[length];
         foreach (var voice in voices)

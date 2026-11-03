@@ -163,6 +163,8 @@ public sealed class MalformedInputGeometryTests
         Assert.Throws<InvalidDataException>(() => RcCollision.Read(b, new RcCollision.Options(MaxOctants: 0)));
         Assert.Throws<InvalidDataException>(() => RcCollision.Read(b, new RcCollision.Options(MaxVertices: 2)));
         Assert.Throws<InvalidDataException>(() => RcCollision.Read(b, new RcCollision.Options(MaxTriangles: 0)));
+        Assert.Throws<InvalidDataException>(() => RcCollision.Read(b, new RcCollision.Options(MaxGridCells: 2)));
+        Assert.Single(RcCollision.Read(b, new RcCollision.Options(MaxGridCells: 3)).Triangles);
 
         byte[] badFace = ValidCollision();
         badFace[62] = 3; // vertex index == vertex count
@@ -207,6 +209,13 @@ public sealed class MalformedInputGeometryTests
     {
         SweepPrefixesAndBytes("collision", ValidCollision(), b => RcCollision.Read(b));
         FuzzOnlyInvalidData("collision-fuzz", 11, 3000, 8, 256, b => RcCollision.Read(b));
+    }
+
+    [Fact]
+    public void PaletteSwizzleRejectsShortInputsWithArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() => Ps2Texture.SwizzlePalette(new uint[255]));
+        Assert.Equal(256, Ps2Texture.SwizzlePalette(new uint[256]).Length);
     }
 
     // -------------------------------------------------------------- sky ----
@@ -782,6 +791,15 @@ public sealed class MalformedInputGeometryTests
     }
 
     [Fact]
+    public void ValidSkeletonWithTwoJointsStillDecodes()
+    {
+        var b = new byte[0x100];
+        I32(b, 0x14, 0x48);
+        I32(b, 0x18, 0x88);
+        Assert.Equal(2, GcUyaMoby.ReadJoints(b, 2).Count);
+    }
+
+    [Fact]
     public void MobySequenceOffsetsCannotOverflowTheBoundsChecks()
     {
         foreach (int offset in HostileOffsets.Concat(new[] { 0x100 - 0x1b, 0x100, 0x48 }))
@@ -791,6 +809,12 @@ public sealed class MalformedInputGeometryTests
             I32(b, 0x48, offset);
             Assert.All(GcUyaMoby.ReadSequences(b, 2), sequence => Assert.Empty(sequence.Frames));
         }
+
+        // The final legal 0x1c-byte sequence header must still be accepted.
+        var boundary = new byte[0x100];
+        boundary[0x0c] = 1;
+        I32(boundary, 0x48, 0x100 - 0x1c);
+        Assert.Empty(Assert.Single(GcUyaMoby.ReadSequences(boundary, 2)).Frames);
 
         // A sequence whose frame table runs past the buffer is kept without frames.
         var tooMany = new byte[0x100];

@@ -32,7 +32,7 @@ public static class RcCollision
         ObpBounds Bounds,
         IReadOnlyList<int> MaterialIds);
 
-    public sealed record Options(int MaxOctants = 200_000, int MaxVertices = 8_000_000, int MaxTriangles = 8_000_000);
+    public sealed record Options(int MaxOctants = 200_000, int MaxVertices = 8_000_000, int MaxTriangles = 8_000_000, long MaxGridCells = 16_000_000);
 
     public static Mesh Read(byte[] bytes, Options? options = null)
     {
@@ -71,7 +71,7 @@ public static class RcCollision
         // The tree is a DAG of offsets, so hostile nodes can share children and
         // make the slot walk multiplicative. Legitimate trees visit about one
         // slot per four input bytes; allow generous slack and fail beyond it.
-        long slotBudget = 16L * bytes.Length + 1_000_000;
+        long slotBudget = Math.Min(options.MaxGridCells, 16L * bytes.Length + 1_000_000);
 
         int zCoord = S16(meshOffset);
         int zCount = U16(meshOffset + 2);

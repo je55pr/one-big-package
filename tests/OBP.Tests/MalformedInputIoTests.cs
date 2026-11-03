@@ -180,6 +180,18 @@ public sealed class MalformedInputIoTests
         Assert.Throws<InvalidDataException>(() => Iso9660Filesystem.Open(Mem(bytes)));
     }
 
+    [Theory]
+    [InlineData(512)]
+    [InlineData(1024)]
+    [InlineData(2048)]
+    [InlineData(32768)]
+    public void ValidPowerOfTwoLogicalBlockSizesAreAccepted(int blockSize)
+    {
+        byte[] bytes = ValidIso();
+        PatchBoth16(bytes, Pvd + 128, (ushort)blockSize);
+        Assert.Equal(blockSize, Iso9660Filesystem.Open(Mem(bytes)).Volume.LogicalBlockSize);
+    }
+
     [Fact]
     public void PrimaryDescriptorFieldsAreCrossChecked()
     {
@@ -486,6 +498,9 @@ public sealed class MalformedInputIoTests
         var segment = new Elf32ProgramHeader(0, 1, 0, 0x1000, 0x1000, 3_000_000_000L, 3_000_000_000L, 5, 16);
         var reader = new SparseReader(3_100_000_000L);
         Assert.Throws<ArgumentOutOfRangeException>(() => Elf32Reader.ReadVirtualRange(reader, [segment], 0x1000, 3_000_000_000L));
+        long justAboveArrayLimit = (long)Array.MaxLength + 1;
+        var boundarySegment = segment with { FileSize = justAboveArrayLimit, MemorySize = justAboveArrayLimit };
+        Assert.Throws<ArgumentOutOfRangeException>(() => Elf32Reader.ReadVirtualRange(reader, [boundarySegment], 0x1000, justAboveArrayLimit));
     }
 
     [Fact]
