@@ -114,7 +114,7 @@ public sealed class Rac2ParticleSession(Rac2ParticleAssets assets, Rac2ParticleR
             Position = p.Position,
             Velocity = p.Velocity,
             NativeSize = p.InitialSize,
-            Color = p.Rgb & 0xffffff | (uint)p.InitialOpacity << 24,
+            Color = Rac2ParticleColor.Pack(p.Rgb, (uint)p.InitialOpacity),
             Angle = (byte)random.Below(255),
             Remaining = lifespan,
             Total = lifespan,
@@ -135,8 +135,8 @@ public sealed class Rac2ParticleSession(Rac2ParticleAssets assets, Rac2ParticleR
             if (_slots[i] is not { } p) continue;
             // GC's callback expires BEFORE colour/motion/size; no final movement at timer zero.
             if (--p.Remaining <= 0) { Remove(p); continue; }
-            byte alpha = unchecked((byte)((p.Color >> 24) + p.OpacityStep));
-            p.Color = p.Color & 0xffffff | (uint)alpha << 24;
+            byte alpha = unchecked((byte)(Rac2ParticleColor.Alpha(p.Color) + p.OpacityStep));
+            p.Color = Rac2ParticleColor.Pack(p.Color, alpha);
             p.Position = M.Add(p.Position, p.Velocity);
             p.Velocity = new(p.Velocity.X, p.Velocity.Y, M.Subtract(p.Velocity.Z, p.Gravity));
             p.Angle = unchecked((byte)(p.Angle + p.Spin));

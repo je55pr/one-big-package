@@ -65,7 +65,7 @@ public sealed class Rac3ParticleDraw
         int near = (p.DepthRange & 15) << 10, far = Math.Min((p.DepthRange & 0xf0) << 13, view.FarDepthLimit);
         if (z <= near || z >= far) return null;
         int fade = Math.Min(4096, Math.Min(z - near, (far - z) >> 4));
-        uint color = p.Color & 0xffffff | (uint)(fade * (p.Color >> 24) >> 12) << 24;
+        uint color = Rac3ParticleColor.Pack(p.Color, (uint)(fade * Rac3ParticleColor.Alpha(p.Color) >> 12));
         float q = M.VuDivide(M.Multiply(p.NativeSize, view.ProjectionW), M.Add(depth, .5f));
         Vector2 axes = new(M.Multiply(_cosines[p.Angle], q), M.Multiply(_cosines[(p.Angle + 192) & 255], q));
         return new(relative, axes, color);

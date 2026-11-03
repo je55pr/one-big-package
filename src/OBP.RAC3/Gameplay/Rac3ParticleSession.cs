@@ -94,7 +94,7 @@ public sealed class Rac3ParticleSession
             PositionW = p.Position.W,
             Velocity = p.Velocity,
             NativeSize = p.InitialSize,
-            Color = p.Rgb & 0xffffff | (uint)p.InitialOpacity << 24,
+            Color = Rac3ParticleColor.Pack(p.Rgb, (uint)p.InitialOpacity),
             Angle = (byte)_random.Below(255),
             Remaining = p.Lifespan,
             Total = p.Lifespan,
@@ -177,7 +177,7 @@ public sealed class Rac3ParticleSession
         {
             if (_slots[i] is not { } p) continue;
             if (--p.Remaining <= 0) { Remove(p); continue; }
-            p.Color = p.Color & 0xffffff | (uint)unchecked((byte)((p.Color >> 24) + p.OpacityStep)) << 24;
+            p.Color = Rac3ParticleColor.Pack(p.Color, unchecked((byte)(Rac3ParticleColor.Alpha(p.Color) + p.OpacityStep)));
             p.Position = M.Add(p.Position, p.Velocity); // Original VADD.xyz; W remains copied.
             p.Velocity = new(p.Velocity.X, p.Velocity.Y, M.Subtract(p.Velocity.Z, p.Gravity));
             p.Angle = unchecked((byte)(p.Angle + p.Spin)); p.NativeSize = M.Add(p.NativeSize, p.SizeStep);
