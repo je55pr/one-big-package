@@ -554,34 +554,8 @@ public static partial class Rac1MobyPose
         { affine[8], affine[9], affine[10] },
     };
 
-    private static bool IsRigid(float[] affine)
-    {
-        if (affine.Length != 15)
-        {
-            return false;
-        }
-        var a = Affine3x3(affine);
-        for (int row = 0; row < 3; row++)
-        {
-            double length2 = 0;
-            for (int col = 0; col < 3; col++) length2 += a[row, col] * a[row, col];
-            if (System.Math.Abs(length2 - 1.0) > RigidTolerance) return false;
-        }
-        for (int aRow = 0; aRow < 3; aRow++)
-        {
-            for (int bRow = aRow + 1; bRow < 3; bRow++)
-            {
-                double dot = 0;
-                for (int col = 0; col < 3; col++) dot += a[aRow, col] * a[bRow, col];
-                if (System.Math.Abs(dot) > RigidTolerance) return false;
-            }
-        }
-        double det =
-            a[0, 0] * (a[1, 1] * a[2, 2] - a[1, 2] * a[2, 1]) -
-            a[0, 1] * (a[1, 0] * a[2, 2] - a[1, 2] * a[2, 0]) +
-            a[0, 2] * (a[1, 0] * a[2, 1] - a[1, 1] * a[2, 0]);
-        return System.Math.Abs(det - 1.0) <= RigidTolerance;
-    }
+    private static bool IsRigid(float[] affine) =>
+        affine.Length == 15 && IsRigidMatrix(Affine3x3(affine));
 
     private static double[,] QuaternionMatrix(Rac1MobyAnimation.JointQuaternion q)
     {

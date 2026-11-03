@@ -105,7 +105,7 @@ public sealed partial class Rac1RatchetMovementController
         UpdateExtendedInputBuffers(input, context);
         _specialLeftSupport |= !contact.IsGrounded && Phase != Rac1RatchetMovementPhase.Grounded;
         if (_landing is not null || TryBeginLanding(contact, context))
-            return StepLanding(input, contact, context, resolveNativeFacingYaw);
+            return StepLanding(input, context, resolveNativeFacingYaw);
         if (TryStepPostLandingCarry(input, contact, out var carryStep))
             return carryStep;
 
@@ -479,7 +479,7 @@ public sealed partial class Rac1RatchetMovementController
         return true;
     }
 
-    private StepResult StepLanding(PlayerControlIntent input, Rac1PlayerContactResult contact,
+    private StepResult StepLanding(PlayerControlIntent input,
         Rac1MovementContext context, Func<Rac1RatchetYawMode, double>? resolveNativeFacingYaw)
     {
         var contactMotion = _contactProcessedMotion ?? new(_planarX, _planarY, _verticalStep);

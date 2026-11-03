@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.Numerics;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
+using static OBP.RAC1.Rac1Finite;
 
 namespace OBP.RAC1.Gameplay;
 
@@ -38,7 +39,7 @@ public sealed class Rac1AmoeboidFamilySession
         public float Health { get; set; } = 3;
         public bool UsedReserve { get; set; }
         public bool ContactEmitted { get; set; }
-        public int Sequence { get; set; } = 0;
+        public int Sequence { get; set; }
     }
 
     public Rac1AmoeboidFamilySession(Rac1MobyRuntimeSession runtime,
@@ -285,8 +286,6 @@ public sealed class Rac1AmoeboidFamilySession
         new(e.Native.InstanceIndex, e.Native.NativeClassId, e.Group, e.Native.State.NativeState,
             e.Native.IsActive, e.Health, e.Position, e.Yaw, e.Sequence, Vector3.Zero, false);
 
-    private static bool Finite(Vector3 p) =>
-        float.IsFinite(p.X) && float.IsFinite(p.Y) && float.IsFinite(p.Z);
 
     private sealed class FamilyDamageConsumer(Rac1AmoeboidFamilySession session, int cls) : IRac1MobyDamageConsumer
     {
