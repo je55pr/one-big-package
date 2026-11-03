@@ -10,9 +10,11 @@ namespace OBP.Fusion;
 /// <summary>OBP-authored trigger/placement data. Native recipe parameters stay behind the registered source factory.</summary>
 public sealed record EffectExperimentDefinition(int Version, string Id, string ResetKey, IReadOnlyList<EffectExperimentEntry> Effects)
 {
+    private static readonly JsonSerializerOptions ParseOptions = new() { PropertyNameCaseInsensitive = true };
+
     public static EffectExperimentDefinition Parse(string json)
     {
-        var definition = JsonSerializer.Deserialize<EffectExperimentDefinition>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+        var definition = JsonSerializer.Deserialize<EffectExperimentDefinition>(json, ParseOptions)
             ?? throw new JsonException("Missing effect experiment.");
         definition.Validate(); return definition;
     }

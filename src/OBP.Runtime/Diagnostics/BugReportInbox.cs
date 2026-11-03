@@ -90,7 +90,7 @@ public sealed class BugReportInbox
         WriteAtomicBytes(path, JsonSerializer.SerializeToUtf8Bytes(new PendingDraft(1, sessionId, report), Json));
     }
 
-    public int PendingDraftCount() => PendingDraftFiles().Count();
+    public int PendingDraftCount() => PendingDraftFiles().Count;
 
     /// <summary>
     /// Restore submitted reports from the original capture's completed tape.
