@@ -27,35 +27,42 @@ internal static class Rac2RetailLevelFixtures
 }
 
 /// <summary>
-/// Imports the retail Oozla (LEVEL1) world once per test class. The tests only read the shared world, so one import
-/// replaces the one-per-test import the single large world-import test used to perform.
+/// Imports the retail Oozla (LEVEL1) world once per test class, on first use. The tests only read the shared world, so
+/// one import replaces the one-per-test import the single large world-import test used to perform. The import is lazy so
+/// that a LEVEL1 import failure fails only the tests that read the Oozla world, not the whole class.
 /// </summary>
 public sealed class Rac2OozlaWorldImportFixture : IDisposable
 {
-    private readonly FileRandomAccessReader? _reader;
+    private readonly Lazy<(FileRandomAccessReader? Reader, RuntimeWorld? World)> _import = new(Import);
 
-    public Rac2OozlaWorldImportFixture()
+    /// <summary>The imported Oozla world, or <see langword="null"/> when <c>OBP_GC_ISO</c> is not set.</summary>
+    public RuntimeWorld? World => _import.Value.World;
+
+    public void Dispose()
+    {
+        if (_import.IsValueCreated)
+        {
+            _import.Value.Reader?.Dispose();
+        }
+    }
+
+    private static (FileRandomAccessReader? Reader, RuntimeWorld? World) Import()
     {
         var iso = Environment.GetEnvironmentVariable("OBP_GC_ISO");
         if (string.IsNullOrEmpty(iso))
         {
-            return;
+            return (null, null);
         }
 
-        _reader = new FileRandomAccessReader(iso);
+        var reader = new FileRandomAccessReader(iso);
         try
         {
-            World = Rac2WorldImport.Build(_reader, 1);
+            return (reader, Rac2WorldImport.Build(reader, 1));
         }
         catch
         {
-            _reader.Dispose();
+            reader.Dispose();
             throw;
         }
     }
-
-    /// <summary>The imported Oozla world, or <see langword="null"/> when <c>OBP_GC_ISO</c> is not set.</summary>
-    public RuntimeWorld? World { get; }
-
-    public void Dispose() => _reader?.Dispose();
 }
