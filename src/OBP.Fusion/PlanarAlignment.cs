@@ -126,7 +126,7 @@ public static class PlanarAlignmentSolver
         // angle φ for R_std(φ); CompositionTransform's rotation R_y(θ) equals
         // R_std(−θ), so θ = −φ.
         double phi = System.Math.Atan2(sCross, sDot);
-        double rotationDegrees = CompositionTransform.NormalizeDegrees(-phi * 180.0 / System.Math.PI);
+        double rotationDegrees = CompositionTransform.NormalizeDegrees(-double.RadiansToDegrees(phi));
 
         double scale = 1.0;
         if (allowScale)

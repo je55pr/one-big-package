@@ -28,6 +28,9 @@ public sealed record CompositionTransform(
     double RotationYDegrees = 0,
     double Scale = 1.0)
 {
+    private const double HalfTurnDegrees = 180.0;
+    private const double FullTurnDegrees = 360.0;
+
     public static readonly CompositionTransform Identity = new();
 
     public bool IsIdentity =>
@@ -54,7 +57,7 @@ public sealed record CompositionTransform(
     /// </summary>
     public static (double X, double Z) RotateY(double x, double z, double degrees)
     {
-        double t = degrees * System.Math.PI / 180.0;
+        double t = double.DegreesToRadians(degrees);
         double c = System.Math.Cos(t);
         double sn = System.Math.Sin(t);
         return (x * c + z * sn, -x * sn + z * c);
@@ -66,10 +69,8 @@ public sealed record CompositionTransform(
         // outer.Apply(this.Apply(p)). Only needed for nested roots; kept simple.
         var origin = outer.Apply(Apply(Vec3.Zero));
         var unitX = outer.Apply(Apply(new Vec3(1, 0, 0))) - origin;
-        var unitZ = outer.Apply(Apply(new Vec3(0, 0, 1))) - origin;
         double scale = System.Math.Sqrt(unitX.X * unitX.X + unitX.Z * unitX.Z);
-        double deg = System.Math.Atan2(-unitX.Z, unitX.X) * 180.0 / System.Math.PI;
-        _ = unitZ;
+        double deg = double.RadiansToDegrees(System.Math.Atan2(-unitX.Z, unitX.X));
         return new CompositionTransform(origin.X, origin.Y, origin.Z, deg, scale);
     }
 
@@ -84,9 +85,9 @@ public sealed record CompositionTransform(
     /// <summary>Fold a rotation into (−180, 180].</summary>
     public static double NormalizeDegrees(double d)
     {
-        d %= 360.0;
-        if (d > 180.0) d -= 360.0;
-        if (d <= -180.0) d += 360.0;
+        d %= FullTurnDegrees;
+        if (d > HalfTurnDegrees) d -= FullTurnDegrees;
+        if (d <= -HalfTurnDegrees) d += FullTurnDegrees;
         return d;
     }
 }

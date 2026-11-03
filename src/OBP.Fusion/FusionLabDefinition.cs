@@ -6,6 +6,10 @@ namespace OBP.Fusion;
 public sealed record FusionLabDefinition
 {
     public const int CurrentVersion = 1;
+
+    /// <summary>Largest allowed gap, in lab units, between the shared wall of two connected rooms.</summary>
+    private const double PortalAlignmentTolerance = 0.001;
+
     public int Version { get; init; } = CurrentVersion;
     public required string Id { get; init; }
     public required FusionLabPoint Spawn { get; init; }
@@ -57,8 +61,8 @@ public sealed record FusionLabDefinition
                 !edges.Add(connection.From + ">" + connection.To) ||
                 !double.IsFinite(connection.OpeningWidth) ||
                 connection.OpeningWidth < 3 || connection.OpeningWidth > Math.Min(from.Width, to.Width) - 1 ||
-                Math.Abs((from.CenterZ + from.Depth / 2) - (to.CenterZ - to.Depth / 2)) > 0.001 ||
-                Math.Abs(from.CenterX - to.CenterX) > 0.001)
+                Math.Abs((from.CenterZ + from.Depth / 2) - (to.CenterZ - to.Depth / 2)) > PortalAlignmentTolerance ||
+                Math.Abs(from.CenterX - to.CenterX) > PortalAlignmentTolerance)
                 throw new ArgumentException($"Invalid northbound connection '{connection.From}' > '{connection.To}'.");
             adjacency[from.Id].Add(to.Id);
             adjacency[to.Id].Add(from.Id);

@@ -21,6 +21,18 @@ public sealed class EffectWorldSessionTests
         return registry;
     }
     [Theory]
+    [InlineData(1, true)]
+    [InlineData(36000, true)]
+    [InlineData(0, false)]
+    [InlineData(36001, false)]
+    public void EmissionTickRequestBoundsAreCharacterised(int ticks, bool admitted)
+    {
+        var factory = new FakeFactory(Key(ObpSourceGame.Rac1));
+        using var world = new EffectWorldSession("world", 1, Registry(factory));
+        if (admitted) Assert.Equal(EffectAdmission.Ready, world.Start(Request(world, factory.Key, ticks: ticks)).Admission);
+        else Assert.Throws<ArgumentException>(() => world.Start(Request(world, factory.Key, ticks: ticks)));
+    }
+    [Theory]
     [InlineData("rac1:LEVEL0")]
     [InlineData("rac3:TABLE1")]
     [InlineData("obp:fusion-lab")]

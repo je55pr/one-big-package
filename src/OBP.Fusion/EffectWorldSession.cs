@@ -5,6 +5,13 @@ namespace OBP.Fusion;
 
 public readonly record struct EffectHandle(string WorldInstanceId, long LeaseGeneration, long ResetGeneration, long Sequence);
 public enum EffectAdmission { Ready, AlreadyConsumed, StaleLease, RetiredOwner, Unavailable, CapacityExceeded, Disposed }
+/// <summary>Shared admission bounds for authored and replayed effect requests.</summary>
+internal static class EffectBounds
+{
+    /// <summary>Longest emission window, in native effect ticks, that a request may ask for (10 minutes at 60 Hz).</summary>
+    public const int MaximumEmissionTicks = 36_000;
+}
+
 public sealed record EffectRequest(string WorldInstanceId, long LeaseGeneration, long ResetGeneration, long Sequence,
     RuntimeEffectRecipeKey Recipe, uint Seed, RuntimeEffectPose Pose, int EmissionTicks, ActorInstanceKey? AttachedActor = null);
 public sealed record EffectAdmissionResult(EffectAdmission Admission, EffectHandle? Handle, RuntimeEffectProblem? Problem = null);
@@ -49,7 +56,7 @@ public sealed class EffectWorldSession : IDisposable
         if (request.WorldInstanceId != WorldInstanceId || request.LeaseGeneration != LeaseGeneration || request.ResetGeneration != ResetGeneration)
             return new(EffectAdmission.StaleLease, null);
         request.Pose.Validate(); request.Recipe.Validate();
-        if (request.Sequence < 1 || request.EmissionTicks is < 1 or > 36000) throw new ArgumentException("Invalid effect request bounds.");
+        if (request.Sequence < 1 || request.EmissionTicks is < 1 or > EffectBounds.MaximumEmissionTicks) throw new ArgumentException("Invalid effect request bounds.");
         var handle = new EffectHandle(WorldInstanceId, LeaseGeneration, ResetGeneration, request.Sequence);
         if (request.Sequence <= _lastSequence) return new(EffectAdmission.AlreadyConsumed, _instances.ContainsKey(handle) ? handle : null);
         if (_instances.Count >= _maximumInstances) return new(EffectAdmission.CapacityExceeded, null);

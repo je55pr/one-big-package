@@ -23,7 +23,7 @@ public sealed record EffectExperimentDefinition(int Version, string Id, string R
         var ids = new HashSet<string>(StringComparer.Ordinal);
         foreach (var effect in Effects)
         {
-            if (effect is null || string.IsNullOrWhiteSpace(effect.Id) || !ids.Add(effect.Id) || effect.EmissionTicks is < 1 or > 36000 ||
+            if (effect is null || string.IsNullOrWhiteSpace(effect.Id) || !ids.Add(effect.Id) || effect.EmissionTicks is < 1 or > EffectBounds.MaximumEmissionTicks ||
                 effect.Position is null || effect.End is null || string.IsNullOrWhiteSpace(effect.AssetKind) || string.IsNullOrWhiteSpace(effect.OriginalId))
                 throw new ArgumentException("Invalid or duplicate effect experiment entry.");
             effect.Key.Validate(); effect.Pose.Validate();

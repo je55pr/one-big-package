@@ -28,6 +28,18 @@ public class CompositionTransformTests
     }
 
     [Fact]
+    public void Then_ComposesLikeNestedApply()
+    {
+        var inner = new CompositionTransform(3, 1, -4, RotationYDegrees: 30, Scale: 2);
+        var outer = new CompositionTransform(-7, 2, 5, RotationYDegrees: 75, Scale: 0.5);
+        var composed = inner.Then(outer);
+        foreach (var p in new[] { Vec3.Zero, new Vec3(1, 0, 0), new Vec3(0, 3, 1), new Vec3(-8, 2.5, 13) })
+            AssertClose(outer.Apply(inner.Apply(p)), composed.Apply(p), 1e-9);
+        Assert.Equal(1.0, composed.Scale, 9);
+        Assert.Equal(105.0, composed.RotationYDegrees, 9);
+    }
+
+    [Fact]
     public void Translation_AddsOffset()
     {
         var t = new CompositionTransform(10, 5, -2);
