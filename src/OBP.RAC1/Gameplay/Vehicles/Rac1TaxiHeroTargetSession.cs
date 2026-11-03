@@ -1,3 +1,5 @@
+using static OBP.RAC1.Rac1Finite;
+
 namespace OBP.RAC1.Gameplay;
 
 /// <summary>
@@ -19,7 +21,7 @@ public sealed class Rac1TaxiHeroTargetSession
     public Rac1TaxiHeroTargetSession(Rac1TaxiPoint target, double targetYaw, int flag = 0,
         int movementMode = 0)
     {
-        if (!IsFinite(target) || !double.IsFinite(targetYaw))
+        if (!Finite(target) || !double.IsFinite(targetYaw))
             throw new ArgumentOutOfRangeException(nameof(target));
         if (movementMode is not (0 or 1 or 3))
             throw new ArgumentOutOfRangeException(nameof(movementMode));
@@ -49,7 +51,7 @@ public sealed class Rac1TaxiHeroTargetSession
     /// </summary>
     public void Retarget(Rac1TaxiPoint target, double heading, int flag)
     {
-        if (!IsFinite(target) || !double.IsFinite(heading))
+        if (!Finite(target) || !double.IsFinite(heading))
             throw new ArgumentOutOfRangeException(nameof(target));
         Target = target;
         TargetYaw = Wrap(heading);
@@ -65,7 +67,7 @@ public sealed class Rac1TaxiHeroTargetSession
     public void Observe(Rac1TaxiPoint player, double yaw, double planarSpeedPerFrame,
         bool animationFinished)
     {
-        if (!IsFinite(player) || !double.IsFinite(yaw) ||
+        if (!Finite(player) || !double.IsFinite(yaw) ||
             !double.IsFinite(planarSpeedPerFrame) || planarSpeedPerFrame < 0)
             throw new ArgumentOutOfRangeException(nameof(player));
         double dx = player.X - Target.X;
@@ -95,9 +97,6 @@ public sealed class Rac1TaxiHeroTargetSession
         }
     }
 
-    private static bool IsFinite(Rac1TaxiPoint point) =>
-        double.IsFinite(point.X) && double.IsFinite(point.Y) &&
-        double.IsFinite(point.Z);
 
     private static double Wrap(double angle) => Math.IEEERemainder(angle, 2d * Math.PI);
 }

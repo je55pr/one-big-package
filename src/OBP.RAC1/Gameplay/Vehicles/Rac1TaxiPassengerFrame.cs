@@ -1,3 +1,5 @@
+using static OBP.RAC1.Rac1Finite;
+
 namespace OBP.RAC1.Gameplay;
 
 /// <summary>
@@ -42,9 +44,6 @@ public readonly record struct Rac1TaxiCabBasis(
     private static bool Close(double value, double expected) =>
         Math.Abs(value - expected) <= 0.0001d;
 
-    private static bool Finite(Rac1TaxiPoint p) =>
-        double.IsFinite(p.X) && double.IsFinite(p.Y) &&
-        double.IsFinite(p.Z);
 
     private static double Dot(Rac1TaxiPoint a, Rac1TaxiPoint b) =>
         a.X * b.X + a.Y * b.Y + a.Z * b.Z;
@@ -99,7 +98,4 @@ public sealed class Rac1TaxiPassengerFrame
             cabPosition.Z + offset.Z);
     }
 
-    private static bool Finite(Rac1TaxiPoint p) =>
-        double.IsFinite(p.X) && double.IsFinite(p.Y) &&
-        double.IsFinite(p.Z);
 }

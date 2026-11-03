@@ -1,3 +1,5 @@
+using static OBP.RAC1.Rac1Finite;
+
 namespace OBP.RAC1.Gameplay;
 
 /// <summary>
@@ -14,7 +16,7 @@ public static class Rac1TaxiNativeDepartureClearance
     public static bool Cleared(
         Rac1TaxiPoint taxi, Rac1TaxiPoint hero, int? departurePathSelector)
     {
-        if (!IsFinite(taxi) || !IsFinite(hero))
+        if (!Finite(taxi) || !Finite(hero))
             return false;
 
         double x = taxi.X - hero.X;
@@ -26,6 +28,4 @@ public static class Rac1TaxiNativeDepartureClearance
         return squared + y * y > WithDeparturePathRadius * WithDeparturePathRadius;
     }
 
-    private static bool IsFinite(Rac1TaxiPoint p) =>
-        double.IsFinite(p.X) && double.IsFinite(p.Y) && double.IsFinite(p.Z);
 }

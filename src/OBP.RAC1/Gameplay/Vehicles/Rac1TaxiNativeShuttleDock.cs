@@ -1,3 +1,5 @@
+using static OBP.RAC1.Rac1Finite;
+
 namespace OBP.RAC1.Gameplay;
 
 /// <summary>
@@ -20,7 +22,7 @@ public sealed class Rac1TaxiNativeShuttleDock
         ArgumentNullException.ThrowIfNull(sideOnePath);
         if (sideZeroPath.Count < 2 || sideOnePath.Count < 2 ||
             initialSide is not (0 or 1) || optionalCuboidSelector < -1 ||
-            !sideZeroPath.All(IsFinite) || !sideOnePath.All(IsFinite))
+            !sideZeroPath.All(Finite) || !sideOnePath.All(Finite))
             throw new ArgumentException("Invalid native two-sided shuttle paths or selectors.");
 
         SideZeroPath = sideZeroPath;
@@ -44,7 +46,7 @@ public sealed class Rac1TaxiNativeShuttleDock
     /// </summary>
     public int? OppositeNearestPathSide(Rac1TaxiPoint position)
     {
-        if (!IsFinite(position)) return null;
+        if (!Finite(position)) return null;
         return position.DistanceSquared(SideZeroPath[0]) <
             position.DistanceSquared(SideOnePath[0]) ? 1 : 0;
     }
@@ -62,6 +64,4 @@ public sealed class Rac1TaxiNativeShuttleDock
             ? heroSide : null;
     }
 
-    private static bool IsFinite(Rac1TaxiPoint p) =>
-        double.IsFinite(p.X) && double.IsFinite(p.Y) && double.IsFinite(p.Z);
 }
