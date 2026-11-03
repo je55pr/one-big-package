@@ -1,8 +1,7 @@
-using OBP.Core;
-using System.Buffers.Binary;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
+using static OBP.Tests.Rac1BoltCrateFixtures;
 
 namespace OBP.Tests;
 
@@ -250,20 +249,5 @@ public sealed class Rac1BoltCrateTests
         Assert.Equal(5, Rac1BoltCrate.ValueForNativePickupClass(14));
         Assert.Equal(20, Rac1BoltCrate.ValueForNativePickupClass(15));
         Assert.Equal(50, Rac1BoltCrate.ValueForNativePickupClass(16));
-    }
-
-    private static RuntimeDynamicObject Class500(int uid, int rewardCentre)
-    {
-        var raw = new byte[0x78];
-        BinaryPrimitives.WriteUInt16LittleEndian(raw.AsSpan(0x0c, 2), checked((ushort)uid));
-        BinaryPrimitives.WriteInt32LittleEndian(raw.AsSpan(0x10, 4), rewardCentre);
-        BinaryPrimitives.WriteInt32LittleEndian(raw.AsSpan(0x18, 4), 500);
-        var pvar = new byte[0x100];
-
-        return new RuntimeDynamicObject(
-            ObpSourceGame.Rac1, 500, 89, uid, "moby:500", "moby:89",
-            new RuntimeObjectTransform(new double[16]), Array.Empty<RuntimeObjectMesh>(),
-            [new RuntimeOpaquePayload(Rac1BoltCrate.InstancePayloadFormat, raw),
-             new RuntimeOpaquePayload(Rac1BoltCrate.PVarPayloadFormat, pvar)]);
     }
 }
