@@ -55,6 +55,36 @@ public sealed class WorldEntryPolicyOwnershipTests
     }
 
     [Fact]
+    public void WorldEntryFailuresDelegateBrowserRecoveryAndSupersededQuitPolicy()
+    {
+        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
+        string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.WorldEntry.cs"));
+        string navigation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "ApplicationNavigationCoordinator.cs"));
+        string lifecycle = File.ReadAllText(Path.Combine(RepoPaths.Root, "src", "OBP.Godot", "ApplicationLifecycle.cs"));
+
+        Assert.Contains("_navigation.ReportWorldEntryFailure(destinationId, error, _world is not null)", entry, StringComparison.Ordinal);
+        Assert.Contains("AbandonFailedRac1Travel();", entry, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void ReportWorldPreparationFailure(", entry, StringComparison.Ordinal);
+        Assert.DoesNotContain("ShowDestinationSelector();", entry, StringComparison.Ordinal);
+        Assert.Contains("ReportFailure: (error, superseded) => ApplicationLifecycle.ReportWorldPreparationFailure(this, error, superseded)", root, StringComparison.Ordinal);
+        Assert.DoesNotContain("ReportFailure: ReportWorldPreparationFailure", root, StringComparison.Ordinal);
+
+        int method = navigation.IndexOf("internal void ReportWorldEntryFailure(", StringComparison.Ordinal);
+        int next = navigation.IndexOf("internal void SetSelectorHint(", method, StringComparison.Ordinal);
+        Assert.True(method >= 0 && next > method);
+        string recovery = navigation[method..next];
+        Assert.Contains("Error($\"{destinationId} could not load: {error.Message}\")", recovery, StringComparison.Ordinal);
+        Assert.Contains("if (!hasActiveWorld)", recovery, StringComparison.Ordinal);
+        Assert.Contains("ShowSelector();", recovery, StringComparison.Ordinal);
+        Assert.Contains("SetSelectorHint(error.Message);", recovery, StringComparison.Ordinal);
+        Assert.True(recovery.IndexOf("Error(", StringComparison.Ordinal)
+            < recovery.IndexOf("ShowSelector();", StringComparison.Ordinal));
+
+        Assert.Contains("deferred world preparation failed (superseded={superseded})", lifecycle, StringComparison.Ordinal);
+        Assert.Contains("if (!superseded && owner.IsInsideTree()) RequestQuit(owner, \"world-preparation-failed\", 2)", lifecycle, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void AuthoredDuplicateIsHiddenByAvatarPresentationOwner()
     {
         string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.WorldEntry.cs"));

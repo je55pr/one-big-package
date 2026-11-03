@@ -303,6 +303,18 @@ internal sealed class ApplicationNavigationCoordinator
             _ports.Sources().SetStatus(message, error: true);
     }
 
+    // The browser owns recovery UI after an entry failure. An existing world
+    // must retain its scene and controls; a failed initial join restores the selector.
+    internal void ReportWorldEntryFailure(string destinationId, Exception error, bool hasActiveWorld)
+    {
+        Error($"{destinationId} could not load: {error.Message}");
+        if (!hasActiveWorld)
+        {
+            ShowSelector();
+            SetSelectorHint(error.Message);
+        }
+    }
+
     internal void SetSelectorHint(string message) => _selector?.SetHint(
         _ports.DebugOutput() ? message : "That world could not be opened. Please choose another world.", error: true);
 
