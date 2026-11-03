@@ -45,7 +45,11 @@ public static class AnimatedMeshFraming
         int cut = name.LastIndexOf("_t", StringComparison.Ordinal);
         if (cut < 0 || cut + 2 >= name.Length)
             return name;
-        for (int i = cut + 2; i < name.Length; i++)
+        // RAC3 names its materialless surface with texture id -1 (`_t-1`).
+        int digits = name[cut + 2] == '-' ? cut + 3 : cut + 2;
+        if (digits >= name.Length)
+            return name;
+        for (int i = digits; i < name.Length; i++)
             if (!char.IsAsciiDigit(name[i]))
                 return name;
         return name[..cut];

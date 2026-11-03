@@ -98,6 +98,9 @@ public sealed class AnimatedMeshFramingTests
 
     [Theory]
     [InlineData("ratchet_i3_t12", "ratchet_i3")]
+    [InlineData("ratchet_i3_t-1", "ratchet_i3")]
+    [InlineData("ratchet_i3_t-", "ratchet_i3_t-")]
+    [InlineData("ratchet_i3_t--1", "ratchet_i3_t--1")]
     [InlineData("uya-preview-moby5_i2_s1_t0", "uya-preview-moby5_i2_s1")]
     [InlineData("noSuffix", "noSuffix")]
     [InlineData("tail_t", "tail_t")]

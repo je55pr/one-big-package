@@ -54,9 +54,11 @@ internal static class GodotPlayerSpawnPlacement
         if (animFocus)
         {
             var measured = AnimatedMeshFraming.MeasureFirstInstance(world.AnimatedMeshes);
-            if (measured.Bounds is { } bounds)
+            var focusCentre = measured.Bounds is { } b0
+                ? RuntimeWorldScene.ToScene(b0.Center.X, b0.Center.Y, b0.Center.Z)
+                : (Vector3?)null;
+            if (measured.Bounds is { } bounds && focusCentre is { } centre && IsFinite(centre))
             {
-                var centre = RuntimeWorldScene.ToScene(bounds.Center.X, bounds.Center.Y, bounds.Center.Z);
                 spawn = centre + new Vector3(0f, 2.5f, 9f);
                 var look = centre - spawn;
                 yaw = Mathf.Atan2(look.X, look.Z) + Mathf.Pi;
@@ -65,7 +67,7 @@ internal static class GodotPlayerSpawnPlacement
             else
             {
                 // Explicit failure: keep the authored/bounds placement chosen above.
-                log($"[OBPGame] anim-focus spawn not applied ({measured.Status}): {measured.Detail}");
+                log($"[OBPGame] anim-focus spawn not applied ({measured.Status}): {(measured.Succeeded ? "centre outside float range" : measured.Detail)}");
             }
         }
 
@@ -91,4 +93,6 @@ internal static class GodotPlayerSpawnPlacement
 
         return new(spawn, yaw);
     }
+
+    private static bool IsFinite(Vector3 v) => float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
 }

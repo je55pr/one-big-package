@@ -121,6 +121,19 @@ public sealed class PlayerSpawnPlacementOwnershipTests
         Assert.True(float.IsFinite(placement.Position.X) && float.IsFinite(placement.Position.Y) && float.IsFinite(placement.Position.Z));
     }
 
+    [Fact]
+    public void AnimFocusCentreBeyondFloatRangeKeepsBaseSpawn()
+    {
+        var logs = new List<string>();
+        var baseline = GodotPlayerSpawnPlacement.Resolve(TestWorld(), null,
+            animFocus: false, scripted: false, crateFocus: () => null, log: _ => { });
+        var placement = GodotPlayerSpawnPlacement.Resolve(AnimatedWorld([0, 0, 0], [1e40, 0, 0]), null,
+            animFocus: true, scripted: false, crateFocus: () => null, log: logs.Add);
+
+        Assert.Equal(baseline, placement);
+        Assert.Contains(logs, l => l.Contains("anim-focus spawn not applied"));
+    }
+
     public static TheoryData<double[][]> InvalidAnimatedFrames() => new()
     {
         new double[][] { [] },

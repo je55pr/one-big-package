@@ -37,8 +37,16 @@ internal static class GodotWorldCaptureCamera
             return;
         }
 
-        RuntimeWorldScene.FrameCamera(camera, bounds, azimuthDegrees: 35f, elevationDegrees: 18f);
         var centre = RuntimeWorldScene.ToScene(bounds.Center.X, bounds.Center.Y, bounds.Center.Z);
+        var min = RuntimeWorldScene.ToScene(bounds.Min.X, bounds.Min.Y, bounds.Min.Z);
+        var max = RuntimeWorldScene.ToScene(bounds.Max.X, bounds.Max.Y, bounds.Max.Z);
+        if (!float.IsFinite(centre.X + centre.Y + centre.Z + min.X + min.Y + min.Z + max.X + max.Y + max.Z))
+        {
+            GD.PushError("[OBPGame] anim-solo camera not framed (bounds outside float range)");
+            return;
+        }
+
+        RuntimeWorldScene.FrameCamera(camera, bounds, azimuthDegrees: 35f, elevationDegrees: 18f);
         camera.Position = centre + (camera.Position - centre) * 0.55f;
         camera.LookAt(centre, Vector3.Up);
         camera.Current = true;
