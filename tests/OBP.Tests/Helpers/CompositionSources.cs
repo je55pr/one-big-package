@@ -14,6 +14,7 @@ internal static class CompositionSources
         "game/diagnostics/ApplicationDiagnostics.cs",
         "game/scripts/Rac1WorldComposition.cs",
         "game/scripts/Rac2WorldComposition.cs",
+        "game/scripts/CompositionBase.cs",
     ];
 
     private static readonly Lazy<string> Union = new(() => string.Join("\n", Files.Select(Read)));

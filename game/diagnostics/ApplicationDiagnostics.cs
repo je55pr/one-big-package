@@ -20,112 +20,12 @@ namespace OBP.Game.Diagnostics;
 /// <summary>
 /// Diagnostic fixture catalogue. Each factory binds a scenario harness to focused
 /// observation and action ports over the owned application components. This is the
-/// only place those bindings live; <c>OBPGame</c> only supplies the context.
+/// only place those bindings live; <c>OBPGame</c> only supplies the Context.
 /// </summary>
-internal sealed class ApplicationDiagnostics(ApplicationComponents context)
+internal sealed class ApplicationDiagnostics(ApplicationComponents components) : CompositionBase(components)
 {
-    private Node3D _host => context.Host;
-    private CommandLineArgs _args { get => context.Args(); set => context.ReplaceArgs(value); }
-    private HostOperationScope _hostOperations => context.Operations;
-    private PlayerSessionHost _persistentPlayer => context.Player;
-    private Rac1CampaignHost _rac1Campaign => context.Campaign;
-    private PlayerAvatarPresentationHost _avatarPresentation => context.Avatar;
-    private PlayerEquipmentPresentationBinder _equipmentPresentation => context.Equipment;
-    private HudStateAdapter _hudState => context.Hud;
-    private GodotApplicationPresentation Presentation => context.Presentation();
-    private WorldSceneLifetime<GodotWorldResources> WorldScenes => context.WorldScenes();
-    private WorldSceneLifetime<GodotWorldResources>? _worldScenes => context.WorldScenes();
-    private SourceSetupController Sources => context.Sources();
-    private FusionWeaponHost FusionWeapons => context.Fusion();
-    private GodotPlayerLifecycleHost PlayerLife => context.Life();
-    private ActorWorldHost ActorHost => context.Actors();
-    private MovementReproductionService MovementReproduction => context.Reproduction();
-    private CaptureReplayCoordinator CaptureReplay => context.Capture();
-    private CaptureReplayCoordinator? _captureReplay => context.CaptureIfStarted();
-    private GodotCapturePresentation CapturePresentation => context.CapturePresentation();
-    private ApplicationNavigationCoordinator _navigation => context.Navigation();
-    private UiModalCoordinator Modals => context.Modals();
-    private BugReportUiCoordinator? _bugReporting => context.Bugs();
-    private ProfileCoordinator Profiles => context.Profiles();
-    private Rac1PlayerAudioPresenter? _playerAudio => context.PlayerAudio();
-    private IRac1WeaponPlayerInput Rac1CombatInput => context.CombatInput();
-    private ObpPlayerSession? _playerSession => context.PlayerSession();
-    private PlayerSessionNativeState? _playerNative => context.PlayerNative();
-    private bool OrdinaryPlayerSession => context.OrdinaryPlayer();
-    private Rac1WeaponInventory _rac1Weapons => context.Rac1Weapons();
-    private Rac1HeldItemSession _rac1HeldItem => context.Rac1Held();
-    private Rac1BoltWallet _rac1BoltWallet => context.Rac1Wallet();
-    private Rac1RatchetNanotechSession _rac1Nanotech => context.Rac1Nanotech();
-    private SourceWeaponKey CurrentWeaponKey => context.CurrentWeapon();
-    private long _frame => context.Frame();
-
-    private Node3D _worldRoot => Presentation.WorldRoot;
-    private Node3D _playerRoot => Presentation.PlayerRoot;
-    private CanvasLayer _ui => Presentation.Ui;
-    private Camera3D _camera => Presentation.Camera;
-    private Camera3D _activeCamera { get => Presentation.ActiveCamera; set => Presentation.ActiveCamera = value; }
-    private PlayerHud? _playerHud => Presentation.PlayerHud;
-    private PlayerHost? _player => Presentation.Player;
-    private WorldHost _worldHost => _worldScenes?.Current?.Resources.Presentation ?? context.IdleWorldHost;
-    private RuntimeWorld? _world => _worldScenes?.Current?.Plan.Prepared.World;
-    private RuntimeWorldScene.Result? _sceneResult => _worldScenes?.Current?.Resources.Scene;
-    private int _worldSwitches => _worldScenes?.ActivationCount ?? 0;
-    private ObpDestination? _activeDestination => _worldScenes?.NativeDestination;
-    private string? _currentDestinationId => _worldScenes?.DestinationId;
-    private Rac1WorldModule Rac1World => _worldScenes?.Current?.Resources.Rac1Gameplay
-        ?? throw new InvalidOperationException("R&C1 gameplay requires an active scene lease.");
-
-    private PauseMenuUi? _pauseMenu => Modals.PauseMenu;
-    private WeaponQuickSelectUi? _quickSelect => Modals.QuickSelect;
-    private bool PauseMenuOpen => Modals.PauseOpen;
-    private bool QuickSelectOpen => Modals.QuickSelectOpen;
-    private bool BugReportModalOpen => _bugReporting?.IsOpen == true || _captureReplay?.Recorder?.BugInputSuspended == true;
-    private string? SharedProfilePath => Profiles.SharedProfilePath;
-    private ObpProfile? _profileDocument => Profiles.Document;
-    private bool _profileWriteBlocked => Profiles.WriteBlocked;
-    private string? _rac1CampaignRestoreWarning => _rac1Campaign.Persistence.RestoreWarning;
-    private Rac1CampaignRestoreKind _rac1CampaignRestoreKind => _rac1Campaign.Persistence.RestoreKind;
-    private string? PlayerEquipmentConfigurationIdentity => _persistentPlayer.Equipment.ConfigurationIdentity;
-
-    private Window GetWindow() => _host.GetWindow();
-    private SceneTree GetTree() => _host.GetTree();
-    private static bool IsInstanceValid(GodotObject? value) => GodotObject.IsInstanceValid(value);
-
-    private bool EnterFusionLab() => _navigation.EnterLab();
-    private bool OnDestinationChosen(ObpDestination destination) => _navigation.Choose(destination);
-    private bool EnterProviderWorld(string path, ObpDestination destination) => _navigation.EnterProviderWorld(path, destination);
-    private void ShowTitleScreen() => _navigation.ShowTitle();
-    private void ShowDestinationSelector() => _navigation.ShowSelector();
-    private bool TryHandleInteractiveBack() => _navigation.HandleBack(Modals);
-    private bool TryOpenPauseMenu() => Modals.OpenPause();
-    private bool TryClosePauseMenu() => Modals.TryClosePause();
-    private bool TryOpenWeaponQuickSelect(InputEvent input) => Modals.OpenQuickSelect(input);
-    private void CloseWeaponQuickSelect(SourceWeaponKey? weapon = null) => Modals.CloseQuickSelect(weapon);
-    private void OpenDestinationFromBootstrap(string id) => context.OpenDestination(id);
-    private bool EnterWorld(string destinationId, Func<RuntimeWorld> load, ObpDestination? nativeDestination, string? sourcePath) =>
-        context.EnterWorld(destinationId, load, nativeDestination, sourcePath);
-    private void RefreshPlayerSourceAvailability() => context.RefreshPlayerSources();
-    private void RememberCommandLineSource(ObpSourceGame game, string path, bool persist = true) => Sources.Remember(game, path, persist);
-    private Rac1PlanetTravelStartResult TravelRac1CampaignTo(int id) => _navigation.TravelRac1CampaignTo(id);
-    private Rac1DestinationDiscoveryResult ApplyRac1CampaignProgressionEvent(int id) => context.ApplyProgressionEvent(id);
-    private void TickRac1CampaignSaves(double delta) => _rac1Campaign.Persistence.TickAndReport(delta);
-    private void FlushRac1CampaignSaves(string boundary) => _rac1Campaign.Persistence.FlushAndReport(boundary);
-    private bool TryCompleteRac1EnvironmentalRestart(bool automatic) => context.CompleteEnvironmentalRestart(automatic);
-    private bool SaveSharedProfile(string reason) => Profiles.Save(reason);
-    private ObpProfile CaptureSharedProfile() => Profiles.Capture();
-    private IReadOnlyList<ProfileSource> CaptureProfileSources() => Profiles.CaptureProfileSources();
-    private void ApplyOverlaySpec(string? spec) => Presentation.ApplyOverlaySpec(spec);
-    private void UpdateWorldHud() => Presentation.UpdateWorldHud(_worldScenes?.Current, _worldHost, _worldSwitches, context.Mode().World);
-    private int? CurrentPlayerAvatarSourceSequence() => _avatarPresentation.CurrentSourceSequence();
-    private bool PlayerAvatarPresentationIsSynchronized() => _avatarPresentation.IsSynchronized;
-    private IReadOnlyList<EquipmentCatalogEntry> ReadPlayerEquipment() => _persistentPlayer.Equipment.Read();
-    private EquipmentChangeResult SelectPlayerEquipment(string catalogId) => _persistentPlayer.Equipment.Select(catalogId);
-    private EquipmentChangeResult AssignPlayerQuickSelect(int slot, string? catalogId) => _persistentPlayer.Equipment.AssignQuickSelect(slot, catalogId);
-    private EquipmentChangeResult UnequipPlayerEquipment() => _persistentPlayer.Equipment.Unequip();
-    private EquipmentChangeResult SetPlayerGadgetEnabled(string catalogId, bool enabled) => _persistentPlayer.Equipment.SetGadgetEnabled(catalogId, enabled);
-    private static System.Numerics.Vector3 ToNumerics(Vector3 value) => new(value.X, value.Y, value.Z);
     private enum Mode { Smoke, Picker, Selector, World, Title }
-    private Mode _mode => context.Mode() switch { { Title: true } => Mode.Title, { Selector: true } => Mode.Selector, { World: true } => Mode.World, { Picker: true } => Mode.Picker, _ => Mode.Smoke };
+    private Mode _mode => Context.Mode() switch { { Title: true } => Mode.Title, { Selector: true } => Mode.Selector, { World: true } => Mode.World, { Picker: true } => Mode.Picker, _ => Mode.Smoke };
 
     // --- fixture factories -------------------------------------------------
 

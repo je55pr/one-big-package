@@ -10,18 +10,8 @@ namespace OBP.Game;
 /// Binds an R&amp;C2 world lease's module to the application's owned components. The
 /// module and its source library own the native behaviour; these are typed ports only.
 /// </summary>
-internal sealed class Rac2WorldComposition(ApplicationComponents context)
+internal sealed class Rac2WorldComposition(ApplicationComponents components) : CompositionBase(components)
 {
-    private CommandLineArgs _args => context.Args();
-    private WorldSceneLifetime<GodotWorldResources>? _worldScenes => context.WorldScenes();
-    private SourceSetupController Sources => context.Sources();
-    private GodotPlayerLifecycleHost PlayerLife => context.Life();
-    private ActorWorldHost ActorHost => context.Actors();
-    private PlayerSessionNativeState? _playerNative => context.PlayerNative();
-    private bool OrdinaryPlayerSession => context.OrdinaryPlayer();
-    private PlayerHost? _player => context.Presentation().Player;
-    private WorldHost _worldHost => _worldScenes?.Current?.Resources.Presentation ?? context.IdleWorldHost;
-    private void RefreshRac1HudState(params HudFeedbackDraft[] feedback) => context.RefreshHud(feedback);
 
     internal Rac2WorldModule CreateRac2WorldModule(RuntimeWorld world, GodotWorldResources resources) => new(
         world, resources.Scene, resources, new Rac2WorldPorts(

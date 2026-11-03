@@ -17,63 +17,8 @@ namespace OBP.Game;
 /// formula, tick or damage dispatch is implemented here. A new R&amp;C1 mechanic adds
 /// its ports to its own module and one binding below, never to <c>OBPGame</c>.
 /// </summary>
-internal sealed class Rac1WorldComposition(ApplicationComponents context)
+internal sealed class Rac1WorldComposition(ApplicationComponents components) : CompositionBase(components)
 {
-    private Node3D _host => context.Host;
-    private CommandLineArgs _args => context.Args();
-    private PlayerSessionHost _persistentPlayer => context.Player;
-    private Rac1CampaignHost _rac1Campaign => context.Campaign;
-    private PlayerAvatarPresentationHost _avatarPresentation => context.Avatar;
-    private PlayerEquipmentPresentationBinder _equipmentPresentation => context.Equipment;
-    private HudStateAdapter _hudState => context.Hud;
-    private GodotApplicationPresentation Presentation => context.Presentation();
-    private WorldSceneLifetime<GodotWorldResources>? _worldScenes => context.WorldScenes();
-    private SourceSetupController Sources => context.Sources();
-    private FusionWeaponHost FusionWeapons => context.Fusion();
-    private GodotPlayerLifecycleHost PlayerLife => context.Life();
-    private ActorWorldHost ActorHost => context.Actors();
-    private MovementReproductionService MovementReproduction => context.Reproduction();
-    private UiModalCoordinator Modals => context.Modals();
-    private Rac1PlayerAudioPresenter? _playerAudio => context.PlayerAudio();
-    private IRac1WeaponPlayerInput Rac1CombatInput => context.CombatInput();
-    private PlayerSessionNativeState? _playerNative => context.PlayerNative();
-    private ObpPlayerSession? _playerSession => context.PlayerSession();
-    private bool OrdinaryPlayerSession => context.OrdinaryPlayer();
-    private Rac1WeaponInventory _rac1Weapons => context.Rac1Weapons();
-    private Rac1HeldItemSession _rac1HeldItem => context.Rac1Held();
-    private Rac1BoltWallet _rac1BoltWallet => context.Rac1Wallet();
-    private Rac1RatchetNanotechSession _rac1Nanotech => context.Rac1Nanotech();
-    private Rac1HandPresentationContext Rac1HandPresentation => context.Hand();
-    private CanvasLayer _ui => Presentation.Ui;
-    private Camera3D _camera => Presentation.Camera;
-    private Camera3D _activeCamera { get => Presentation.ActiveCamera; set => Presentation.ActiveCamera = value; }
-    private PlayerHost? _player => Presentation.Player;
-    private WorldHost _worldHost => _worldScenes?.Current?.Resources.Presentation ?? context.IdleWorldHost;
-    private RuntimeWorld? _world => _worldScenes?.Current?.Plan.Prepared.World;
-    private RuntimeWorldScene.Result? _sceneResult => _worldScenes?.Current?.Resources.Scene;
-    private Rac1WorldModule Rac1World => _worldScenes?.Current?.Resources.Rac1Gameplay
-        ?? throw new InvalidOperationException("R&C1 gameplay requires an active scene lease.");
-    private ObpDestination? _activeDestination => _worldScenes?.NativeDestination;
-    private bool InWorldMode => context.Mode().World;
-    private bool QuickSelectOpen => Modals.QuickSelectOpen;
-    private bool PauseMenuOpen => Modals.PauseOpen;
-    private bool ControllerSettingsOpen => Modals.SettingsOpen;
-    private bool Rac1PlanetMapOpen => context.Navigation().PlanetMapOpen;
-    private SourceWeaponKey? _previousSelectedWeapon { get => Modals.PreviousSelectedWeapon; set => Modals.PreviousSelectedWeapon = value; }
-    private ulong _lastQuickSelectTap { set { if (value == 0) Modals.ResetWheelGesture(); } }
-
-    private SceneTree GetTree() => _host.GetTree();
-    private Window GetWindow() => _host.GetWindow();
-    private Viewport GetViewport() => _host.GetViewport();
-    private void AddChild(Node node) => _host.AddChild(node);
-    private static bool IsInstanceValid(GodotObject? value) => GodotObject.IsInstanceValid(value);
-    private IReadOnlyList<EquipmentCatalogEntry> ReadPlayerEquipment() => _persistentPlayer.Equipment.Read();
-    private bool OnDestinationChosen(ObpDestination destination) => context.Navigation().Choose(destination);
-    private void PersistRac1CampaignState(string reason) => _rac1Campaign.Persistence.Persist(reason);
-    private void RefreshRac1HudState(params HudFeedbackDraft[] feedback) => context.RefreshHud(feedback);
-    private bool TryCompleteRac1EnvironmentalRestart(bool automatic) => context.CompleteEnvironmentalRestart(automatic);
-    private void TickRac1VeldinEnvironmentalDeath() => _worldScenes?.Current?.Resources.Rac1Gameplay?.Lifecycle.TickEnvironmentalDeath();
-    private void ShowRac1CombatRetry() => _worldScenes?.Current?.Resources.Rac1Gameplay?.Lifecycle.ShowCombatRetry();
 
     internal Rac1WorldModule CreateRac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene) => new(world, scene, _persistentPlayer.Rac1EffectRandom(_args.FixedSeed),
         new Rac1LootPorts(() => _player, () => _world, () => _rac1Weapons, () => _rac1Nanotech,
