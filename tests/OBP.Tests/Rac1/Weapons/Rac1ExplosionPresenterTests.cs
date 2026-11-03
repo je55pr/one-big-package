@@ -55,7 +55,7 @@ public sealed class Rac1ExplosionPresenterTests
         Assert.Empty(rootType.GetMembers("EquipmentColor"));
 
         string world = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Rac1WeaponEffectsHost.cs"));
-        string factory = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
+        string factory = CompositionSources.Application;
         string presenter = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Rac1ExplosionPresenter.cs"));
         Assert.Contains("Explosions.CreateEquipmentParticle(type, color, size", world, StringComparison.Ordinal);
         Assert.Contains("Explosions.CreateEquipmentParticle(27, new(.3f, .7f, 1, .6f), .6f", factory, StringComparison.Ordinal);
