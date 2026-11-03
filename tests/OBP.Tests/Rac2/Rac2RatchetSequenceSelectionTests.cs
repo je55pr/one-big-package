@@ -105,20 +105,15 @@ public sealed class Rac2RatchetSequenceSelectionTests
         Assert.Null(Rac2RatchetSequenceSelection.GunWaitingSequenceId);
     }
 
+
     [SkippableFact]
-    public void RetailOozlaStateJumpTableAndRatchetSequenceSlotsMatchRecoveredContract()
+    public void RetailOozlaStateInitJumpTableMatchesRecoveredStateHandlers()
     {
         var iso = Environment.GetEnvironmentVariable("OBP_GC_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_GC_ISO not set");
 
         using var reader = new FileRandomAccessReader(iso!);
-        var fs = Iso9660Filesystem.Open(reader);
-        var wad = fs.OpenFile("/G/LEVEL1.WAD")
-            ?? throw new FileNotFoundException("/G/LEVEL1.WAD");
-        var header = Rac2LevelWad.ReadHeader(wad);
-        var data = Rac2LevelWad.RequireLump(wad, header, 0);
-        var overlay = Rac2LevelOverlay.Open(data);
-        var core = Rac2LevelCore.Open(data);
+        var overlay = Rac2LevelOverlay.Open(OpenOozlaLump(reader));
 
         const uint stateInitJumpTableAddress = 0x002A1F30;
         var jumpTable = overlay.ReadVirtual(stateInitJumpTableAddress, 148 * sizeof(uint));
@@ -141,6 +136,16 @@ public sealed class Rac2RatchetSequenceSelectionTests
         Assert.Equal(0x002C165Cu, Entry(Rac2RatchetSequenceSelection.TargetingState));
         Assert.Equal(0x002C16A4u, Entry(Rac2RatchetSequenceSelection.GunWaitingState));
         Assert.Equal(0x002BEEE0u, Entry(Rac2RatchetSequenceSelection.DeathState));
+    }
+
+    [SkippableFact]
+    public void RetailOozlaRatchetSequenceSlotsMatchRecoveredFrameCounts()
+    {
+        var iso = Environment.GetEnvironmentVariable("OBP_GC_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_GC_ISO not set");
+
+        using var reader = new FileRandomAccessReader(iso!);
+        var core = Rac2LevelCore.Open(OpenOozlaLump(reader));
 
         Assert.Equal(0x80E0, core.Header.RatchetSeqsOffset);
 
@@ -193,6 +198,16 @@ public sealed class Rac2RatchetSequenceSelectionTests
         {
             Assert.Equal(frameCount, FrameCount(sequence));
         }
+    }
+
+    [SkippableFact]
+    public void RetailOozlaStateUpdateHandlersAndSequenceWritersMatchRecoveredContract()
+    {
+        var iso = Environment.GetEnvironmentVariable("OBP_GC_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_GC_ISO not set");
+
+        using var reader = new FileRandomAccessReader(iso!);
+        var overlay = Rac2LevelOverlay.Open(OpenOozlaLump(reader));
 
         const uint stateUpdateJumpTableAddress = 0x002A1CE0;
         var updateTable = overlay.ReadVirtual(stateUpdateJumpTableAddress, 147 * sizeof(uint));
@@ -265,5 +280,14 @@ public sealed class Rac2RatchetSequenceSelectionTests
             0x00358A08u, 0x00358B60u, 0x0035B840u, 0x0036F938u,
             0x00370634u, 0x00370744u, 0x003815D4u,
         }, sequenceWriters.OrderBy(x => x).ToArray());
+    }
+
+    private static IRandomAccessReader OpenOozlaLump(IRandomAccessReader reader)
+    {
+        var fs = Iso9660Filesystem.Open(reader);
+        var wad = fs.OpenFile("/G/LEVEL1.WAD")
+            ?? throw new FileNotFoundException("/G/LEVEL1.WAD");
+        var header = Rac2LevelWad.ReadHeader(wad);
+        return Rac2LevelWad.RequireLump(wad, header, 0);
     }
 }
