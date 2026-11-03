@@ -113,7 +113,7 @@ public sealed class Rac2RatchetSequenceSelectionTests
         Skip.If(string.IsNullOrEmpty(iso), "OBP_GC_ISO not set");
 
         using var reader = new FileRandomAccessReader(iso!);
-        var (overlay, _) = OpenOozlaLevelData(reader);
+        var overlay = Rac2LevelOverlay.Open(OpenOozlaLump(reader));
 
         const uint stateInitJumpTableAddress = 0x002A1F30;
         var jumpTable = overlay.ReadVirtual(stateInitJumpTableAddress, 148 * sizeof(uint));
@@ -145,7 +145,7 @@ public sealed class Rac2RatchetSequenceSelectionTests
         Skip.If(string.IsNullOrEmpty(iso), "OBP_GC_ISO not set");
 
         using var reader = new FileRandomAccessReader(iso!);
-        var (_, core) = OpenOozlaLevelData(reader);
+        var core = Rac2LevelCore.Open(OpenOozlaLump(reader));
 
         Assert.Equal(0x80E0, core.Header.RatchetSeqsOffset);
 
@@ -207,7 +207,7 @@ public sealed class Rac2RatchetSequenceSelectionTests
         Skip.If(string.IsNullOrEmpty(iso), "OBP_GC_ISO not set");
 
         using var reader = new FileRandomAccessReader(iso!);
-        var (overlay, _) = OpenOozlaLevelData(reader);
+        var overlay = Rac2LevelOverlay.Open(OpenOozlaLump(reader));
 
         const uint stateUpdateJumpTableAddress = 0x002A1CE0;
         var updateTable = overlay.ReadVirtual(stateUpdateJumpTableAddress, 147 * sizeof(uint));
@@ -282,13 +282,12 @@ public sealed class Rac2RatchetSequenceSelectionTests
         }, sequenceWriters.OrderBy(x => x).ToArray());
     }
 
-    private static (Rac2LevelOverlay.Image overlay, Rac2LevelCore.Core core) OpenOozlaLevelData(IRandomAccessReader reader)
+    private static IRandomAccessReader OpenOozlaLump(IRandomAccessReader reader)
     {
         var fs = Iso9660Filesystem.Open(reader);
         var wad = fs.OpenFile("/G/LEVEL1.WAD")
             ?? throw new FileNotFoundException("/G/LEVEL1.WAD");
         var header = Rac2LevelWad.ReadHeader(wad);
-        var data = Rac2LevelWad.RequireLump(wad, header, 0);
-        return (Rac2LevelOverlay.Open(data), Rac2LevelCore.Open(data));
+        return Rac2LevelWad.RequireLump(wad, header, 0);
     }
 }
