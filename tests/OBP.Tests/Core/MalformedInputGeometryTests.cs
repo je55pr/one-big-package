@@ -25,8 +25,9 @@ public sealed class MalformedInputGeometryTests
     /// towards small offsets/counts so parsers get past their first validation. Parsing may succeed
     /// or fail, but may only fail with <see cref="InvalidDataException"/>.
     /// </summary>
-    private static void FuzzOnlyInvalidData(string label, int seed, int iterations, int minLength, int maxLength, Action<byte[]> read)
+    private static void FuzzOnlyInvalidData(string label, int seed, int iterations, int minLength, int maxLength, params Action<byte[]>[] reads)
     {
+        Assert.NotEmpty(reads);
         var random = new Random(seed);
         for (int iteration = 0; iteration < iterations; iteration++)
         {
@@ -44,10 +45,34 @@ public sealed class MalformedInputGeometryTests
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(at), word);
             }
 
-            var ex = Record.Exception(() => read(buffer));
-            Assert.True(ex is null or InvalidDataException,
-                $"{label} iteration {iteration} (seed {seed}, {buffer.Length} bytes): {ex?.GetType().Name}: {ex?.Message}");
+            for (int reader = 0; reader < reads.Length; reader++)
+            {
+                var ex = Record.Exception(() => reads[reader](buffer));
+                Assert.True(ex is null or InvalidDataException,
+                    $"{label} reader {reader} iteration {iteration} (seed {seed}, {buffer.Length} bytes): {ex?.GetType().Name}: {ex?.Message}");
+            }
         }
+    }
+
+    [Fact]
+    public void FuzzHarnessExercisesEveryReaderAfterExpectedRejection()
+    {
+        int rejected = 0, checkedInputs = 0;
+        FuzzOnlyInvalidData("harness", 0, 3, 0, 0,
+            _ => { rejected++; throw new InvalidDataException("expected rejection"); },
+            _ => checkedInputs++);
+        Assert.Equal(3, rejected);
+        Assert.Equal(3, checkedInputs);
+    }
+
+    [Fact]
+    public void FuzzHarnessDoesNotSuppressLaterUnexpectedFailures()
+    {
+        var error = Assert.Throws<Xunit.Sdk.TrueException>(() => FuzzOnlyInvalidData("harness", 0, 1, 0, 0,
+            _ => throw new InvalidDataException("expected rejection"),
+            _ => throw new InvalidOperationException("unexpected later failure")));
+        Assert.Contains("reader 1", error.Message, StringComparison.Ordinal);
+        Assert.Contains("unexpected later failure", error.Message, StringComparison.Ordinal);
     }
 
     private static void SweepPrefixesAndBytes(string label, byte[] valid, Action<byte[]> read, params Type[] extraAllowed)
@@ -862,12 +887,10 @@ public sealed class MalformedInputGeometryTests
     [Fact]
     public void MobyFuzzOnlyFailsWithInvalidData()
     {
-        FuzzOnlyInvalidData("moby-fuzz", 61, 3000, 0x48, 0x400, b =>
-        {
-            GcUyaMoby.ReadClass(b);
-            GcUyaMoby.ReadClass(b, recoverPersistentVertexCache: true);
-            GcUyaMoby.ReadJoints(b, b[8]);
-            GcUyaMoby.ReadSequences(b, b[8]);
-        });
+        FuzzOnlyInvalidData("moby-fuzz", 61, 3000, 0x48, 0x400,
+            b => GcUyaMoby.ReadClass(b),
+            b => GcUyaMoby.ReadClass(b, recoverPersistentVertexCache: true),
+            b => GcUyaMoby.ReadJoints(b, b[8]),
+            b => GcUyaMoby.ReadSequences(b, b[8]));
     }
 }
