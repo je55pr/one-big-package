@@ -2,7 +2,9 @@
 
 This is the shared contract for the #264 reconciliation gate. It records OBP
 design, not recovered native equivalence. Version 1 defines executable ports;
-#266/#267 implement the persistent session and shared native/custom lifecycle.
+#266/#267 implemented the persistent session and shared native/custom lifecycle
+(#264-#275 are closed). The follow-up ownership table at the end is a historical
+record of that staging.
 
 ## Ownership
 
@@ -39,6 +41,7 @@ flowchart TD
     Fusion --> Core
     RAC[OBP.RAC1 / RAC2 / RAC3: native controllers and decoding] --> Runtime
     RAC --> PS2[OBP.PS2 / OBP.IO: bounded source access]
+    PS2 --> Runtime
     Presentation[OBP.Godot: neutral presentation] --> Runtime
     Presentation --> Fusion
     Host[game: composition root, scene, input and contacts] --> Presentation
@@ -47,7 +50,8 @@ flowchart TD
 ```
 
 RAC modules do not reference each other or Fusion. Fusion does not reference RAC,
-IO/PS2, Godot or the application. Runtime references Core only. Source-native
+IO/PS2, Godot or the application. Runtime references Core only; `OBP.PS2` references
+Runtime for its `Presentation/` adapters. Source-native
 implementations of Runtime ports remain source-owned; the composition root wires
 them into Fusion. A host adapter may connect an existing `IObpWorldProvider` or
 authored generator to the entry port. It must not acquire gameplay decisions.
@@ -158,7 +162,8 @@ R&C1 checkpoints/travel and source environment/actor hooks stay narrow adapters.
 An unexpected failure during destructive activation cleans partial scene resources
 and returns to selection with the session retained; it does not promise scene
 rollback after activation begins. The selected profiles and service registrations
-below complete the #268/#269 bridge; #256 still owns mixed actor registration.
+below completed the #268/#269 bridge; mixed actor registration was delivered by #256
+(see [ACTOR_ADAPTERS.md](ACTOR_ADAPTERS.md)).
 This does not make every weapon effect, source attack or UI policy available.
 
 ## Selected controls, animation, health and equipment
@@ -228,12 +233,13 @@ The deterministic configuration hash includes registrations, source builds,
 loadout policy, appearance, desired weapon, slots and enabled gadgets, without paths
 or retail payloads; it is an admission identity, not the final replay/save format.
 
-The future #259 UI consumes `ReadPlayerEquipment`, `SelectPlayerEquipment`,
+The #259 UI consumes `ReadPlayerEquipment`, `SelectPlayerEquipment`,
 `AssignPlayerQuickSelect`, `SetPlayerGadgetEnabled` and
 `PlayerEquipmentConfigurationIdentity`. The existing Quick Select consumes this
-read model now; overflow pages follow the eight assigned slots. This ticket does
-not rebuild pause-menu visuals. Native weapon effect/contact adapters still owned
-by #271 report `ContextBlocked` where unavailable; #272 retains audio migration.
+read model; overflow pages follow the eight assigned slots. Native weapon
+effect/contact adapters report `ContextBlocked` where unavailable. Held-model
+(#271) and audio (#272) ownership are described in
+[TRILOGY_EQUIPMENT_ACTORS.md](TRILOGY_EQUIPMENT_ACTORS.md).
 
 `tools/player-capabilities-smoke.ps1 -Rendered` compares 240-tick scripted movement,
 camera, sequences, pose hashes, hand attachments and native elapsed time in
@@ -274,9 +280,11 @@ implementations under `game/diagnostics` remain the separate diagnostic boundary
   select player services. Any code change fails until its source-owned purpose,
   focused regression and fingerprint update are reviewed together. Legitimate
   water/campaign/environment updates remain possible through that explicit update.
-- `migration`: existing player-global coupling, a follow-up owner and a fixed
+- `migration`: a retained player-global coupling, a follow-up owner and a fixed
   hash of C# tokens. Comments/formatting do not affect it. Changing/expanding a
   retained coupling fails; migration removes its dependency and ledger entry.
+  The ledger currently contains no `migration` entries and
+  `ReconciliationGateTests` rejects a new one.
 
 There are no blanket source-file or RAC-prefix exemptions. New ownership sites
 fail with `OBP001`; stale entries also fail. Tests inject an erroneous avatar
@@ -303,7 +311,12 @@ Preserve the retail R&C1 UI, campaign saves and source controllers in that flow.
 #274 migrates current R&C1-only replay admission; #275 keeps both fidelity and
 cross-world integration evidence. Do not weaken native tests to hide fusion drift.
 
-## Follow-up write ownership
+## Follow-up write ownership (historical)
+
+This table records the original staging of #264. Every listed issue is closed, and
+the named `OBPGame.*` partials and `PlayerHost` scopes have since been decomposed
+into the owners described in [OBPGAME_ROOT_CENSUS.md](OBPGAME_ROOT_CENSUS.md);
+only `OBPGame.cs` and `OBPGame.WorldEntry.cs` remain (#376 is open).
 
 | Owner | Primary write scope | Boundary / sequencing |
 |---|---|---|
@@ -318,6 +331,6 @@ cross-world integration evidence. Do not weaken native tests to hide fusion drif
 | #256 | Actor adapters, target/contact registry and mixed combat | Consume the one world lease/player owner, never a per-source player |
 | #273 / #274 / #275 | Durable save/profile / cross-world replay and bug capture / final route acceptance | Extend versioned session boundaries after foundations; final gate is Veldin→Oozla→UYA Veldin→Lab→Veldin |
 
-Later stages remain separate work. Where a listed partial has two owners, extract the agreed seam or
+Later stages were separate work. Where a listed partial had two owners, extract the agreed seam or
 sequence commits before parallel editing. Keep source-native formulas in RAC;
 the goal is consistent orchestration, not a new generic retail simulation.

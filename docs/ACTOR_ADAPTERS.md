@@ -7,7 +7,9 @@ live actor registry and owns deterministic ordering and contact receipts.
 
 ## Callsite census and ownership
 
-The starting point is `82f1253` on `dev`. `OBPGame.Actors` owned world dictionaries,
+The starting point is `82f1253` on `dev`. The `OBPGame.*` partials named in this
+section (`Actors`, `ActorAdapters`, `ActorContacts`) are the pre-extraction
+locations and no longer exist. `OBPGame.Actors` owned world dictionaries,
 background imports, decoded-source caches, construction, contact bodies, cleanup
 and two native tick-group registrations. `OBPGame.ActorAdapters` contained three
 family constructors and two animation caches. Its string-keyed factory map was
@@ -23,9 +25,9 @@ rebuilt on every lookup; each constructor separately checked its native recipe.
 | Background native imports | Attachment token linked to `HostOperationScope`; native reads finish before shutdown drain completes; abandoned results/failures are observed |
 | Native source groups | Supplied by factories, still sorted and stepped once by `ActorRuntimeSet`; existing R&C1/GC source-host tick bridges retained |
 | Original-world targets | `RegisterExistingNativeTargets` wraps existing source sessions; source-owned world construction and authored level predicates remain unchanged |
-| Weapon rays / blasts / wrench | `OBPGame.ActorContacts`, R&C1 projectile exclusions and native GC movement use the world's body/view registry; source-qualified keys and damage admission unchanged |
+| Weapon rays / blasts / wrench | `ActorCombatContactService` / `ActorContactGeometry` (formerly `OBPGame.ActorContacts`), R&C1 projectile exclusions and native GC movement use the world's body/view registry; source-qualified keys and damage admission unchanged |
 | Player damage, rewards and sound | Existing native host bridges; retirement removes player attack registrations, native capture references, owned pickups and actor audio |
-| Capture and diagnostics | `CaptureSession` observes the world owner; explicit replay-family admission remains deliberately narrower than general factory registration |
+| Capture and diagnostics | `CaptureReplayCoordinator` (formerly `OBPGame.CaptureSession`) observes the world owner; explicit replay-family admission remains deliberately narrower than general factory registration |
 
 No destination origin grants a player capability. The factories receive narrow
 source bindings, not the root node or a service locator. The extracted

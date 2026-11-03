@@ -7,6 +7,12 @@ constructor receives only the focused observation/action ports it needs.
 `DiagnosticRunContext` supplies cancellation, phase waits and temporary resource
 ownership; it cannot look up the root or arbitrary services.
 
+> **Status:** the sections below record each extraction phase (#335-#345) as it
+> landed, and describe the root permissions, temporary delegations and partial
+> counts as they stood then. Those phases are closed and the retired `OBPGame.*`
+> diagnostic partials no longer exist (see [OBPGAME_ROOT_CENSUS.md](OBPGAME_ROOT_CENSUS.md)).
+> `WorldSmokeHarness` currently registers 22 first-world smoke scenarios.
+
 ## Admission and lifetime
 
 The explicit test driver admits a scenario. Ordinary startup cannot implicitly

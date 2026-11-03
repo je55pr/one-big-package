@@ -38,14 +38,17 @@ The single owner of one loaded world's Godot side:
   the ambient animations, and resolves + applies the region hero light /
   ambient / fog via `EnvResolver`.
 
-API: `Load(hostNode, sceneParent, world, name, options)` /
+API: `Load(hostNode, sceneParent, world, name, options, preparedScene = null)` /
 `Unload()` (frees everything + `GC.Collect`, leak-verified by the stress
 harness) / `Tick(...)`.
 
-`game/OBPGame` creates one `WorldHost` for the session and drives it from the
-single neutral `AdoptRuntimeWorld` path. The former GC-only `EnterWorld(int)`
-application path has been removed; GC, R&C1 and UYA all reach this point through
-`ObpDestination` + `IObpWorldProvider`.
+Each world lease's `GodotWorldResources` owns its own `WorldHost` (not one
+session-wide host). During staged world entry `WorldHost.PrepareScene` builds the
+candidate scene before the destructive boundary, and `Load(..., preparedScene)`
+adopts it at activation; the host drives it from the single neutral
+`OBPGame.EnterWorld` path (see [OBPGAME_HOST_OWNERSHIP.md](OBPGAME_HOST_OWNERSHIP.md)).
+The former GC-only `EnterWorld(int)` application path has been removed; GC, R&C1
+and UYA all reach this point through `ObpDestination` + `IObpWorldProvider`.
 
 The playable Fusion Lab uses the same single-world lifecycle as native worlds.
 The former multi-world comparison viewer and its document loader were retired
@@ -165,7 +168,7 @@ Under the [player/world contract](PLAYER_WORLD_CONTRACT.md), the shared entry
 path resolves the session's genuine avatar independently of world origin,
 initially R&C1 Ratchet throughout, and fails visibly if its required assets are
 unavailable. Capsule presentation requires explicit `--diagnostic-player` mode.
-#268 retains complete avatar/profile and clock admission work.
+Complete avatar/profile and clock admission (#268) is implemented.
 This does not label an R&C1 skin as a GC/UYA avatar. The recovered GC/UYA selectors
 remain source-owned evidence for future genuine providers.
 
@@ -287,8 +290,8 @@ caller's metadata, with a watchdog. Both capture paths use it.
 
 `WorldHost` / `PresentationEnvironment` / `DebugOverlay` / `CaptureHarness`
 consume a `RuntimeWorld` from any provider. RAC1 and RAC3 populate core geometry
-/ collision / environment (RAC3 also dynamic objects); `Lighting` and
-`AnimatedMeshes` are still null there, and the host degrades gracefully — the
+/ collision / environment (RAC3 also dynamic objects) and `AnimatedMeshes` where
+decoded; `Lighting` is still null there, and the host degrades gracefully — the
 hero light hides, F5 env-gizmos report "no decoded lighting", the HUD reads
 `LEVELn` / the native label. Per-game shot sets: `tools/shots/rac{1,2,3}.json`.
 

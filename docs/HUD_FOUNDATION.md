@@ -21,20 +21,27 @@ This follows the repository-wide boundary in [ARCHITECTURE.md](ARCHITECTURE.md):
 
 ## Current baseline
 
+> **Note:** the baseline and per-game sections below describe the foundation-stage
+> state. Since then the persistent player session has become the HUD's source of
+> health, wallet and selected weapon on every destination
+> ([PLAYER_WORLD_CONTRACT.md](PLAYER_WORLD_CONTRACT.md), "Selected controls, animation,
+> health and equipment"); sources without such context still show no meter.
+> Reconciling these per-game statements is left to the owner.
+
 The repository already has useful state, but it is intentionally uneven and mostly source-specific:
 
 - R&C1 owns bounded Nanotech/life state in `Rac1RatchetNanotechSession`; the witnessed Veldin reset value is four, not a trilogy-wide maximum-health claim.
 - R&C1 owns a minimal wrench/item-10 inventory plus equipped selection and item-10 ammo in `Rac1WeaponInventory`; `Rac1BombGloveSession` proves a 40-round Bomb Glove capacity and one-round accepted-shot cost.
 - R&C1 and GC have bounded Bolt-crate sessions that can emit/collect proven denominations. Their current `CollectedBolts` counters are slice/session telemetry, not a reconstructed trilogy wallet or save economy.
 - Ordinary contextual gameplay-prompt state is not yet represented as an authoritative runtime concept.
-- `PlayerHost.PlayerHud`, `OBPGame._worldHud`, `GetRac1GameplayHudLine()` and `GetCrateDebugHudLine()` are developer telemetry. They expose positions, controller tuning, native states and smoke-test facts that do not belong in a shipping player HUD.
+- `PlayerHost`'s `PlayerHud` layer, the `OBPGame._worldHud` label and the per-module `HudLine()` helpers (for example `Rac2Gameplay.HudLine()` and `CrateDiagnostics.HudLine`) are developer telemetry. They expose positions, controller tuning, native states and smoke-test facts that do not belong in a shipping player HUD.
 - `UiTheme` is an OBP application theme. It does not establish retail HUD fonts, colours, panel shapes, spacing or animation timing.
 
 Relevant retail-backed evidence is recorded in [RAC1_DEATH_RESPAWN.md](../research/RAC1_DEATH_RESPAWN.md), [RAC1_WEAPON_INVENTORY.md](../research/RAC1_WEAPON_INVENTORY.md), [RAC1_BOMB_GLOVE.md](../research/RAC1_BOMB_GLOVE.md), [RAC1_CRATES_PICKUPS.md](../research/RAC1_CRATES_PICKUPS.md) and [GC_CRATES.md](../research/GC_CRATES.md).
 
 ## Minimal snapshot
 
-A future shared contract should be conceptually equivalent to:
+The implemented contract (`HudSnapshot` in `OBP.Runtime/Presentation/HudState.cs`) is conceptually:
 
 ```text
 HudSnapshot
@@ -45,6 +52,7 @@ HudSnapshot
   CurrentWeapon?     HudWeapon
   Feedback[]         HudFeedbackEvent
   ContextPrompt?     HudContextPrompt
+  Air?               HudResourceMeter   (added after this foundation: a unit key, current and capacity)
 ```
 
 `Epoch` changes when the observed gameplay session is replaced, such as a source/world/session reset. `Revision` increases within one epoch. Together they let a presenter reject stale snapshots and de-duplicate transient events without using wall-clock time as gameplay truth.

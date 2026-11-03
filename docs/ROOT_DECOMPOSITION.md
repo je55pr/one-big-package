@@ -16,6 +16,13 @@ a file without removing privileged access is not encapsulation. Preserve script
 UIDs, scene associations, native authority, callback phase/order and all existing
 CLI/profile/save/replay wire identities.
 
+> **Status:** this document is a running ledger. Per-migration measurements
+> (file, method and field totals) are snapshots taken when each PR landed, not the
+> current state. The current root is `OBPGame.cs` plus `OBPGame.WorldEntry.cs`
+> (2,942 lines); see [OBPGAME_ROOT_CENSUS.md](OBPGAME_ROOT_CENSUS.md). #333 and
+> #376 remain open, and the guard is `dotnet run --project tools/OBP.ArchitectureTool
+> -c Release -- check .` (see *Reproducing the measurements*).
+
 ## Frozen source and actual scope
 
 The starting commit is `eea806399f864f30949d665701d39d510549a7ac`.
