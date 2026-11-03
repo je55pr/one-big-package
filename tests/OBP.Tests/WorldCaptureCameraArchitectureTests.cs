@@ -30,4 +30,14 @@ public sealed class WorldCaptureCameraArchitectureTests
         Assert.DoesNotContain("StartsWith(firstInstance)", camera, StringComparison.Ordinal);
         Assert.Contains("camera.Current = true", camera);
     }
+
+    [Fact]
+    public void AnimFocusSpawnUsesValidatedFramingAndReportsFailure()
+    {
+        string spawn = Script("GodotPlayerSpawnPlacement.cs");
+
+        Assert.Contains("AnimatedMeshFraming.MeasureFirstInstance(world.AnimatedMeshes)", spawn);
+        Assert.Contains("anim-focus spawn not applied", spawn);
+        Assert.DoesNotContain("Frames[0]", spawn, StringComparison.Ordinal);
+    }
 }

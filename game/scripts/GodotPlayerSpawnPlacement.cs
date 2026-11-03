@@ -2,6 +2,7 @@ using Godot;
 using OBP.Godot;
 using OBP.Godot.Player;
 using OBP.Runtime;
+using OBP.Runtime.Camera;
 
 namespace OBP.Game;
 
@@ -50,17 +51,22 @@ internal static class GodotPlayerSpawnPlacement
         }
 
         // MobySequence showcase: stand right next to the first animated moby.
-        if (animFocus && world.AnimatedMeshes is { Count: > 0 } anim)
+        if (animFocus)
         {
-            var f0 = anim[0].Frames[0];
-            double cx = 0, cy = 0, cz = 0;
-            int n = f0.Length / 3;
-            for (int i = 0; i < f0.Length; i += 3) { cx += f0[i]; cy += f0[i + 1]; cz += f0[i + 2]; }
-            var centre = RuntimeWorldScene.ToScene(cx / n, cy / n, cz / n);
-            spawn = centre + new Vector3(0f, 2.5f, 9f);
-            var look = centre - spawn;
-            yaw = Mathf.Atan2(look.X, look.Z) + Mathf.Pi;
-            log($"[OBPGame] anim-focus spawn near {anim[0].Name} at ({cx / n:0},{cy / n:0},{cz / n:0})");
+            var measured = AnimatedMeshFraming.MeasureFirstInstance(world.AnimatedMeshes);
+            if (measured.Bounds is { } bounds)
+            {
+                var centre = RuntimeWorldScene.ToScene(bounds.Center.X, bounds.Center.Y, bounds.Center.Z);
+                spawn = centre + new Vector3(0f, 2.5f, 9f);
+                var look = centre - spawn;
+                yaw = Mathf.Atan2(look.X, look.Z) + Mathf.Pi;
+                log($"[OBPGame] anim-focus spawn near {measured.Instance} at ({bounds.Center.X:0},{bounds.Center.Y:0},{bounds.Center.Z:0})");
+            }
+            else
+            {
+                // Explicit failure: keep the authored/bounds placement chosen above.
+                log($"[OBPGame] anim-focus spawn not applied ({measured.Status}): {measured.Detail}");
+            }
         }
 
         if (crateFocus() is { } focus)

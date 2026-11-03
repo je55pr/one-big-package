@@ -2,6 +2,7 @@ using Godot;
 using OBP.Core;
 using OBP.Core.Math;
 using OBP.Game;
+using OBP.Godot;
 using OBP.Runtime;
 
 namespace OBP.Tests;
@@ -34,7 +35,7 @@ public sealed class PlayerSpawnPlacementOwnershipTests
     {
         string placement = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotPlayerSpawnPlacement.cs"));
         int native = placement.IndexOf("if (nativeStartUsable && preferredStart", StringComparison.Ordinal);
-        int animation = placement.IndexOf("if (animFocus &&", StringComparison.Ordinal);
+        int animation = placement.IndexOf("if (animFocus)", StringComparison.Ordinal);
         int crate = placement.IndexOf("if (crateFocus() is", StringComparison.Ordinal);
         int capture = placement.IndexOf("if (scripted && !nativeStartUsable)", StringComparison.Ordinal);
 
@@ -87,4 +88,44 @@ public sealed class PlayerSpawnPlacementOwnershipTests
         Assert.Equal(focus.Position, capture.Position);
         Assert.Equal(Mathf.Pi / 2, capture.Yaw, 4);
     }
+
+    private static RuntimeWorld AnimatedWorld(params double[][] frames) => TestWorld() with
+    {
+        AnimatedMeshes = [new RuntimeAnimatedMesh("moby_i0_t0", "moby", -1, [], [], [], frames, 30f)],
+    };
+
+    [Fact]
+    public void AnimFocusSpawnFacesTheMeasuredInstanceCentre()
+    {
+        var logs = new List<string>();
+        var placement = GodotPlayerSpawnPlacement.Resolve(AnimatedWorld([0, 0, 0, 4, 2, 6]), null,
+            animFocus: true, scripted: false, crateFocus: () => null, log: logs.Add);
+
+        var centre = RuntimeWorldScene.ToScene(2, 1, 3);
+        Assert.Equal(centre + new Vector3(0f, 2.5f, 9f), placement.Position);
+        Assert.Contains(logs, l => l.Contains("anim-focus spawn near moby_i0"));
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidAnimatedFrames))]
+    public void AnimFocusWithInvalidFramesReportsFailureAndKeepsBaseSpawn(double[][] frames)
+    {
+        var logs = new List<string>();
+        var baseline = GodotPlayerSpawnPlacement.Resolve(TestWorld(), null,
+            animFocus: false, scripted: false, crateFocus: () => null, log: _ => { });
+        var placement = GodotPlayerSpawnPlacement.Resolve(AnimatedWorld(frames), null,
+            animFocus: true, scripted: false, crateFocus: () => null, log: logs.Add);
+
+        Assert.Equal(baseline, placement);
+        Assert.Contains(logs, l => l.Contains("anim-focus spawn not applied"));
+        Assert.True(float.IsFinite(placement.Position.X) && float.IsFinite(placement.Position.Y) && float.IsFinite(placement.Position.Z));
+    }
+
+    public static TheoryData<double[][]> InvalidAnimatedFrames() => new()
+    {
+        new double[][] { [] },
+        new double[][] { [1, 2] },
+        new double[][] { [double.NaN, 0, 0] },
+        new double[][] { },
+    };
 }
