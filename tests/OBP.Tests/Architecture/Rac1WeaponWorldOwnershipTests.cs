@@ -21,9 +21,10 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
     [Fact]
     public void WeaponDiagnosticCollectorsRejectRetiredGameplayBeforeEnumeratingProjectiles()
     {
-        string root = CompositionSources.Application;
+        string root = CompositionSources.Diagnostics;
         int start = root.IndexOf("private GodotRac1AdditionalWeaponDiagnosticFixture CreateRac1AdditionalWeaponDiagnosticFixture", StringComparison.Ordinal);
         int end = root.IndexOf("private GodotRac1ArsenalDiagnosticFixture CreateRac1ArsenalDiagnosticFixture", StringComparison.Ordinal);
+        Assert.True(start >= 0 && end > start, "The additional-weapon fixture must precede the arsenal fixture in the diagnostics composition.");
         string fixture = root[start..end];
         Assert.Contains("var scope = new GodotRac1DiagnosticWorldScope(worlds)", fixture, StringComparison.Ordinal);
         Assert.Equal(2, fixture.Split("scope.RequireCurrent()", StringSplitOptions.None).Length - 1);
