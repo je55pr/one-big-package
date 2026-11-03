@@ -508,7 +508,7 @@ public sealed class MalformedInputIoTests
     public void EveryElfTruncationFailsWithExpectedExceptionsOnly()
     {
         byte[] bytes = MinimalElf();
-        for (int length = 0; length < 100; length++)
+        for (int length = 0; length < bytes.Length; length++)
         {
             var reader = Mem(bytes[..length]);
             var ex = Record.Exception(() =>
@@ -516,9 +516,15 @@ public sealed class MalformedInputIoTests
                 var header = Elf32Reader.ReadHeader(reader);
                 Elf32Reader.ReadProgramHeaders(reader, header);
             });
-            if (length < 52 + 32)
+            // The complete headers end at 84, but their file-backed segment
+            // occupies [128, 144). Removing only trailing padding is valid.
+            if (length < 128 + 16)
             {
                 Assert.True(ex is InvalidDataException or ArgumentOutOfRangeException, $"length {length}: {ex?.GetType().Name}");
+            }
+            else
+            {
+                Assert.Null(ex);
             }
         }
     }
