@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Globalization;
 using OBP.RAC3.Level;
 
 namespace OBP.Tests;
@@ -207,11 +208,22 @@ public sealed class Rac3GameplayParseTests
     [MemberData(nameof(Rejections))]
     public void MalformedBlocksAreRejectedWithTheirNamedReason(string name, Action<byte[]> corrupt, string message)
     {
-        byte[] data = Populated();
-        corrupt(data);
+        CultureInfo originalCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            // The parser's diagnostic numbers use the current culture; pin the
+            // message-contract test to one locale and restore the caller's setting.
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+            byte[] data = Populated();
+            corrupt(data);
 
-        var error = Assert.Throws<InvalidDataException>(() => Rac3Gameplay.Parse(data));
-        Assert.True(message == error.Message, $"{name}: expected \"{message}\" but got \"{error.Message}\"");
+            var error = Assert.Throws<InvalidDataException>(() => Rac3Gameplay.Parse(data));
+            Assert.True(message == error.Message, $"{name}: expected \"{message}\" but got \"{error.Message}\"");
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+        }
     }
 
     [Fact]
