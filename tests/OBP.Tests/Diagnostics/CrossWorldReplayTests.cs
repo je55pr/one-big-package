@@ -114,20 +114,7 @@ public sealed class CrossWorldReplayTests : IDisposable
     [Fact]
     public void BookmarkResolverAcceptsMatchingSiblingAndRejectsTamperingWithoutChangingSave()
     {
-        Directory.CreateDirectory(_directory);
-        string prefix = Path.Combine(_directory, "prefix.run.jsonl.gz");
-        string bookmark = Path.Combine(_directory, "state.json");
-        File.WriteAllText(prefix, "test-owned prefix bytes");
-        var state = MovementReproStateTests.Sample() with
-        {
-            Version = 3,
-            Destination = "rac2:LEVEL1",
-            Profile = Header("rac2:LEVEL1").PlayerProfile,
-            Replay = new(Path.GetFileName(prefix),
-                Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(prefix))), 0),
-        };
-        MovementReproStateFile.Save(bookmark, state);
-        byte[] original = File.ReadAllBytes(bookmark);
+        var (prefix, bookmark, state, original) = SaveBookmark("test-owned prefix bytes"u8.ToArray());
         Assert.Equal(Path.GetFullPath(prefix), ReplayBookmarkResolver.Resolve(bookmark, state));
         Assert.Equal(original, File.ReadAllBytes(bookmark));
 
@@ -137,27 +124,40 @@ public sealed class CrossWorldReplayTests : IDisposable
         Assert.Throws<FileNotFoundException>(() => ReplayBookmarkResolver.Resolve(bookmark, state));
         Assert.Throws<InvalidDataException>(() => ReplayBookmarkResolver.Resolve(bookmark, state with
         {
-            Replay = state.Replay with { FileName = "../escaped.run.jsonl.gz" }
+            Replay = state.Replay! with { FileName = "../escaped.run.jsonl.gz" }
         }));
         using (var oversized = File.Create(prefix))
             oversized.SetLength(PlaytestRunReader.MaximumCompressedBytes + 1L);
         Assert.Throws<InvalidDataException>(() => ReplayBookmarkResolver.Resolve(bookmark, state));
         File.Delete(prefix);
         Assert.Equal(original, File.ReadAllBytes(bookmark));
+    }
+
+    [SkippableFact]
+    public void BookmarkResolverRejectsSymbolicLinkWithoutChangingSave()
+    {
+        const int ErrorPrivilegeNotHeld = unchecked((int)0x80070522);
+        byte[] bytes = "test-owned prefix bytes"u8.ToArray();
+        var (prefix, bookmark, state, original) = SaveBookmark(bytes);
+        Assert.Equal(Path.GetFullPath(prefix), ReplayBookmarkResolver.Resolve(bookmark, state));
+        File.Delete(prefix);
 
         // The filename is valid and the digest matches, but the file is a link
         // to an unrelated location rather than a sibling recording.
         string external = Path.Combine(Path.GetTempPath(), "obp-outside-prefix-" + Guid.NewGuid().ToString("N") + ".run.jsonl.gz");
-        File.WriteAllText(external, "test-owned prefix bytes");
+        File.WriteAllBytes(external, bytes);
         try
         {
             try { File.CreateSymbolicLink(prefix, external); }
-            catch (Exception error) when (error is UnauthorizedAccessException or IOException or PlatformNotSupportedException)
+            catch (Exception error) when (error is PlatformNotSupportedException ||
+                OperatingSystem.IsWindows() && error.HResult == ErrorPrivilegeNotHeld)
             {
-                // Symlink creation requires developer privileges on some Windows runners.
-                return;
+                // ERROR_PRIVILEGE_NOT_HELD is optional on Windows runners.
+                // Other IO/access failures are setup defects and must fail.
+                throw new SkipException($"Symbolic links unavailable: {error.Message}");
             }
-            Assert.Throws<InvalidDataException>(() => ReplayBookmarkResolver.Resolve(bookmark, state));
+            var rejection = Assert.Throws<InvalidDataException>(() => ReplayBookmarkResolver.Resolve(bookmark, state));
+            Assert.Contains("symbolic link", rejection.Message, StringComparison.Ordinal);
             Assert.Equal(original, File.ReadAllBytes(bookmark));
         }
         finally
@@ -165,6 +165,24 @@ public sealed class CrossWorldReplayTests : IDisposable
             if (File.Exists(prefix)) File.Delete(prefix);
             File.Delete(external);
         }
+    }
+
+    private (string Prefix, string Bookmark, MovementReproState State, byte[] Original) SaveBookmark(byte[] bytes)
+    {
+        Directory.CreateDirectory(_directory);
+        string prefix = Path.Combine(_directory, "prefix.run.jsonl.gz");
+        string bookmark = Path.Combine(_directory, "state.json");
+        File.WriteAllBytes(prefix, bytes);
+        var state = MovementReproStateTests.Sample() with
+        {
+            Version = 3,
+            Destination = "rac2:LEVEL1",
+            Profile = Header("rac2:LEVEL1").PlayerProfile,
+            Replay = new(Path.GetFileName(prefix),
+                Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)), 0),
+        };
+        MovementReproStateFile.Save(bookmark, state);
+        return (prefix, bookmark, state, File.ReadAllBytes(bookmark));
     }
 
     [Fact]
