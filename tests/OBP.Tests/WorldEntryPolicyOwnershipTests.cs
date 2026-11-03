@@ -32,8 +32,10 @@ public sealed class WorldEntryPolicyOwnershipTests
         Assert.Contains("var world = load();", planning);
         Assert.Contains("var spawn = validateEntry(world);", planning);
         Assert.Contains("return new(world, spawn, []);", planning);
-        Assert.Contains("if (SourceFileStamp(path) != expected)", policy);
-        Assert.Contains("The world source changed during preparation.", policy);
+        Assert.Contains("WorldSourceFileStamp.Capture(path)", policy);
+        Assert.Contains("WorldSourceFileStamp.RequireUnchanged(path, expected)", policy);
+        Assert.DoesNotContain("new FileInfo(", policy, StringComparison.Ordinal);
+        Assert.DoesNotContain("if (SourceFileStamp(path) != expected)", policy, StringComparison.Ordinal);
 
         int firstAssets = entry.IndexOf("PrepareSelectedPlayerAssets();", StringComparison.Ordinal);
         int plan = entry.IndexOf("_worldEntries.Prepare(request,", StringComparison.Ordinal);
