@@ -12,6 +12,7 @@ filename). Exit 0 if every pair is within tolerance, 1 otherwise.
 Retail reference captures MUST NOT be committed or uploaded — baselines live only
 on the local machine (captures/ is gitignored).
 """
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -162,20 +163,28 @@ def selftest():
     print("selftest ok")
 
 
-def main(argv):
-    if "--selftest" in argv:
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Compare two screenshot sets (files or directories matched by filename). "
+        "Exit 0 if every pair is within tolerance, 1 otherwise.",
+        epilog="Retail reference captures MUST NOT be committed or uploaded; "
+        "baselines live only on the local machine (captures/ is gitignored).",
+    )
+    parser.add_argument("baseline", nargs="?", help="baseline PNG file or directory")
+    parser.add_argument("current", nargs="?", help="current PNG file or directory")
+    parser.add_argument("--tolerances", metavar="FILE", help="JSON tolerance table (default: built-in)")
+    parser.add_argument("--diffdir", metavar="DIR", help="directory for diff heat images")
+    parser.add_argument("--selftest", action="store_true", help="run the built-in self test and exit")
+    args = parser.parse_args(argv)
+    if args.selftest:
         selftest()
         return 0
-    if len(argv) < 2:
-        print(__doc__)
-        return 2
-    base, cur = argv[0], argv[1]
-    tol = argv[argv.index("--tolerances") + 1] if "--tolerances" in argv else None
-    ddir = argv[argv.index("--diffdir") + 1] if "--diffdir" in argv else None
-    ok, _ = run(base, cur, tol, ddir)
+    if args.baseline is None or args.current is None:
+        parser.error("baseline and current are required")
+    ok, _ = run(args.baseline, args.current, args.tolerances, args.diffdir)
     print("\nPASS" if ok else "\nFAIL")
     return 0 if ok else 1
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main())

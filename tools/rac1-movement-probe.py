@@ -6,7 +6,6 @@ import struct
 from collections import defaultdict
 from pathlib import Path
 
-from capstone import Cs, CS_ARCH_MIPS, CS_MODE_LITTLE_ENDIAN, CS_MODE_MIPS32
 
 ISO_SHA256 = "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d"
 EXE_SHA256 = "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9"
@@ -160,6 +159,9 @@ def gp_float_refs(exe, code, float_addresses, gp):
 
 def disassembly_windows(exe, code, pcs, radius=8):
     blob = exe[code["offset"]:code["offset"] + code["size"]]
+    # Optional dependency, needed only for disassembly.
+    from capstone import Cs, CS_ARCH_MIPS, CS_MODE_LITTLE_ENDIAN, CS_MODE_MIPS32
+
     md = Cs(CS_ARCH_MIPS, CS_MODE_MIPS32 | CS_MODE_LITTLE_ENDIAN)
     rows = {}
     for pc in sorted(set(pcs)):

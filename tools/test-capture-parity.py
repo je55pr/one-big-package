@@ -12,6 +12,7 @@ from unittest import mock
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location("capture_parity", Path(__file__).with_name("compare-capture-parity.py"))
+assert spec is not None and spec.loader is not None
 parity = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(parity)
 

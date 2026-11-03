@@ -103,7 +103,7 @@ def build_atlas(iso: Path, verify_sha: bool = True):
             if section["type"] != 1:
                 raise ValueError(f"level {level}: registration section is not initialized")
             blob = overlay.read(section["address"], section["size"])
-            def code_address(address):
+            def code_address(address, overlay=overlay):
                 return address % 4 == 0 and any(
                     s["type"] == 1 and s["address"] <= address < s["address"] + s["size"] - 3
                     for s in overlay.sections)

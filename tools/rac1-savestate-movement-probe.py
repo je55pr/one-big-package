@@ -8,7 +8,6 @@ import zipfile
 from collections import defaultdict
 from pathlib import Path
 
-from capstone import Cs, CS_ARCH_MIPS, CS_MODE_LITTLE_ENDIAN, CS_MODE_MIPS32
 
 FLOATS = {
     "ground_error_gain": 0.00800000038,
@@ -118,6 +117,9 @@ def scan_lui_lwc1_refs(memory, wanted, start=0x00080000, end=0x01000000):
 
 
 def disassembly_windows(memory, refs, radius=10):
+    # Optional dependency, needed only for disassembly.
+    from capstone import Cs, CS_ARCH_MIPS, CS_MODE_LITTLE_ENDIAN, CS_MODE_MIPS32
+
     md = Cs(CS_ARCH_MIPS, CS_MODE_MIPS32 | CS_MODE_LITTLE_ENDIAN)
     rows = {}
     for lui_pc, load_pc, _ in refs:
