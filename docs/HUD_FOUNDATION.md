@@ -22,8 +22,9 @@ This follows the repository-wide boundary in [ARCHITECTURE.md](ARCHITECTURE.md):
 ## Current baseline
 
 > **Note:** the baseline and per-game sections below describe the foundation-stage
-> state. Since then, the persistent player session has become the HUD's source of
-> health, wallet and selected weapon on every destination
+> state. Since then, the persistent player session owns the cross-world, player-facing
+> projection of health, wallet and selected weapon on every destination, while source
+> adapters remain authoritative for native state and source campaign balances
 > ([PLAYER_WORLD_CONTRACT.md](PLAYER_WORLD_CONTRACT.md), "Selected controls, animation,
 > health and equipment"); sources without such context still show no meter.
 > Reconciling these per-game statements is left to the owner.
