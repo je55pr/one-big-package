@@ -191,50 +191,36 @@ public partial class OBPGame
             DecorateFusionLab(lab, _avatarPresentation.View is not null);
         }
         ActorHost.Configure(OrdinaryPlayerSession, PlayerLife.WorldId, PlayerLife.Generation, lab, resources.Scene.Root);
-        var effectScope = resources.EffectScope ?? throw new InvalidOperationException("Effects require the existing world lease.");
-        try
-        {
-            resources.Effects = new(resources.Scene.Root, worldId: effectScope.WorldInstanceId,
-                generation: effectScope.Generation, camera: () => GetViewport().GetCamera3D(),
-                sources: () => Sources.Setup.Library.Attached.Values.ToArray(),
-                actorAlive: key => ActorHost.IsAlive(key),
-                placementOffset: () => lab is not null ? System.Numerics.Vector3.Zero :
-                    WorldEffectHost.Runtime((_player?.GlobalPosition ?? Vector3.Zero) + Rac1WeaponUsePresentationHost.EquipmentForward(_player) * 6 + Vector3.Up * 8) - new System.Numerics.Vector3(0, 0, 18),
-                suspended: () => MovementReproduction.IsLoading || _captureReplay?.Recorder is { WaitingForEntry: true } or { PreparingWorld: true },
-                recordOperation: operation => CaptureReplay.RecordCommand(new("effects", operation)),
-                commandAllowed: () => _captureReplay?.Recorder is null || EffectCaptureContract.Includes(_args, _captureReplay!.Recorder!.Reader?.Header));
-        }
-        catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException or ArgumentException or InvalidOperationException)
-        {
-            resources.EffectsFailure = "Native effects setup is unavailable (" + error.GetType().Name + "). Check the experiment definition.";
-            GD.PrintErr("[effects] " + resources.EffectsFailure);
-        }
+        resources.BindEffects(new GodotWorldResources.EffectBindings(
+            Camera: () => GetViewport().GetCamera3D(),
+            Sources: () => Sources.Setup.Library.Attached.Values.ToArray(),
+            ActorAlive: key => ActorHost.IsAlive(key),
+            PlacementOffset: () => lab is not null ? System.Numerics.Vector3.Zero :
+                WorldEffectHost.Runtime((_player?.GlobalPosition ?? Vector3.Zero) + Rac1WeaponUsePresentationHost.EquipmentForward(_player) * 6 + Vector3.Up * 8) - new System.Numerics.Vector3(0, 0, 18),
+            Suspended: () => MovementReproduction.IsLoading || _captureReplay?.Recorder is { WaitingForEntry: true } or { PreparingWorld: true },
+            RecordOperation: operation => CaptureReplay.RecordCommand(new("effects", operation)),
+            CommandAllowed: () => _captureReplay?.Recorder is null || EffectCaptureContract.Includes(_args, _captureReplay!.Recorder!.Reader?.Header),
+            LogError: message => GD.PrintErr(message)));
         EnsurePlayerHud(); EnsureWorldHud();
         if (OrdinaryPlayerSession) PlayerLife.PublishHud();
         UpdatePlayerHud(); UpdateWorldHud();
         if (_rac1Campaign.FinishWorldEntry(world))
             PersistRac1CampaignState(Rac1CampaignPersistenceHost.TravelPersistenceReason);
-        if (_args.EffectsSmoke && !_args.PlaytestRequested && _worldSwitches == 1)
-        {
-            string report = _args.AcceptanceOut ?? ProjectSettings.GlobalizePath("res://captures/effects-285/report.json");
-            var effectsFixture = new GodotEffectsFixture(this, () => _worldScenes?.Current?.Resources.Effects,
-                () => _worldScenes?.Current?.Resources.Scene.Root,
-                () => System.Text.Json.JsonSerializer.Serialize(new
-                {
-                    Configuration = _playerSession?.Capture().Configuration,
-                    Loadout = _playerSession?.Capture().Loadout,
-                    Actors = ActorHost.ReadActors().Select(actor => new { actor.Registration.Instance, actor.State.Health }).ToArray(),
-                }), Path.GetDirectoryName(Path.GetFullPath(report))!, () => _worldScenes?.Current?.Resources.EffectsFailure);
-            var definition = new DiagnosticScenarioDefinition("effects-room/v1", DiagnosticSourceAccess.OrdinaryPlay, DiagnosticSetup.ExistingWorld,
-                [.. TrilogySourceDefinitions.All.Select(s => new DiagnosticSourceRequirement(s.Game, s.Authority.BuildId))], TimeSpan.FromMinutes(10), 30000, "obp:fusion-lab");
-            var scenario = new EffectsExperimentScenario(definition, effectsFixture,
-                new EffectDiagnosticNavigation(id => id == "obp:fusion-lab" ? EnterFusionLab() :
-                    TrilogyWorldProviders.Resolve(id) is { } next && OnDestinationChosen(next)),
-                new DiagnosticSourceAttachmentFixture(Sources.Setup.Library, () => { }), report, message => GD.Print(message));
-            var runner = new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. Sources.Setup.Library.Attached.Values.Select(s => new DiagnosticSourceSnapshot(s.Game, s.Identity.BuildId, true))]),
-                new GodotDiagnosticFrameClock(this), new ExistingDiagnosticWorld(new GodotDiagnosticWorldObservations(WorldScenes).ReadWorld, _hostOperations.Token));
-            DiagnosticScenarioDispatch.Start([scenario], _hostOperations, runner, (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.PrintErr(message));
-        }
+        GodotEffectsSmoke.StartIfRequested(_args, _worldSwitches, () => new(
+            this, Sources.Setup.Library, new GodotDiagnosticWorldObservations(WorldScenes).ReadWorld, _hostOperations,
+            () => _worldScenes?.Current?.Resources.Effects,
+            () => _worldScenes?.Current?.Resources.Scene.Root,
+            () => _worldScenes?.Current?.Resources.EffectsFailure,
+            () => System.Text.Json.JsonSerializer.Serialize(new
+            {
+                Configuration = _playerSession?.Capture().Configuration,
+                Loadout = _playerSession?.Capture().Loadout,
+                Actors = ActorHost.ReadActors().Select(actor => new { actor.Registration.Instance, actor.State.Health }).ToArray(),
+            }),
+            id => id == "obp:fusion-lab" ? EnterFusionLab() :
+                TrilogyWorldProviders.Resolve(id) is { } next && OnDestinationChosen(next),
+            (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code),
+            message => GD.Print(message), message => GD.PrintErr(message)));
         _loadSummary = $"✓ {destination?.DisplayName ?? (lab is not null ? "Fusion Lab" : world.DisplayName)} · {resources.Scene.MeshInstances} meshes";
         GD.Print($"[destinations] world ready — {_loadSummary} (switch #{_worldSwitches}, player generation {_playerSession!.Capture().Generation})");
     }
