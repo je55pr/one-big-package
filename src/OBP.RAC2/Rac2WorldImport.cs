@@ -33,6 +33,8 @@ namespace OBP.RAC2;
 /// </summary>
 public static partial class Rac2WorldImport
 {
+    private static readonly int[] ChunkLumpSlots = [4, 5, 6];
+
     private static double R2(double v) => System.Math.Floor(v * 100 + 0.5) / 100 + 0.0;
 
     private static double R4(double v) => System.Math.Floor(v * 10000 + 0.5) / 10000 + 0.0;
@@ -43,7 +45,7 @@ public static partial class Rac2WorldImport
         var fs = Iso9660Filesystem.Open(isoReader);
         var wad = fs.OpenFile($"/G/LEVEL{level}.WAD") ?? throw new FileNotFoundException($"/G/LEVEL{level}.WAD");
         var header = Rac2LevelWad.ReadHeader(wad);
-        var chunkSlots = new[] { 4, 5, 6 }.Where(s => header.Lumps[s].Present).ToArray();
+        var chunkSlots = ChunkLumpSlots.Where(s => header.Lumps[s].Present).ToArray();
         bool chunked = chunkSlots.Length > 0;
 
         var meshes = new List<RuntimeMesh>();
