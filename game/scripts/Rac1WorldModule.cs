@@ -13,6 +13,27 @@ namespace OBP.Game;
 /// </summary>
 internal sealed class Rac1WorldModule : IDisposable
 {
+    internal void ClearNativeWeaponTransients(PlayerEquipmentPresentationBinder equipment, Func<Rac1WeaponInventory> inventory)
+    {
+        Bombs.RetireAll();
+        Rac1WeaponEffectsHost.ResetOrFallback(this, equipment);
+        Context.BombGlove = new(inventory());
+        Context.BombFireRequested = Context.EquipmentUsePressed = false;
+    }
+    internal void RetireCapturedTarget(RuntimeWorldScene.DynamicObjectNode target)
+    {
+        var instance = Context.MobyRuntime.Require(target.Source);
+        Context.MobyRuntime.SetNativeState(instance, Rac1MobyRuntime.TerminalNativeStateFe);
+        Context.MobyRuntime.Terminalize(instance);
+        Enemies.SetRac1HostedPresence(target, RuntimeEntityPresence.Inactive);
+        if (Enemies.Roster.TryGetValue(target.Source.InstanceIndex, out var enemy))
+        {
+            enemy.RewardEmitted = enemy.DeathPresented = true;
+            enemy.Body.CollisionLayer = enemy.Body.CollisionMask = 0;
+            Enemies.SetRac1EnemyFlame(enemy, false);
+        }
+        else Loot.DisableRac1CrateCollider(target.Source.InstanceIndex);
+    }
     private readonly RuntimeWorld _world;
     private readonly RuntimeWorldScene.Result _scene;
     private readonly Rac1WorldResetPorts _reset;

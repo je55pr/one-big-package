@@ -26,13 +26,12 @@ public sealed class GameplayTickWiringArchitectureTests
     [Fact]
     public void WorldActivationRegistersOnceAndRetirementStopsCallbacksBeforeTeardown()
     {
-        string entry = Between(Script("OBPGame.WorldEntry.cs"), "private void ActivateOwnedWorld",
-            "private void ActivateWorld");
+        string entry = Between(Script("GodotWorldResources.cs"), "internal void Activate(", "internal void BindGameplayTicks(");
         string root = Script("OBPGame.cs");
-        string retire = Between(root, "private void RetireWorldBindings", "private void SetupOverlay");
+        string retire = Between(root, "private void RetireWorldBindings", "private void ApplyOverlaySpec");
         Assert.Contains("WorldGameplayTickBindings.Activate(entry", entry);
-        Assert.Contains("entry.Resources.BindPlayer(_player)", entry);
-        Assert.True(entry.IndexOf("BindPlayer(_player)", StringComparison.Ordinal)
+        Assert.Contains("BindPlayer(application.Player)", entry);
+        Assert.True(entry.IndexOf("BindPlayer(application.Player)", StringComparison.Ordinal)
             < entry.IndexOf("WorldGameplayTickBindings.Activate(", StringComparison.Ordinal));
         Assert.Contains("RetireGameplayTicks()", retire);
         Assert.True(retire.IndexOf("RetireGameplayTicks()", StringComparison.Ordinal)

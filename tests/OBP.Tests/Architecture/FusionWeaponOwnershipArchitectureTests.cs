@@ -39,21 +39,21 @@ public sealed class FusionWeaponOwnershipArchitectureTests
         string resources = Read("GodotWorldResources.cs");
         Assert.Contains("public IDisposable? FusionWeapons", resources, StringComparison.Ordinal);
         Assert.Contains("FusionWeapons?.Dispose()", resources, StringComparison.Ordinal);
-        string entry = Method("OBPGame.WorldEntry.cs", "ActivateWorld").ToString();
-        int reset = entry.IndexOf("Rac1World.Configure()", StringComparison.Ordinal);
-        int bind = entry.IndexOf("resources.FusionWeapons = FusionWeapons.BindWorld(resources.Scene.Root)", StringComparison.Ordinal);
-        int spawn = entry.IndexOf("SpawnPlayer(world)", StringComparison.Ordinal);
+        string entry = Method("GodotWorldResources.cs", "Activate").ToString();
+        int reset = entry.IndexOf("Rac1Gameplay.Configure()", StringComparison.Ordinal);
+        int bind = entry.IndexOf("FusionWeapons = bindings.EquipmentWorld(Scene.Root)", StringComparison.Ordinal);
+        int spawn = entry.IndexOf("bindings.SpawnPlayer(world)", StringComparison.Ordinal);
         Assert.InRange(bind, reset + 1, spawn - 1);
     }
 
     [Fact]
     public void ForeignAvatarsReceiveViewsAndNativeTransientsClearWithoutSourceAssets()
     {
-        string attach = Method("OBPGame.WorldEntry.cs", "AttachPlayerAvatarVisual").ToString();
-        Assert.Contains("FusionWeapons.AttachViews(view)", attach, StringComparison.Ordinal);
+        string attach = Method("PlayerAvatarPresentationHost.cs", "AttachWorldVisual").ToString();
+        Assert.Contains("bindings.Weapons().AttachViews(view)", attach, StringComparison.Ordinal);
         int nativeViews = attach.IndexOf("UsePresentation.AttachViews(view)", StringComparison.Ordinal);
         Assert.True(nativeViews >= 0, "R&C1 view attachment is missing.");
-        Assert.True(attach.IndexOf("FusionWeapons.AttachViews(view)", StringComparison.Ordinal) > nativeViews);
+        Assert.True(attach.IndexOf("bindings.Weapons().AttachViews(view)", StringComparison.Ordinal) > nativeViews);
         Assert.DoesNotContain("FusionWeapons.AttachViews", Method("Rac1WeaponUsePresentationHost.cs", "AttachViews").ToString(),
             StringComparison.Ordinal);
         string clear = Method("FusionWeaponHost.cs", "ClearTransients").ToString();
@@ -61,7 +61,7 @@ public sealed class FusionWeaponOwnershipArchitectureTests
         Assert.DoesNotContain("Sources.Assets", clear, StringComparison.Ordinal);
         Assert.Contains("ReleaseViews(freeImmediately: true)", Method("FusionWeaponHost.cs", "TickPreparation").ToString(),
             StringComparison.Ordinal);
-        Assert.Contains("resources.Rac1Gameplay = null", Method("OBPGame.cs", "RetireWorldBindings").ToString(),
+        Assert.Contains("Rac1Gameplay = null", Method("GodotWorldResources.cs", "RetireGameplayBeforePlayer").ToString(),
             StringComparison.Ordinal);
     }
 

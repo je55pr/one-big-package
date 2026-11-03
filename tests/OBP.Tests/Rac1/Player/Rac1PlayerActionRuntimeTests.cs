@@ -5,6 +5,28 @@ namespace OBP.Tests;
 
 public sealed class Rac1PlayerActionRuntimeTests
 {
+    [Theory]
+    [InlineData(Rac1PlayerActionDomain.Neutral, false)]
+    [InlineData(Rac1PlayerActionDomain.Wrench, true)]
+    [InlineData(Rac1PlayerActionDomain.WrenchHyperStrike, true)]
+    [InlineData(Rac1PlayerActionDomain.WrenchCometStrike, true)]
+    [InlineData(Rac1PlayerActionDomain.Wade, false)]
+    [InlineData(Rac1PlayerActionDomain.EnvironmentalFallDeath, false)]
+    public void WrenchCompletionOnlyReleasesTheThreeWrenchActions(int state, bool completed)
+    {
+        var session = new Rac1PlayerActionRuntimeSession();
+        session.EnterState(state);
+        var before = session.Probe();
+        Assert.Equal(completed, session.CompleteWrenchAttack());
+        if (completed)
+        {
+            Assert.Equal(Rac1PlayerActionDomain.Neutral, session.Probe().CurrentNativeState);
+            Assert.Equal(state, session.Probe().PreviousNativeState);
+            Assert.Equal(before.EntryGeneration + 1, session.Probe().EntryGeneration);
+        }
+        else Assert.Equal(before, session.Probe());
+    }
+
     [Fact]
     public void CataloguePreservesAll131NativeSlotsWithoutGuessingUnknownNames()
     {

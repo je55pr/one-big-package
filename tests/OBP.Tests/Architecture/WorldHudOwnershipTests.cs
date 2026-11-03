@@ -15,11 +15,13 @@ public sealed class WorldHudOwnershipTests
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
         string hud = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/WorldHud.cs"));
 
-        Assert.Contains("_worldHud = new WorldHud", root, StringComparison.Ordinal);
-        Assert.Contains("hud.Render(new WorldHudFrame(", root, StringComparison.Ordinal);
-        Assert.Contains("resources?.Rac1Gameplay?.Hud.Line()", root, StringComparison.Ordinal);
-        Assert.Contains("resources?.Rac2Gameplay?.HudLine()", root, StringComparison.Ordinal);
-        Assert.Contains("resources?.Rac3Gameplay?.HudLine()", root, StringComparison.Ordinal);
+        Assert.Contains("Presentation.UpdateWorldHud(", root, StringComparison.Ordinal);
+        string presentation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotApplicationPresentation.cs"));
+        Assert.Contains("_worldHud = new WorldHud", presentation, StringComparison.Ordinal);
+        Assert.Contains("hud.Render(new WorldHudFrame(", presentation, StringComparison.Ordinal);
+        Assert.Contains("resources?.Rac1Gameplay?.Hud.Line()", presentation, StringComparison.Ordinal);
+        Assert.Contains("resources?.Rac2Gameplay?.HudLine()", presentation, StringComparison.Ordinal);
+        Assert.Contains("resources?.Rac3Gameplay?.HudLine()", presentation, StringComparison.Ordinal);
         Assert.DoesNotContain("Rac2PlanetCatalogue.Find(", root, StringComparison.Ordinal);
         Assert.DoesNotContain("Game: {gameLabel}", root, StringComparison.Ordinal);
         Assert.DoesNotContain("Render tris: {r.Triangles", root, StringComparison.Ordinal);
@@ -84,9 +86,9 @@ public sealed class WorldHudOwnershipTests
     [Fact]
     public void WorldHudHidesAndClearsTextForUnavailableFrames()
     {
-        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
         string hud = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/WorldHud.cs"));
-        Assert.Contains("if (_world is not { } world || _sceneResult is not { } scene)\n        {\n            hud.Render(null, false);", root, StringComparison.Ordinal);
+        string presentation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotApplicationPresentation.cs"));
+        Assert.Contains("if (entry?.Plan.Prepared.World is not { } world || entry?.Resources.Scene is not { } scene)\n        {\n            hud.Render(null, false);", presentation.Replace("\r\n", "\n"), StringComparison.Ordinal);
         int start = hud.IndexOf("internal void Render(WorldHudFrame? frame, bool enabled)", StringComparison.Ordinal);
         int end = hud.IndexOf("internal static string Format(WorldHudFrame frame)", start, StringComparison.Ordinal);
         Assert.True(start >= 0 && end > start);

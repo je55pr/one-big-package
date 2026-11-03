@@ -53,6 +53,13 @@ internal sealed class PlayerSessionHost
     }
     internal Rac1WeaponInventory? WeaponPreview { get; set; }
 
+    internal Rac1FusionCampaignIsolation IsolateCampaign(Rac1CampaignHost campaign, OBP.Runtime.RuntimeSpawn start)
+    {
+        var isolated = new Rac1FusionCampaignIsolation(campaign, campaign.CollectedNovalisGoldBolts, start);
+        WeaponPreview = null;
+        return isolated;
+    }
+
     /// <summary>
     /// Enter or leave the development arsenal using the existing player-native
     /// preview controller and its current inventory. Returns whether the

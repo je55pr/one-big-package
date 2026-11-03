@@ -29,6 +29,13 @@ internal sealed record Rac1MovementWorldPorts(
 
 internal sealed class Rac1MovementWorldStateAdapter(Rac1MovementWorldPorts ports)
 {
+    internal static void PrepareLegacyCampaign(MovementReproWorld saved, PlayerSessionHost player, Rac1CampaignHost campaign)
+    {
+        var inventory = new Rac1WeaponInventory(saved.Inventory, saved.CurrentItemId);
+        player.WeaponPreview = saved.WeaponPreview ? inventory : null;
+        if (!saved.WeaponPreview) campaign.Session = new Rac1CampaignRuntimeSession(campaign.Session.Campaign, inventory);
+        campaign.Wallet = new Rac1BoltWallet(saved.Bolts);
+    }
     public MovementReproWorld Capture()
     {
         var module = ports.World();

@@ -16,6 +16,57 @@ namespace OBP.Tests;
 public sealed class PlayerEquipmentFacadeTests
 {
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AcquisitionUsesTheExistingInventoryAndPublishesFeedbackAfterPersistence(bool ordinary)
+    {
+        // The retail campaign policy does not pre-grant implemented items, so both modes start unowned.
+        using var fixture = new Fixture(ordinary, new Rac1WeaponInventory(ownsFirstRanged: false),
+            PlayerLoadoutPolicy.RetailCampaign);
+        var campaign = ordinary ? new Rac1WeaponInventory(ownsFirstRanged: false) : fixture.Inventory;
+        var selected = fixture.Inventory;
+        var events = new List<string>();
+        int id = (int)Rac1WeaponId.FirstRanged;
+        Assert.False(selected.OwnsFirstRanged);
+        Rac1MovementCapabilities? movement = null;
+
+        var result = fixture.Equipment.AcquireNativeItem(id, campaign,
+            capabilities => { movement = capabilities; events.Add("movement"); },
+            reason => events.Add(reason), _ => events.Add("feedback"));
+
+        Assert.True(selected.OwnsFirstRanged);
+        Assert.Equal(Rac1MovementCapabilities.FromInventory(selected), movement);
+        Assert.True(result.IsFirstAcquisition);
+        Assert.Equal(new[] { "movement", "item acquisition 10", "feedback" }, events);
+        if (ordinary) Assert.False(campaign.OwnsFirstRanged);
+
+        // A repeat acquisition of an owned item persists but is not a first acquisition.
+        events.Clear();
+        var repeat = fixture.Equipment.AcquireNativeItem(id, campaign,
+            _ => events.Add("movement"), reason => events.Add(reason), _ => events.Add("feedback"));
+        Assert.False(repeat.IsFirstAcquisition);
+        Assert.Equal(new[] { "movement", "item acquisition 10" }, events);
+    }
+
+    [Fact]
+    public void AmmoGrantPersistsAndReportsOnlyAcceptedNativeAmmo()
+    {
+        using var fixture = new Fixture(ordinary: false);
+        var campaign = Rac1WeaponInventory.CreateOpeningLoadout();
+        var events = new List<string>();
+        void Persist(string reason) => events.Add(reason);
+
+        var changed = fixture.Equipment.GrantNativeAmmo(10, 100, campaign, Persist, _ => events.Add("feedback"));
+        Assert.True(changed.Changed);
+        Assert.Equal(40, campaign.FirstRangedAmmo);
+        Assert.Equal(new[] { "ammo grant item 10", "feedback" }, events);
+        events.Clear();
+        var full = fixture.Equipment.GrantNativeAmmo(10, 100, campaign, Persist, _ => events.Add("feedback"));
+        Assert.False(full.Changed);
+        Assert.Empty(events);
+    }
+
+    [Theory]
     [InlineData(EquipmentUsability.MissingSource)]
     [InlineData(EquipmentUsability.UnsupportedBuild)]
     [InlineData(EquipmentUsability.MissingModel)]
@@ -268,7 +319,7 @@ public sealed class PlayerEquipmentFacadeTests
             [ObpSourceGame.Rac3] = Rac3Authority.Primary.BuildId,
         };
         internal PlayerSessionNativeState? Native;
-        private readonly Rac1WeaponInventory _parityInventory = Rac1WeaponInventory.CreateOpeningLoadout();
+        private readonly Rac1WeaponInventory _parityInventory;
         private readonly Rac1HeldItemSession _parityHeld = new();
         internal FusionWeaponSession? ParityWeapons;
         internal Rac1WeaponInventory Inventory => Native?.Inventory ?? _parityInventory;
@@ -286,11 +337,13 @@ public sealed class PlayerEquipmentFacadeTests
         internal PlayerEquipmentPorts Ports { get; }
         internal PlayerEquipmentFacade Equipment { get; }
 
-        internal Fixture(bool ordinary = true)
+        internal Fixture(bool ordinary = true, Rac1WeaponInventory? inventory = null,
+            PlayerLoadoutPolicy policy = PlayerLoadoutPolicy.DevelopmentAvailable)
         {
+            _parityInventory = inventory ?? Rac1WeaponInventory.CreateOpeningLoadout();
             if (ordinary)
             {
-                Native = new(_parityInventory, 42, 1440);
+                Native = new(_parityInventory, 42, 1440, policy);
                 Native.RefreshDevelopmentSources(Sources);
             }
             var presentedAvatar = SelectedAvatar;

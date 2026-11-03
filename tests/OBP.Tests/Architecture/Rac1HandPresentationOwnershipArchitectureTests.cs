@@ -9,7 +9,7 @@ public sealed class Rac1HandPresentationOwnershipArchitectureTests
     [Fact]
     public void HandVisibilityAndAttachmentMutationBelongToTheExistingEquipmentBinder()
     {
-        string entry = Script("OBPGame.WorldEntry.cs");
+        string entry = Script("PlayerAvatarPresentationHost.cs");
         string root = Script("OBPGame.cs");
         string binder = Script("PlayerEquipmentPresentationBinder.cs");
 
@@ -36,7 +36,7 @@ public sealed class Rac1HandPresentationOwnershipArchitectureTests
         Assert.Contains("_equipmentPresentation.RefreshRac1HeldItem(previous, Rac1HandPresentation, _avatarPresentation)", root);
         Assert.Contains("_equipmentPresentation.RefreshRac1HandVisibility(Rac1HandPresentation, _avatarPresentation)", root);
         Assert.Contains("PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(", binder);
-        Assert.Contains("_equipmentPresentation.ApplyAvatarEquipmentPose(", entry);
+        Assert.Contains("bindings.Equipment.ApplyAvatarEquipmentPose(", Script("PlayerAvatarPresentationHost.cs"));
         Assert.DoesNotContain("PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(", entry);
     }
 

@@ -1,10 +1,139 @@
 using Godot;
 using OBP.RAC1.Gameplay;
+using OBP.Core;
+using OBP.RAC1.Player;
+using OBP.RAC1.Presentation;
+using OBP.Runtime.Gameplay;
 
 namespace OBP.Game;
 
 public sealed partial class PauseMenuUi : CanvasLayer
 {
+    internal sealed record CreationBindings(
+        ModalEquipmentPorts Equipment, Func<bool> Ordinary, Func<PlayerHost?> Player,
+        Func<Rac1WeaponInventory> Inventory, Func<PlayerSessionNativeState?> Native,
+        Func<PlayerAvatarPresentationHost> Avatar, Func<ActorWorldHost> Actors,
+        Func<string?> ProfileStatus, Func<string?> SaveNotice,
+        Func<string, EquipmentChangeResult> ResetActor, Func<GodotWorldResources?> Resources,
+        Func<bool> Debug, Func<bool> Preview, Func<FusionWeaponHost> Fusion,
+        Action Close, Action Lab, Action OpenSettings, Action<bool> SetDebug,
+        Action SaveMovement, Action LoadMovement, Action<bool> RequestPreview,
+        Action Worlds, Action Quit);
+
+    internal static PauseMenuUi Create(CreationBindings bindings)
+    {
+        var equip = bindings.Equipment;
+        var menu = new PauseMenuUi
+        {
+            ProcessMode = ProcessModeEnum.Always,
+            RetailEnabled = !bindings.Ordinary() && bindings.Player()?.HasRetailPresentation == true && Rac1RetailUiAssets.IsLoaded,
+            CatalogReader = bindings.Ordinary() ? equip.Catalog : null,
+            SlotReader = bindings.Ordinary() ? equip.QuickSlots : null,
+            CatalogEquip = equip.Equip,
+            CatalogUnequip = equip.Unequip,
+            CatalogGadget = equip.SetGadget,
+            CatalogAssign = equip.AssignSlot,
+            CatalogPreview = bindings.Avatar().CreateAppearancePreview,
+            ActorStatusReader = bindings.Actors().ReadStatus,
+            SharedProfileStatusReader = bindings.ProfileStatus,
+            SaveNoticeReader = bindings.SaveNotice,
+            ActorReset = bindings.ResetActor,
+            EffectStatusReader = () =>
+            {
+                var resources = bindings.Resources();
+                resources?.Effects?.Prepare();
+                return resources?.Effects?.Status ?? resources?.EffectsFailure ?? "World effects are unavailable.";
+            },
+            EffectControl = operation => bindings.Resources()?.Effects?.Control(operation) ??
+                new(false, bindings.Resources()?.EffectsFailure ?? "World effects are unavailable."),
+            CatalogIcon = entry => entry.Definition.Item is { SourceGame: ObpSourceGame.Rac1 } item &&
+                Rac1WeaponIconCatalog.Ordinary((Rac1WeaponId)item.NativeItemId) is { } icon
+                ? Rac1RetailUiAssets.Sprite(icon.AnimationId, icon.Frame) : null,
+            LabAvailable = bindings.Ordinary(),
+            Weapons = Rac1WeaponProfiles.Additional.Select(profile => profile.Item)
+                .Prepend(Rac1WeaponId.FirstRanged)
+                .OrderBy(weapon => (int)weapon)
+                .Select(weapon => new PauseMenuUi.RetailItem(
+                    (int)weapon, Rac1WeaponProfiles.Name(weapon),
+                    bindings.Inventory().Owns(weapon), bindings.Inventory().Equipped == weapon,
+                    Rac1WeaponIconCatalog.Ordinary(weapon)?.AnimationId))
+                .ToArray(),
+            Gadgets = (Rac1RetailUiAssets.NativeMenuPages?.NativeGadgetsGrid.Groups
+                .SelectMany(group => group.Cells).Select(cell => cell.NativeId) ??
+                Enum.GetValues<Rac1TraversalEquipmentId>().Select(gadget => (int)gadget))
+                .Select(id =>
+                {
+                    var gadget = (Rac1TraversalEquipmentId)id;
+                    string name = Enum.IsDefined(gadget) ? gadget.ToString() switch
+                    {
+                        "HeliPack" => "Heli-Pack",
+                        "ThrusterPack" => "Thruster-Pack",
+                        "HydroPack" => "Hydro-Pack",
+                        "OxygenMask" => "O2 Mask",
+                        "Magneboots" => "Magneboots",
+                        "Grindboots" => "Grindboots",
+                        _ => gadget.ToString(),
+                    } : $"Native item {id}";
+                    return new PauseMenuUi.RetailItem(id, name,
+                        bindings.Inventory().OwnsNativeItem(id), false);
+                }).ToArray(),
+            QuickSlots = (bindings.Native()?.Assignments.Capture().QuickSelect ?? bindings.Inventory().QuickSelect
+                .Select(id => id == 0 ? (OBP.Runtime.Gameplay.SourceWeaponKey?)null : new OBP.Runtime.Gameplay.SourceWeaponKey(ObpSourceGame.Rac1, id)).ToArray()).Select((key, slot) =>
+            {
+                // The retained native menu only admits native icon/item IDs.
+                // Foreign slots remain real in the OBP read model and wheel;
+                // #259 owns their full pause-menu presentation.
+                int id = key is { SourceGame: ObpSourceGame.Rac1 } native ? native.NativeItemId : 0;
+                Rac1WeaponId weapon = (Rac1WeaponId)id;
+                var icon = Rac1WeaponIconCatalog.Ordinary(weapon);
+                return new PauseMenuUi.RetailItem(id,
+                    key is { SourceGame: not ObpSourceGame.Rac1 } foreign ? $"{FusionWeaponHost.WeaponName(foreign)} [{SourceIdentityWire.FormatSource(foreign.SourceGame)}]" :
+                    id == 0 ? $"Slot {slot + 1}: Empty" :
+                    Enum.IsDefined(weapon) ? Rac1WeaponProfiles.Name(weapon) : $"Native item {id}",
+                    id != 0 && bindings.Inventory().OwnsNativeItem(id),
+                    id != 0 && bindings.Inventory().Equipped == weapon,
+                    icon?.AnimationId);
+            }).ToArray(),
+            // Retail Items kind=0 reads item_available[]. Kind=1 reads
+            // independent alternate_item_available[] progression flags,
+            // which this campaign host does not yet model or invent.
+            NativePrimaryItemAvailability = bindings.Inventory().Items,
+            Items = Enumerable.Range(0, Rac1NativeInventoryLayout.ItemCount)
+                .Where(id => bindings.Inventory().OwnsNativeItem(id) &&
+                    !Enum.IsDefined((Rac1WeaponId)id) &&
+                    !Enum.IsDefined((Rac1TraversalEquipmentId)id) &&
+                    !(Rac1RetailUiAssets.NativeMenuPages?.NativeGadgetsGrid.Groups
+                        .Any(group => group.Cells.Any(cell => cell.NativeId == id)) ?? false))
+                .Select(id => new PauseMenuUi.RetailItem(id, $"Native item {id}", true, false))
+                .ToArray(),
+            DebugOutputEnabled = bindings.Debug(),
+            MovementStatesAvailable = bindings.Player()?.CanSaveMovementState == true,
+            WeaponPreviewEnabled = bindings.Preview(),
+            FusionTestAvailable = bindings.Fusion().CanRunFixture,
+            FusionTestEnabled = bindings.Fusion().TestActive,
+            EquipmentStatus = bindings.Player() is { } activePlayer
+                ? bindings.Fusion().TestActive ? "Three-game Veldin test · temporary inventory\nOriginal damage · OBP hand mounts / spread feedback\nHold Triangle / Q to select; Circle / E to fire."
+                : $"Weapons: {(!bindings.Preview() ? "campaign inventory" : "full arsenal preview")}\nPack: {activePlayer.Rac1EquipmentLabel}\nSwingshot preview: {(activePlayer.Rac1DevelopmentSwingshotPreview ? "on" : "off")}"
+                : string.Empty,
+        };
+        menu.EquipRequested += equip.SelectNativeWeapon;
+        menu.FusionTestRequested += bindings.Fusion().ToggleTest;
+        menu.LabRequested += () => { bindings.Close(); bindings.Lab(); };
+        menu.QuickSelectAssignRequested = equip.AssignNativeSlot;
+        menu.ResumeRequested += () => bindings.Close();
+        menu.ControllerSettingsRequested += bindings.OpenSettings;
+        menu.DebugOutputChanged += bindings.SetDebug;
+        menu.SaveMovementStateRequested += bindings.SaveMovement;
+        menu.LoadMovementStateRequested += bindings.LoadMovement;
+        menu.WeaponPreviewRequested += () => { bindings.Close(); bindings.RequestPreview(bindings.Preview()); };
+        menu.RefillPreviewRequested += () => { bindings.Close(); if (bindings.Preview()) bindings.RequestPreview(false); };
+        menu.PackPreviewRequested += () => { bindings.Player()?.CycleRac1DevelopmentPack(); bindings.Close(); };
+        menu.SwingshotPreviewRequested += () => { bindings.Player()?.ToggleRac1DevelopmentSwingshot(); bindings.Close(); };
+        menu.WorldsRequested += bindings.Worlds;
+        menu.QuitRequested += bindings.Quit;
+        return menu;
+    }
+
     public event Action? ResumeRequested;
     public event Action? ControllerSettingsRequested;
     public event Action? WorldsRequested;

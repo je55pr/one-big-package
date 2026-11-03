@@ -138,7 +138,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
     public void WalloperPreservesNativeLungeContactTimingAndBodyPoseAge()
     {
         string host = Script("Rac1WalloperHost.cs");
-        string animation = Script("OBPGame.WorldEntry.cs");
+        string animation = Script("PlayerAvatarPresentationHost.cs");
         string equipmentPose = Script("PlayerEquipmentPresentationBinder.cs");
         Assert.Contains("Rac1ArsenalRules.WalloperDurationTicks", host, StringComparison.Ordinal);
         Assert.Contains("Rac1ArsenalRules.WalloperLungeFrom", host, StringComparison.Ordinal);
@@ -152,9 +152,9 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
         Assert.Contains("contacts.Geometry", host, StringComparison.Ordinal);
         Assert.Contains("contacts.HasLineOfSight(centre, bounds.GetCenter())", host, StringComparison.Ordinal);
         Assert.Contains("internal int Age => _disposed ? 0 : _age", host, StringComparison.Ordinal);
-        Assert.Contains("Rac1Gameplay?.Weapons.Walloper.Age ?? 0", animation, StringComparison.Ordinal);
+        Assert.Contains("bindings.Gameplay()?.Weapons.Walloper.Age ?? 0", animation, StringComparison.Ordinal);
         Assert.Contains("walloper ? walloperAge / 60d", equipmentPose, StringComparison.Ordinal);
-        Assert.Contains("_equipmentPresentation.ApplyAvatarEquipmentPose(", animation, StringComparison.Ordinal);
+        Assert.Contains("bindings.Equipment.ApplyAvatarEquipmentPose(", animation, StringComparison.Ordinal);
         Assert.DoesNotContain("_rac1WalloperAge", animation, StringComparison.Ordinal);
     }
 

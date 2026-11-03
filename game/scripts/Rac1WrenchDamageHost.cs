@@ -25,6 +25,17 @@ internal sealed class Rac1WrenchDamageHost(
 {
     private bool _disposed;
 
+    internal bool Strike(RuntimeWorldScene.DynamicObjectNode target, Rac1WrenchDamageResult result) => target.Source.NativeClassId switch
+    {
+        int nativeClass when Rac1BoltCrate.IsCrateClass(nativeClass) || nativeClass == Rac1ExplosiveCrateSession.ClassId => TryStrikeCrate(target, result),
+        Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId or
+            Rac1AridiaEnemies.Sandshark or Rac1AridiaEnemies.Constructorbot or Rac1AridiaEnemies.Nest or
+            Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId or Rac1FrogAuthored.ClassId => TryStrikeHostile(target, result),
+        Rac1NovalisBreakableSession.MushroomClass or Rac1NovalisBreakableSession.RockFormationClass =>
+            _breakables.TryBreakNovalisProp(target, Rac1NovalisBreakableSession.ContactKind.Wrench),
+        _ => false,
+    };
+
     internal bool TryStrikeCrate(RuntimeWorldScene.DynamicObjectNode target, Rac1WrenchDamageResult? nativeDamage = null)
     {
         if (_disposed) return false;

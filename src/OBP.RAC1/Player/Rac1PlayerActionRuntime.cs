@@ -242,6 +242,14 @@ public sealed class Rac1PlayerActionRuntimeSession
         return _current;
     }
 
+    public bool CompleteWrenchAttack()
+    {
+        if (Probe().CurrentNativeState is not (Rac1PlayerActionDomain.Wrench or
+            Rac1PlayerActionDomain.WrenchHyperStrike or Rac1PlayerActionDomain.WrenchCometStrike)) return false;
+        EnterState(Rac1PlayerActionDomain.Neutral);
+        return true;
+    }
+
     public Rac1PlayerActionSnapshot EnterState(int nativeState)
     {
         Rac1PlayerActionDomain.Validate(nativeState);

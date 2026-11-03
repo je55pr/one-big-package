@@ -34,7 +34,7 @@ public sealed class PlayerEquipmentOwnershipArchitectureTests
         string owner = Read("PlayerSessionHost.cs");
         Assert.Contains("private PlayerEquipmentFacade? _equipment", owner, StringComparison.Ordinal);
         Assert.Contains("_equipment?.Dispose()", owner, StringComparison.Ordinal);
-        Assert.Contains("_persistentPlayer.RetireEquipment()", Read("OBPGame.cs"), StringComparison.Ordinal);
+        Assert.Contains("persistent.RetireEquipment()", Read("GodotApplicationShutdown.cs"), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -42,12 +42,24 @@ public sealed class PlayerEquipmentOwnershipArchitectureTests
     {
         var root = CSharpSyntaxTree.ParseText(Read("OBPGame.cs")).GetRoot();
         var exit = Assert.Single(root.DescendantNodes().OfType<MethodDeclarationSyntax>(), method => method.Identifier.ValueText == "_ExitTree");
-        var cleanup = Assert.Single(exit.Body!.Statements.OfType<TryStatementSyntax>());
-        Assert.Contains("ReleaseAudioForExit()", cleanup.Block.ToString(), StringComparison.Ordinal);
+        Assert.Null(exit.Body);
+        string forwarding = exit.ExpressionBody!.ToString();
+        Assert.Contains("GodotApplicationShutdown.Exit(ReleaseAudioForExit", forwarding, StringComparison.Ordinal);
+        Assert.Contains("() => _playerLife, () => _fusionWeapons", forwarding, StringComparison.Ordinal);
+        Assert.Contains("ApplicationLifecycle.ReportRootExit(Name)", forwarding, StringComparison.Ordinal);
+        var shutdown = CSharpSyntaxTree.ParseText(Read("GodotApplicationShutdown.cs")).GetRoot();
+        var helper = Assert.Single(shutdown.DescendantNodes().OfType<MethodDeclarationSyntax>(), method => method.Identifier.ValueText == "Exit");
+        var cleanup = Assert.Single(helper.Body!.Statements.OfType<TryStatementSyntax>());
+        Assert.Contains("releaseAudio()", cleanup.Block.ToString(), StringComparison.Ordinal);
         var retirement = Assert.IsType<FinallyClauseSyntax>(cleanup.Finally);
-        Assert.Contains("_persistentPlayer.RetireEquipment()", retirement.Block.ToString(), StringComparison.Ordinal);
+        // Resolve lazily created services only after releaseAudio has completed or thrown.
+        Assert.DoesNotContain("player()", cleanup.Block.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("weapons()", cleanup.Block.ToString(), StringComparison.Ordinal);
+        Assert.Contains("player()?.Dispose()", retirement.Block.ToString(), StringComparison.Ordinal);
+        Assert.Contains("weapons()?.Dispose()", retirement.Block.ToString(), StringComparison.Ordinal);
+        Assert.Contains("persistent.RetireEquipment()", retirement.Block.ToString(), StringComparison.Ordinal);
         Assert.Contains("ApplicationLifecycle.SetQuitPreparation(null)", retirement.Block.ToString(), StringComparison.Ordinal);
-        Assert.Contains("ApplicationLifecycle.ReportRootExit(Name)", retirement.Block.ToString(), StringComparison.Ordinal);
+        Assert.Contains("reportExit()", retirement.Block.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

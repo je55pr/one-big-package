@@ -2,6 +2,7 @@ using Godot;
 using OBP.Fusion;
 using OBP.Godot;
 using OBP.RAC1.Presentation;
+using OBP.RAC1.Player;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Presentation;
 
@@ -16,6 +17,16 @@ internal sealed record GodotPlayerLifecyclePorts(Func<PlayerSessionNativeState?>
 /// <summary>Owns player-service subscriptions and ordinary retry UI, separately from native parity restart.</summary>
 internal sealed class GodotPlayerLifecycleHost : IDisposable
 {
+    internal static void CompleteNativeWaterAction(bool hasWater, PlayerHost? player,
+        Rac1RatchetNanotechSession health, Action<string> status, Action refreshHud)
+    {
+        if (!hasWater || player is null || health.Probe().IsDead) return;
+        player.Rac1GameplayState = health.ApplyEnvironmentalDeathReset();
+        const string message = "Novalis drowned (native water action completed)";
+        status(message);
+        refreshHud();
+        GD.Print($"[rac1-novalis-water] {message}");
+    }
     private readonly GodotPlayerLifecyclePorts _ports;
     private readonly PlayerLifecycleBridge _life;
     private WorldBinding? _world;

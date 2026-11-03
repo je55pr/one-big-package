@@ -39,7 +39,7 @@ public sealed class Rac1WrenchWorldOwnershipTests
         string host = Script("Rac1WrenchHost.cs");
         string module = Script("Rac1WorldModule.cs");
         Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1Wrench.cs")));
-        string entry = Script("OBPGame.cs") + Script("OBPGame.WorldEntry.cs");
+        string entry = Script("OBPGame.cs");
 
         Assert.Contains("Wrench = new(wrenchFrame, wrenchContact)", module, StringComparison.Ordinal);
         Assert.Contains("Wrench.Reset()", module, StringComparison.Ordinal);
@@ -49,7 +49,7 @@ public sealed class Rac1WrenchWorldOwnershipTests
         Assert.DoesNotContain("Action Wrench", Script("Rac1WorldPorts.cs"), StringComparison.Ordinal);
         Assert.Contains("Rac1WrenchHost.ResetOrFallback(", Method("OBPGame.cs", "CreatePlayerLifecycle"), StringComparison.Ordinal);
         Assert.Contains("Rac1WrenchHost.ResetOrFallback(", Method("OBPGame.cs", "CreateRac1WorldModule"), StringComparison.Ordinal);
-        Assert.Contains("Rac1WrenchHost.ResetOrFallback(", Method("OBPGame.WorldEntry.cs", "ResetPlayerAvatarPhysics"), StringComparison.Ordinal);
+        Assert.Contains("Rac1WrenchHost.ResetOrFallback(", Method("PlayerAvatarPresentationHost.cs", "ResetPlayerAvatarPhysics"), StringComparison.Ordinal);
         Assert.Contains("if (wrench is not null) wrench.Reset()", host, StringComparison.Ordinal);
         Assert.Contains("GodotRac1PlayerAudioPlayback.ResetWrench(audio)", host, StringComparison.Ordinal);
         Assert.Contains("if (player is not null) player.Rac1WrenchThrown = false", host, StringComparison.Ordinal);
@@ -70,8 +70,13 @@ public sealed class Rac1WrenchWorldOwnershipTests
         Assert.Contains("_generation = frame.Generation;", host, StringComparison.Ordinal);
         Assert.Contains("_victims.Clear();", host, StringComparison.Ordinal);
         Assert.Contains("framePorts.ApplyNativeAttack(frame.ProfileId);", host, StringComparison.Ordinal);
-        Assert.Contains("Rac1WrenchAttackProfile.Profiles[profileId]", factory, StringComparison.Ordinal);
-        Assert.Contains("CurrentNativeState is not (0x13 or 0x14 or 0x15)", factory, StringComparison.Ordinal);
+        Assert.Contains("Rac1WrenchHost.ApplyPlayerAttack(", factory, StringComparison.Ordinal);
+        Assert.Contains("Rac1WrenchHost.EndPlayerAttack(", factory, StringComparison.Ordinal);
+        Assert.Contains("Rac1WrenchAttackProfile.Profiles[profile]", host, StringComparison.Ordinal);
+        Assert.Contains("health.Actions.CompleteWrenchAttack()", host, StringComparison.Ordinal);
+        string actions = File.ReadAllText(Path.Combine(RepoPaths.Root, "src/OBP.RAC1/Player/Rac1PlayerActionRuntime.cs"));
+        Assert.Contains("CurrentNativeState is not (Rac1PlayerActionDomain.Wrench or", actions, StringComparison.Ordinal);
+        Assert.Contains("Rac1PlayerActionDomain.WrenchHyperStrike or Rac1PlayerActionDomain.WrenchCometStrike", actions, StringComparison.Ordinal);
         Assert.Contains("_throw.Begin(ToWrenchNative(hand)", host, StringComparison.Ordinal);
         Assert.Contains("if (_throw.NativeState == 10)", host, StringComparison.Ordinal);
         Assert.Contains("query.Exclude = new global::Godot.Collections.Array<Rid> { player.GetRid() }", host, StringComparison.Ordinal);
@@ -111,9 +116,11 @@ public sealed class Rac1WrenchWorldOwnershipTests
         Assert.Contains("Rac1World.Enemies.Frogs.ResolveRac1FrogCarrierWrenchContacts", factory, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Enemies.Frogs.ResolveRac1QueenWrenchContacts", factory, StringComparison.Ordinal);
         Assert.Contains("ActorHost.Combat.ResolveWrench", factory, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.WrenchDamage.TryStrikeCrate(target, result)", factory, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.WrenchDamage.TryStrikeHostile(target, result)", factory, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.Breakables.TryBreakNovalisProp(target", factory, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.WrenchDamage.Strike(target, result)", factory, StringComparison.Ordinal);
+        string damage = Script("Rac1WrenchDamageHost.cs");
+        Assert.Contains("=> TryStrikeCrate(target, result)", damage, StringComparison.Ordinal);
+        Assert.Contains("=> TryStrikeHostile(target, result)", damage, StringComparison.Ordinal);
+        Assert.Contains("_breakables.TryBreakNovalisProp(target", damage, StringComparison.Ordinal);
     }
 
     [Fact]

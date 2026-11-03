@@ -6,6 +6,20 @@ namespace OBP.Tests;
 
 public sealed class RootBoundaryArchitectureTests
 {
+    [Fact]
+    public void FinalRootHasOneGodotScriptAndNoNativeOrViewOwnershipBodies()
+    {
+        var census = RootBoundaryAudit.Census(Host.Value.Select(build => build.Compilation));
+        Assert.Equal("game/scripts/OBPGame.cs", Assert.Single(census.ByFile).Path);
+        foreach (string retired in new[] { "OBPGame.WorldEntry.cs", "OBPGame.WorldEntry.cs.uid" })
+            Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts", retired)));
+        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, PathName));
+        foreach (string feature in new[] { "new PlayerHost", "new DebugOverlay", "new WorldInspectorPanel",
+                     "new PauseMenuUi", "new Rac1WeaponInventory", "new Rac1BoltWallet", "AudioServer.",
+                     ".Actions.EnterState(", ".SetNativeState(", ".Terminalize(" })
+            Assert.DoesNotContain(feature, root, StringComparison.Ordinal);
+    }
+
     private const string PathName = "game/scripts/OBPGame.cs";
     private const string Fixture = "namespace OBP.Game; public partial class OBPGame { private int _old; public int Read() => _old; }";
     private static readonly Lazy<RootBuild[]> Host = new(() => RootBoundaryAudit.ReadBuilds(RepoPaths.Root));

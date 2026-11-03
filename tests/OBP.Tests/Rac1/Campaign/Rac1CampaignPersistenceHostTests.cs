@@ -10,6 +10,37 @@ namespace OBP.Tests;
 /// </summary>
 public sealed class Rac1CampaignPersistenceHostTests
 {
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void BoundHostKeepsPreviewAndFusionEphemeralAndFlushesCampaignTravel(bool preview, bool fusion)
+    {
+        string path = TemporaryPath();
+        try
+        {
+            var owner = new Rac1CampaignHost();
+            var messages = new List<string>();
+            owner.Persistence.Bind(new(() => true, () => path, () => path,
+                () => preview, () => fusion, () => owner.Wallet, messages.Add, messages.Add));
+            owner.Persistence.EnsureInitialized();
+            owner.Wallet.Credit(37);
+            owner.Persistence.Persist(Rac1CampaignPersistenceHost.TravelPersistenceReason);
+
+            Assert.Equal(!preview && !fusion, File.Exists(path));
+            if (!preview && !fusion)
+            {
+                Assert.Equal(37, Rac1CampaignSaveFile.LoadOrDefault(path).Bolts);
+                Assert.Contains(messages, message => message.Contains("campaign travel save flush complete", StringComparison.Ordinal));
+            }
+        }
+        finally
+        {
+            if (Directory.Exists(Path.GetDirectoryName(path)!))
+                Directory.Delete(Path.GetDirectoryName(path)!, true);
+        }
+    }
+
     [Fact]
     public void OrdinaryEphemeralModeNeverReadsOrWritesAnExplicitParitySave()
     {

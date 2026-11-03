@@ -1,6 +1,7 @@
 using OBP.Core;
 using OBP.Fusion;
 using OBP.Runtime;
+using OBP.Runtime.Player;
 
 namespace OBP.Game;
 
@@ -20,6 +21,37 @@ public sealed class WorldSceneLifetime<TResources>(Action retireBindings,
     public ObpDestination? NativeDestination { get; private set; }
     public RuntimeSpawn? PlayerEntry => Current?.PlayerEntry;
     public float EntrySnapReach => Current?.EntrySnapReach ?? 8;
+    public int ActivationCount { get; private set; }
+    internal int CountActivation() => ++ActivationCount;
+
+    internal sealed record EntryPreparation(
+        Action PreparePlayer,
+        Action PrepareControllers,
+        Func<WorldEntrySession> Session,
+        Func<WorldEntryMode> Mode,
+        PlayerAvatarProviderRegistry Avatars,
+        Func<RuntimeWorld, float> SnapReach,
+        Func<RuntimeWorld, string, TResources> PrepareScene,
+        Func<bool> AdmitActivation);
+
+    /// <summary>Stage and revalidate every dependency before the existing destructive commit boundary.</summary>
+    internal bool Enter(string destinationId, IWorldEntrySource source, ObpDestination? destination,
+        string? sourcePath, FusionLabDefinition? lab, EntryPreparation preparation)
+    {
+        var stamp = WorldSourceFileStamp.Capture(sourcePath);
+        preparation.PreparePlayer();
+        preparation.PrepareControllers();
+        var session = preparation.Session();
+        var request = session.Request(destinationId, preparation.Mode());
+        var plan = session.Prepare(request, source, preparation.Avatars);
+        using var staged = Prepare(plan, destination, lab, preparation.SnapReach(plan.Prepared.World),
+            () => preparation.PrepareScene(plan.Prepared.World, destinationId));
+        preparation.PreparePlayer();
+        WorldSourceFileStamp.RequireUnchanged(sourcePath, stamp);
+        if (!preparation.AdmitActivation()) return false;
+        session.Commit(plan, this);
+        return true;
+    }
 
     public IDisposable Prepare(WorldEntryPlan plan, ObpDestination? destination, FusionLabDefinition? lab,
         float snapReach, Func<TResources> prepare)

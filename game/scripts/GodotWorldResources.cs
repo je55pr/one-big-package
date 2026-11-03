@@ -7,6 +7,7 @@ using OBP.IO;
 using OBP.RAC2.Gameplay;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
+using OBP.Runtime.Presentation;
 
 namespace OBP.Game;
 
@@ -30,6 +31,84 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
     public IDisposable? PlayerLife { get; set; }
     internal GameplayTickScheduler<InputEvent>? GameplayTicks { get; private set; }
 
+    internal sealed record ActivationBindings(
+        Node3D Host, GodotApplicationPresentation Application, Func<CommandLineArgs> Args,
+        PlayerAvatarPresentationHost Avatar, PlayerEquipmentPresentationBinder Equipment,
+        Func<bool> Ordinary, Action<(long Length, long Written)?> SetAvatarStamp,
+        GodotPlayerLifecycleHost PlayerLife, ApplicationNavigationCoordinator Navigation,
+        SourceSetupController Sources,
+        Func<RuntimeWorld, RuntimeWorldScene.Result, Rac1WorldModule> CreateRac1,
+        Func<RuntimeWorld, GodotWorldResources, Rac2WorldModule> CreateRac2,
+        Action<RuntimeWorld> SpawnPlayer, ActorWorldHost Actors, Rac1CampaignHost Campaign,
+        Func<Node3D, IDisposable> EquipmentWorld, Func<int> CountActivation, Action<RuntimeSpawn> OverrideEntry, Action SetWorldMode,
+        Action<string> Persist, HudStateAdapter Hud,
+        EffectBindings Effects, WorldGameplayTickPorts Ticks,
+        Action<int> EffectsSmoke, Action<string> PublishSummary, Func<long> PlayerGeneration);
+
+    internal void Activate(WorldSceneLease<GodotWorldResources> entry, ActivationBindings bindings)
+    {
+        if (bindings.Avatar.HasPrepared && bindings.Avatar.ApplyPrepared()) bindings.Equipment.InvalidateSource();
+        bindings.SetAvatarStamp(bindings.Avatar.CommittedSourceStamp);
+        if (bindings.Ordinary()) bindings.Equipment.ApplyPreparedBank();
+        EffectScope = entry.Plan.Request;
+        var application = bindings.Application;
+        GodotSmokeSceneFixture.RetireBootstrap(bindings.Host, application.WorldRoot, application.Ui);
+        PlayerLife = bindings.PlayerLife.BindWorld(entry.Plan.Request.WorldInstanceId, entry.Plan.Request.Generation, Scene.Root);
+        bindings.Navigation.RetireMenuPages();
+        bindings.Sources.RetireView();
+        var world = entry.Plan.Prepared.World;
+        Rac1Gameplay = bindings.CreateRac1(world, Scene);
+        Rac2Gameplay = bindings.CreateRac2(world, this);
+        Rac3Gameplay = Rac3WorldModule.CreateForWorld(world, Scene);
+        int switches = bindings.CountActivation();
+        if (bindings.Campaign.BeginWorldEntry(world) is { } authoredEntry) bindings.OverrideEntry(authoredEntry);
+        var args = bindings.Args();
+        Load(bindings.Host, application.WorldRoot, world, entry.Plan.Request.DestinationId,
+            WorldEntryPreparationPolicy.WorldOptions(world, args));
+        application.SetupOverlay(Scene, world, Presentation, args.Overlay, args.Inspect);
+        Rac2Gameplay?.Configure();
+        bool staticCamera = args.ShotsPath is not null || args.CaptureFrame is not null &&
+            (args.DirectLoad || args.Destination is not null) && args.TestScene != "player" &&
+            !args.AnimSolo && !args.CrateFocus && !args.CrateAutoStrike;
+        if (!staticCamera)
+        {
+            Rac1Gameplay.Configure();
+            Rac3Gameplay?.Configure();
+        }
+        FusionWeapons = bindings.EquipmentWorld(Scene.Root);
+        if (args.AnimSolo)
+        {
+            GodotWorldCaptureCamera.FrameAnimated(application.Camera, world);
+            application.ActiveCamera = application.Camera;
+        }
+        else if (staticCamera)
+        {
+            GodotWorldCaptureCamera.FrameShowcase(application.Camera, world);
+            application.ActiveCamera = application.Camera;
+        }
+        else
+        {
+            bindings.SpawnPlayer(world);
+            if (application.Player is { } player) Rac2Gameplay?.Arm(player);
+        }
+        bindings.SetWorldMode();
+        bindings.Navigation.WorldActivated(args.CaptureFrame is null);
+        if (entry.Lab is not null) bindings.Navigation.DecorateLab(entry.Lab, bindings.Avatar.View is not null);
+        bindings.Actors.Configure(bindings.Ordinary(), bindings.PlayerLife.WorldId, bindings.PlayerLife.Generation, entry.Lab, Scene.Root);
+        BindEffects(bindings.Effects);
+        application.EnsurePlayerHud(); application.EnsureWorldHud();
+        if (bindings.Ordinary()) bindings.PlayerLife.PublishHud();
+        application.UpdatePlayerHud(bindings.Hud.Current);
+        application.UpdateWorldHud(entry, Presentation, switches, true);
+        if (bindings.Campaign.FinishWorldEntry(world)) bindings.Persist(Rac1CampaignPersistenceHost.TravelPersistenceReason);
+        bindings.EffectsSmoke(switches);
+        string summary = $"✓ {entry.NativeDestination?.DisplayName ?? (entry.Lab is not null ? "Fusion Lab" : world.DisplayName)} · {Scene.MeshInstances} meshes";
+        bindings.PublishSummary(summary);
+        GD.Print($"[destinations] world ready — {summary} (switch #{switches}, player generation {bindings.PlayerGeneration()})");
+        BindPlayer(application.Player);
+        WorldGameplayTickBindings.Activate(entry, bindings.Ticks);
+    }
+
     internal void BindGameplayTicks(GameplayTickScheduler<InputEvent> ticks)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -52,6 +131,23 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
             try { Rac1Gameplay?.Dispose(); }
             finally { Rac1Gameplay = null; }
         }
+    }
+
+    internal void RetireGameplayBeforePlayer()
+    {
+        try { Rac1Gameplay?.Dispose(); }
+        finally
+        {
+            Rac1Gameplay = null;
+            try { Rac2Gameplay?.Dispose(); }
+            finally { Rac2Gameplay = null; }
+        }
+    }
+
+    internal void RetireGameplayAfterPlayer()
+    {
+        try { Rac3Gameplay?.Dispose(); }
+        finally { Rac3Gameplay = null; }
     }
 
     // Only the scene lease may publish and retire this world's effects. The host

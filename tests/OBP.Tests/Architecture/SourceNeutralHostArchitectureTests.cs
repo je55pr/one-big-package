@@ -52,7 +52,7 @@ public sealed class SourceNeutralHostArchitectureTests
     public void InjectingDestinationDependentAvatarSelectionIntoTheRealHostFails()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.WorldEntry.cs");
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.cs");
         const string mistake = """
             private void ChooseAvatarFromPlanet(OBP.Core.ObpDestination next) {
                 var origin = next;
@@ -120,18 +120,18 @@ public sealed class SourceNeutralHostArchitectureTests
     public void WorldEntryAdapterCannotConditionallySpawnThePlayerByOrigin()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.WorldEntry.cs");
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/GodotWorldResources.cs");
         var invocation = original.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>()
-            .Single(call => call.Expression is IdentifierNameSyntax { Identifier.ValueText: "SpawnPlayer" });
+            .Single(call => call.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "SpawnPlayer" });
         var statement = Assert.IsType<ExpressionStatementSyntax>(invocation.Parent);
-        var mutation = SyntaxFactory.ParseStatement("if (world.Game == ObpSourceGame.Rac1) SpawnPlayer(world);")
+        var mutation = SyntaxFactory.ParseStatement("if (world.Game == ObpSourceGame.Rac1) bindings.SpawnPlayer(world);")
             .WithTriviaFrom(statement);
         var changed = CSharpSyntaxTree.Create((CSharpSyntaxNode)original.GetRoot().ReplaceNode(statement, mutation),
             (CSharpParseOptions)original.Options, original.FilePath);
         var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
             changed)), HostOwnershipAudit.Policy());
         Assert.Single(errors);
-        Assert.Contains("ActivateWorld", errors[0]);
+        Assert.Contains("Activate", errors[0]);
         Assert.Contains("unapproved world-origin", errors[0]);
     }
 
@@ -156,7 +156,7 @@ public sealed class SourceNeutralHostArchitectureTests
         Assert.DoesNotContain(usages, usage => usage.LegacyReads > 0);
         foreach (var tree in HostOwnershipAudit.Host.Value.SyntaxTrees.Where(tree => tree.FilePath.StartsWith("game/scripts/", StringComparison.Ordinal)))
             Assert.DoesNotContain("UseRac1Gameplay", tree.GetText().ToString(), StringComparison.Ordinal);
-        var avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.WorldEntry.cs"));
+        var avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotApplicationPresentation.cs"));
         Assert.DoesNotContain("Get(destination.Game)", avatar, StringComparison.Ordinal);
         var lab = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/ApplicationNavigationCoordinator.cs"));
         Assert.DoesNotContain("rac1:LEVEL0", lab, StringComparison.Ordinal);

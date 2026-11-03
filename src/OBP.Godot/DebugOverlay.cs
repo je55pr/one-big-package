@@ -534,4 +534,20 @@ public sealed class DebugOverlay
         int i = index * 3;
         return RuntimeWorldScene.ToScene(blob.Positions[i], blob.Positions[i + 1], blob.Positions[i + 2]);
     }
+    public bool HandleKey(Key keycode)
+    {
+        switch (keycode)
+        {
+            case Key.F1: IsolateNextKind(); return true;
+            case Key.F2: Toggle(DebugOverlay.Layer.KindTint); return true;
+            case Key.F3: Toggle(DebugOverlay.Layer.CollisionWire); return true;
+            case Key.F4: Toggle(DebugOverlay.Layer.WorldBounds); return true;
+            case Key.F5: Toggle(DebugOverlay.Layer.EnvGizmos); return true;
+            case Key.F6: Toggle(DebugOverlay.Layer.HideSky); return true;
+            case Key.F7: Clear(); return true;
+            case Key.J: Toggle(DebugOverlay.Layer.Skeleton); return true;
+            default: return false;
+        }
+    }
+
 }

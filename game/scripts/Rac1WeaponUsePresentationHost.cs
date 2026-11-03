@@ -43,6 +43,15 @@ internal sealed record Rac1WeaponUsePorts(
 /// </summary>
 internal sealed class Rac1WeaponUsePresentationHost(Rac1WorldModule world, Rac1WeaponUsePorts ports)
 {
+    internal static void ForeignSelectionChanged(Rac1WorldModule? world, Rac1AdditionalUseHost use,
+        PlayerEquipmentPresentationBinder equipment)
+    {
+        equipment.WeaponAudio.Reset();
+        if (world is not null) world.Context.BombFireRequested = world.Context.EquipmentUsePressed = false;
+        use.CancelFire();
+        world?.Weapons.ThrownAnimation.Stop();
+    }
+
     private PlayerSessionHost Session => ports.Session;
     private Rac1WeaponUseStatePorts State => ports.State;
     private Rac1WeaponUseEnvironmentPorts Environment => ports.Environment;

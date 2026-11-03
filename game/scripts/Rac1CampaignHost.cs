@@ -18,6 +18,19 @@ internal sealed class Rac1CampaignHost
 
     internal Rac1CampaignHost() => Persistence = new(this);
 
+    internal void AbandonUncommittedTravel()
+    {
+        if (Session.Travel.TransitionActive && !Session.Travel.CurrentLevelCommitted)
+            Session.AbandonUncommittedHostLoad();
+    }
+
+    internal Rac1DestinationDiscoveryResult ApplyProgressionEvent(int id, Action<string> persist)
+    {
+        var result = Session.Campaign.ApplyProgressionEvent(id);
+        if (result == Rac1DestinationDiscoveryResult.Discovered) persist($"discovery event 0x{id:x}");
+        return result;
+    }
+
     /// <summary>Admit only this campaign's source world for checkpoint preparation.</summary>
     internal RuntimeSpawn? BeginWorldEntry(RuntimeWorld world) =>
         world.Game == ObpSourceGame.Rac1 ? BeginWorldEntry(world.LevelId, world.PlayerStart!) : null;

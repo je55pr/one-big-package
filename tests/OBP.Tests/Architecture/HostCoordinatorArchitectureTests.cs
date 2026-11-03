@@ -37,8 +37,8 @@ public class HostCoordinatorArchitectureTests
         Assert.DoesNotContain("Action<double> Swing", File.ReadAllText(Path.Combine(scripts, "Rac1WorldPorts.cs")), StringComparison.Ordinal);
         Assert.DoesNotContain("_ticks.Swing(delta)", File.ReadAllText(Path.Combine(scripts, "Rac1WorldModule.cs")), StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac1Projectiles.cs")));
-        Assert.Contains("Rac1Gameplay?.Bombs.StepPhysics()",
-            File.ReadAllText(Path.Combine(scripts, "OBPGame.WorldEntry.cs")), StringComparison.Ordinal);
+        Assert.Contains("bindings.Gameplay()?.Bombs.StepPhysics()",
+            File.ReadAllText(Path.Combine(scripts, "PlayerAvatarPresentationHost.cs")), StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac1Enemies.cs")));
         Assert.Contains("internal void TickRac1Hostiles(",
             File.ReadAllText(Path.Combine(scripts, "Rac1EnemyHost.cs")), StringComparison.Ordinal);
@@ -57,7 +57,7 @@ public class HostCoordinatorArchitectureTests
         string resources = File.ReadAllText(Path.Combine(scripts, "GodotWorldResources.cs"));
         string actors = File.ReadAllText(Path.Combine(scripts, "ActorNativeAdapters.cs"));
         string app = File.ReadAllText(Path.Combine(scripts, "OBPGame.cs"));
-        string worldEntry = File.ReadAllText(Path.Combine(scripts, "OBPGame.WorldEntry.cs"));
+        string worldEntry = File.ReadAllText(Path.Combine(scripts, "GodotWorldResources.cs"));
 
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac2Gameplay.cs")));
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac2AranosOpeningHost.cs")));
@@ -71,7 +71,7 @@ public class HostCoordinatorArchitectureTests
         Assert.Contains("private void TickRac2OpeningMsr1NativeTick(", aranos, StringComparison.Ordinal);
         Assert.Contains("public Rac2WorldModule? Rac2Gameplay", resources, StringComparison.Ordinal);
         Assert.Contains("Rac2Gameplay?.Dispose()", resources, StringComparison.Ordinal);
-        Assert.Contains("if (_player is { } player) resources.Rac2Gameplay?.Arm(player);", worldEntry, StringComparison.Ordinal);
+        Assert.Contains("if (application.Player is { } player) Rac2Gameplay?.Arm(player);", worldEntry, StringComparison.Ordinal);
         Assert.DoesNotContain("_worldScenes?.Current?.Resources.Rac2Gameplay?.Arm(player)", app, StringComparison.Ordinal);
         Assert.Contains("internal bool Current => _clock.Current;", core, StringComparison.Ordinal);
         Assert.Contains("if (!_clock.SourceReadyForActivation) return;", core, StringComparison.Ordinal);

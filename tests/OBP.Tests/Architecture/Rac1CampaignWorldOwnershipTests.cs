@@ -45,10 +45,13 @@ public sealed class Rac1CampaignWorldOwnershipTests
         string progression = Method("OBPGame.cs", "ApplyRac1CampaignProgressionEvent");
         int sources = progression.IndexOf("Sources.Initialize();", StringComparison.Ordinal);
         int restore = progression.IndexOf("EnsureRac1CampaignPersistenceInitialized();", StringComparison.Ordinal);
-        int mutation = progression.IndexOf("_rac1Campaign.Session.Campaign.ApplyProgressionEvent(progressionEventId)",
+        int mutation = progression.IndexOf("_rac1Campaign.ApplyProgressionEvent(progressionEventId, PersistRac1CampaignState)",
             StringComparison.Ordinal);
         Assert.True(sources >= 0 && restore > sources && mutation > restore,
             "Campaign persistence must restore before a progression event mutates the live session.");
+        string owner = Method("Rac1CampaignHost.cs", "ApplyProgressionEvent");
+        Assert.Contains("Session.Campaign.ApplyProgressionEvent(id)", owner, StringComparison.Ordinal);
+        Assert.Contains("if (result == Rac1DestinationDiscoveryResult.Discovered) persist(", owner, StringComparison.Ordinal);
     }
 
     [Fact]

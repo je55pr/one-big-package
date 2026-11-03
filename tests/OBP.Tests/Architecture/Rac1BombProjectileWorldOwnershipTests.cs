@@ -26,7 +26,7 @@ public sealed class Rac1BombProjectileWorldOwnershipTests
         string module = Script("Rac1WorldModule.cs");
         string host = Script("Rac1BombProjectileHost.cs");
         Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1Projectiles.cs")));
-        string entry = Script("OBPGame.WorldEntry.cs");
+        string entry = Script("PlayerAvatarPresentationHost.cs");
         string application = Script("OBPGame.cs");
 
         Assert.Contains("Bombs = new(Context, Presentation, Weapons, Enemies, Breakables, bomb)", module, StringComparison.Ordinal);
@@ -35,8 +35,8 @@ public sealed class Rac1BombProjectileWorldOwnershipTests
         Assert.Contains("internal Rac1BombProjectileHost Bombs { get; }", module, StringComparison.Ordinal);
         Assert.Contains("_weapons.ThrownAnimation.Begin()", host, StringComparison.Ordinal);
         Assert.Contains("Spawn(shot)", host, StringComparison.Ordinal);
-        Assert.Contains("Rac1Gameplay?.Bombs.StepUse()", entry, StringComparison.Ordinal);
-        Assert.Contains("Rac1Gameplay?.Bombs.StepPhysics()", entry, StringComparison.Ordinal);
+        Assert.Contains("bindings.Gameplay()?.Bombs.StepUse()", entry, StringComparison.Ordinal);
+        Assert.Contains("bindings.Gameplay()?.Bombs.StepPhysics()", entry, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Bombs.RetireAll()", application, StringComparison.Ordinal);
         Assert.Contains("Rac1World.Bombs.ImpactCount", application, StringComparison.Ordinal);
         Assert.Contains("internal int ImpactCount", host, StringComparison.Ordinal);

@@ -19,6 +19,30 @@ namespace OBP.Game;
 /// </summary>
 internal sealed class PlayerAvatarPresentationHost
 {
+    /// <summary>
+    /// Existing player and scene owners borrowed for one visual subscription.
+    /// Live observations are resolved at use time; retirement releases the callbacks.
+    /// No root reference or replacement native session is retained here.
+    /// </summary>
+    internal sealed record WorldBindings(
+        Func<ObpPlayerSession?> Session,
+        Func<PlayerAnimationProfile> AnimationProfile,
+        Func<RuntimeWorld> World,
+        Func<ObpDestination?> Destination,
+        Func<RuntimeWorldScene.Result?> Scene,
+        Func<Rac1WorldModule?> Gameplay,
+        Func<Rac1HandPresentationContext> Hand,
+        Func<PlayerHost?> Player,
+        PlayerEquipmentPresentationBinder Equipment,
+        Rac1AdditionalUseHost Use,
+        Func<IReadOnlyDictionary<ObpSourceGame, string>> EquipmentSources,
+        Func<FusionWeaponHost> Weapons,
+        Func<IRac1WeaponPlayerInput> CombatInput,
+        Func<bool> Alive,
+        Func<bool> Ordinary,
+        Func<Rac1PlayerAudioPresenter?> Audio,
+        Func<bool> MovementLoading);
+
     internal static readonly PlayerAvatarProviderRegistry Registry = new(
         [Rac1PlayerAvatarProvider.Instance, DiagnosticAvatarProvider.Instance]);
     private static PlayerAvatarProviderRegistry Providers => Registry;
@@ -206,6 +230,99 @@ internal sealed class PlayerAvatarPresentationHost
         StagedBombView = staged;
         staged.Reparent(glove, keepGlobalTransform: false);
         staged.Rotation = new(0, MathF.PI, 0);
+    }
+
+    /// <summary>Attach only the staged session-selected avatar, independently of destination.</summary>
+    internal void AttachWorldVisual(PlayerHost player, WorldBindings bindings)
+    {
+        if (bindings.Session() is not { } session) return;
+        var selected = session.Capture().Configuration.Avatar;
+        if (selected.SourceGame == ObpSourceGame.Synthetic)
+        {
+            GD.Print("[player-avatar] EXPLICIT DIAGNOSTIC CAPSULE");
+            return;
+        }
+        var avatar = Avatar ?? throw new InvalidOperationException("Selected avatar was not staged before world entry.");
+        ClearWorldVisual(bindings.Audio(), bindings.Equipment);
+        var glove = selected.SourceGame == ObpSourceGame.Rac1
+            ? GloveAsset ?? throw new InvalidOperationException("Selected glove asset was not staged.")
+            : null;
+        var materials = glove is null ? null : new WorldMaterialFactory(bindings.World() with { Textures = glove.Textures });
+        var (view, _) = CreateWorldVisual(player, bindings.AnimationProfile(), materials);
+        if (selected.SourceGame == ObpSourceGame.Rac1)
+        {
+            if (bindings.Equipment.Assets(bindings.Ordinary(),
+                (bindings.Gameplay() ?? throw new InvalidOperationException("R&C1 gameplay requires an active scene lease.")).Loot.PickupAssets) is not null)
+                InstallStagedBomb(bindings.Weapons().CreateNativeEffect(121, "Rac1RetailStagedBomb_Class121"));
+            bindings.Gameplay()?.UsePresentation.AttachViews(view);
+        }
+        // Shared weapon views belong to any selected avatar, not just RAC1.
+        bindings.Weapons().AttachViews(view);
+        player.VisualRoot.ReplaceVisual(view);
+        player.ConfigureAvatarPresentation((float)avatar.AnimationBounds.Height);
+        Subscribe(player, (_, state, input) => StepPlayerAvatarPhysics(bindings, state, input),
+            () => ResetPlayerAvatarPhysics(bindings));
+        bindings.Equipment.BindSelected(this, bindings.EquipmentSources(), bindings.Equipment.NativeViews.Assets, bindings.Weapons().Sources.Assets);
+        bindings.Equipment.RefreshRac1HandVisibility(bindings.Hand(), this);
+        HideAuthoredWorldRatchetPresentation(bindings.Destination(), bindings.Scene());
+        GD.Print($"[player-avatar] attached selected {avatar.Identity.ModelId}: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
+    }
+
+
+    private void StepPlayerAvatarPhysics(
+        WorldBindings bindings, PlayerAnimationState state, Rac1LocomotionAnimationInput input)
+    {
+        if (Controller is not Rac1PlayerAnimationPresentationController controller)
+            return;
+        bindings.CombatInput().StepInput();
+        bindings.Gameplay()?.Bombs.StepUse();
+        bindings.Gameplay()?.UsePresentation.StepAdditional();
+        bindings.Weapons().Step();
+        input = bindings.Gameplay()?.Weapons.ThrownAnimation.Select(input,
+            bindings.Alive(), bindings.Player()?.Rac1WrenchFrame.Active == true,
+            CurrentSourceSequence(), controller.TraversalAuthoredAnimationTime) ?? input;
+        StepNative(state, input);
+
+
+        bindings.Equipment.ApplyAvatarEquipmentPose(this, controller, state, input,
+            new(bindings.Hand(), bindings.Use.UseTicks, bindings.Use.UseAge,
+                bindings.Gameplay()?.Weapons.Walloper.Age ?? 0,
+                bindings.Alive(), bindings.Weapons().Sources.Assets,
+                bindings.Weapons().Pose.UseStarted, bindings.Weapons().Pose.TriggerHeld));
+        if (PhysicsPlayer is { } player)
+        {
+            StepHandAttachments(controller, player.Rac1WrenchFrame,
+                (bindings.Gameplay()?.Wrench.ThrowActive == true),
+                bindings.Gameplay()?.Weapons.ThrownAnimation.Generation ?? 0);
+            bindings.Gameplay()?.UsePresentation.StepViews(controller);
+            bindings.Weapons().StepViews(controller, Avatar);
+        }
+
+
+        GodotRac1PlayerAudioPlayback.Step(bindings.Audio(), controller, bindings.Player(), bindings.MovementLoading());
+        bindings.Gameplay()?.Bombs.StepPhysics();
+        bindings.Gameplay()?.Effects.StepAdditionalWeaponWorld();
+        bindings.Gameplay()?.Effects.StepBombEffectsPhysics();
+        SampleClock();
+        bindings.Equipment.RefreshRac1HandVisibility(bindings.Hand(), this);
+    }
+
+
+    private void ResetPlayerAvatarPhysics(WorldBindings bindings)
+    {
+        bindings.Weapons().ClearTransients();
+        bindings.Audio()?.Reset();
+        Rac1WrenchHost.ResetOrFallback(bindings.Gameplay()?.Wrench, bindings.Audio(), bindings.Player());
+        bindings.Gameplay()?.Weapons.ThrownAnimation.Stop();
+        ResetClock();
+    }
+
+    internal void ClearWorldVisual(Rac1PlayerAudioPresenter? audio, PlayerEquipmentPresentationBinder equipment)
+    {
+        audio?.Reset();
+        Retire();
+        equipment.NativeViews.ClearViews();
+        equipment.ClearBindings();
     }
 
     internal void Subscribe(PlayerHost player,

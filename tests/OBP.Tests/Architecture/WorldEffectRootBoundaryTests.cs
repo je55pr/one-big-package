@@ -10,16 +10,17 @@ public sealed class WorldEffectRootBoundaryTests
     public void EffectsAreConstructedByWorldLeaseResourcesAndRetiredWithThem()
     {
         string scripts = Path.Combine(RepoPaths.Root, "game", "scripts");
-        string entry = File.ReadAllText(Path.Combine(scripts, "OBPGame.WorldEntry.cs"));
+        string entry = File.ReadAllText(Path.Combine(scripts, "OBPGame.cs"));
         string resources = File.ReadAllText(Path.Combine(scripts, "GodotWorldResources.cs"));
 
-        Assert.Contains("resources.BindEffects(new GodotWorldResources.EffectBindings(", entry, StringComparison.Ordinal);
+        Assert.Contains("Effects: new(", entry, StringComparison.Ordinal);
+        Assert.Contains("BindEffects(bindings.Effects)", resources, StringComparison.Ordinal);
         // Verify the resolved owner and created type, not just the spelling of
         // an implicit constructor. This also catches explicit constructors,
         // aliases, and direct writes through another local resource name.
         var compilation = HostOwnershipAudit.Host.Value;
         var entryTree = Assert.Single(compilation.SyntaxTrees, tree =>
-            tree.FilePath == "game/scripts/OBPGame.WorldEntry.cs");
+            tree.FilePath == "game/scripts/OBPGame.cs");
         var semantic = compilation.GetSemanticModel(entryTree);
         var nodes = entryTree.GetRoot().DescendantNodes();
         Assert.DoesNotContain(nodes.OfType<AssignmentExpressionSyntax>(), assignment =>
@@ -35,9 +36,9 @@ public sealed class WorldEffectRootBoundaryTests
         Assert.Contains("ObjectDisposedException.ThrowIf(_disposed, this);", resources, StringComparison.Ordinal);
         Assert.DoesNotContain("partial class OBPGame", resources, StringComparison.Ordinal);
 
-        int configured = entry.IndexOf("ActorHost.Configure(", StringComparison.Ordinal);
-        int bound = entry.IndexOf("resources.BindEffects(", StringComparison.Ordinal);
-        int hud = entry.IndexOf("EnsurePlayerHud(); EnsureWorldHud();", StringComparison.Ordinal);
+        int configured = resources.IndexOf("bindings.Actors.Configure(", StringComparison.Ordinal);
+        int bound = resources.IndexOf("BindEffects(bindings.Effects)", StringComparison.Ordinal);
+        int hud = resources.IndexOf("application.EnsurePlayerHud(); application.EnsureWorldHud();", StringComparison.Ordinal);
         Assert.True(configured >= 0 && configured < bound && bound < hud,
             "Effects must bind after actors and before HUD activation.");
     }
@@ -45,10 +46,10 @@ public sealed class WorldEffectRootBoundaryTests
     [Fact]
     public void EffectsSmokeStartsLazilyFromItsDiagnosticOwnerOnlyOnFirstExplicitWorld()
     {
-        string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.WorldEntry.cs"));
+        string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
         string launcher = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "GodotEffectsSmoke.cs"));
 
-        Assert.Contains("GodotEffectsSmoke.StartIfRequested(_args, _worldSwitches, () => new(", entry, StringComparison.Ordinal);
+        Assert.Contains("GodotEffectsSmoke.StartIfRequested(_args, switches, () => new(", entry, StringComparison.Ordinal);
         Assert.DoesNotContain("new EffectsExperimentScenario(", entry, StringComparison.Ordinal);
         Assert.DoesNotContain("new GodotEffectsFixture(", entry, StringComparison.Ordinal);
         Assert.DoesNotContain("new DiagnosticScenarioDefinition(\"effects-room/v1\"", entry, StringComparison.Ordinal);

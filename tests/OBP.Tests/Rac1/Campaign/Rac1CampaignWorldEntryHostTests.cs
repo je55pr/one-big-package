@@ -118,25 +118,25 @@ public sealed class Rac1CampaignWorldEntryHostTests
     [Fact]
     public void RootOnlyWiresTheSourceCampaignEntryBoundary()
     {
-        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.WorldEntry.cs"));
+        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotWorldResources.cs"));
         string owner = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Rac1CampaignHost.cs"));
 
         Assert.DoesNotContain("BeginSourceWorldEntry(", root, StringComparison.Ordinal);
         Assert.DoesNotContain("CommitSourceWorldEntry(", root, StringComparison.Ordinal);
         Assert.DoesNotContain("Session.StartLevelCheckpointSession(", root, StringComparison.Ordinal);
         Assert.DoesNotContain("Session.CommitLoadedLevel(", root, StringComparison.Ordinal);
-        Assert.Contains("_rac1Campaign.BeginWorldEntry(world)", root, StringComparison.Ordinal);
-        Assert.Contains("_rac1Campaign.FinishWorldEntry(world)", root, StringComparison.Ordinal);
+        Assert.Contains("bindings.Campaign.BeginWorldEntry(world)", root, StringComparison.Ordinal);
+        Assert.Contains("bindings.Campaign.FinishWorldEntry(world)", root, StringComparison.Ordinal);
         Assert.DoesNotContain("if (world.Game == ObpSourceGame.Rac1)", root, StringComparison.Ordinal);
 
         // A source that cannot commit travel must not trigger a campaign parity save.
         var activate = CSharpSyntaxTree.ParseText(root).GetRoot().DescendantNodes()
-            .OfType<MethodDeclarationSyntax>().Single(method => method.Identifier.ValueText == "ActivateWorld");
+            .OfType<MethodDeclarationSyntax>().Single(method => method.Identifier.ValueText == "Activate");
         var persist = Assert.Single(activate.DescendantNodes().OfType<InvocationExpressionSyntax>(),
-            call => call.Expression.ToString() == "PersistRac1CampaignState");
+            call => call.Expression.ToString() == "bindings.Persist");
         var guard = Assert.IsType<IfStatementSyntax>(persist.Ancestors()
             .First(node => node is IfStatementSyntax or MethodDeclarationSyntax));
-        Assert.Equal("_rac1Campaign.FinishWorldEntry(world)", guard.Condition.ToString());
+        Assert.Equal("bindings.Campaign.FinishWorldEntry(world)", guard.Condition.ToString());
         Assert.Null(guard.Else);
         Assert.Equal("Rac1CampaignPersistenceHost.TravelPersistenceReason",
             Assert.Single(persist.ArgumentList.Arguments).Expression.ToString());
