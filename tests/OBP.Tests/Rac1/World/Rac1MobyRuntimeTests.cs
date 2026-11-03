@@ -1,8 +1,8 @@
 using OBP.Core;
-using System.Buffers.Binary;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
+using static OBP.Tests.Rac1Class749Fixtures;
 
 namespace OBP.Tests;
 
@@ -475,65 +475,6 @@ public sealed class Rac1MobyRuntimeTests
             runtime.DispatchDamage<object>(unknown, unknownDamage));
     }
 
-    private static Rac1Class749TargetFacts Facts(
-        double distance,
-        double facingError,
-        int? statusSentinel = 0,
-        Rac1Class749WorldPoint currentPosition = default) =>
-        new(distance, facingError, currentPosition, statusSentinel);
-
-    private static RuntimeDynamicObject Class749(
-        int instanceIndex,
-        float health,
-        Rac1Class749WorldPoint targetDestination = default,
-        int statusSentinel = 0,
-        Rac1Class749WorldPoint home = default)
-    {
-        var pvar = new byte[Rac1Class749Hostile.PVarSize];
-        BinaryPrimitives.WriteInt32LittleEndian(
-            pvar.AsSpan(Rac1Class749Hostile.HealthOffset, sizeof(int)),
-            BitConverter.SingleToInt32Bits(health));
-        WriteSingle(
-            pvar,
-            Rac1Class749Hostile.TargetDestinationOffset,
-            checked((float)targetDestination.X));
-        WriteSingle(
-            pvar,
-            Rac1Class749Hostile.TargetDestinationOffset + sizeof(float),
-            checked((float)targetDestination.Z));
-        WriteSingle(
-            pvar,
-            Rac1Class749Hostile.TargetDestinationOffset + 2 * sizeof(float),
-            checked((float)targetDestination.Y));
-        BinaryPrimitives.WriteInt32LittleEndian(
-            pvar.AsSpan(Rac1Class749Hostile.StatusSentinelOffset, sizeof(int)),
-            statusSentinel);
-        WriteSingle(pvar, Rac1Class749Hostile.HomePositionOffset, checked((float)home.X));
-        WriteSingle(
-            pvar,
-            Rac1Class749Hostile.HomePositionOffset + sizeof(float),
-            checked((float)home.Z));
-        WriteSingle(
-            pvar,
-            Rac1Class749Hostile.HomePositionOffset + 2 * sizeof(float),
-            checked((float)home.Y));
-
-        var transform = new double[16];
-        transform[12] = home.X;
-        transform[13] = home.Y;
-        transform[14] = home.Z;
-        transform[15] = 1d;
-        return new RuntimeDynamicObject(
-            ObpSourceGame.Rac1,
-            Rac1Class749Hostile.NativeClassId,
-            instanceIndex,
-            null,
-            $"moby:{Rac1Class749Hostile.NativeClassId}",
-            $"moby:{instanceIndex}",
-            new RuntimeObjectTransform(transform),
-            Array.Empty<RuntimeObjectMesh>(),
-            [new RuntimeOpaquePayload(Rac1Class749Hostile.PVarPayloadFormat, pvar)]);
-    }
     private static RuntimeDynamicObject Dynamic(
         int nativeClassId,
         int instanceIndex,
@@ -549,9 +490,4 @@ public sealed class Rac1MobyRuntimeTests
             new RuntimeObjectTransform(new double[16]),
             Array.Empty<RuntimeObjectMesh>(),
             payloads);
-
-    private static void WriteSingle(byte[] bytes, int offset, float value) =>
-        BinaryPrimitives.WriteInt32LittleEndian(
-            bytes.AsSpan(offset, sizeof(int)),
-            BitConverter.SingleToInt32Bits(value));
 }
