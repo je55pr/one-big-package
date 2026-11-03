@@ -14,14 +14,22 @@ public sealed class WorldSmokeArchitectureTests
         string entry = File.ReadAllText(Path.Combine(scripts, "OBPGame.WorldEntry.cs"));
         string harness = File.ReadAllText(Path.Combine(
             RepoPaths.Root, "game", "diagnostics", "WorldSmokeHarness.cs"));
+        string dispatch = File.ReadAllText(Path.Combine(
+            RepoPaths.Root, "game", "diagnostics", "GodotWorldSmokeDispatch.cs"));
 
         Assert.Contains("_ports.EnterWorld(destination.DestinationId", loader, StringComparison.Ordinal);
-        Assert.Contains("WorldSmokeHarness.Create(", entry, StringComparison.Ordinal);
-        Assert.Contains("WorldSmokeHarness.Bind(new WorldSmokeHarness.Factories(", entry, StringComparison.Ordinal);
-        Assert.DoesNotContain("new WorldSmokeHarness.Entrypoints(", entry, StringComparison.Ordinal);
+        Assert.Contains("GodotWorldSmokeDispatch.Start(new(", entry, StringComparison.Ordinal);
+        Assert.Contains("new WorldSmokeHarness.Factories(", entry, StringComparison.Ordinal);
+        Assert.DoesNotContain("WorldSmokeHarness.Create(", entry, StringComparison.Ordinal);
+        Assert.DoesNotContain("DiagnosticScenarioDispatch.Start(", entry, StringComparison.Ordinal);
+        Assert.Contains("WorldSmokeHarness.Create(", dispatch, StringComparison.Ordinal);
+        Assert.Contains("WorldSmokeHarness.Bind(ports.Factories)", dispatch, StringComparison.Ordinal);
+        Assert.Contains("DiagnosticScenarioDispatch.Start(scenarios, ports.Operations, runner, ports.Quit, ports.LogError)", dispatch, StringComparison.Ordinal);
         Assert.Contains("internal static Entrypoints Bind(", harness, StringComparison.Ordinal);
-        Assert.Contains("DiagnosticScenarioDispatch.Start(", entry, StringComparison.Ordinal);
         Assert.DoesNotContain("partial class OBPGame", harness, StringComparison.Ordinal);
+        Assert.DoesNotContain("partial class OBPGame", dispatch, StringComparison.Ordinal);
+        Assert.Contains("SourceVerification.StartForWorldEntry(nativeDestination, _args.VerifyHash, _worldSwitches)", entry, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void StartRequestedSourceVerification(", entry, StringComparison.Ordinal);
         foreach (string flag in new[]
         {
             "_args.Rac1VeldinPlaySmoke",

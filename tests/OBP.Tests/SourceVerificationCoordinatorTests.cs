@@ -6,6 +6,29 @@ namespace OBP.Tests;
 public sealed class SourceVerificationCoordinatorTests
 {
     private static readonly TimeSpan DeadlockTimeout = TimeSpan.FromMinutes(2);
+
+    [Theory]
+    [InlineData(ObpSourceGame.Rac2, true, 1, true)]
+    [InlineData(ObpSourceGame.Rac2, true, 2, false)]
+    [InlineData(ObpSourceGame.Rac2, false, 1, false)]
+    [InlineData(ObpSourceGame.Rac1, true, 1, false)]
+    [InlineData(ObpSourceGame.Rac3, true, 1, false)]
+    public async Task WorldEntryHashGateAdmitsOnlyRequestedFirstRac2World(
+        ObpSourceGame game, bool verifyHash, int worldSwitches, bool expected)
+    {
+        var read = new List<ObpSourceGame>();
+        using var owner = new SourceVerificationCoordinator(source =>
+        {
+            read.Add(source);
+            return new(source, "fixture", "synthetic", 1, 1);
+        }, (_, _, _) => "verified", () => "fixture", (_, _) => { });
+        var destination = new ObpDestination("fixture", game, "fixture", "fixture", null, "Fixture", null, null, ObpDestinationKind.Planet);
+        owner.StartForWorldEntry(destination, verifyHash, worldSwitches);
+        Assert.Equal(expected ? 1 : 0, read.Count);
+        if (expected) Assert.Equal(ObpSourceGame.Rac2, read[0]);
+        await owner.StopAsync();
+    }
+
     [Fact]
     public async Task LateOptionalHashCannotPublishAfterReplacement()
     {

@@ -57,23 +57,20 @@ public partial class OBPGame
             _lastCommittedProfileDestination = destinationId;
             if (nativeDestination is not null)
             {
-                var scenarios = WorldSmokeHarness.Create(_args, nativeDestination, _worldSwitches,
-                    WorldSmokeHarness.Bind(new WorldSmokeHarness.Factories(
+                GodotWorldSmokeDispatch.Start(new(
+                    this, _args, nativeDestination, _worldSwitches,
+                    new WorldSmokeHarness.Factories(
                         CreateRac1EncounterDiagnosticHarness, CreateRac1CampaignDiagnosticHarness,
                         CreateMovementDiagnosticHarness, CreateRac1LootDiagnosticHarness,
                         CreateWeaponDiagnosticHarness, CreateCaptureDiagnosticHarness,
                         CreateRac1WorldRouteDiagnosticHarness, CreatePlayerDiagnosticHarness,
                         definition => new Rac3RatchetSeedScenario(definition,
                             new GodotRac3RatchetSeedFixture(_worldScenes?.Current?.Resources.Rac3Gameplay, () => _player).Sample,
-                            message => GD.Print(message)))), Sources.Setup.Access != SourceAccessMode.ExplicitDiagnostic, TrilogySourceDefinitions.All);
-                var runner = new DiagnosticScenarioRunner(
-                    new GodotDiagnosticSources(() => [.. Sources.Setup.Library.Attached.Values.Select(source =>
-                        new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
-                    new GodotDiagnosticFrameClock(this),
-                    new ExistingDiagnosticWorld(new GodotDiagnosticWorldObservations(WorldScenes).ReadWorld, _hostOperations.Token));
-                DiagnosticScenarioDispatch.Start(scenarios, _hostOperations, runner,
-                    (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.PrintErr(message));
-                StartRequestedSourceVerification(nativeDestination, sourcePath!);
+                            message => GD.Print(message))),
+                    Sources.Setup.Access != SourceAccessMode.ExplicitDiagnostic, Sources.Setup.Library,
+                    new GodotDiagnosticWorldObservations(WorldScenes).ReadWorld, _hostOperations,
+                    (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.PrintErr(message)));
+                SourceVerification.StartForWorldEntry(nativeDestination, _args.VerifyHash, _worldSwitches);
             }
             SaveSharedProfile("world transition");
             if (_args.SourceSetupCheck && _worldSwitches == 1) CreateUiDiagnosticHarness().Start("source-setup-check");
@@ -142,12 +139,6 @@ public partial class OBPGame
     {
         GD.PrintErr($"[lifecycle] deferred world preparation failed (superseded={superseded}): {error}");
         if (!superseded && IsInsideTree()) ApplicationLifecycle.RequestQuit(this, "world-preparation-failed", 2);
-    }
-
-    private void StartRequestedSourceVerification(ObpDestination destination, string sourcePath)
-    {
-        if (_args.VerifyHash && _worldSwitches == 1 && destination.Game == ObpSourceGame.Rac2)
-            SourceVerification.Start(ObpSourceGame.Rac2);
     }
 
     private void ActivateWorld(RuntimeWorld world, GodotWorldResources resources,

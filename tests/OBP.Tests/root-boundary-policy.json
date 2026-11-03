@@ -5372,7 +5372,8 @@
     "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:SourceFileStamp(:string ?):( long Length , long Written ) ?:private,static",
     "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:ValidateSourceEntry(:RuntimeWorld):RuntimeSpawn:private,static",
     "game/scripts/OBPGame.cs::OBPGame::method:FrameAnimatedMobies(:RuntimeWorld):void:private",
-    "game/scripts/OBPGame.cs::OBPGame::method:FrameShowcaseCamera(:RuntimeWorld):void:private"
+    "game/scripts/OBPGame.cs::OBPGame::method:FrameShowcaseCamera(:RuntimeWorld):void:private",
+    "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:StartRequestedSourceVerification(:ObpDestination,:string):void:private"
   ],
   "RetiredAccess": [
     "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()"
