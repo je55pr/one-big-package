@@ -86,7 +86,6 @@ public sealed class WorldHudOwnershipTests
     [Fact]
     public void WorldHudHidesAndClearsTextForUnavailableFrames()
     {
-        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
         string hud = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/WorldHud.cs"));
         string presentation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotApplicationPresentation.cs"));
         Assert.Contains("if (entry?.Plan.Prepared.World is not { } world || entry?.Resources.Scene is not { } scene)\n        {\n            hud.Render(null, false);", presentation.Replace("\r\n", "\n"), StringComparison.Ordinal);

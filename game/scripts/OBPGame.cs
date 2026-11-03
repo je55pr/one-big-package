@@ -1146,11 +1146,21 @@ public partial class OBPGame : Node3D
         CloseWeaponQuickSelect();
         TearDownInteractiveOverlays();
         TryCloseRac1PlanetMap();
-        ClearPlayerAvatarView();
-        _worldScenes?.Current?.Resources.RetireGameplayBeforePlayer();
-        Presentation.RetireWorldHud(_hudState, OrdinaryPlayerSession);
-        Presentation.RetirePlayerAndInspection();
-        _worldScenes?.Current?.Resources.RetireGameplayAfterPlayer();
+        // A failure in one retirement step must not leave the old player node live and parented.
+        try
+        {
+            ClearPlayerAvatarView();
+            _worldScenes?.Current?.Resources.RetireGameplayBeforePlayer();
+        }
+        finally
+        {
+            try { Presentation.RetireWorldHud(_hudState, OrdinaryPlayerSession); }
+            finally
+            {
+                try { Presentation.RetirePlayerAndInspection(); }
+                finally { _worldScenes?.Current?.Resources.RetireGameplayAfterPlayer(); }
+            }
+        }
     }
 
     /// <summary>Delegate the overlay spec used by captures and individual shots.</summary>

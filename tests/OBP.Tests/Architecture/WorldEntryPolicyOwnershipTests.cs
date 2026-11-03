@@ -6,7 +6,6 @@ public sealed class WorldEntryPolicyOwnershipTests
     public void EntryRootBorrowsWorldPreparationPolicyInsteadOfOwningIt()
     {
         string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
-        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
         string policy = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "WorldEntryPreparationPolicy.cs"));
         string lifetime = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/WorldSceneLifetime.cs"));
         string resources = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotWorldResources.cs"));
@@ -20,7 +19,9 @@ public sealed class WorldEntryPolicyOwnershipTests
         Assert.Contains("SnapReach: WorldEntryPreparationPolicy.SourceEntrySnapReach", entry);
         Assert.Contains("WorldEntryPreparationPolicy.WorldOptions(world, args)", resources);
         Assert.Contains("WorldEntryPreparationPolicy.WorldOptions(world, _args)", entry);
-        Assert.Contains("WorldEntryPreparationPolicy.SourceFileStamp", root);
+        Assert.Contains("WorldEntryPreparationPolicy.SourceFileStamp", entry);
+        // The activation admission must stay bound to the ordinary-source check, not just be called.
+        Assert.Contains("AdmitActivation: () => Sources.RequireOrdinary(\"world activation\")", entry, StringComparison.Ordinal);
         Assert.DoesNotContain("private WorldHost.Options WorldOptions(", entry, StringComparison.Ordinal);
         Assert.DoesNotContain("private static RuntimeSpawn ValidateSourceEntry(", entry, StringComparison.Ordinal);
         Assert.DoesNotContain("private static float SourceEntrySnapReach(", entry, StringComparison.Ordinal);
