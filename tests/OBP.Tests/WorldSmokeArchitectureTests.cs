@@ -43,6 +43,30 @@ public sealed class WorldSmokeArchitectureTests
     }
 
     [Fact]
+    public void GodotDispatchUsesCommittedWorldAndLiveSourceBuildSnapshots()
+    {
+        string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.WorldEntry.cs"));
+        string dispatch = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "GodotWorldSmokeDispatch.cs"));
+
+        Assert.Contains("WorldSmokeHarness.Create(", dispatch, StringComparison.Ordinal);
+        Assert.Contains("WorldSmokeHarness.Bind(ports.Factories)", dispatch, StringComparison.Ordinal);
+        Assert.Contains("if (scenarios.Length == 0) return;", dispatch, StringComparison.Ordinal);
+        Assert.Contains("ports.Sources.Attached.Values.Select(source =>", dispatch, StringComparison.Ordinal);
+        Assert.Contains("new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true)", dispatch, StringComparison.Ordinal);
+        Assert.Contains("new GodotDiagnosticFrameClock(ports.Host)", dispatch, StringComparison.Ordinal);
+        Assert.Contains("new ExistingDiagnosticWorld(ports.ReadWorld, ports.Operations.Token)", dispatch, StringComparison.Ordinal);
+
+        // The prior world must be committed before any scenario observes it.
+        // Hash verification remains after smoke dispatch, before profile save.
+        int commit = entry.IndexOf("_worldEntries.Commit(plan, WorldScenes);", StringComparison.Ordinal);
+        int start = entry.IndexOf("GodotWorldSmokeDispatch.Start(new(", StringComparison.Ordinal);
+        int verify = entry.IndexOf("SourceVerification.StartForWorldEntry(nativeDestination,", StringComparison.Ordinal);
+        int save = entry.IndexOf("SaveSharedProfile(\"world transition\");", StringComparison.Ordinal);
+        Assert.True(commit >= 0 && commit < start && start < verify && verify < save,
+            "World diagnostics must observe the committed lease before source verification and profile save.");
+    }
+
+    [Fact]
     public void WorldSmokeBindingsPreserveCreatorSpecificSlots()
     {
         string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "WorldSmokeHarness.cs"));
