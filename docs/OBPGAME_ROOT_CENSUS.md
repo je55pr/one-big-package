@@ -7,7 +7,7 @@ This is an ownership and file accounting snapshot, not a claim that final root c
 | Metric | Frozen origin | Current checkpoint |
 | --- | ---: | ---: |
 | Root-declaring files | 122 | 2 |
-| Root-declaring file lines | 27362 | 2957 |
+| Root-declaring file lines | 27362 | 2948 |
 
 File-by-file inventory. Ownership references are **original migration issue assignments**, not claims about the destination class:
 
@@ -134,7 +134,7 @@ File-by-file inventory. Ownership references are **original migration issue assi
 | `game/scripts/OBPGame.Sources.cs` | #346 | 316 | Retired | 0 |
 | `game/scripts/OBPGame.SourceSetup.cs` | #346 | 82 | Retired | 0 |
 | `game/scripts/OBPGame.StressDiagnostics.cs` | #345 | 114 | Retired | 0 |
-| `game/scripts/OBPGame.WorldEntry.cs` | #376 | 178 | Active | 349 |
+| `game/scripts/OBPGame.WorldEntry.cs` | #376 | 178 | Active | 340 |
 
 #376 now delegates world-debug HUD rendering to `WorldHud`, original-order player-spawn placement selection to `GodotPlayerSpawnPlacement`, and overlay command parsing to the existing `DebugOverlay`. `OBPGame` still owns live player construction, world-lease integration and host wiring; no new all-capabilities controller was introduced.
 
@@ -145,5 +145,7 @@ The synthetic `--test-scene` geometry, idempotent plain bootstrap environment an
 The 22 legacy world-smoke scenario bindings now resolve through typed harness factories owned by `WorldSmokeHarness`, not a per-scenario mapping inside `OBPGame.WorldEntry.cs`. The Godot root still supplies its eight host factories and the R&C3 seed fixture, while portable tests pin the complete lazy scenario-to-owner route map.
 
 The world-lease-owned `GodotWorldResources` now constructs the native effects host from typed camera/source/actor/replay ports, retains explicit failure reporting and disposes it with the lease. `GodotEffectsSmoke` owns the separate first-world effects acceptance admission, fixture, runner and dispatch. The root still supplies narrow live observations and navigation callbacks, but no longer creates the effects host or the effects acceptance scenario.
+
+`GodotWorldSmokeDispatch` now owns the Godot runner, source snapshots and dispatch of the 22 registered world-smoke scenarios, borrowing typed factories and world observations from the root. The optional first-world R&C2 hash gate lives with `SourceVerificationCoordinator`; the former root helper (including its unused source path) is retired and its admission rules are covered by data-driven portable tests.
 
 The remaining root files still contain host composition and world-entry glue. The rest of #376 requires migrating those members to existing owners, deleting the WorldEntry partial, tightening architecture guards and validating the full 17-phase authorised real-input suite.

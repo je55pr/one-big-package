@@ -14,14 +14,22 @@ public sealed class WorldSmokeArchitectureTests
         string entry = File.ReadAllText(Path.Combine(scripts, "OBPGame.WorldEntry.cs"));
         string harness = File.ReadAllText(Path.Combine(
             RepoPaths.Root, "game", "diagnostics", "WorldSmokeHarness.cs"));
+        string dispatch = File.ReadAllText(Path.Combine(
+            RepoPaths.Root, "game", "diagnostics", "GodotWorldSmokeDispatch.cs"));
 
         Assert.Contains("_ports.EnterWorld(destination.DestinationId", loader, StringComparison.Ordinal);
-        Assert.Contains("WorldSmokeHarness.Create(", entry, StringComparison.Ordinal);
-        Assert.Contains("WorldSmokeHarness.Bind(new WorldSmokeHarness.Factories(", entry, StringComparison.Ordinal);
-        Assert.DoesNotContain("new WorldSmokeHarness.Entrypoints(", entry, StringComparison.Ordinal);
+        Assert.Contains("GodotWorldSmokeDispatch.Start(new(", entry, StringComparison.Ordinal);
+        Assert.Contains("new WorldSmokeHarness.Factories(", entry, StringComparison.Ordinal);
+        Assert.DoesNotContain("WorldSmokeHarness.Create(", entry, StringComparison.Ordinal);
+        Assert.DoesNotContain("DiagnosticScenarioDispatch.Start(", entry, StringComparison.Ordinal);
+        Assert.Contains("WorldSmokeHarness.Create(", dispatch, StringComparison.Ordinal);
+        Assert.Contains("WorldSmokeHarness.Bind(ports.Factories)", dispatch, StringComparison.Ordinal);
+        Assert.Contains("DiagnosticScenarioDispatch.Start(scenarios, ports.Operations, runner, ports.Quit, ports.LogError)", dispatch, StringComparison.Ordinal);
         Assert.Contains("internal static Entrypoints Bind(", harness, StringComparison.Ordinal);
-        Assert.Contains("DiagnosticScenarioDispatch.Start(", entry, StringComparison.Ordinal);
         Assert.DoesNotContain("partial class OBPGame", harness, StringComparison.Ordinal);
+        Assert.DoesNotContain("partial class OBPGame", dispatch, StringComparison.Ordinal);
+        Assert.Contains("SourceVerification.StartForWorldEntry(nativeDestination, _args.VerifyHash, _worldSwitches)", entry, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void StartRequestedSourceVerification(", entry, StringComparison.Ordinal);
         foreach (string flag in new[]
         {
             "_args.Rac1VeldinPlaySmoke",
@@ -32,6 +40,30 @@ public sealed class WorldSmokeArchitectureTests
         })
             Assert.DoesNotContain(flag, loader, StringComparison.Ordinal);
 
+    }
+
+    [Fact]
+    public void GodotDispatchUsesCommittedWorldAndLiveSourceBuildSnapshots()
+    {
+        string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.WorldEntry.cs"));
+        string dispatch = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "GodotWorldSmokeDispatch.cs"));
+
+        Assert.Contains("WorldSmokeHarness.Create(", dispatch, StringComparison.Ordinal);
+        Assert.Contains("WorldSmokeHarness.Bind(ports.Factories)", dispatch, StringComparison.Ordinal);
+        Assert.Contains("if (scenarios.Length == 0) return;", dispatch, StringComparison.Ordinal);
+        Assert.Contains("ports.Sources.Attached.Values.Select(source =>", dispatch, StringComparison.Ordinal);
+        Assert.Contains("new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true)", dispatch, StringComparison.Ordinal);
+        Assert.Contains("new GodotDiagnosticFrameClock(ports.Host)", dispatch, StringComparison.Ordinal);
+        Assert.Contains("new ExistingDiagnosticWorld(ports.ReadWorld, ports.Operations.Token)", dispatch, StringComparison.Ordinal);
+
+        // The prior world must be committed before any scenario observes it.
+        // Hash verification remains after smoke dispatch, before profile save.
+        int commit = entry.IndexOf("_worldEntries.Commit(plan, WorldScenes);", StringComparison.Ordinal);
+        int start = entry.IndexOf("GodotWorldSmokeDispatch.Start(new(", StringComparison.Ordinal);
+        int verify = entry.IndexOf("SourceVerification.StartForWorldEntry(nativeDestination,", StringComparison.Ordinal);
+        int save = entry.IndexOf("SaveSharedProfile(\"world transition\");", StringComparison.Ordinal);
+        Assert.True(commit >= 0 && commit < start && start < verify && verify < save,
+            "World diagnostics must observe the committed lease before source verification and profile save.");
     }
 
     [Fact]

@@ -54,10 +54,10 @@
     "Hash": "fd72e166578f668651d7223b3559093b84ba1e54c044c9901b5711f4adf04824"
   },
   {
-    "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.StartRequestedSourceVerification(ObpDestination,string)",
+    "Key": "game/scripts/SourceVerificationCoordinator.cs::SourceVerificationCoordinator.StartForWorldEntry(ObpDestination,bool,int)",
     "Kind": "adapter",
-    "Reason": "Opt-in original GC source verification; no player service choice. #356 starts the optional verification owner for the same admitted source; its task scope is independent of critical startup/capture work.",
-    "Hash": "cdd268364d23df0f2fe394489d3ec6b0a5fbc541df3952541a07af0d6a349db9"
+    "Reason": "Opt-in first-world R&C2 source hash verification is now admitted by the existing source-verification owner under #376, not by OBPGame. The game identity is read solely to choose the optional source-specific hash job; this adapter never selects a player service or avatar. SourceVerificationCoordinatorTests cover first-world, foreign-game and disabled-hash gates, with the existing independent cancellation/failure tests protecting job lifetime.",
+    "Hash": "be07ef127427ca8240f59d02db944dfd95465944216077ee490a7caf0063df9c"
   },
   {
     "Key": "src/OBP.Godot/DebugOverlay.cs::DebugOverlay.BuildEnvGizmos()",
