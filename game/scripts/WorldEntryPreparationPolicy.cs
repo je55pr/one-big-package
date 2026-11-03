@@ -24,7 +24,7 @@ internal static class WorldEntryPreparationPolicy
     // composition root. Validation still runs before a prepared plan is staged.
     private sealed class PlannedWorldSource(Func<RuntimeWorld> load) : IWorldEntrySource
     {
-        public PreparedWorldEntry Prepare(WorldEntryRequest request)
+        public PreparedWorldEntry Prepare(WorldEntryRequest _)
         {
             var world = load();
             var spawn = ValidateSourceEntry(world);
