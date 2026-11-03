@@ -1,0 +1,11 @@
+# Minimal lint config for the Python probe/oracle scripts under tools/.
+# Run from the repo root: ruff check tools
+target-version = "py310"
+line-length = 120
+
+[lint]
+select = ["E", "F", "B", "W", "UP"]
+ignore = [
+  "E501",  # long lines are common in recovered-field tables
+  "B905",  # zip() strict= needs Python 3.10+ semantics review per call site
+]

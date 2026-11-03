@@ -82,7 +82,8 @@ def decompress(path: Path) -> bytes:
         pass
     # PCSX2 bundles the Zstandard DLL on Windows. Avoid installing packages
     # or altering the emulator's existing compression settings.
-    dll = Path(os.environ.get("PCSX2_ZSTD_DLL", r"C:\Program Files\PCSX2\zstd.dll"))
+    default_dll = r"C:\Program Files\PCSX2\zstd.dll" if os.name == "nt" else ""
+    dll = Path(os.environ.get("PCSX2_ZSTD_DLL", default_dll))
     if not dll.is_file():
         raise RuntimeError("Zstd dump: install Python zstandard, or set PCSX2_ZSTD_DLL")
     lib = ctypes.CDLL(str(dll))
@@ -113,7 +114,7 @@ class Tag:
 
 
 class GifPath:
-    def __init__(self, audit: "GsAudit", index: int):
+    def __init__(self, audit: GsAudit, index: int):
         self.audit = audit
         self.index = index
         self.tail = b""

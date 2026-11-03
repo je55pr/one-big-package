@@ -13,7 +13,6 @@ import hashlib
 import importlib.util
 import json
 import math
-import struct
 import subprocess
 from pathlib import Path
 

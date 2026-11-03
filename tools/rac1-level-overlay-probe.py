@@ -20,6 +20,11 @@ EE_SIZE = 32 * 1024 * 1024
 SECTOR_SIZE = 0x800
 
 
+def f32(value):
+    """Round a Python float to the nearest IEEE-754 single."""
+    return struct.unpack("<f", struct.pack("<f", value))[0]
+
+
 def checked_range(offset, size, limit, label):
     if offset < 0 or size <= 0 or offset > limit or size > limit - offset:
         raise ValueError(f"{label} is outside its bounded source")
@@ -166,7 +171,6 @@ def ordinary_locomotion_report(overlay, gp, tick_seconds):
     table = struct.unpack("<8f", overlay.read(0x17BDB8, 32))
     offsets = struct.unpack("<4i", overlay.read(gp - 0x7538, 16))
     frames = struct.unpack("<2i", overlay.read(gp - 0x7528, 8))
-    f32 = lambda value: struct.unpack("<f", struct.pack("<f", value))[0]
     rates = [{
         "sequence": sequence,
         "speedMultiplier": immediate_float(overlay, multiplier),
@@ -268,7 +272,6 @@ def crouch_and_stop_report(overlay, tick_seconds):
         "restartEntryMotion": (0x2232D4, 0x2233A4),
         "idleRestartInput": (0x22A720, 0x22A750),
     }
-    f32 = lambda value: struct.unpack("<f", struct.pack("<f", value))[0]
     threshold = immediate_float(overlay, 0x217CC8)
     divisor = immediate_float(overlay, 0x217D4C)
     return {
@@ -383,7 +386,6 @@ def crouch_surface_report(veldin, hoven, squared_update_scale):
         })
     if levels[0]["blocks"]["coefficientSelection"]["sha256"] != levels[1]["blocks"]["coefficientSelection"]["sha256"]:
         raise ValueError("Veldin/Hoven crouch coefficient branches differ")
-    f32 = lambda value: struct.unpack("<f", struct.pack("<f", value))[0]
     return {
         "scope": "action-4 residual carry braking; not the complete ice-slide action controller",
         "surfaceClass": 7, "iceFlag": "P+0x12e2",

@@ -11,10 +11,12 @@ import ctypes
 import hashlib
 import json
 import math
+import os
 import shutil
 import socket
 import struct
 import subprocess
+import sys
 import time
 from ctypes import wintypes
 from itertools import groupby
@@ -29,7 +31,9 @@ READ32 = 2
 NEUTRAL = 127
 BUTTON_MASKS = {"cross": 0x4000}
 FRAME_ADVANCE_VK = 0x76  # F7
-PWSH_RUNNER = Path(r"C:\ChatGPT\Tools\pwsh-runner.cmd")
+# Optional wrapper (e.g. a .cmd shim) used to launch the picker helper; when
+# unset the helper is run through PowerShell found on PATH.
+PWSH_RUNNER_ENV = "OBP_PWSH_RUNNER"
 PICKER_HELPER = ROOT / "tools" / "rac1-pcsx2-input-recording-picker.ps1"
 KNOWN_FIELDS = {
     "yaw": (PLAYER_STATE + 0x18, "f32"),
@@ -329,8 +333,13 @@ def sample_player(pine: Pine, scan_bytes: int = 0x180) -> dict[str, object]:
     }
     return sample
 
-user32 = ctypes.WinDLL("user32", use_last_error=True)
-kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+# Win32 bindings exist only on Windows; keep the module importable elsewhere
+# (for --help, py_compile and reuse of the pure helpers).
+if sys.platform == "win32":
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+else:
+    user32 = kernel32 = None
 VK_MENU = 0x12
 KEYEVENTF_KEYUP = 0x0002
 
@@ -413,16 +422,21 @@ def _wait_for_input_recording_picker(pid: int, timeout: float = 4.0) -> int:
         time.sleep(0.05)
     raise TimeoutError(f"input-recording picker not found for pid {pid}")
 
+def _picker_command(dialog: int, movie: Path) -> list[str]:
+    runner = os.environ.get(PWSH_RUNNER_ENV)
+    if runner:
+        if not Path(runner).exists():
+            raise FileNotFoundError(f"PowerShell runner not found ({PWSH_RUNNER_ENV}): {runner}")
+        return ["cmd.exe", "/d", "/s", "/c", runner, "-File", str(PICKER_HELPER), str(dialog), str(movie)]
+    shell = shutil.which("pwsh") or shutil.which("powershell")
+    if shell is None:
+        raise FileNotFoundError(f"PowerShell not found on PATH; install it or set {PWSH_RUNNER_ENV}")
+    return [shell, "-NoProfile", "-File", str(PICKER_HELPER), str(dialog), str(movie)]
+
 def _invoke_picker_path(dialog: int, movie: Path) -> None:
     absolute = movie.resolve()
-    if not PWSH_RUNNER.exists():
-        raise FileNotFoundError(f"PowerShell runner not found: {PWSH_RUNNER}")
     completed = subprocess.run(
-        [
-            "cmd.exe", "/d", "/s", "/c",
-            str(PWSH_RUNNER), "-File", str(PICKER_HELPER),
-            str(dialog), str(absolute),
-        ],
+        _picker_command(dialog, absolute),
         cwd=ROOT,
         text=True,
         capture_output=True,
