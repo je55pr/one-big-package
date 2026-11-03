@@ -24,12 +24,12 @@ public sealed class Rac1MenuPanelCameraTests
             Rac1MenuPanelCamera.ProjectRelative(new Vector3(0, 0, 0), size));
     }
 
-    [Fact]
+    [SkippableFact]
     public void OriginalPauseFirstFrameProjectsIntoSixDistinctVisiblePanelStrips()
     {
         string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
-        using var disc = new FileRandomAccessReader(path);
+        Skip.If(string.IsNullOrWhiteSpace(path), "OBP_RAC1_ISO not set");
+        using var disc = new FileRandomAccessReader(path!);
         var assets = Rac1UiAssets.Read(disc);
         var motion = new Rac1MenuPanelMotion(assets.NativeMenuPanels!, assets.NativeMenuPages!);
         motion.BeginTransition(Rac1MenuPanelPages.Page.OrdinaryPause, backwards: true);

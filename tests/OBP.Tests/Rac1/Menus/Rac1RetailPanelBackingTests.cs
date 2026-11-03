@@ -18,12 +18,12 @@ public sealed class Rac1RetailPanelBackingTests
         Assert.Equal(128, Rac1RetailPanelBlend.ClearAlpha);
     }
 
-    [Fact]
+    [SkippableFact]
     public void PackedBackingAndFramePointIndicesAgreeWithOriginalExecutable()
     {
         string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
-        using var stream = File.OpenRead(path);
+        Skip.If(string.IsNullOrWhiteSpace(path), "OBP_RAC1_ISO not set");
+        using var stream = File.OpenRead(path!);
         byte[] pvd = ReadAt(stream, 16L * 2048, 2048);
         Assert.Equal("CD001", Encoding.ASCII.GetString(pvd, 1, 5));
         const int rootRecord = 156;

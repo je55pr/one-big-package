@@ -5,12 +5,12 @@ namespace OBP.Tests;
 
 public sealed class Rac1MenuPanelMotionTests
 {
-    [Fact]
+    [SkippableFact]
     public void NativeTwelveTickPageTransitionUsesActualSevenFrameMenuTrack()
     {
         string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
-        using var disc = new FileRandomAccessReader(path);
+        Skip.If(string.IsNullOrWhiteSpace(path), "OBP_RAC1_ISO not set");
+        using var disc = new FileRandomAccessReader(path!);
         var assets = Rac1UiAssets.Read(disc);
         var source = new Rac1MenuPanelMotion(assets.NativeMenuPanels!, assets.NativeMenuPages!);
         var initial = source.Pose(0);
@@ -36,12 +36,12 @@ public sealed class Rac1MenuPanelMotionTests
         Assert.Equal(0, source.RemainingUpdates);
     }
 
-    [Fact]
+    [SkippableFact]
     public void PanelMotionRetainsFourteenSlotsAndRejectsOverlappingChanges()
     {
         string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
-        using var disc = new FileRandomAccessReader(path);
+        Skip.If(string.IsNullOrWhiteSpace(path), "OBP_RAC1_ISO not set");
+        using var disc = new FileRandomAccessReader(path!);
         var assets = Rac1UiAssets.Read(disc);
         var motion = new Rac1MenuPanelMotion(assets.NativeMenuPanels!, assets.NativeMenuPages!);
         Assert.Equal(7, motion.Pose(7).NativeSequence);

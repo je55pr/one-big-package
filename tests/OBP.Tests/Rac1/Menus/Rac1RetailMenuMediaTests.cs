@@ -5,12 +5,12 @@ namespace OBP.Tests;
 
 public sealed class Rac1RetailMenuMediaTests
 {
-    [Fact]
+    [SkippableFact]
     public void SupportedDiscDecodesNativeFlashingPanelLayersAndTwoStartupCues()
     {
         string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
-        using var disc = new FileRandomAccessReader(path);
+        Skip.If(string.IsNullOrWhiteSpace(path), "OBP_RAC1_ISO not set");
+        using var disc = new FileRandomAccessReader(path!);
         var assets = Rac1UiAssets.Read(disc);
         Assert.Equal(new[] { 0x19, 0x1A, 0x1C }, assets.MenuEffects.Keys.Order());
         foreach (var texture in assets.MenuEffects.Values)

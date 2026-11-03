@@ -6,12 +6,12 @@ namespace OBP.Tests;
 /// <summary>Original NTSC-U Veldin overlay source page tables, not mock animation IDs.</summary>
 public sealed class Rac1MenuPanelPagesTests
 {
-    [Fact]
+    [SkippableFact]
     public void RetailOverlayContainsNativeSlotSequencesForAllSixEntrypointPages()
     {
         string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
-        using var disc = new FileRandomAccessReader(path);
+        Skip.If(string.IsNullOrWhiteSpace(path), "OBP_RAC1_ISO not set");
+        using var disc = new FileRandomAccessReader(path!);
         var assets = Rac1UiAssets.Read(disc);
         var pages = Assert.IsType<Rac1MenuPanelPages>(assets.NativeMenuPages);
         Assert.Equal(6, pages.Pages.Count);

@@ -6,12 +6,12 @@ namespace OBP.Tests;
 
 public sealed class Rac1MenuPanelModelTests
 {
-    [Fact]
+    [SkippableFact]
     public void OriginalDiscHasNativeFiveJointPanelModelAndAllAnimationSlots()
     {
         string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
-        using var disc = new FileRandomAccessReader(path);
+        Skip.If(string.IsNullOrWhiteSpace(path), "OBP_RAC1_ISO not set");
+        using var disc = new FileRandomAccessReader(path!);
         var model = Rac1UiAssets.Read(disc).NativeMenuPanels;
         Assert.NotNull(model);
         Assert.Equal(5, model.JointCount);
