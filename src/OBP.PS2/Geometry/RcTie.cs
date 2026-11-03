@@ -81,7 +81,7 @@ public static class RcTie
                 int packetData = tableBase + BinaryPrimitives.ReadInt32LittleEndian(buf[phOff..]);
                 int vertOfs = buf[phOff + 0x08] * 0x10;
                 int vertSize = buf[phOff + 0x09] * 0x10;
-                if (packetData <= 0 || packetData + 0x2c > buf.Length)
+                if (packetData <= 0 || (long)packetData + 0x2c > buf.Length)
                 {
                     continue;
                 }

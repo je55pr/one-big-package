@@ -133,6 +133,7 @@ public static class Ps2SkeletalAnimation
         }
         int auxiliary = signs + (joints + 7) / 8;
         int baseChannels = descriptor + 4 + joints * 6;
+        Require(bytes, baseChannels, 2);
         int scales = bytes[baseChannels], translations = bytes[baseChannels + 1];
         int baseCursor = baseChannels + 2;
         var scale = PackedVectors(bytes, ref baseCursor, ref auxiliary, scales, joints, true);

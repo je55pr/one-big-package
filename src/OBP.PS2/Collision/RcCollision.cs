@@ -32,7 +32,11 @@ public static class RcCollision
         ObpBounds Bounds,
         IReadOnlyList<int> MaterialIds);
 
-    public sealed record Options(int MaxOctants = 200_000, int MaxVertices = 8_000_000, int MaxTriangles = 8_000_000);
+    public sealed record Options(
+        int MaxOctants = 200_000,
+        int MaxVertices = 8_000_000,
+        int MaxTriangles = 8_000_000,
+        long MaxGridCells = 16_000_000);
 
     public static Mesh Read(byte[] bytes, Options? options = null)
     {
@@ -56,10 +60,11 @@ public static class RcCollision
 
         int meshEnd = heroGroupsOffset != 0 ? heroGroupsOffset : bytes.Length;
 
-        byte U8(int at) => at >= 0 && at < bytes.Length ? bytes[at] : throw new InvalidDataException($"RC collision read past end at {at}.");
-        short S16(int at) => at >= 0 && at + 2 <= bytes.Length ? BinaryPrimitives.ReadInt16LittleEndian(bytes.AsSpan(at)) : throw new InvalidDataException($"RC collision read past end at {at}.");
-        ushort U16(int at) => at >= 0 && at + 2 <= bytes.Length ? BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(at)) : throw new InvalidDataException($"RC collision read past end at {at}.");
-        uint U32(int at) => at >= 0 && at + 4 <= bytes.Length ? BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(at)) : throw new InvalidDataException($"RC collision read past end at {at}.");
+        // Offsets come from untrusted tables; compare in 64-bit so "at + n" cannot wrap.
+        byte U8(long at) => at >= 0 && at < bytes.Length ? bytes[(int)at] : throw new InvalidDataException($"RC collision read past end at {at}.");
+        short S16(long at) => at >= 0 && at + 2 <= bytes.Length ? BinaryPrimitives.ReadInt16LittleEndian(bytes.AsSpan((int)at)) : throw new InvalidDataException($"RC collision read past end at {at}.");
+        ushort U16(long at) => at >= 0 && at + 2 <= bytes.Length ? BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan((int)at)) : throw new InvalidDataException($"RC collision read past end at {at}.");
+        uint U32(long at) => at >= 0 && at + 4 <= bytes.Length ? BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan((int)at)) : throw new InvalidDataException($"RC collision read past end at {at}.");
 
         var octants = new List<Octant>();
         var positionList = new List<double>();
@@ -68,6 +73,9 @@ public static class RcCollision
         double minX = double.PositiveInfinity, minY = double.PositiveInfinity, minZ = double.PositiveInfinity;
         double maxX = double.NegativeInfinity, maxY = double.NegativeInfinity, maxZ = double.NegativeInfinity;
 
+        long cells = 0;
+        static InvalidDataException GridBudget() => new("RC collision grid walk exceeds its traversal budget.");
+
         int zCoord = S16(meshOffset);
         int zCount = U16(meshOffset + 2);
         int zOffsets = meshOffset + 4;
@@ -75,43 +83,47 @@ public static class RcCollision
         for (int z = 0; z < zCount; z++)
         {
             int zByte = U16(zOffsets + z * 2) * 4;
+            if (++cells > options.MaxGridCells) throw GridBudget();
             if (zByte == 0)
             {
                 continue;
             }
 
-            int zNode = meshOffset + zByte;
+            long zNode = (long)meshOffset + zByte;
             int yCoord = S16(zNode);
             int yCount = U16(zNode + 2);
-            int yOffsets = zNode + 4;
+            long yOffsets = zNode + 4;
 
             for (int y = 0; y < yCount; y++)
             {
+                if (++cells > options.MaxGridCells) throw GridBudget();
                 uint yByte = U32(yOffsets + y * 4);
                 if (yByte == 0)
                 {
                     continue;
                 }
 
-                int yNode = meshOffset + (int)yByte;
+                long yNode = (long)meshOffset + yByte;
                 int xCoord = S16(yNode);
                 int xCount = U16(yNode + 2);
-                int xOffsets = yNode + 4;
+                long xOffsets = yNode + 4;
 
                 for (int x = 0; x < xCount; x++)
                 {
+                    if (++cells > options.MaxGridCells) throw GridBudget();
                     uint octByte = U32(xOffsets + x * 4) >> 8;
                     if (octByte == 0)
                     {
                         continue;
                     }
 
-                    int octOffset = meshOffset + (int)octByte;
-                    if (octOffset < meshOffset || octOffset + 4 > meshEnd)
+                    long octOffsetLong = (long)meshOffset + octByte;
+                    if (octOffsetLong + 4 > meshEnd)
                     {
                         throw new InvalidDataException($"RC collision octant offset 0x{octByte:x} out of mesh range.");
                     }
 
+                    int octOffset = (int)octOffsetLong;
                     int faceCount = U16(octOffset);
                     int vertexCount = U8(octOffset + 2);
                     int quadCount = U8(octOffset + 3);

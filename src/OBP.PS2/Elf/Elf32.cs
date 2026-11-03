@@ -167,7 +167,7 @@ public static class Elf32Reader
     /// <summary>Resolve one fully file-backed ELF32 virtual range through PT_LOAD metadata.</summary>
     public static Elf32VirtualRangeMapping MapVirtualRange(IReadOnlyList<Elf32ProgramHeader> programHeaders, long virtualAddress, long length)
     {
-        if (virtualAddress < 0 || virtualAddress >= AddressSpaceSize || length < 0 || virtualAddress + length > AddressSpaceSize)
+        if (virtualAddress < 0 || virtualAddress >= AddressSpaceSize || length < 0 || length > AddressSpaceSize - virtualAddress)
         {
             throw new ArgumentOutOfRangeException(nameof(virtualAddress), $"Invalid ELF32 virtual range 0x{virtualAddress:x}+{length}.");
         }

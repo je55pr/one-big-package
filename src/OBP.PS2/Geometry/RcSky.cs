@@ -40,12 +40,13 @@ public static class RcSky
         var outp = new List<SkyTexture>();
         for (int i = 0; i < count; i++)
         {
-            int at = defsOffset + i * TextureEntrySize;
-            if (at < 0 || at + TextureEntrySize > bytes.Length)
+            long atLong = (long)defsOffset + (long)i * TextureEntrySize;
+            if (atLong < 0 || atLong + TextureEntrySize > bytes.Length)
             {
                 break;
             }
 
+            int at = (int)atLong;
             int paletteOffset = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(at + 0x00));
             int textureOffset = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(at + 0x04));
             int width = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(at + 0x08));
@@ -55,13 +56,17 @@ public static class RcSky
                 continue;
             }
 
-            int pixelStart = dataOffset + textureOffset;
-            int paletteStart = dataOffset + paletteOffset;
-            if (pixelStart < 0 || paletteStart < 0 ||
-                pixelStart + width * height > bytes.Length || paletteStart + 256 * 4 > bytes.Length)
+            // Table offsets are untrusted: bounds-check in 64-bit so sums cannot wrap.
+            long pixelStartLong = (long)dataOffset + textureOffset;
+            long paletteStartLong = (long)dataOffset + paletteOffset;
+            if (pixelStartLong < 0 || paletteStartLong < 0 ||
+                pixelStartLong + width * height > bytes.Length || paletteStartLong + 256 * 4 > bytes.Length)
             {
                 continue;
             }
+
+            int pixelStart = (int)pixelStartLong;
+            int paletteStart = (int)paletteStartLong;
 
             var palette = new uint[256];
             for (int p = 0; p < 256; p++)
@@ -88,7 +93,7 @@ public static class RcSky
 
     private static Shell? ReadShell(byte[] bytes, int shellOffset)
     {
-        if (shellOffset <= 0 || shellOffset + 0x10 > bytes.Length)
+        if (shellOffset <= 0 || (long)shellOffset + 0x10 > bytes.Length)
         {
             return null;
         }
@@ -111,7 +116,7 @@ public static class RcSky
         for (int c = 0; c < clusterCount; c++)
         {
             int ch = shellOffset + 0x10 + c * ClusterHeaderSize;
-            if (ch + ClusterHeaderSize > bytes.Length)
+            if ((long)ch + ClusterHeaderSize > bytes.Length)
             {
                 break;
             }
@@ -127,15 +132,19 @@ public static class RcSky
                 continue;
             }
 
-            int vbase = data + vertexOffset;
-            int sbase = data + stOffset;
-            int fbase = data + triOffset;
-            if (vbase + vertexCount * 8 > bytes.Length ||
-                sbase + vertexCount * 4 > bytes.Length ||
-                fbase + triCount * 4 > bytes.Length)
+            long vbaseLong = (long)data + vertexOffset;
+            long sbaseLong = (long)data + stOffset;
+            long fbaseLong = (long)data + triOffset;
+            if (vbaseLong + vertexCount * 8 > bytes.Length ||
+                sbaseLong + vertexCount * 4 > bytes.Length ||
+                fbaseLong + triCount * 4 > bytes.Length)
             {
                 continue;
             }
+
+            int vbase = (int)vbaseLong;
+            int sbase = (int)sbaseLong;
+            int fbase = (int)fbaseLong;
 
             int baseV = positions.Count / 3;
             for (int v = 0; v < vertexCount; v++)

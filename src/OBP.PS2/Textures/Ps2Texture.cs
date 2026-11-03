@@ -17,6 +17,11 @@ public static class Ps2Texture
 
     public static uint[] SwizzlePalette(uint[] palette)
     {
+        if (palette.Length < 256)
+        {
+            throw new ArgumentException($"PS2 palette has {palette.Length} entries; 256 are required.", nameof(palette));
+        }
+
         var outp = new uint[256];
         for (int i = 0; i < 256; i++)
         {
