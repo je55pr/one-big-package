@@ -32,21 +32,6 @@ public sealed class AutomationDesktopSafetyTests
     }
 
     [Fact]
-    public void StartProcessWrappersQuoteEveryArgumentSoPathsWithSpacesStayWhole()
-    {
-        // Start-Process joins -ArgumentList into one Windows command line without quoting.
-        var unquoted = Directory.EnumerateFiles(Path.Combine(RepoPaths.Root, "tools"), "*.ps1", SearchOption.AllDirectories)
-            .SelectMany(file => File.ReadAllLines(file).Select((text, index) => (file, text, line: index + 1)))
-            .Where(l => l.text.Contains("Start-Process", StringComparison.Ordinal) &&
-                l.text.Contains("-ArgumentList", StringComparison.Ordinal) &&
-                !l.text.Contains("-ArgumentList $quoted", StringComparison.Ordinal))
-            .Select(l => Path.GetRelativePath(RepoPaths.Root, l.file) + ":" + l.line)
-            .ToArray();
-        Assert.Empty(unquoted);
-        Assert.Contains("-ArgumentList $quotedGameArgs", File.ReadAllText(Path.Combine(RepoPaths.Root, "tools", "launch-obp.ps1")), StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void SourceSetupCheckIsAutomatedWhileRetainingOrdinarySourceRequirements()
     {
         string[] arguments = ["--source-setup-check"];

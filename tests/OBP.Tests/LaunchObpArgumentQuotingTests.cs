@@ -25,14 +25,19 @@ public sealed class LaunchObpArgumentQuotingTests
     [SkippableFact]
     public async Task LaunchObpQuotingPreservesSpacesEmbeddedQuotesAndTrailingBackslashes()
     {
-        string shellName = OperatingSystem.IsWindows() ? "pwsh.exe" : "pwsh";
-        string? shell = (System.Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator)
-            .Select(directory => Path.Combine(directory, shellName)).FirstOrDefault(File.Exists);
+        string[] shellNames = OperatingSystem.IsWindows()
+            ? ["pwsh.exe", "powershell.exe"]
+            : ["pwsh"];
+        string[] directories = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator);
+        string? shell = shellNames.SelectMany(name => directories.Select(directory => Path.Combine(directory, name)))
+            .FirstOrDefault(File.Exists);
         Skip.If(shell is null, "PowerShell is not installed.");
 
         string[] statements = File.ReadAllLines(Path.Combine(RepoPaths.Root, "tools", "launch-obp.ps1"))
             .Where(line => line.TrimStart().StartsWith("$quotedGameArgs = ", StringComparison.Ordinal)).ToArray();
         Assert.Single(statements);
+        Assert.Contains("Start-Process -FilePath $gameExe -ArgumentList $quotedGameArgs",
+            File.ReadAllText(Path.Combine(RepoPaths.Root, "tools", "launch-obp.ps1")), StringComparison.Ordinal);
 
         string directory = Path.Combine(Path.GetTempPath(), "obp launch quoting " + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
@@ -42,7 +47,7 @@ public sealed class LaunchObpArgumentQuotingTests
             File.WriteAllText(input, JsonSerializer.Serialize(Cases));
             File.WriteAllText(script, string.Join('\n',
                 "$ErrorActionPreference = 'Stop'",
-                "$gameArgs = @(Get-Content -LiteralPath '" + input.Replace("'", "''") + "' -Raw | ConvertFrom-Json)",
+                "$gameArgs = [string[]](ConvertFrom-Json -InputObject (Get-Content -LiteralPath '" + input.Replace("'", "''") + "' -Raw))",
                 statements[0],
                 "ConvertTo-Json -InputObject @($quotedGameArgs) -Compress"));
 
@@ -53,7 +58,7 @@ public sealed class LaunchObpArgumentQuotingTests
                 RedirectStandardError = true,
                 StandardOutputEncoding = new UTF8Encoding(false),
             };
-            foreach (string argument in new[] { "-NoProfile", "-NonInteractive", "-File", script }) start.ArgumentList.Add(argument);
+            foreach (string argument in new[] { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script }) start.ArgumentList.Add(argument);
             using var process = Process.Start(start) ?? throw new InvalidOperationException("Could not start PowerShell.");
             Task<string> output = process.StandardOutput.ReadToEndAsync(), error = process.StandardError.ReadToEndAsync();
             await process.WaitForExitAsync();
