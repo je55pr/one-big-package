@@ -79,21 +79,28 @@ public sealed partial class TrilogySkeletalRetailTests
             var clip = rig.Asset.Clips[id]; int f = clip.Frames.Count / 2;
             sampler.Reset(clip, new(f, f, 0));
             var positions = sampler.Skin(); var expected = original.Clip(id).LocalFrames[f];
+            Assert.Equal(expected.Length, positions.Length);
             Assert.InRange(positions.Zip(expected, (a, b) => Math.Abs(a - b)).Max(), 0, .00001);
         }
         foreach (var source in new[] { data.Rac2, data.Rac3 })
         {
             var player = new PlayerEquipmentAnimationPlayer();
+            int appliedLayers = 0;
             foreach (var clip in rig.Asset.Clips.Values.Where(c => c.SequenceId < 23))
                 for (int f = 0; f < clip.Frames.Count; f++)
                 {
                     var sample = new PlayerSkeletalSample(f, (f + 1) % clip.Frames.Count, .5f);
                     var pose = player.Step(source, clip.SequenceId, sample, true, false, false, false, clip);
                     Assert.False(pose.FullBody); Assert.Null(player.CurrentUseSequence);
+                    appliedLayers += pose.Layers.Count;
                     sampler.Reset(clip, sample);
                     foreach (var layer in pose.Layers) sampler.Apply(layer.Clip, layer.Sample, layer.Weight);
-                    Assert.All(sampler.Skin(), p => Assert.True(double.IsFinite(p)));
+                    var positions = sampler.Skin();
+                    Assert.NotEmpty(positions);
+                    Assert.Equal(rig.Asset.Skin!.Positions.Length, positions.Length);
+                    Assert.All(positions, p => Assert.True(double.IsFinite(p)));
                 }
+            Assert.True(appliedLayers > 0, "Expected to exercise source arm layers.");
         }
     }
 
@@ -128,6 +135,7 @@ public sealed partial class TrilogySkeletalRetailTests
                 var pose = controller.ApplySourceEquipment(source, state is PlayerAnimationState.Run or PlayerAnimationState.JumpRise, false, false, false);
                 if (!controller.SourceEquipmentIsBlending || controller.SourceEquipmentBlendFraction != 0 || previous is null || previousHand is null) return;
                 boundaries++;
+                Assert.Equal(previous.Length, pose.SampledPose!.LocalPositions.Length);
                 Assert.InRange(pose.SampledPose!.LocalPositions.Zip(previous, (a, b) => Math.Abs(a - b)).Max(), 0, .00001);
                 var hand = controller.CurrentAttachmentPose(PlayerEquipmentPose.HandAttachmentKey)!;
                 double Error(PlayerAvatarPoint a, PlayerAvatarPoint b) => Math.Max(Math.Abs(a.X - b.X), Math.Max(Math.Abs(a.Y - b.Y), Math.Abs(a.Z - b.Z)));

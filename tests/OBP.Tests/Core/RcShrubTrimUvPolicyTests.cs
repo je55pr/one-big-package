@@ -137,6 +137,8 @@ public sealed class RcShrubTrimUvPolicyTests
             "tie", [new(2, 17, Identity())], classes,
             9, mappedTie, (_, _, _) => { },
             reversedTrimTextures: new Dictionary<int, HashSet<int>> { [17] = [7] });
+        Assert.Equal(2, normalTie.Count);
+        Assert.Equal(2, mappedTie.Count);
         foreach (var baseline in normalTie)
             Assert.Equal(baseline.Uvs,
                 Assert.Single(mappedTie, mesh => mesh.TextureId == baseline.TextureId).Uvs);
@@ -201,6 +203,7 @@ public sealed class RcShrubTrimUvPolicyTests
                         return reversed ? 1f - nativeV : nativeV;
                     }))
                 .Order().ToArray();
+            Assert.NotEmpty(expected);
             var actual = meshes.Where(mesh => mesh.TextureId == textureId)
                 .SelectMany(mesh => mesh.Indices.Select(vertex => mesh.Uvs[vertex * 2 + 1]))
                 .Order().ToArray();

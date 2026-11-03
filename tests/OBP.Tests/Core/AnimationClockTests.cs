@@ -53,8 +53,8 @@ public class AnimationClockTests
     [Fact]
     public void SameTime_SameFrame()
     {
-        Assert.Equal(
-            AnimationClock.FrameAt(17, 24, 3.1415, LoopMode.PingPong),
-            AnimationClock.FrameAt(17, 24, 3.1415, LoopMode.PingPong));
+        Assert.Equal(11, AnimationClock.FrameAt(17, 24, 3.1415, LoopMode.PingPong));
+        Assert.Equal(2, AnimationClock.FrameAt(4, 10, 0.4, LoopMode.PingPong));
+        Assert.Equal(11, AnimationClock.FrameAt(17, 24, 3.1415, LoopMode.PingPong));
     }
 }

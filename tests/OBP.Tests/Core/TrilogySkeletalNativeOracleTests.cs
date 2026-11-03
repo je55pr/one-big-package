@@ -34,6 +34,7 @@ public sealed partial class TrilogySkeletalRetailTests
                 var sequence = Ps2SkeletalAnimation.ReadSequence(assets.AsSpan(at, end - at), 0, 111, s, true);
                 for (int f = 0; f < sequence.Frames.Count; f++) frames.Add((s, f, sequence.Frames[f]));
             }
+            Assert.NotEmpty(frames);
             byte[] native = await Execute(null, frames.Select(f => (f.Sequence, f.Frame)));
             Assert.Equal(frames.Count * 2048, native.Length);
             for (int i = 0; i < frames.Count; i++)
@@ -62,6 +63,7 @@ public sealed partial class TrilogySkeletalRetailTests
                 var cases = source.Body.Values.Where(c => !carry || c.SequenceId < 23)
                     .SelectMany(c => new[] { 0, c.Frames.Count / 2, c.Frames.Count - 1 }.Distinct().Select(f => (Sequence: c.SequenceId, Frame: f)))
                     .Where(c => !carry || source.Arms.Take(source.ArmCount).All(a => a.TryGetValue(c.Sequence, out var clip) && c.Frame < clip.Frames.Count)).ToArray();
+                Assert.NotEmpty(cases);
                 byte[] matrices = await Execute(carry ? "carry" : "pose", cases, weight);
                 Assert.Equal(cases.Length * 31 * 64, matrices.Length);
                 var sampler = new PlayerSkeletalSampler(source.Skeleton);
