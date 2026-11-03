@@ -39,7 +39,7 @@ public sealed class Rac1WrenchWorldOwnershipTests
         string host = Script("Rac1WrenchHost.cs");
         string module = Script("Rac1WorldModule.cs");
         Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1Wrench.cs")));
-        string entry = Script("OBPGame.cs");
+        string entry = CompositionSources.Application;
 
         Assert.Contains("Wrench = new(wrenchFrame, wrenchContact)", module, StringComparison.Ordinal);
         Assert.Contains("Wrench.Reset()", module, StringComparison.Ordinal);
@@ -64,7 +64,7 @@ public sealed class Rac1WrenchWorldOwnershipTests
     public void NativeThrowFlightAndSwingClockRetainOriginalOrdering()
     {
         string host = Script("Rac1WrenchHost.cs");
-        string factory = Script("OBPGame.cs");
+        string factory = CompositionSources.Application;
 
         Assert.Contains("framePorts.HoldWrench();", host, StringComparison.Ordinal);
         Assert.Contains("_generation = frame.Generation;", host, StringComparison.Ordinal);
@@ -94,7 +94,7 @@ public sealed class Rac1WrenchWorldOwnershipTests
     public void FourPointSweepCoalescesVictimsAndBorrowsDamageAuthority()
     {
         string host = Script("Rac1WrenchHost.cs");
-        string factory = Script("OBPGame.cs");
+        string factory = CompositionSources.Application;
 
         Assert.Contains("Rac1WrenchContactPath.AnimatedSweepHostGeometry", host, StringComparison.Ordinal);
         Assert.Contains("Rac1WrenchAttackProfile.NativeDamageFlags", host, StringComparison.Ordinal);
@@ -126,7 +126,7 @@ public sealed class Rac1WrenchWorldOwnershipTests
     [Fact]
     public void ExistingActorAndDiagnosticsBorrowTheSameWrenchOwner()
     {
-        string factory = Script("OBPGame.cs");
+        string factory = CompositionSources.Application;
         string host = Script("Rac1WrenchHost.cs");
 
         Assert.Contains("owner.Wrench.HasVictim", factory, StringComparison.Ordinal);

@@ -2666,13 +2666,6 @@
       "Hash": "a930be5d7bb100766f6a142734b312fe5664ec05144c6ecc9ca339d60f26e69b"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:AddSyntheticTraversalMesh(:Node3D,:string,:int,params:( Vector3 A , Vector3 B , Vector3 C ) [  ]):void:private,static",
-      "Owner": "#339",
-      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
-      "ExpiresWith": "#342",
-      "Hash": "8d32d715d1ab2e11a61cb81b5a4d5d8bc272071e8433b37ad4ca8beca4b54d8e"
-    },
-    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ApplySharedProfile(:ObpProfile):void:private",
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
@@ -2698,7 +2691,7 @@
       "Owner": "#339",
       "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
       "ExpiresWith": "#348",
-      "Hash": "f638499040963141463a3f0aeafa269534b1d6c319144eed70c185618de044da"
+      "Hash": "0f5cd97c0be3cc01af9d3069429bbb1e7226ce4ca6a19bb62310b6e54b91c8d8"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ClearFusionLabStatus():void:private",
@@ -2706,13 +2699,6 @@
       "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
       "ExpiresWith": "#376",
       "Hash": "e23ba97f7a6ffc9497a76eb116adafadc42395b5dde3b30b41219d48736bbdaf"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ClearMovementSmokeInput():void:private,static",
-      "Owner": "#339",
-      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
-      "ExpiresWith": "#358",
-      "Hash": "706a2e8596906c2ead963d034b79f267904720a9b28f1c609046641ef690182d"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ClosePauseMenu():void:private",
@@ -2729,39 +2715,11 @@
       "Hash": "5de988f21fc4a44ad509365fb9b0fdcc83ff529b31b92d63f223d814afcd09c9"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateCaptureDiagnosticHarness():CaptureDiagnosticHarness:private",
-      "Owner": "#356",
-      "Rationale": "Focused final-composition binding only: snapshot reads and existing scenario/camera/navigation actions; the capture owner now retains the harness and presentation metadata. Remove this factory with final root wiring #376. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
-      "ExpiresWith": "#376",
-      "Hash": "4cf3a7ce9d82d06a549419d945b311736cd1072000ad83df6919dd981137bde6"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateFusionWeaponDiagnosticHarness():FusionWeaponDiagnosticHarness:private",
-      "Owner": "#352",
-      "Rationale": "Invocation-only fusion diagnostic composition using the owned source/session/renderer observations and scoped source/asset fixture actions; final application composition retires this factory. #367/#368 final root cleanup: transient R&C1 effects and equipment-use forwarding now live in world-scoped hosts borrowing their original player, source, presentation and damage authorities. No duplicate native inventory, ammunition, persistent root state or runtime authority is introduced. The audited root weapon/weapon-world partials are retired.",
-      "ExpiresWith": "#376",
-      "Hash": "15c6fb3bda333418533b94512c34d9b919d0390d616fa40fc3acefee014b1652"
-    },
-    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateModalCoordinator():UiModalCoordinator:private",
       "Owner": "#348",
       "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #371 routes Metropolis taxi world ownership, passenger and hull presentation through the lease-owned taxi host; native session rules and diagnostic compatibility remain separately observed. #367/#368 final player input extraction: native input, selection and equipment cycle now use the persistent PlayerSessionHost.Rac1WeaponPlayerInputHost with typed deferred world/source/UI ports; only the source-neutral composition borrow remains in OBPGame. The original root combat partial, no-op swing forwarding and random reward wrapper are retired. Native hand, damage and campaign authorities stay unchanged. #367/#368 final root cleanup: transient R&C1 effects and equipment-use forwarding now live in world-scoped hosts borrowing their original player, source, presentation and damage authorities. No duplicate native inventory, ammunition, persistent root state or runtime authority is introduced. The audited root weapon/weapon-world partials are retired. #372 routes source-authored mission scenes/actors, prompt and deferred level exits through a disposable world lease. Native campaign and player-owned wallet remain separately selected by existing typed ports.",
       "ExpiresWith": "#376",
       "Hash": "12c59bb0cca0df7b6b4ce36bace66a4da6e758feefca7fe442b5709986942027"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateMovementDiagnosticHarness():MovementDiagnosticHarness:private",
-      "Owner": "#339",
-      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Reads source availability or equipment order through the persistent PlayerEquipmentFacade. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #367/#368 final player input extraction: native input, selection and equipment cycle now use the persistent PlayerSessionHost.Rac1WeaponPlayerInputHost with typed deferred world/source/UI ports; only the source-neutral composition borrow remains in OBPGame. The original root combat partial, no-op swing forwarding and random reward wrapper are retired. Native hand, damage and campaign authorities stay unchanged. #372: source-world retry panel and Veldin environmental contact now reside in the disposable R&C1 lease. The selected player health, campaign checkpoint and game navigation are still borrowed separately via narrow typed bindings.",
-      "ExpiresWith": "#376",
-      "Hash": "f9e0c3f5b76a8983df48a8a74aa8f332637692e485deccfff62cf69b03732f21"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateMovementStateDiagnosticFixture():IMovementStateDiagnosticFixture:private",
-      "Owner": "#344",
-      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #367/#368: native wrench damage admission and crate/hostile world dispatch moved into per-lease Rac1WrenchDamageHost. The persistent player's native wrench controller and reward RNG remain borrowed authorities through typed ports. Existing diagnostics, enemy/actor and bomb callbacks retain their entry points, now routed to the world owner; no duplicate native damage session or new root mutable state. #367/#368 final player input extraction: native input, selection and equipment cycle now use the persistent PlayerSessionHost.Rac1WeaponPlayerInputHost with typed deferred world/source/UI ports; only the source-neutral composition borrow remains in OBPGame. The original root combat partial, no-op swing forwarding and random reward wrapper are retired. Native hand, damage and campaign authorities stay unchanged.",
-      "ExpiresWith": "#358",
-      "Hash": "bd01b2310fdbe8fbe8dba80a288080468e9d4902a2ff410d8c8a77df3ccf28ea"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePauseMenuPresentation():PauseMenuUi:private",
@@ -2771,137 +2729,11 @@
       "Hash": "8e7cc655dbc949c7388f0124b97bdd62b29c83a0e35f05dd71deb03971c26feb"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlayerDiagnosticHarness():PlayerSessionDiagnosticHarness:private",
-      "Owner": "#338",
-      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376. #354 binds the owned native player audio presenter and its copied observations. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #373 preserves this exact lease-scoped R&C2 owner binding, validated by the focused R&C2 world ownership and original actor regressions. #367/#368 reviewed the migration to a world-scoped R&C1 weapon/gadget owner and camera lease; existing diagnostic factories now read those owned projections, with unchanged source-native identities and no new root mutable state. #368: diagnostic observations read the world-scoped native wrench throw clock, position and swing generation without root session state. #367/#368 final player input extraction: native input, selection and equipment cycle now use the persistent PlayerSessionHost.Rac1WeaponPlayerInputHost with typed deferred world/source/UI ports; only the source-neutral composition borrow remains in OBPGame. The original root combat partial, no-op swing forwarding and random reward wrapper are retired. Native hand, damage and campaign authorities stay unchanged. #367/#368 final root cleanup: transient R&C1 effects and equipment-use forwarding now live in world-scoped hosts borrowing their original player, source, presentation and damage authorities. No duplicate native inventory, ammunition, persistent root state or runtime authority is introduced. The audited root weapon/weapon-world partials are retired. #367/#368 final callback review hardening: preview controls now reject fusion-test changes before consulting the nullable R&C1 world lease; callbacks on an absent world show a diagnostic rather than dereferencing retired gameplay. Active-world preview and native inventory behaviour remain unchanged.",
-      "ExpiresWith": "#376",
-      "Hash": "fd52910e5ad336ca010527bba92595ce5cd485de693ac66ca3b496bd4dfbf74a"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AdditionalWeaponDiagnosticFixture(:IDiagnosticWorldObservations):GodotRac1AdditionalWeaponDiagnosticFixture:private",
-      "Owner": "#341",
-      "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #367/#368 reviewed the migration to a world-scoped R&C1 weapon/gadget owner and camera lease; existing diagnostic factories now read those owned projections, with unchanged source-native identities and no new root mutable state. #367/#368: world-scoped Rac1EquipmentProjectileHost now owns Blaster/Suck Cannon carriers, thrown mine/Doom projectiles, Doom agents, Taunter/Suck motes and shrinking flashes. Root use/input, native Pyrocitor particle damage and persistent ammo remain separate. Enemy, Taunter and diagnostic factories borrow typed world views by lease; shared contact and Moby damage rules are delegated unchanged. Retains reset, native movement, collision, sound, source IDs and emission ordering without adding root state. #367/#368: player-session-owned Rac1AdditionalUseHost now holds R&C1 additional-weapon request admission, native Rac1AdditionalWeaponSession instance, preview inventory binding, equipment use tick/age, Pyrocitor held flag and shot diagnostics. Root continues to render/distribute world effects through existing owners after its player-use result. Native ammo/cadence remain in the single borrowed weapon inventory and native source session; no new RNG or independent world authority. Original selection, preview resets, native step, shot presentation, persistence and audio ordering retained; write-only generations ledger eliminated. #367/#368: R&C1 native held/staged view collections, selected model source cache, per-world materials and visual pose generation were moved out of OBPGame to the existing PlayerEquipmentPresentationBinder.NativeViews component. It preserves selected source cache identity, the original attachment and action playback ordering, the view clock and sound filtering, and the original avatar muzzle socket ray/fallback. Root supplies existing player, world, visibility and audio facts by direct call; the source-native weapon session, campaign and damage owner remain unchanged. Source invalidation and world-view retirement now use the binder-owned view lease without altering the source-bank decision. #367/#368 review hardening: projectile and Doom-agent diagnostic enumerations now require the captured world scope and a live gameplay module before accessing scoped weapon collections, and share their original diagnostic world lease with each created witness. #367/#368 final root cleanup: transient R&C1 effects and equipment-use forwarding now live in world-scoped hosts borrowing their original player, source, presentation and damage authorities. No duplicate native inventory, ammunition, persistent root state or runtime authority is introduced. The audited root weapon/weapon-world partials are retired. #367/#368 final callback review hardening: preview controls now reject fusion-test changes before consulting the nullable R&C1 world lease; callbacks on an absent world show a diagnostic rather than dereferencing retired gameplay. Active-world preview and native inventory behaviour remain unchanged.",
-      "ExpiresWith": "#367",
-      "Hash": "bc4a823a09bfd77f3c15ebe7d397830945817e1ed724f574afdd43e26b768b71"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AridiaDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1AridiaDiagnosticFixture:private",
-      "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #363. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #363 now reads world-scoped Aridia encounter snapshots and routes explicit probe actions through Rac1EnemyHost.Aridia; native sessions, constructorbot caches, group admission and scripted bindings no longer live in root. Remaining factory is diagnostic composition only and expires with #376.",
-      "ExpiresWith": "#376",
-      "Hash": "60d81914e81e0a009a4fab463d5e183801b7ba5515af36baed64560e346284a5"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1ArsenalDiagnosticFixture(:IDiagnosticWorldObservations,:GodotRac1WeaponTargetFixture):GodotRac1ArsenalDiagnosticFixture:private",
-      "Owner": "#341",
-      "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #367/#368 moves the Suck Cannon capture/cargo presentations into the Rac1WeaponHost world lease. Actor retirement, arsenal diagnostic snapshots and bookmark restoration now resolve typed world-owned cargo adapters lazily; native inventory, saved identities, damage and pickup authority are unchanged. #367/#368 moves native RYNO salvo scheduling, Devastator/Visibomb missile motion, guided camera lifecycle and missile diagnostic observation into per-world Rac1ArsenalMissileHost. Application factories supply typed actions lazily, retaining recovered damage/contacts and no new root state. Shared arsenal generation counter is now owned by Rac1WeaponHost rather than a missile-family record; decoy animation and rocket witnesses preserve the same monotonic world-lease IDs. #367/#368 moves native Decoy Glove and Drone Device deployable state into the world-scoped Rac1ArsenalDeployableHost. Enemy decoy attraction, same-attacker cooldown, native movement/hit dispatch and live arsenal diagnostic witnesses are delegated through typed ports with no new root fields. Existing source-native rule constants and lease lifecycle/tick order remain unchanged. #367/#368 diagnostics project transformed enemy/view pairs through world-owned Rac1MorphHost without exposing its dictionaries. #367/#368: the diagnostic projection now reads beam visibility and shader material identity through the world-owned Rac1ArsenalBeamPresenter. No presentation collections remain on OBPGame. #367/#368 final consolidation: shared weapon 60 Hz world tick and ordered arsenal/flame/projectile stepping are now owned by the per-world Rac1WeaponHost lease, including reset and diagnostic clock reads. Root composition only borrows a nullable world tick (zero when unbound), preserving deferred callbacks and source-neutral construction. The obsolete OBPGame Arsenal root partial is retired.",
-      "ExpiresWith": "#367",
-      "Hash": "a88a5f727e46c1ac0d6cac14fcdb7d52bdbf68bb24cfb9ee96eeaf23a74451d8"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1CampaignDiagnosticHarness():Rac1CampaignDiagnosticHarness:private",
-      "Owner": "#342",
-      "Rationale": "Invocation-only campaign/checkpoint/mission or crate/pickup diagnostic fixture composition. Immutable source-qualified observations and explicit fixture actions retain native sessions, actors and save paths inside their owners. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #372 binds campaign saves to the existing persistent source owner and authored checkpoint volumes to the current world lease, without new native policy or global mutable state. #372 routes source-authored mission scenes/actors, prompt and deferred level exits through a disposable world lease. Native campaign and player-owned wallet remain separately selected by existing typed ports.",
-      "ExpiresWith": "#372",
-      "Hash": "52bc1718b0a68ec27ab30a61b27583d6179fc41744506b85ea39f9063948c8c9"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1CombatDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1CombatDiagnosticFixture:private",
-      "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #368. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #367/#368 final player input extraction: native input, selection and equipment cycle now use the persistent PlayerSessionHost.Rac1WeaponPlayerInputHost with typed deferred world/source/UI ports; only the source-neutral composition borrow remains in OBPGame. The original root combat partial, no-op swing forwarding and random reward wrapper are retired. Native hand, damage and campaign authorities stay unchanged. #372 binds campaign saves to the existing persistent source owner and authored checkpoint volumes to the current world lease, without new native policy or global mutable state.",
-      "ExpiresWith": "#368",
-      "Hash": "d39eaf6ec292202aeebb8dfc17ee139bd4c8230d4b2028aae58ba60f8ff7559c"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1EncounterDiagnosticHarness():Rac1EncounterDiagnosticHarness:private",
-      "Owner": "#361",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #361. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. The enemy state/health/contact bridge is retired; this remaining factory binds focused source-owner observations and expires with final composition. #367/#368: native wrench damage admission and crate/hostile world dispatch moved into per-lease Rac1WrenchDamageHost. The persistent player's native wrench controller and reward RNG remain borrowed authorities through typed ports. Existing diagnostics, enemy/actor and bomb callbacks retain their entry points, now routed to the world owner; no duplicate native damage session or new root mutable state. #372: source-world retry panel and Veldin environmental contact now reside in the disposable R&C1 lease. The selected player health, campaign checkpoint and game navigation are still borrowed separately via narrow typed bindings.",
-      "ExpiresWith": "#376",
-      "Hash": "b9fad03e40bbc29eed0f157a31cf8d72680f1cbdeffff9ecdd30ac26f052ec8f"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1FrogDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1FrogDiagnosticFixture:private",
-      "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #362. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #362 moves all native frog/Queen/carrier state, contact, source timing and visual/camera leases into Rac1FrogEncounter; only guarded diagnostic composition and narrow camera/effect callbacks remain at the root. Native Frog/Queen checks and source-neutral player-selection rejection tests protect this intermediate boundary; #376 retires the remaining composition glue. #368: frog/queen diagnostic sweep and victim-forget operations now resolve the same world-owned wrench contact and hit-coalescing session as gameplay.",
-      "ExpiresWith": "#376",
-      "Hash": "2764c9f16a18a215c0c806cd509c604aae5d209414cf8183774da1dfcab49adb"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1LootDiagnosticHarness():Rac1LootDiagnosticHarness:private",
-      "Owner": "#342",
-      "Rationale": "Invocation-only campaign/checkpoint/mission or crate/pickup diagnostic fixture composition. Immutable source-qualified observations and explicit fixture actions retain native sessions, actors and save paths inside their owners. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #366 adds a source-stamped read-only breakable snapshot and bounded, explicit crate diagnostic actions, with per-world retirement checks; the remaining root fixture construction expires with #376. Combined #366/#367/#368 merge review: source-world breakables and weapon contact/arsenal owners now coexist in the same lease; deferred line-of-sight, enemy admission and diagnostic reads retain their native policy and no new root mutable state is introduced. #367/#368: native wrench damage admission and crate/hostile world dispatch moved into per-lease Rac1WrenchDamageHost. The persistent player's native wrench controller and reward RNG remain borrowed authorities through typed ports. Existing diagnostics, enemy/actor and bomb callbacks retain their entry points, now routed to the world owner; no duplicate native damage session or new root mutable state.",
-      "ExpiresWith": "#369",
-      "Hash": "b9e98ceff0287f595cd798c869e33f58c57f80b1cfd74f70bf24407e01d13f8d"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1QueenDiagnosticBindings():GodotRac1QueenDiagnosticBindings:private",
-      "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #362. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #362 moves all native frog/Queen/carrier state, contact, source timing and visual/camera leases into Rac1FrogEncounter; only guarded diagnostic composition and narrow camera/effect callbacks remain at the root. Native Frog/Queen checks and source-neutral player-selection rejection tests protect this intermediate boundary; #376 retires the remaining composition glue. #367/#368 reviewed the migration to a world-scoped R&C1 weapon/gadget owner and camera lease; existing diagnostic factories now read those owned projections, with unchanged source-native identities and no new root mutable state. #367/#368 now obtains R&C1 target geometry and occlusion through world-scoped Rac1WeaponContactHost with per-physics-frame caches, while preserving the original host contact/ray and damage semantics; native player/equipment authority and replay IDs remain unchanged. #368: frog/queen diagnostic sweep and victim-forget operations now resolve the same world-owned wrench contact and hit-coalescing session as gameplay.",
-      "ExpiresWith": "#376",
-      "Hash": "44e84eb6f41675e88f6892bc7b6473b2300815f0549ea6a2e8b181c9470b0559"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1TaxiDiagnosticFixture():IRac1TaxiDiagnosticFixture:private",
-      "Owner": "#343",
-      "Rationale": "Invocation-only Novalis music/mechanism, taxi and lease-retirement fixture composition. Source-native sessions, source attachment paths, scene nodes and collision/audio resources stay behind scoped adapters; assertions and test control flow are standalone. #371 routes Metropolis taxi world ownership, passenger and hull presentation through the lease-owned taxi host; native session rules and diagnostic compatibility remain separately observed. The remaining root diagnostic fixture composition is deferred to final root composition cleanup in #376.",
-      "ExpiresWith": "#376",
-      "Hash": "e382b001673ae756f63ffd121d04a905f3751be5761e8b368114f046a00fb46b"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1WorldRouteDiagnosticHarness():Rac1WorldRouteDiagnosticHarness:private",
-      "Owner": "#343",
-      "Rationale": "Invocation-only Novalis music/mechanism, taxi and lease-retirement fixture composition. Source-native sessions, source attachment paths, scene nodes and collision/audio resources stay behind scoped adapters; assertions and test control flow are standalone. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #371 routes Metropolis taxi world ownership, passenger and hull presentation through the lease-owned taxi host; native session rules and diagnostic compatibility remain separately observed.",
-      "ExpiresWith": "#370",
-      "Hash": "e9804a262f46f88f902c2ac9a90a947a718a1f9096954316d0240d351016c2c7"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateShotListCliService():ShotListCliService:private",
-      "Owner": "#356",
-      "Rationale": "Focused final-composition binding only: snapshot reads and existing scenario/camera/navigation actions; the capture owner now retains the harness and presentation metadata. Remove this factory with final root wiring #376.",
-      "ExpiresWith": "#376",
-      "Hash": "4969f661acd7421e80d9f4555ac7041ea1457f3595b3f870abf64401f533bbc1"
-    },
-    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateSourceSetup():SourceSetupController:private",
       "Owner": "#346",
       "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. #376 delegates idempotent plain bootstrap backdrop construction to GodotSmokeSceneFixture; source setup only chooses when to request it. Source state, admission and repair live outside the root; final world-entry composition removes this bridge. #354 binds the owned native player audio presenter and its copied observations. #356 binds the same observations/actions to the capture/replay owner; recording, validation, metadata and optional verification state no longer live in the root. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #367/#368: preview arsenal inventory snapshot, gadget acquisition, source weapon grants, and rebind admission moved into persistent PlayerSessionHost, preserving native SetEquipmentPreview then the current inventory identity before grants. World reset, UI/report/synchronization and detector refresh remain root orchestration in original order. ResetRac1WeaponAudio and RecordRac1WeaponSound forwarding methods were retired; call sites now borrow the already owned PlayerEquipmentPresentationBinder.WeaponAudio.Reset/Record with unchanged tick/trace inputs. The one-call source-detector forwarding method was inlined. No new world state, independent ammo authority or privileged root exception.",
       "ExpiresWith": "#376",
       "Hash": "d94c5e369482cf1196fee3421c0f1b00aeb7d730652d39f6a74508466981076a"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateStressSwitchCliService():StressSwitchCliService:private",
-      "Owner": "#345",
-      "Rationale": "Temporary stress CLI composition for immutable world-generation/node witnesses, campaign observation and the existing rejected-import boundary. The service owns traversal/cancellation; retire the root binding with final world-entry composition. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added.",
-      "ExpiresWith": "#376",
-      "Hash": "30ccadb7edde6cd54def8944c12365f9d107cf7806108e914621777df8208b4b"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateTrilogyActorDiagnosticFixture():ITrilogyActorDiagnosticFixture:private",
-      "Owner": "#344",
-      "Rationale": "Composition-only adapter for owned actor snapshots, cache and retirement witnesses, and controlled construction/invalidation trials. Focused encounter reset and shared-asset teardown callbacks remain until final root composition #376. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
-      "ExpiresWith": "#376",
-      "Hash": "ca95801203f67604a452d5762a162f950256aa6c825fe81f06177db883d83d67"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateTrilogyPlayerDiagnosticFixture():ITrilogyPlayerDiagnosticFixture:private",
-      "Owner": "#344",
-      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376. #354 binds the owned native player audio presenter and its copied observations. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #367/#368: player-session-owned Rac1AdditionalUseHost now holds R&C1 additional-weapon request admission, native Rac1AdditionalWeaponSession instance, preview inventory binding, equipment use tick/age, Pyrocitor held flag and shot diagnostics. Root continues to render/distribute world effects through existing owners after its player-use result. Native ammo/cadence remain in the single borrowed weapon inventory and native source session; no new RNG or independent world authority. Original selection, preview resets, native step, shot presentation, persistence and audio ordering retained; write-only generations ledger eliminated.",
-      "ExpiresWith": "#376",
-      "Hash": "095dcaa66ea2a243e884bac1d351ef9de7cc653f86c567ae046889f2b8ee0f44"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateUiDiagnosticHarness():UiDiagnosticHarness:private",
-      "Owner": "#337",
-      "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added.",
-      "ExpiresWith": "#348",
-      "Hash": "b6daa1279bfd94c8e730b0315039dda00bdf298d974267e74b55219fa21c708f"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateWeaponDiagnosticHarness():WeaponDiagnosticHarness:private",
-      "Owner": "#341",
-      "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #367/#368 now obtains R&C1 target geometry and occlusion through world-scoped Rac1WeaponContactHost with per-physics-frame caches, while preserving the original host contact/ray and damage semantics; native player/equipment authority and replay IDs remain unchanged. #368 migrated the existing Bomb Glove sphere sweep, including initial-overlap admission, into the per-world contact host; native projectile tick order and diagnostics still use the same callback. #367/#368 defers the world-owned contact/target delegates until their owning R&C1 lease exists; host construction must not resolve Rac1World eagerly. The new ContactCallbacksDoNotResolveTheWorldDuringHostConstruction guard covers each factory. #368: diagnostic observations read the world-scoped native wrench throw clock, position and swing generation without root session state. #367/#368: native Bomb Glove projectile launch, host contact geometry, impact and native blast dispatch now execute in world-lease Rac1BombProjectileHost. The existing source-owned BombGlove resolution, actor combat, crate rewards, and particle presenter remain authoritative through borrowed actions; diagnostic reads retain scene-scoped projectile views. Five root projectile members retire with this bounded migration. #367/#368 final root cleanup: transient R&C1 effects and equipment-use forwarding now live in world-scoped hosts borrowing their original player, source, presentation and damage authorities. No duplicate native inventory, ammunition, persistent root state or runtime authority is introduced. The audited root weapon/weapon-world partials are retired.",
-      "ExpiresWith": "#367",
-      "Hash": "bb8a0fcf9a18915432fca5a02f7b5bd6c7c4c4cff66a2379fbe193cc0d9e0be4"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:EnsurePlayerSession():void:private",
@@ -2999,7 +2831,7 @@
       "Owner": "#347",
       "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
       "ExpiresWith": "#376",
-      "Hash": "8ff4a0b05788c78e2674837191711f0d7235747693ff21ae830f69ff0b62635b"
+      "Hash": "48914416044884711033401cd9d93b668bdf967d4d43934a1d444ea7642bd919"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:SaveSharedProfile(:string):bool:private",
@@ -3009,32 +2841,11 @@
       "Hash": "bb5c81944352846751d114d6c48f0937493620019cad585e614327d0c1dd3e34"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetAnalogueSmokeInput(:float,:float):void:private,static",
-      "Owner": "#339",
-      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
-      "ExpiresWith": "#358",
-      "Hash": "34ceeb7b8a92509d26af616dbdcf1ed2ca32b991a965310712c6414c3f842d88"
-    },
-    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetDebugOutputEnabled(:bool):void:private",
       "Owner": "#348",
       "Rationale": "Final #376 typed composition/delegation to the owning player, world, navigation, diagnostic, menu or persistence component. No native rules, resource ownership or diagnostic assertions belong in this bound root member. Its exact fingerprint remains reviewed.",
       "ExpiresWith": "#376",
       "Hash": "083d191fa2550071789513f1ba03277b0dbd89c5f2f4817bba8d311c8ef51034"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetRac1SmokeConditionedInput(:double,:double):void:private,static",
-      "Owner": "#339",
-      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
-      "ExpiresWith": "#354",
-      "Hash": "5b4698bb376a67c89ed5d6da33e427d5a8ea1031e3c536e5d26151bdff1b0dfe"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetSyntheticNativeHeading(:PlayerHost,:double,:double):void:private,static",
-      "Owner": "#339",
-      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
-      "ExpiresWith": "#343",
-      "Hash": "5c1e15615efb5fdc85feb786b19b39b591420fc723429a624756c3e4916309e3"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ShowControllerSettingsFromMenu():void:public",
@@ -3077,13 +2888,6 @@
       "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
       "ExpiresWith": "#376",
       "Hash": "368da910762bc05b22c019b5af2003ede400b094126ef3b5a46488b647ecc402"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:StartFusionLabTraversalSmoke(:PlayerHost):void:private",
-      "Owner": "#345",
-      "Rationale": "Final #376 typed composition/delegation to the owning player, world, navigation, diagnostic, menu or persistence component. No native rules, resource ownership or diagnostic assertions belong in this bound root member. Its exact fingerprint remains reviewed.",
-      "ExpiresWith": "#376",
-      "Hash": "a513089c7780670f300d87dfb9b595d0c3f19131042e3b5d308c1bf4434f2864"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:TearDownInteractiveOverlays():void:private",
@@ -3461,7 +3265,7 @@
       "Owner": "#357",
       "Rationale": "Exact replay composition: a narrow Godot scene adapter owns player input attachment and UI suspension; report and diagnostic actions receive the driver lifetime. Copied world/player facts and bookmark snapshots retain the existing owners. The root supplies no recording, checkpoint, native algorithm or diagnostic policy. Final host composition removes this binding.",
       "ExpiresWith": "#376",
-      "Hash": "b7a6e4a48537e2bba6bba2fa7f9c6f5660d18a0c7dbd2d30b2f44c641799ec50"
+      "Hash": "4329076fe32c22008660b596136b87ebdcf57a19d8aa3992219c36f5bdcea55a"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:CapturePresentation:GodotCapturePresentation:get/:private",
@@ -3720,7 +3524,7 @@
       "Owner": "#358",
       "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
       "ExpiresWith": "#376",
-      "Hash": "7c5595a1a5dfc11dd532ae3e44b27500f4af210a88620659bfc30de06b4bffd8"
+      "Hash": "2e69bf19f3708fccc38b187a330379ef283de94e9bf0f6f838177251dd141f8a"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:MovementWorldState:Rac1MovementWorldStateAdapter:get/:private",
@@ -3853,7 +3657,7 @@
       "Owner": "#376",
       "Rationale": "Final audited application composition: GodotApplicationPresentation owns scene/view/player nodes; WorldSceneLifetime and GodotWorldResources own world preparation, activation and retirement; navigation owns retained summary metadata; shutdown owns drain/audio policy. This member only binds or projects those existing owners and cannot acquire feature state.",
       "ExpiresWith": "#376",
-      "Hash": "69a5f0e90809294b225f68b76837f2a2fad41ee17c448ec3b4a117703a370030"
+      "Hash": "751a6e357b03b76a844656d71b3e3033c38ecd1b42c29b3745ba286cfb5ca353"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:PrepareForQuitAsync():Task:private",
@@ -3973,6 +3777,20 @@
       "Rationale": "Final audited application composition: GodotApplicationPresentation owns scene/view/player nodes; WorldSceneLifetime and GodotWorldResources own world preparation, activation and retirement; navigation owns retained summary metadata; shutdown owns drain/audio policy. This member only binds or projects those existing owners and cannot acquire feature state.",
       "ExpiresWith": "#376",
       "Hash": "77e8faf05c250f8c45e1340417ac9d956ade088cde42fc585b8b424a0a401b18"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_diagnostics:ApplicationDiagnostics ?:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only reference to the diagnostic fixture catalogue in game/diagnostics/ApplicationDiagnostics.cs. The root supplies an explicit context of owned components and named actions; fixture binding, assertions and observation ports live with the diagnostics.",
+      "ExpiresWith": "#376",
+      "Hash": "d73a7ffe91e205cd0960aa338455895ca305fd2edbdcaea9e246c27d129600d7"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Diagnostics:ApplicationDiagnostics:get/:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only reference to the diagnostic fixture catalogue in game/diagnostics/ApplicationDiagnostics.cs. The root supplies an explicit context of owned components and named actions; fixture binding, assertions and observation ports live with the diagnostics.",
+      "ExpiresWith": "#376",
+      "Hash": "a7b90f47deae8a1e202f081b21ac8b48b1d6ed9e59cedf0d6627d7c3e710c49c"
     }
   ],
   "RetiredMembers": [

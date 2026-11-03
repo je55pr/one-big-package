@@ -22,7 +22,7 @@ public sealed class Rac1WrenchDamageWorldOwnershipTests
             Assert.Empty(root.GetMembers(name));
 
         string module = Script("Rac1WorldModule.cs");
-        string rootFactory = Script("OBPGame.cs");
+        string rootFactory = CompositionSources.Application;
         string host = Script("Rac1WrenchDamageHost.cs");
         string additionalDamage = Script("Rac1WeaponDamageHost.cs");
 

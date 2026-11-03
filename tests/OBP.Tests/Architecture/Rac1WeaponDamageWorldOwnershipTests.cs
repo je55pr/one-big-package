@@ -21,7 +21,7 @@ public sealed class Rac1WeaponDamageWorldOwnershipTests
         string module = Script("Rac1WorldModule.cs");
         string contact = Script("Rac1WeaponContactHost.cs");
         string damage = Script("Rac1WeaponDamageHost.cs");
-        string application = Script("OBPGame.cs");
+        string application = CompositionSources.Application;
         string flames = Script("Rac1PyrocitorFlameHost.cs");
 
         Assert.Contains("WeaponDamage = new(Context, Enemies, Breakables, WrenchDamage, Weapons.Contacts)", module, StringComparison.Ordinal);
@@ -41,7 +41,7 @@ public sealed class Rac1WeaponDamageWorldOwnershipTests
     public void ArsenalTargetSearchPreservesEnemyOnlyCandidatesAndExactFilterSemantics()
     {
         string contact = Script("Rac1WeaponContactHost.cs");
-        string application = Script("OBPGame.cs");
+        string application = CompositionSources.Application;
         Assert.Contains("Func<IEnumerable<RuntimeWorldScene.DynamicObjectNode>> ArsenalTargets", contact, StringComparison.Ordinal);
         Assert.Contains("Func<int, bool> IsMorphed", contact, StringComparison.Ordinal);
         Assert.Contains("() => Rac1World.Enemies.Targets,", application, StringComparison.Ordinal);

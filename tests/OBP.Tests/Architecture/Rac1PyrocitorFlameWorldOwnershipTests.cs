@@ -29,7 +29,7 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
 
         string weapons = Script("Rac1WeaponHost.cs");
         string module = Script("Rac1WorldModule.cs");
-        string composition = Script("OBPGame.cs");
+        string composition = CompositionSources.Application;
         string flame = Script("Rac1PyrocitorFlameHost.cs");
 
         Assert.Contains("Flames = new(Contacts, contacts.Flames)", weapons, StringComparison.Ordinal);
@@ -106,7 +106,7 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
         string reset = Script("Rac1WeaponUsePresentationHost.cs");
         string frame = Script("Rac1WeaponEffectsHost.cs");
         string flame = Script("Rac1PyrocitorFlameHost.cs");
-        string composition = Script("OBPGame.cs");
+        string composition = CompositionSources.Application;
 
         string[] ordered =
         [

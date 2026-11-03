@@ -21,9 +21,10 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
     [Fact]
     public void WeaponDiagnosticCollectorsRejectRetiredGameplayBeforeEnumeratingProjectiles()
     {
-        string root = Script("OBPGame.cs");
+        string root = CompositionSources.Diagnostics;
         int start = root.IndexOf("private GodotRac1AdditionalWeaponDiagnosticFixture CreateRac1AdditionalWeaponDiagnosticFixture", StringComparison.Ordinal);
         int end = root.IndexOf("private GodotRac1ArsenalDiagnosticFixture CreateRac1ArsenalDiagnosticFixture", StringComparison.Ordinal);
+        Assert.True(start >= 0 && end > start, "The additional-weapon fixture must precede the arsenal fixture in the diagnostics composition.");
         string fixture = root[start..end];
         Assert.Contains("var scope = new GodotRac1DiagnosticWorldScope(worlds)", fixture, StringComparison.Ordinal);
         Assert.Equal(2, fixture.Split("scope.RequireCurrent()", StringSplitOptions.None).Length - 1);
@@ -40,7 +41,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
         var root = HostOwnershipAudit.Host.Value.GetTypeByMetadataName("OBP.Game.OBPGame")!;
         Assert.Empty(root.GetMembers("_rac1WeaponWorldTick"));
         string host = Script("Rac1WeaponHost.cs");
-        string composition = Script("OBPGame.cs");
+        string composition = CompositionSources.Application;
         string rootWorld = Script("Rac1WeaponEffectsHost.cs");
         string rootUse = Script("Rac1WeaponUsePresentationHost.cs");
         Assert.Contains("private ulong _worldTick;", host, StringComparison.Ordinal);
@@ -96,7 +97,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
     public void DetectorBorrowsNativeProgressAndEmitsPhysicalBolts()
     {
         string host = Script("Rac1MetalDetectorHost.cs");
-        string root = Script("OBPGame.cs");
+        string root = CompositionSources.Application;
         Assert.Contains("Rac1MetalDetectorSession", host, StringComparison.Ordinal);
         Assert.Contains("Rac1BuriedBoltProgress.Restore(ports.BuriedBolts().Snapshot())", host, StringComparison.Ordinal);
         Assert.Contains("_session.FindNearest(nativePlayer)", host, StringComparison.Ordinal);
@@ -149,7 +150,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
         string world = Script("Rac1WorldModule.cs");
         Assert.Contains("Weapons.ResetWorld()", world, StringComparison.Ordinal);
         Assert.Contains("Weapons.Dispose()", world, StringComparison.Ordinal);
-        string application = Script("OBPGame.cs");
+        string application = CompositionSources.Application;
         Assert.Contains("new Rac1WeaponTargetPorts(", application, StringComparison.Ordinal);
         Assert.Contains("new Rac1WeaponContactPhysicsPorts(", application, StringComparison.Ordinal);
     }
@@ -200,7 +201,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
 
         string host = Script("Rac1SuckCannonHost.cs");
         string weapon = Script("Rac1WeaponHost.cs");
-        string application = Script("OBPGame.cs");
+        string application = CompositionSources.Application;
         string restore = Script("Rac1MovementWorldStateAdapter.cs");
         Assert.Contains("Rac1AdditionalWeaponSession?", host, StringComparison.Ordinal);
         Assert.Contains("session.TryCapture(key)", host, StringComparison.Ordinal);
@@ -251,7 +252,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
 
         string host = Script("Rac1MorphHost.cs");
         string parent = Script("Rac1WeaponHost.cs");
-        string world = Script("OBPGame.cs");
+        string world = CompositionSources.Application;
         string arsenal = Script("Rac1ArsenalUseHost.cs");
         Assert.Contains("Morph = new(arsenal.Morph, Beams)", parent, StringComparison.Ordinal);
         Assert.Contains("Morph.Reset()", parent, StringComparison.Ordinal);
@@ -296,7 +297,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
     [Fact]
     public void MorphConsumersBorrowReadOnlyIdentitiesViewsAndDiagnostics()
     {
-        string root = Script("OBPGame.cs");
+        string root = CompositionSources.Application;
         string host = Script("Rac1MorphHost.cs");
         Assert.Contains("MorphedMobies: () => Rac1World.Weapons.Morph.ActiveKeys()", root, StringComparison.Ordinal);
         Assert.Contains(".Concat(Rac1World.Weapons.SuckCannon.ChickenCargoKeys).Distinct().ToArray()", root, StringComparison.Ordinal);
@@ -334,7 +335,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
         string parent = Script("Rac1WeaponHost.cs");
         string module = Script("Rac1WorldModule.cs");
         string arsenal = Script("Rac1ArsenalUseHost.cs");
-        string application = Script("OBPGame.cs");
+        string application = CompositionSources.Application;
 
         Assert.Contains("Beams = new(sceneRoot, arsenal.Beams)", parent, StringComparison.Ordinal);
         Assert.Contains("Beams.Reset()", parent, StringComparison.Ordinal);
@@ -354,7 +355,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
         string tesla = Script("Rac1TeslaHost.cs");
         string morph = Script("Rac1MorphHost.cs");
         string parent = Script("Rac1WeaponHost.cs");
-        string application = Script("OBPGame.cs");
+        string application = CompositionSources.Application;
         string presenter = Script("Rac1ArsenalBeamPresenter.cs");
 
         Assert.Contains("Tesla = new(arsenal.Tesla, Contacts, Beams)", parent, StringComparison.Ordinal);

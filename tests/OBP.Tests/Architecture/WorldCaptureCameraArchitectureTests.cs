@@ -9,7 +9,7 @@ public sealed class WorldCaptureCameraArchitectureTests
     [Fact]
     public void NativeWorldAndAnimatedMobyCameraFramingBelongToPresentationAdapter()
     {
-        string root = Script("OBPGame.cs");
+        string root = CompositionSources.Application;
         string entry = Script("GodotWorldResources.cs");
         string camera = Script("GodotWorldCaptureCamera.cs");
 

@@ -29,7 +29,7 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
         Assert.Equal("Rac1EquipmentProjectileHost",
             Assert.Single(host.GetMembers("Projectiles").OfType<IPropertySymbol>()).Type.Name);
 
-        string composition = Script("OBPGame.cs");
+        string composition = CompositionSources.Application;
         string world = Script("Rac1WorldModule.cs");
         string weapons = Script("Rac1WeaponHost.cs");
         string projectile = Script("Rac1EquipmentProjectileHost.cs");
@@ -101,7 +101,7 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
         Assert.Contains("Rac1WeaponProfiles.ChildDamage(weapon, nativeClass, id,", host, StringComparison.Ordinal);
         Assert.Contains("bot.Motion.Step(Rac1LootPresentation.ToEffectNative(origin), targetPoint)", host, StringComparison.Ordinal);
         Assert.Contains("bot.Motion.SourceSequence(direction.LengthSquared() > .01f)", host, StringComparison.Ordinal);
-        Assert.Contains("new Rac1TaunterMine(shot.Position, () => shot.Taunted = true)", Script("OBPGame.cs"), StringComparison.Ordinal);
+        Assert.Contains("new Rac1TaunterMine(shot.Position, () => shot.Taunted = true)", CompositionSources.Application, StringComparison.Ordinal);
         Assert.Contains("world.Weapons.Projectiles.FireBlaster(shot)", weapons, StringComparison.Ordinal);
         Assert.Contains("world.Weapons.Projectiles.Throw(shot)", weapons, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1AdditionalWeaponSession(", host, StringComparison.Ordinal);
@@ -113,7 +113,7 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
     {
         string root = Script("Rac1WeaponUsePresentationHost.cs");
         string host = Script("Rac1EquipmentProjectileHost.cs");
-        string composition = Script("OBPGame.cs");
+        string composition = CompositionSources.Application;
 
         int arsenal = root.IndexOf("world.Weapons.Arsenal.Reset()", StringComparison.Ordinal);
         int retire = root.IndexOf("world.Weapons.Projectiles.RetireShotsAgentsMotes()", StringComparison.Ordinal);

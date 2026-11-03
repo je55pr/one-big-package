@@ -29,8 +29,8 @@ public sealed class Rac1LifecycleWorldOwnershipTests
         Assert.Contains("Lifecycle.Reset()", Method("Rac1WorldModule.cs", "ResetBindings"), StringComparison.Ordinal);
         Assert.Contains("Lifecycle.Dispose()", Method("Rac1WorldModule.cs", "Dispose"), StringComparison.Ordinal);
         Assert.Contains("Lifecycle.TryCompleteEnvironmentalRestart(automatic)",
-            Script("OBPGame.cs"), StringComparison.Ordinal);
-        Assert.Contains("Lifecycle.TickEnvironmentalDeath()", Script("OBPGame.cs"), StringComparison.Ordinal);
+            CompositionSources.Application, StringComparison.Ordinal);
+        Assert.Contains("Lifecycle.TickEnvironmentalDeath()", CompositionSources.Application, StringComparison.Ordinal);
     }
 
     [Fact]
