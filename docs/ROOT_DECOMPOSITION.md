@@ -947,7 +947,7 @@ Two plain Godot-side components provide distinct remaining ownership:
 `GodotApplicationPresentation` owns scene roots, the player node, cameras,
 HUD and inspection views; `GodotApplicationShutdown` owns draining, audio-mix
 retirement and ordered final disposal. Neither takes an `OBPGame` reference
-or replaces the persistent player, campaign, actor registry or world lease.
+nor replaces the persistent player, campaign, actor registry or world lease.
 Shutdown resolves lazily created services after audio cleanup, including when
 cleanup throws. Preparation revalidates selected assets and the source file
 before the existing destructive commit. Native clocks and callback order stay

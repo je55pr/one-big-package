@@ -21,16 +21,19 @@ public sealed class PlayerEquipmentFacadeTests
     public void AcquisitionUsesTheExistingInventoryAndPublishesFeedbackAfterPersistence(bool ordinary)
     {
         using var fixture = new Fixture(ordinary);
-        var campaign = new Rac1WeaponInventory(ownsFirstRanged: false);
-        var selected = fixture.Native?.Inventory ?? campaign;
+        var campaign = ordinary ? new Rac1WeaponInventory(ownsFirstRanged: false) : fixture.Inventory;
+        var selected = fixture.Inventory;
         var events = new List<string>();
         int id = (int)Rac1WeaponId.FirstRanged;
         bool first = !selected.OwnsFirstRanged;
+        Rac1MovementCapabilities? movement = null;
 
         var result = fixture.Equipment.AcquireNativeItem(id, campaign,
-            _ => events.Add("movement"), reason => events.Add(reason), _ => events.Add("feedback"));
+            capabilities => { movement = capabilities; events.Add("movement"); },
+            reason => events.Add(reason), _ => events.Add("feedback"));
 
         Assert.True(selected.OwnsFirstRanged);
+        Assert.Equal(Rac1MovementCapabilities.FromInventory(selected), movement);
         Assert.Equal(first, result.IsFirstAcquisition);
         Assert.Equal("movement", events[0]);
         Assert.Equal("item acquisition 10", events[1]);

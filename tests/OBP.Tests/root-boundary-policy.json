@@ -3082,7 +3082,7 @@
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:StartFusionLabTraversalSmoke(:PlayerHost):void:private",
       "Owner": "#345",
       "Rationale": "Final #376 typed composition/delegation to the owning player, world, navigation, diagnostic, menu or persistence component. No native rules, resource ownership or diagnostic assertions belong in this bound root member. Its exact fingerprint remains reviewed.",
-      "ExpiresWith": "#347",
+      "ExpiresWith": "#376",
       "Hash": "a513089c7780670f300d87dfb9b595d0c3f19131042e3b5d308c1bf4434f2864"
     },
     {

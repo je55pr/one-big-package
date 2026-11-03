@@ -136,9 +136,12 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
     internal void RetireGameplayBeforePlayer()
     {
         try { Rac1Gameplay?.Dispose(); }
-        finally { Rac1Gameplay = null; }
-        try { Rac2Gameplay?.Dispose(); }
-        finally { Rac2Gameplay = null; }
+        finally
+        {
+            Rac1Gameplay = null;
+            try { Rac2Gameplay?.Dispose(); }
+            finally { Rac2Gameplay = null; }
+        }
     }
 
     internal void RetireGameplayAfterPlayer()

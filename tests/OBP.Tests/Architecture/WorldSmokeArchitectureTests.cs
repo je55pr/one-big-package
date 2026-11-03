@@ -61,10 +61,13 @@ public sealed class WorldSmokeArchitectureTests
         string navigation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/ApplicationNavigationCoordinator.cs"));
         int commit = navigation.IndexOf("if (!prepareAndCommit()) return false;", StringComparison.Ordinal);
         int completed = navigation.IndexOf("completed();", commit, StringComparison.Ordinal);
+        // The start of the completion callback passed to EnterPreparedWorld: dispatch must follow it,
+        // so moving it into the prepare-and-commit lambda would fail this check.
+        int completion = entry.IndexOf("_lastCommittedProfileDestination = destinationId;", StringComparison.Ordinal);
         int start = entry.IndexOf("GodotWorldSmokeDispatch.Start(new(", StringComparison.Ordinal);
         int verify = entry.IndexOf("SourceVerification.StartForWorldEntry(nativeDestination,", StringComparison.Ordinal);
         int save = entry.IndexOf("SaveSharedProfile(\"world transition\");", StringComparison.Ordinal);
-        Assert.True(commit >= 0 && completed > commit && start >= 0 && start < verify && verify < save,
+        Assert.True(commit >= 0 && completed > commit && completion >= 0 && start > completion && start < verify && verify < save,
             "World diagnostics must observe the committed lease before source verification and profile save.");
     }
 
