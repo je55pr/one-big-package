@@ -17,11 +17,16 @@ public sealed class PlayerNativeSessionStateTests
         var session = new ObpPlayerSession(PlayerSessionLifetimeTests.Snapshot(), native);
         native.Weapons.Select(FusionWeaponSession.Lancer);
         native.Weapons.LancerSession.ResetWorld(18);
+        native.Weapons.LancerSession.Equip();
+        for (int tick = 0; tick < 9; tick++)
+            native.Weapons.LancerSession.Tick(true, System.Numerics.Vector3.Zero, System.Numerics.Vector3.UnitX);
+        Assert.Equal(1, native.Weapons.LancerSession.AddAmmo(1));
         native.Held.HoldWrench();
         native.Health.ApplyHostAridiaContactDamage();
         var before = session.Capture();
         native.Inventory.GrantAmmoClamped(10, 5);
         Assert.NotEqual(native.Inventory.FirstRangedAmmo, campaign.FirstRangedAmmo);
+        Assert.NotEmpty(native.Weapons.LancerSession.ActiveShots);
         for (int i = 0; i < 5; i++) session.EndWorld();
         Assert.Equal(FusionWeaponSession.Lancer, native.Weapons.Selected);
         Assert.True(native.Held.Hand.WrenchHeld);

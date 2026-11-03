@@ -138,6 +138,7 @@ public sealed class PlayerSkeletalAnimationTests
 
     private static void Near(double[] expected, double[] actual)
     {
+        Assert.NotEmpty(expected);
         Assert.Equal(expected.Length, actual.Length);
         for (int i = 0; i < expected.Length; i++) Assert.InRange(Math.Abs(expected[i] - actual[i]), 0, .000002);
     }
