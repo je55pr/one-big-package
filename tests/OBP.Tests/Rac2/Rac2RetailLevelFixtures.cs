@@ -66,3 +66,46 @@ public sealed class Rac2OozlaWorldImportFixture : IDisposable
         }
     }
 }
+
+/// <summary>
+/// Reads the retail Oozla (LEVEL1) gameplay lump once per test class, on first use, and disposes the disc reader with
+/// the class. Tests only read the shared tables.
+/// </summary>
+public sealed class Rac2OozlaGameplayFixture : IDisposable
+{
+    private readonly Lazy<(FileRandomAccessReader? Reader, Rac2Instances.Gameplay? Gameplay)> _read = new(Read);
+
+    /// <summary>The Oozla gameplay tables, or <see langword="null"/> when <c>OBP_GC_ISO</c> is not set.</summary>
+    public Rac2Instances.Gameplay? Gameplay => _read.Value.Gameplay;
+
+    public void Dispose()
+    {
+        if (_read.IsValueCreated)
+        {
+            _read.Value.Reader?.Dispose();
+        }
+    }
+
+    private static (FileRandomAccessReader? Reader, Rac2Instances.Gameplay? Gameplay) Read()
+    {
+        var iso = Environment.GetEnvironmentVariable("OBP_GC_ISO");
+        if (string.IsNullOrEmpty(iso))
+        {
+            return (null, null);
+        }
+
+        var reader = new FileRandomAccessReader(iso);
+        try
+        {
+            var fs = Iso9660Filesystem.Open(reader);
+            var wad = fs.OpenFile("/G/LEVEL1.WAD") ?? throw new FileNotFoundException("/G/LEVEL1.WAD");
+            var header = Rac2LevelWad.ReadHeader(wad);
+            return (reader, Rac2Instances.Read(Rac2LevelWad.RequireLump(wad, header, 2)));
+        }
+        catch
+        {
+            reader.Dispose();
+            throw;
+        }
+    }
+}

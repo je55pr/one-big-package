@@ -27,7 +27,7 @@ public class Rac2RetailOverlayWitnessTests
 
         for (int level = 0; level < 27; level++)
         {
-            var (wad, header) = OpenLevelWad(iso!, level);
+            var (wad, header) = OpenLevelWad(iso, level);
             var overlay = Rac2LevelOverlay.Open(Rac2LevelWad.RequireLump(wad, header, 0));
             Assert.Equal(expected, overlay.ReadVirtual(Rac2BoltReward.AuthoredBank0Address, expected.Length));
         }
@@ -38,7 +38,7 @@ public class Rac2RetailOverlayWitnessTests
     {
         var iso = RequireIso();
 
-        using var isoReader = new FileRandomAccessReader(iso!);
+        using var isoReader = new FileRandomAccessReader(iso);
         var disc = Ps2Boot.OpenDisc(isoReader);
         var programHeaders = Ps2Boot.ReadBootProgramHeaders(disc);
         var selectors = Elf32Reader.ReadVirtualRange(
@@ -54,7 +54,7 @@ public class Rac2RetailOverlayWitnessTests
     {
         var iso = RequireIso();
 
-        var (wad, header) = OpenLevelWad(iso!, 1);
+        var (wad, header) = OpenLevelWad(iso, 1);
         var overlay = Rac2LevelOverlay.Open(Rac2LevelWad.RequireLump(wad, header, 0));
 
         // This transition only falls through to SetPlayerState(21, 1) when the
@@ -80,7 +80,7 @@ public class Rac2RetailOverlayWitnessTests
 
         // Retail's index map is identity at slot 10. Metadata record 10 has
         // live Moby class 71 at +0x14, the class passed to the normal allocator.
-        using var isoReader = new FileRandomAccessReader(iso!);
+        using var isoReader = new FileRandomAccessReader(iso);
         var disc = Ps2Boot.OpenDisc(isoReader);
         var programHeaders = Ps2Boot.ReadBootProgramHeaders(disc);
         var mapEntry = Elf32Reader.ReadVirtualRange(disc.BootExecutable, programHeaders, 0x00139572, 1);

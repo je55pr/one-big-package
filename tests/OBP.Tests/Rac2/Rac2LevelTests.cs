@@ -27,13 +27,13 @@ public class Rac2LevelTests
     {
         var iso = RequireIso();
 
-        var (_, header) = OpenLevelWad(iso!, 1);
+        var (_, header) = OpenLevelWad(iso, 1);
         Assert.Equal(0x60, header.HeaderSizeField);
         Assert.Equal(1, header.LevelId);
         Assert.Equal(new[] { 0, 1, 2, 3, 4, 5, 7, 8 }, header.Lumps.Where(l => l.Present).Select(l => l.Slot).ToArray());
 
         // LEVEL21.WAD self-reports levelId 30 (file index ≠ engine id).
-        var (_, h21) = OpenLevelWad(iso!, 21);
+        var (_, h21) = OpenLevelWad(iso, 21);
         Assert.Equal(30, h21.LevelId);
     }
 
@@ -42,7 +42,7 @@ public class Rac2LevelTests
     {
         var iso = RequireIso();
 
-        var (wad, header) = OpenLevelWad(iso!, 1);
+        var (wad, header) = OpenLevelWad(iso, 1);
         var core = Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0));
 
         Assert.Equal(19_023_392, core.Assets.Length);
@@ -70,7 +70,7 @@ public class Rac2LevelTests
     {
         var iso = RequireIso();
 
-        var (wad, header) = OpenLevelWad(iso!, 1);
+        var (wad, header) = OpenLevelWad(iso, 1);
         var s = Rac2LevelSettings.Read(Rac2LevelWad.RequireLump(wad, header, 2));
 
         Assert.Equal(0f, s.DeathHeight);
@@ -92,7 +92,7 @@ public class Rac2LevelTests
     {
         var iso = RequireIso();
 
-        var (wad, header) = OpenLevelWad(iso!, 1);
+        var (wad, header) = OpenLevelWad(iso, 1);
 
         var meshes = new List<RcCollision.Mesh>();
         foreach (int slot in new[] { 4, 5, 6 })
@@ -136,7 +136,7 @@ public class Rac2LevelTests
     {
         var iso = RequireIso();
 
-        var (wad, header) = OpenLevelWad(iso!, 1);
+        var (wad, header) = OpenLevelWad(iso, 1);
         var chunk = Rac2LevelWad.RequireLump(wad, header, 4);
         int tfragOffset = BinaryPrimitives.ReadInt32LittleEndian(chunk.Read(0, 8).AsSpan());
         var tf = Rac2Tfrag.Read(WadLz.ReadBlock(chunk, tfragOffset).Data);

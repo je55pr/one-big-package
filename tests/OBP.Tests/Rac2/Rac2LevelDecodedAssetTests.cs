@@ -20,7 +20,7 @@ public class Rac2LevelDecodedAssetTests
     {
         var iso = RequireIso();
 
-        var (wad, header) = OpenLevelWad(iso!, 1);
+        var (wad, header) = OpenLevelWad(iso, 1);
         var core = Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0));
         var textures = Rac2LevelTextures.Read(core, table);
 
@@ -41,7 +41,7 @@ public class Rac2LevelDecodedAssetTests
     {
         var iso = RequireIso();
 
-        var (wad, header) = OpenLevelWad(iso!, 1);
+        var (wad, header) = OpenLevelWad(iso, 1);
         var core = Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0));
         var classes = Rac2Tie.ReadClasses(core);
 
@@ -56,7 +56,7 @@ public class Rac2LevelDecodedAssetTests
     {
         var iso = RequireIso();
 
-        var (wad, header) = OpenLevelWad(iso!, 1);
+        var (wad, header) = OpenLevelWad(iso, 1);
         var core = Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0));
         var classes = Rac2Shrub.ReadClasses(core);
 
@@ -73,7 +73,7 @@ public class Rac2LevelDecodedAssetTests
     {
         var iso = RequireIso();
 
-        var (wad, header) = OpenLevelWad(iso!, 1);
+        var (wad, header) = OpenLevelWad(iso, 1);
         var core = Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0));
         var sky = Rac2Sky.ReadLevelSky(core) ?? throw new InvalidDataException("Oozla has a sky section.");
 
@@ -115,7 +115,7 @@ public class Rac2LevelDecodedAssetTests
     {
         var iso = RequireIso();
 
-        var (wad, header) = OpenLevelWad(iso!, 1);
+        var (wad, header) = OpenLevelWad(iso, 1);
         var core = Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0));
         var classes = Rac2MobyClasses.Read(core);
 
@@ -167,7 +167,7 @@ public class Rac2LevelDecodedAssetTests
     {
         var iso = RequireIso();
 
-        var (wad, header) = OpenLevelWad(iso!, 1);
+        var (wad, header) = OpenLevelWad(iso, 1);
         var core = Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0));
         var classes = Rac2MobyClasses.Read(core);
 

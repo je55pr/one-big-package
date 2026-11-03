@@ -10,14 +10,19 @@ namespace OBP.Tests;
 /// Oozla (LEVEL1) gameplay lump (lump 2) checks: instance counts, the class-500 Bolt Crates, the lighting tables and the
 /// environment sample/transition tables, plus the per-level class-0 player seed. Retail-gated on <c>OBP_GC_ISO</c>.
 /// </summary>
-public class Rac2LevelGameplayTests
+public sealed class Rac2LevelGameplayTests : IClassFixture<Rac2OozlaGameplayFixture>
 {
+    private readonly Rac2OozlaGameplayFixture _oozla;
+
+    public Rac2LevelGameplayTests(Rac2OozlaGameplayFixture oozla)
+    {
+        _oozla = oozla;
+    }
+
     [SkippableFact]
     public void Level1_GameplayInstanceCountsMatchTheBaseline()
     {
-        var iso = RequireIso();
-
-        var gameplay = ReadGameplay(iso, 1);
+        var gameplay = OozlaGameplay();
 
         Assert.Equal(1617, gameplay.TieInstances.Count);
         Assert.Equal(2825, gameplay.ShrubInstances.Count);
@@ -27,9 +32,7 @@ public class Rac2LevelGameplayTests
     [SkippableFact]
     public void Level1_BoltCratesKeepNativeInstanceRecordsAndPVars()
     {
-        var iso = RequireIso();
-
-        var gameplay = ReadGameplay(iso, 1);
+        var gameplay = OozlaGameplay();
 
         // Gameplay identity/state needed by the dynamic-Moby bridge. Oozla has
         // 190 authored class-500 Bolt Crates; each retains its native 0x88
@@ -53,9 +56,7 @@ public class Rac2LevelGameplayTests
     [SkippableFact]
     public void Level1_ShowcaseBoltCrateIdentityAndPayoutMatchTheBaseline()
     {
-        var iso = RequireIso();
-
-        var gameplay = ReadGameplay(iso, 1);
+        var gameplay = OozlaGameplay();
         var boltCrates = gameplay.MobyInstances.Where(m => m.OClass == 500).ToArray();
 
         // The deterministic Oozla showcase deliberately targets the first authored
@@ -77,9 +78,7 @@ public class Rac2LevelGameplayTests
     [SkippableFact]
     public void Level1_DirectionalLightsMatchTheBaseline()
     {
-        var iso = RequireIso();
-
-        var gameplay = ReadGameplay(iso, 1);
+        var gameplay = OozlaGameplay();
 
         // Directional lights (gameplay ptr 0x04) — the main GC light type.
         Assert.Equal(3, gameplay.DirLights.Count);
@@ -93,9 +92,7 @@ public class Rac2LevelGameplayTests
     [SkippableFact]
     public void Level1_MobyBakedLightingMatchesTheBaseline()
     {
-        var iso = RequireIso();
-
-        var gameplay = ReadGameplay(iso, 1);
+        var gameplay = OozlaGameplay();
 
         // Per-moby baked ambient (0x74) + directional-light index (0x80).
         Assert.Equal(new[] { 28 / 255f, 45 / 255f, 51 / 255f }, new[] { gameplay.MobyInstances[0].LightColour.R, gameplay.MobyInstances[0].LightColour.G, gameplay.MobyInstances[0].LightColour.B });
@@ -109,9 +106,7 @@ public class Rac2LevelGameplayTests
     [SkippableFact]
     public void Level1_PointLightsMatchTheBaseline()
     {
-        var iso = RequireIso();
-
-        var gameplay = ReadGameplay(iso, 1);
+        var gameplay = OozlaGameplay();
 
         // Point lights (gameplay ptr 0x80) — only affect mobies. Oozla has 2.
         Assert.Equal(2, gameplay.PointLights.Count);
@@ -123,9 +118,7 @@ public class Rac2LevelGameplayTests
     [SkippableFact]
     public void Level1_EnvSamplePointsMatchTheBaseline()
     {
-        var iso = RequireIso();
-
-        var gameplay = ReadGameplay(iso, 1);
+        var gameplay = OozlaGameplay();
 
         // Env sample points (gameplay ptr 0x8c) — the per-region atmosphere probes.
         Assert.Equal(10, gameplay.EnvSamples.Count);
@@ -142,21 +135,20 @@ public class Rac2LevelGameplayTests
     public void EnvTransitionsMatchTheBaselineOnOozlaEndakoAndGrelbin()
     {
         var iso = RequireIso();
-
-        var gameplay = ReadGameplay(iso, 1);
+        var gameplay = OozlaGameplay();
 
         // Env transitions (gameplay ptr 0x84) — doorway lighting/fog blend volumes.
         Assert.Empty(gameplay.EnvTransitions); // Oozla has none
 
         // Endako has 12 (hero-only); Grelbin has 2 with a fog blend.
-        var (endakoWad, endakoHeader) = OpenLevelWad(iso!, 3);
+        var (endakoWad, endakoHeader) = OpenLevelWad(iso, 3);
         var endako = Rac2Instances.Read(Rac2LevelWad.RequireLump(endakoWad, endakoHeader, 2));
         Assert.Equal(12, endako.EnvTransitions.Count);
         Assert.True(endako.EnvTransitions[0].EnableHero);
         Assert.False(endako.EnvTransitions[0].EnableFog);
         Assert.Equal(16, endako.EnvTransitions[0].InverseMatrix.Length);
 
-        var (grelbinWad, grelbinHeader) = OpenLevelWad(iso!, 19);
+        var (grelbinWad, grelbinHeader) = OpenLevelWad(iso, 19);
         var grelbin = Rac2Instances.Read(Rac2LevelWad.RequireLump(grelbinWad, grelbinHeader, 2));
         Assert.Equal(2, grelbin.EnvTransitions.Count);
         Assert.True(grelbin.EnvTransitions[0].EnableFog);
@@ -169,7 +161,7 @@ public class Rac2LevelGameplayTests
     {
         var iso = RequireIso();
 
-        using var reader = new FileRandomAccessReader(iso!);
+        using var reader = new FileRandomAccessReader(iso);
         var fs = Iso9660Filesystem.Open(reader);
         for (int level = 0; level <= 26; level++)
         {
@@ -182,9 +174,9 @@ public class Rac2LevelGameplayTests
         }
     }
 
-    private static Rac2Instances.Gameplay ReadGameplay(string iso, int level)
+    private Rac2Instances.Gameplay OozlaGameplay()
     {
-        var (wad, header) = OpenLevelWad(iso, level);
-        return Rac2Instances.Read(Rac2LevelWad.RequireLump(wad, header, 2));
+        Skip.If(_oozla.Gameplay is null, "OBP_GC_ISO not set");
+        return _oozla.Gameplay!;
     }
 }

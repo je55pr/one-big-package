@@ -207,7 +207,7 @@ public sealed class Rac2LevelWorldImportTests : IClassFixture<Rac2OozlaWorldImpo
         // level core, not chunk lumps. Exercises that path of GcWorldImport.
         var iso = RequireIso();
 
-        using var reader = new FileRandomAccessReader(iso!);
+        using var reader = new FileRandomAccessReader(iso);
         var world = Rac2WorldImport.Build(reader, 0);
 
         int Tris(string kind) => world.Meshes.Where(m => m.AssetKind == kind).Sum(m => m.TriangleCount);
