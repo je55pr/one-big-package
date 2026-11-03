@@ -144,18 +144,39 @@ public sealed class CrossWorldReplayTests : IDisposable
         Assert.Throws<InvalidDataException>(() => ReplayBookmarkResolver.Resolve(bookmark, state));
         File.Delete(prefix);
         Assert.Equal(original, File.ReadAllBytes(bookmark));
+    }
+
+    [SkippableFact]
+    public void BookmarkResolverRejectsSymbolicLinkWithoutChangingSave()
+    {
+        Directory.CreateDirectory(_directory);
+        string prefix = Path.Combine(_directory, "prefix.run.jsonl.gz");
+        string bookmark = Path.Combine(_directory, "state.json");
+        byte[] bytes = "test-owned prefix bytes"u8.ToArray();
+        var state = MovementReproStateTests.Sample() with
+        {
+            Version = 3,
+            Destination = "rac2:LEVEL1",
+            Profile = Header("rac2:LEVEL1").PlayerProfile,
+            Replay = new(Path.GetFileName(prefix),
+                Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)), 0),
+        };
+        MovementReproStateFile.Save(bookmark, state);
+        byte[] original = File.ReadAllBytes(bookmark);
 
         // The filename is valid and the digest matches, but the file is a link
         // to an unrelated location rather than a sibling recording.
         string external = Path.Combine(Path.GetTempPath(), "obp-outside-prefix-" + Guid.NewGuid().ToString("N") + ".run.jsonl.gz");
-        File.WriteAllText(external, "test-owned prefix bytes");
+        File.WriteAllBytes(external, bytes);
         try
         {
             try { File.CreateSymbolicLink(prefix, external); }
-            catch (Exception error) when (error is UnauthorizedAccessException or IOException or PlatformNotSupportedException)
+            catch (Exception error) when (error is PlatformNotSupportedException ||
+                OperatingSystem.IsWindows() && error.HResult == unchecked((int)0x80070522))
             {
-                // Symlink creation requires developer privileges on some Windows runners.
-                return;
+                // ERROR_PRIVILEGE_NOT_HELD is optional on Windows runners.
+                // Other IO/access failures are setup defects and must fail.
+                Skip.If(true, $"Symbolic links unavailable: {error.Message}");
             }
             Assert.Throws<InvalidDataException>(() => ReplayBookmarkResolver.Resolve(bookmark, state));
             Assert.Equal(original, File.ReadAllBytes(bookmark));
