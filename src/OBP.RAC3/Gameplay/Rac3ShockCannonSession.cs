@@ -8,6 +8,11 @@ namespace OBP.RAC3.Gameplay;
 /// </summary>
 public sealed class Rac3ShockCannonSession
 {
+    // Retail native function addresses reported as the origin of each effect.
+    private const int ChargeCueFunction = 0x0046dcb8;
+    private const int BeamCueFunction = 0x003873f8;
+    private const int MuzzleCueFunction = 0x003877d8;
+
     private long _generation;
     private long _update;
     private long _shotSequence;
@@ -84,12 +89,12 @@ public sealed class Rac3ShockCannonSession
             {
                 _chargeLoop = true;
                 audio.Add(Audio(3, Rac3ShockCannonAudioOperation.StartLoop, 4));
-                effects.Add(Effect(Rac3ShockCannonEffectKind.ChargeStarted, null, 0x0046dcb8));
+                effects.Add(Effect(Rac3ShockCannonEffectKind.ChargeStarted, null, ChargeCueFunction));
             }
             if (_charge >= Rac3ShockCannonProfile.ChargeUpdates && !_charged)
             {
                 _charged = true;
-                effects.Add(Effect(Rac3ShockCannonEffectKind.ChargeReady, null, 0x0046dcb8));
+                effects.Add(Effect(Rac3ShockCannonEffectKind.ChargeReady, null, ChargeCueFunction));
             }
         }
         else
@@ -135,7 +140,7 @@ public sealed class Rac3ShockCannonSession
             // Damage queries precede counter decrement. The render callback
             // follows it and skips the transition-to-zero update.
             if (_beamRemaining > 1)
-                effects.Add(Effect(Rac3ShockCannonEffectKind.Beam, _beam.Id, 0x003873f8));
+                effects.Add(Effect(Rac3ShockCannonEffectKind.Beam, _beam.Id, BeamCueFunction));
             if (--_beamRemaining == 0)
             {
                 effects.Add(Effect(Rac3ShockCannonEffectKind.BeamStopped, _beam.Id, null));
@@ -146,7 +151,7 @@ public sealed class Rac3ShockCannonSession
         if (State == Rac3ShockCannonState.Windup && --_windup == 0)
         {
             State = Rac3ShockCannonState.Discharge;
-            effects.Add(Effect(Rac3ShockCannonEffectKind.Muzzle, _pending!.Id, 0x003877d8));
+            effects.Add(Effect(Rac3ShockCannonEffectKind.Muzzle, _pending!.Id, MuzzleCueFunction));
             audio.Add(Audio(_pending.Kind == Rac3ShockCannonShotKind.ChargedBeam ? 0 : 4,
                 Rac3ShockCannonAudioOperation.Play));
         }
