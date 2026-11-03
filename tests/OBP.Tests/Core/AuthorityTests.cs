@@ -45,7 +45,6 @@ public class AuthorityTests
     [Fact]
     public void OnlyThePrimaryRac2BuildIsSupportedForNativeImport()
     {
-        Assert.Contains("rac2-ntscu-v1.01", Rac2Authority.SupportedBuildIds);
-        Assert.DoesNotContain("rac2-gh-v2.00", Rac2Authority.SupportedBuildIds);
+        Assert.Equal(new[] { "rac2-ntscu-v1.01" }, Rac2Authority.SupportedBuildIds);
     }
 }

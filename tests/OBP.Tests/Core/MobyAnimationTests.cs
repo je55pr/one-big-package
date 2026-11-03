@@ -88,12 +88,15 @@ public class MobyAnimationTests
         var cl = Classes(1)[1134];
         var seq = cl.Sequences[1];
 
+        Assert.NotEmpty(cl.Mesh.Positions);
+        Assert.NotEmpty(seq.Frames);
         double restExtent = Extent(cl.Mesh.Positions);
 
         for (int f = 0; f < seq.Frames.Count; f++)
         {
             var a = Rac2MobyAnimation.Pose(cl.Mesh, cl.Joints, seq.Frames[f]);
             var b = Rac2MobyAnimation.Pose(cl.Mesh, cl.Joints, seq.Frames[f]);
+            Assert.Equal(cl.Mesh.Positions.Length, a.Length);
             Assert.Equal(a, b); // deterministic
 
             foreach (double c in a)
@@ -115,6 +118,8 @@ public class MobyAnimationTests
         var mid = cl.Sequences[1].Frames[85];
         var skin = Rac2MobyAnimation.SkinMatrices(cl.Joints, mid, cl.Mesh.Scale / 1024f);
 
+        Assert.NotEmpty(cl.Joints);
+        Assert.Equal(cl.Joints.Count, skin.Length);
         foreach (var m in skin)
         {
             var x = new Vector3(m.M11, m.M12, m.M13);

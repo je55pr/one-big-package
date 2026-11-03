@@ -121,6 +121,14 @@ public sealed class MalformedInputAudioTests
         {
             short[] pcm = Ps2SpuAdpcm.DecodeFrames([.. Frame(header, fill: 0x88), .. Frame(header, fill: 0x77), .. Frame(header, fill: 0xff)]);
             Assert.Equal(84, pcm.Length);
+            if (header is 0x40 or 0x30)
+            {
+                // Shift-zero predictive frames overflow in both directions:
+                // negative nibbles saturate immediately; the positive frame
+                // reaches the positive rail on its second sample.
+                Assert.All(pcm.Take(28), sample => Assert.Equal(short.MinValue, sample));
+                Assert.All(pcm.Skip(29).Take(27), sample => Assert.Equal(short.MaxValue, sample));
+            }
         }
     }
 

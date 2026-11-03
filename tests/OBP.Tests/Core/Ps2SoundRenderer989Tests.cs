@@ -26,7 +26,9 @@ public sealed class Ps2SoundRenderer989Tests
         var sound = Sound(new(1, 0, Tone()), new(41, 60, null), new(24, 0, null));
         var rendered = Assert.IsType<Ps2SoundRenderer989.Rendered>(Ps2SoundRenderer989.TryRender(sound, tone => Sample(tone, true)));
         Assert.Contains(rendered.Samples.Skip(9000).Take(1000), sample => sample > 0);
-        Assert.All(rendered.Samples.Skip(12010), sample => Assert.Equal(0, sample));
+        var releasedTail = rendered.Samples.Skip(12010).ToArray();
+        Assert.NotEmpty(releasedTail);
+        Assert.All(releasedTail, sample => Assert.Equal(0, sample));
     }
 
     [Fact]
