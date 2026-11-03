@@ -26,6 +26,18 @@ public static class Rac2Instances
     private const int ShrubInstanceSize = 0x70;
     private const int MobyInstanceSize = 0x88;
 
+    private const int BlockHeaderSize = 0x10;          // s32 count, padded to 0x10
+    private const int MaxInstanceCount = 200_000;      // tie / shrub / moby blocks
+    private const int MaxTableCount = 4096;            // light and environment tables
+    private const int MatrixOffset = 0x10;             // column-major 4x4 inside a tie / shrub struct
+    private const int MatrixInstanceMinBytes = 0x50;   // oclass header + matrix must fit before the read
+    private const int DirLightSize = 0x40;
+    private const int PointLightSize = 0x10;
+    private const int PointLightRecordsOffset = 0x800; // records follow a fixed 0x800-byte area after the header
+    private const int EnvSampleSize = 0x20;
+    private const int EnvTransitionSize = 0x80;
+    private const int EnvTransitionSphereSize = 0x10;
+
     /// <summary>Matrix instance (tie / shrub): a column-major 4×4.</summary>
     public sealed record MatrixInstance(int Index, int OClass, float[] Matrix);
 
@@ -103,340 +115,302 @@ public static class Rac2Instances
     public static Gameplay Read(IRandomAccessReader gameplayLump, long maxDecompressedBytes = 64L * 1024 * 1024) =>
         Parse(WadLz.ReadBlock(gameplayLump, 0, maxDecompressedBytes).Data);
 
-    public static Gameplay Parse(byte[] data)
+    public static Gameplay Parse(byte[] data) => new(
+        ReadMatrixBlock(data, TieInstancesPtr, TieInstanceSize),
+        ReadMatrixBlock(data, ShrubInstancesPtr, ShrubInstanceSize),
+        ReadMobyInstances(data),
+        ReadDirLights(data),
+        ReadPointLights(data),
+        ReadEnvSamples(data),
+        ReadEnvTransitions(data),
+        data.Length);
+
+    /// <summary>
+    /// Follows the header pointer at <paramref name="pointerOffset"/> to an instance block and reads its
+    /// <c>s32</c> count. Returns false (an empty block) for a pointer outside the buffer, a non-positive or
+    /// truncated block offset, or a count outside <c>0..<paramref name="maxCount"/></c>.
+    /// </summary>
+    private static bool TryOpenBlock(byte[] data, int pointerOffset, int maxCount, out int blockOffset, out int count)
     {
-        int BlockPointer(int headerOffset)
+        blockOffset = 0;
+        count = 0;
+        if (pointerOffset + 4 > data.Length)
         {
-            if (headerOffset < 0 || headerOffset + 4 > data.Length)
-            {
-                return 0;
-            }
-
-            int value = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(headerOffset));
-            return value > 0 && value < data.Length ? value : 0;
+            return false;
         }
 
-        int pvarTableBlock = BlockPointer(PVarTablePtr);
-        int pvarDataBlock = BlockPointer(PVarDataPtr);
-
-        byte[]? ResolvePVar(int pvarIndex)
+        blockOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(pointerOffset));
+        if (blockOffset <= 0 || blockOffset > data.Length - BlockHeaderSize)
         {
-            if (pvarIndex < 0 || pvarTableBlock == 0 || pvarDataBlock == 0)
-            {
-                return null;
-            }
-
-            long tableAt64 = (long)pvarTableBlock + pvarIndex * 8L;
-            if (tableAt64 < 0 || tableAt64 + 8 > data.Length)
-            {
-                return null;
-            }
-
-            int tableAt = (int)tableAt64;
-            int relativeOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(tableAt));
-            int size = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(tableAt + 4));
-            long dataAt64 = (long)pvarDataBlock + relativeOffset;
-            if (relativeOffset < 0 || size < 0 || dataAt64 < 0 || dataAt64 + size > data.Length)
-            {
-                return null;
-            }
-
-            return data.AsSpan((int)dataAt64, size).ToArray();
+            return false;
         }
 
-        List<MatrixInstance> ReadBlock(int pointerOffset, int structSize)
+        count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blockOffset));
+        return count is >= 0 && count <= maxCount;
+    }
+
+    private static int BlockPointer(byte[] data, int headerOffset)
+    {
+        if (headerOffset < 0 || headerOffset + 4 > data.Length)
         {
-            var outp = new List<MatrixInstance>();
-            if (pointerOffset + 4 > data.Length)
-            {
-                return outp;
-            }
-
-            int blockOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(pointerOffset));
-            if (blockOffset <= 0 || blockOffset + 0x10 > data.Length)
-            {
-                return outp;
-            }
-
-            int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blockOffset));
-            if (count is < 0 or > 200_000)
-            {
-                return outp;
-            }
-
-            for (int i = 0; i < count; i++)
-            {
-                int at = blockOffset + 0x10 + i * structSize;
-                if (at + 0x50 > data.Length)
-                {
-                    break;
-                }
-
-                var matrix = new float[16];
-                for (int m = 0; m < 16; m++)
-                {
-                    matrix[m] = BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + 0x10 + m * 4));
-                }
-
-                outp.Add(new MatrixInstance(i, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at)), matrix));
-            }
-
-            return outp;
+            return 0;
         }
 
-        List<MobyInstance> ReadMoby()
+        int value = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(headerOffset));
+        return value > 0 && value < data.Length ? value : 0;
+    }
+
+    /// <summary>The PVar blob for <paramref name="pvarIndex"/>, or null when the tables or the range are absent.</summary>
+    private static byte[]? ResolvePVar(byte[] data, int pvarTableBlock, int pvarDataBlock, int pvarIndex)
+    {
+        if (pvarIndex < 0 || pvarTableBlock == 0 || pvarDataBlock == 0)
         {
-            var outp = new List<MobyInstance>();
-            if (MobyInstancesPtr + 4 > data.Length)
-            {
-                return outp;
-            }
-
-            int blockOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(MobyInstancesPtr));
-            if (blockOffset <= 0 || blockOffset + 0x10 > data.Length)
-            {
-                return outp;
-            }
-
-            int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blockOffset));
-            if (count is < 0 or > 200_000)
-            {
-                return outp;
-            }
-
-            for (int i = 0; i < count; i++)
-            {
-                int at = blockOffset + 0x10 + i * MobyInstanceSize;
-                if (at + MobyInstanceSize > data.Length)
-                {
-                    break;
-                }
-
-                if (BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at)) != MobyInstanceSize)
-                {
-                    break; // `size` field is always 0x88
-                }
-
-                float F(int rel) => BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + rel));
-                var position = (F(0x40), F(0x44), F(0x48));
-                if (!float.IsFinite(position.Item1) || !float.IsFinite(position.Item2) || !float.IsFinite(position.Item3))
-                {
-                    continue;
-                }
-
-                int S(int rel) => BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at + rel));
-                int pvarIndex = S(0x68);
-                outp.Add(new MobyInstance(
-                    i,
-                    S(0x28),
-                    F(0x2c),
-                    position,
-                    (F(0x4c), F(0x50), F(0x54)),
-                    (S(0x74) / 255f, S(0x78) / 255f, S(0x7c) / 255f),
-                    S(0x80),
-                    S(0x10),
-                    S(0x14),
-                    pvarIndex,
-                    S(0x70),
-                    data.AsSpan(at, MobyInstanceSize).ToArray(),
-                    ResolvePVar(pvarIndex)));
-            }
-
-            return outp;
+            return null;
         }
 
-        List<DirLight> ReadDirLights()
+        long tableAt64 = (long)pvarTableBlock + pvarIndex * 8L;
+        if (tableAt64 < 0 || tableAt64 + 8 > data.Length)
         {
-            var outp = new List<DirLight>();
-            if (DirLightsPtr + 4 > data.Length)
-            {
-                return outp;
-            }
-
-            int blockOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(DirLightsPtr));
-            if (blockOffset <= 0 || blockOffset + 0x10 > data.Length)
-            {
-                return outp;
-            }
-
-            int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blockOffset));
-            if (count is < 0 or > 4096)
-            {
-                return outp;
-            }
-
-            for (int i = 0; i < count; i++)
-            {
-                int at = blockOffset + 0x10 + i * 0x40;
-                if (at + 0x40 > data.Length)
-                {
-                    break;
-                }
-
-                (float, float, float) V3(int o) => (
-                    BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + o)),
-                    BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + o + 4)),
-                    BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + o + 8)));
-                outp.Add(new DirLight(V3(0x00), V3(0x10), V3(0x20), V3(0x30)));
-            }
-
-            return outp;
+            return null;
         }
 
-        List<PointLight> ReadPointLights()
+        int tableAt = (int)tableAt64;
+        int relativeOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(tableAt));
+        int size = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(tableAt + 4));
+        long dataAt64 = (long)pvarDataBlock + relativeOffset;
+        if (relativeOffset < 0 || size < 0 || dataAt64 < 0 || dataAt64 + size > data.Length)
         {
-            var outp = new List<PointLight>();
-            if (PointLightsPtr + 4 > data.Length)
-            {
-                return outp;
-            }
-
-            int blockOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(PointLightsPtr));
-            if (blockOffset <= 0 || blockOffset + 0x10 > data.Length)
-            {
-                return outp;
-            }
-
-            int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blockOffset));
-            if (count is < 0 or > 4096)
-            {
-                return outp;
-            }
-
-            for (int i = 0; i < count; i++)
-            {
-                int at = blockOffset + 0x10 + 0x800 + i * 0x10;
-                if (at + 0x10 > data.Length)
-                {
-                    break;
-                }
-
-                ushort U(int o) => BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(at + o));
-                float radius = U(0x06) / 64f;
-                if (radius <= 0)
-                {
-                    continue;
-                }
-
-                outp.Add(new PointLight(
-                    (U(0x00) / 64f, U(0x02) / 64f, U(0x04) / 64f),
-                    radius,
-                    (U(0x08) / 65535f, U(0x0a) / 65535f, U(0x0c) / 65535f)));
-            }
-
-            return outp;
+            return null;
         }
 
-        List<EnvSample> ReadEnvSamples()
+        return data.AsSpan((int)dataAt64, size).ToArray();
+    }
+
+    private static List<MatrixInstance> ReadMatrixBlock(byte[] data, int pointerOffset, int structSize)
+    {
+        var result = new List<MatrixInstance>();
+        if (!TryOpenBlock(data, pointerOffset, MaxInstanceCount, out int blockOffset, out int count))
         {
-            var outp = new List<EnvSample>();
-            if (EnvSamplesPtr + 4 > data.Length)
-            {
-                return outp;
-            }
-
-            int blockOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(EnvSamplesPtr));
-            if (blockOffset <= 0 || blockOffset + 0x10 > data.Length)
-            {
-                return outp;
-            }
-
-            int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blockOffset));
-            if (count is < 0 or > 4096)
-            {
-                return outp;
-            }
-
-            for (int i = 0; i < count; i++)
-            {
-                int at = blockOffset + 0x10 + i * 0x20;
-                if (at + 0x20 > data.Length)
-                {
-                    break;
-                }
-
-                short S16(int o) => BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(at + o));
-                byte B(int o) => data[at + o];
-                short nearD = S16(0x1a), farD = S16(0x1c);
-                outp.Add(new EnvSample(
-                    (S16(0x04) / 4f, S16(0x06) / 4f, S16(0x08) / 4f),
-                    BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at + 0x00)),
-                    S16(0x0c),
-                    (B(0x10) / 255f, B(0x11) / 255f, B(0x12) / 255f),
-                    farD > nearD
-                        ? new EnvFog((B(0x17) / 255f, B(0x18) / 255f, B(0x19) / 255f), nearD, farD, B(0x0e), B(0x0f))
-                        : null));
-            }
-
-            return outp;
+            return result;
         }
 
-        List<EnvTransition> ReadEnvTransitions()
+        for (int i = 0; i < count; i++)
         {
-            var outp = new List<EnvTransition>();
-            if (EnvTransitionsPtr + 4 > data.Length)
+            long position = (long)blockOffset + BlockHeaderSize + (long)i * structSize;
+            if (position > data.Length - MatrixInstanceMinBytes)
             {
-                return outp;
+                break;
             }
 
-            int blockOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(EnvTransitionsPtr));
-            if (blockOffset <= 0 || blockOffset + 0x10 > data.Length)
+            int at = (int)position;
+
+            var matrix = new float[16];
+            for (int m = 0; m < 16; m++)
             {
-                return outp;
+                matrix[m] = BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + MatrixOffset + m * 4));
             }
 
-            int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blockOffset));
-            if (count is < 0 or > 4096)
-            {
-                return outp;
-            }
-
-            int spheresAt = blockOffset + 0x10;
-            int structsAt = spheresAt + count * 0x10;
-            for (int i = 0; i < count; i++)
-            {
-                int so = spheresAt + i * 0x10;
-                int at = structsAt + i * 0x80;
-                if (at + 0x80 > data.Length)
-                {
-                    break;
-                }
-
-                float F(int o) => BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + o));
-                float Sph(int o) => BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(so + o));
-                (float, float, float) Rgb(int o) => (data[at + o] / 255f, data[at + o + 1] / 255f, data[at + o + 2] / 255f);
-                uint flags = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(at + 0x50));
-                EnvState State(int side) => new(
-                    Rgb(0x40 + side * 4),
-                    BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at + 0x48 + side * 4)),
-                    Rgb(0x54 + side * 4),
-                    F(0x5c + side * 0x10), F(0x64 + side * 0x10), F(0x60 + side * 0x10), F(0x68 + side * 0x10));
-
-                var mat = new float[16];
-                for (int j = 0; j < 16; j++)
-                {
-                    mat[j] = F(j * 4);
-                }
-
-                outp.Add(new EnvTransition(
-                    mat,
-                    (Sph(0), Sph(4), Sph(8), Sph(12)),
-                    (flags & 1) != 0, (flags & 2) != 0,
-                    State(0), State(1)));
-            }
-
-            return outp;
+            result.Add(new MatrixInstance(i, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at)), matrix));
         }
 
-        return new Gameplay(
-            ReadBlock(TieInstancesPtr, TieInstanceSize),
-            ReadBlock(ShrubInstancesPtr, ShrubInstanceSize),
-            ReadMoby(),
-            ReadDirLights(),
-            ReadPointLights(),
-            ReadEnvSamples(),
-            ReadEnvTransitions(),
-            data.Length);
+        return result;
+    }
+
+    private static List<MobyInstance> ReadMobyInstances(byte[] data)
+    {
+        var result = new List<MobyInstance>();
+        if (!TryOpenBlock(data, MobyInstancesPtr, MaxInstanceCount, out int blockOffset, out int count))
+        {
+            return result;
+        }
+
+        int pvarTableBlock = BlockPointer(data, PVarTablePtr);
+        int pvarDataBlock = BlockPointer(data, PVarDataPtr);
+        for (int i = 0; i < count; i++)
+        {
+            long recordStart = (long)blockOffset + BlockHeaderSize + (long)i * MobyInstanceSize;
+            if (recordStart > data.Length - MobyInstanceSize)
+            {
+                break;
+            }
+
+            int at = (int)recordStart;
+
+            if (BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at)) != MobyInstanceSize)
+            {
+                break; // `size` field is always 0x88
+            }
+
+            float F(int rel) => BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + rel));
+            var position = (F(0x40), F(0x44), F(0x48));
+            if (!float.IsFinite(position.Item1) || !float.IsFinite(position.Item2) || !float.IsFinite(position.Item3))
+            {
+                continue;
+            }
+
+            int S(int rel) => BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at + rel));
+            int pvarIndex = S(0x68);
+            result.Add(new MobyInstance(
+                i,
+                S(0x28),
+                F(0x2c),
+                position,
+                (F(0x4c), F(0x50), F(0x54)),
+                (S(0x74) / 255f, S(0x78) / 255f, S(0x7c) / 255f),
+                S(0x80),
+                S(0x10),
+                S(0x14),
+                pvarIndex,
+                S(0x70),
+                data.AsSpan(at, MobyInstanceSize).ToArray(),
+                ResolvePVar(data, pvarTableBlock, pvarDataBlock, pvarIndex)));
+        }
+
+        return result;
+    }
+
+    private static List<DirLight> ReadDirLights(byte[] data)
+    {
+        var result = new List<DirLight>();
+        if (!TryOpenBlock(data, DirLightsPtr, MaxTableCount, out int blockOffset, out int count))
+        {
+            return result;
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            long position = (long)blockOffset + BlockHeaderSize + (long)i * DirLightSize;
+            if (position > data.Length - DirLightSize)
+            {
+                break;
+            }
+
+            int at = (int)position;
+
+            (float, float, float) V3(int o) => (
+                BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + o)),
+                BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + o + 4)),
+                BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + o + 8)));
+            result.Add(new DirLight(V3(0x00), V3(0x10), V3(0x20), V3(0x30)));
+        }
+
+        return result;
+    }
+
+    private static List<PointLight> ReadPointLights(byte[] data)
+    {
+        var result = new List<PointLight>();
+        if (!TryOpenBlock(data, PointLightsPtr, MaxTableCount, out int blockOffset, out int count))
+        {
+            return result;
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            long position = (long)blockOffset + BlockHeaderSize + PointLightRecordsOffset + (long)i * PointLightSize;
+            if (position > data.Length - PointLightSize)
+            {
+                break;
+            }
+
+            int at = (int)position;
+
+            ushort U(int o) => BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(at + o));
+            float radius = U(0x06) / 64f;
+            if (radius <= 0)
+            {
+                continue;
+            }
+
+            result.Add(new PointLight(
+                (U(0x00) / 64f, U(0x02) / 64f, U(0x04) / 64f),
+                radius,
+                (U(0x08) / 65535f, U(0x0a) / 65535f, U(0x0c) / 65535f)));
+        }
+
+        return result;
+    }
+
+    private static List<EnvSample> ReadEnvSamples(byte[] data)
+    {
+        var result = new List<EnvSample>();
+        if (!TryOpenBlock(data, EnvSamplesPtr, MaxTableCount, out int blockOffset, out int count))
+        {
+            return result;
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            long position = (long)blockOffset + BlockHeaderSize + (long)i * EnvSampleSize;
+            if (position > data.Length - EnvSampleSize)
+            {
+                break;
+            }
+
+            int at = (int)position;
+
+            short S16(int o) => BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(at + o));
+            byte B(int o) => data[at + o];
+            short nearD = S16(0x1a), farD = S16(0x1c);
+            result.Add(new EnvSample(
+                (S16(0x04) / 4f, S16(0x06) / 4f, S16(0x08) / 4f),
+                BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at + 0x00)),
+                S16(0x0c),
+                (B(0x10) / 255f, B(0x11) / 255f, B(0x12) / 255f),
+                farD > nearD
+                    ? new EnvFog((B(0x17) / 255f, B(0x18) / 255f, B(0x19) / 255f), nearD, farD, B(0x0e), B(0x0f))
+                    : null));
+        }
+
+        return result;
+    }
+
+    private static List<EnvTransition> ReadEnvTransitions(byte[] data)
+    {
+        var result = new List<EnvTransition>();
+        if (!TryOpenBlock(data, EnvTransitionsPtr, MaxTableCount, out int blockOffset, out int count))
+        {
+            return result;
+        }
+
+        // Layout: count bounding spheres first, then count 0x80 transition structs.
+        long spheresAt = (long)blockOffset + BlockHeaderSize;
+        long structsAt = spheresAt + (long)count * EnvTransitionSphereSize;
+        for (int i = 0; i < count; i++)
+        {
+            long structPosition = structsAt + (long)i * EnvTransitionSize;
+            if (structPosition > data.Length - EnvTransitionSize)
+            {
+                break;
+            }
+
+            int so = (int)(spheresAt + (long)i * EnvTransitionSphereSize);
+            int at = (int)structPosition;
+
+            float F(int o) => BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + o));
+            float Sph(int o) => BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(so + o));
+            (float, float, float) Rgb(int o) => (data[at + o] / 255f, data[at + o + 1] / 255f, data[at + o + 2] / 255f);
+            uint flags = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(at + 0x50));
+            EnvState State(int side) => new(
+                Rgb(0x40 + side * 4),
+                BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at + 0x48 + side * 4)),
+                Rgb(0x54 + side * 4),
+                F(0x5c + side * 0x10), F(0x64 + side * 0x10), F(0x60 + side * 0x10), F(0x68 + side * 0x10));
+
+            var mat = new float[16];
+            for (int j = 0; j < 16; j++)
+            {
+                mat[j] = F(j * 4);
+            }
+
+            result.Add(new EnvTransition(
+                mat,
+                (Sph(0), Sph(4), Sph(8), Sph(12)),
+                (flags & 1) != 0, (flags & 2) != 0,
+                State(0), State(1)));
+        }
+
+        return result;
     }
 
     /// <summary>Column-major <c>Mat4</c> from position, XYZ-euler rotation (radians) and uniform scale. <c>R = Rz·Ry·Rx</c>.</summary>
