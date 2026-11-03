@@ -45,7 +45,7 @@ public sealed class RcTieUvSeamTests
     public void TodanoRockWall_UsesContinuousUvAcrossPackedTieSeam()
     {
         string? source = Environment.GetEnvironmentVariable("OBP_GC_ISO");
-        Skip.If(string.IsNullOrWhiteSpace(source) || !File.Exists(source),
+        Skip.If(string.IsNullOrWhiteSpace(source),
             "Requires a locally supplied Going Commando disc.");
 
         using var disc = new FileRandomAccessReader(source!);
