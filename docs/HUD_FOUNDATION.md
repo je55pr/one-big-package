@@ -35,7 +35,7 @@ The repository already has useful state, but it is intentionally uneven and most
 - R&C1 owns a minimal wrench/item-10 inventory plus equipped selection and item-10 ammo in `Rac1WeaponInventory`; `Rac1BombGloveSession` proves a 40-round Bomb Glove capacity and one-round accepted-shot cost.
 - R&C1 and GC have bounded Bolt-crate sessions that can emit/collect proven denominations. Their current `CollectedBolts` counters are slice/session telemetry, not a reconstructed trilogy wallet or save economy.
 - Ordinary contextual gameplay-prompt state is not yet represented as an authoritative runtime concept.
-- `PlayerHost`'s `PlayerHud` layer, the `OBPGame._worldHud` label and the per-module `HudLine()` helpers (for example `Rac2Gameplay.HudLine()` and `CrateDiagnostics.HudLine`) are developer telemetry. They expose positions, controller tuning, native states and smoke-test facts that do not belong in a shipping player HUD.
+- `PlayerHost`'s `PlayerHud` layer, the `OBPGame._worldHud` label and the per-module `HudLine()` helpers (for example `Rac2Gameplay.HudLine()` and `CrateDiagnostics.HudLine()`) are developer telemetry. They expose positions, controller tuning, native states and smoke-test facts that do not belong in a shipping player HUD.
 - `UiTheme` is an OBP application theme. It does not establish retail HUD fonts, colours, panel shapes, spacing or animation timing.
 
 Relevant retail-backed evidence is recorded in [RAC1_DEATH_RESPAWN.md](../research/RAC1_DEATH_RESPAWN.md), [RAC1_WEAPON_INVENTORY.md](../research/RAC1_WEAPON_INVENTORY.md), [RAC1_BOMB_GLOVE.md](../research/RAC1_BOMB_GLOVE.md), [RAC1_CRATES_PICKUPS.md](../research/RAC1_CRATES_PICKUPS.md) and [GC_CRATES.md](../research/GC_CRATES.md).
@@ -165,7 +165,13 @@ At this foundation stage, **no integrated player-HUD layout, icon set, typograph
 
 A later retail-HUD archaeology lane may replace individual OBP defaults with recovered assets/layout/timing. Each promotion should cite its authority and leave unrelated defaults labelled as OBP design.
 
-## Per-game projection today
+## Per-game projection at the foundation stage (historical)
+
+These per-game statements record what each source could project when this
+foundation was written. They are superseded where the shared player session now
+supplies health, wallet and selected weapon (see the note under "Current
+baseline" and [PLAYER_WORLD_CONTRACT.md](PLAYER_WORLD_CONTRACT.md)); the
+"absent rather than fabricated" rule still applies to any field no owner supplies.
 
 ### R&C1
 
