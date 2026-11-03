@@ -20,7 +20,7 @@ public sealed class GameplayTickWiringArchitectureTests
         Assert.DoesNotContain("Rac1Gameplay?.PhysicsStep(", physics, StringComparison.Ordinal);
         Assert.Contains("TickSharedProfile(delta)", frame);
         Assert.Contains("TickRac1CampaignSaves(delta)", frame);
-        Assert.Contains("_sourceVerification?.Tick(Time.GetTicksMsec())", frame);
+        Assert.Contains("Capture.VerificationIfStarted?.Tick(Time.GetTicksMsec())", frame);
     }
 
     [Fact]

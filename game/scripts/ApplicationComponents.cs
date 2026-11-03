@@ -1,5 +1,6 @@
 using Godot;
 using OBP.Core;
+using OBP.Game.Diagnostics;
 using OBP.Godot;
 using OBP.RAC1.Progression;
 using OBP.Fusion;
@@ -62,4 +63,6 @@ internal sealed record ApplicationComponents(
     Func<int, Rac1DestinationDiscoveryResult> ApplyProgressionEvent,
     Func<bool, bool> CompleteEnvironmentalRestart,
     Action<HudFeedbackDraft[]> RefreshHud,
-    Func<Rac1HandPresentationContext> Hand);
+    Func<Rac1HandPresentationContext> Hand,
+    Func<string> SceneKind,
+    Func<ApplicationDiagnostics> Diagnostics);

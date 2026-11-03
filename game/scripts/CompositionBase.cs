@@ -2,6 +2,7 @@ using Godot;
 using OBP.Core;
 using OBP.Fusion;
 using OBP.Godot;
+using OBP.Game.Diagnostics;
 using OBP.Godot.Player;
 using OBP.IO;
 using OBP.RAC1.Gameplay;
@@ -71,6 +72,7 @@ internal abstract class CompositionBase(ApplicationComponents components)
     protected RuntimeWorldScene.Result? _sceneResult => _worldScenes?.Current?.Resources.Scene;
     protected int _worldSwitches => _worldScenes?.ActivationCount ?? 0;
     protected ObpDestination? _activeDestination => _worldScenes?.NativeDestination;
+    protected ApplicationDiagnostics Diagnostics => Context.Diagnostics();
     protected string? _currentDestinationId => _worldScenes?.DestinationId;
     protected Rac1WorldModule Rac1World => _worldScenes?.Current?.Resources.Rac1Gameplay
         ?? throw new InvalidOperationException("R&C1 gameplay requires an active scene lease.");

@@ -28,7 +28,7 @@ public sealed class WorldSmokeArchitectureTests
         Assert.Contains("internal static Entrypoints Bind(", harness, StringComparison.Ordinal);
         Assert.DoesNotContain("partial class OBPGame", harness, StringComparison.Ordinal);
         Assert.DoesNotContain("partial class OBPGame", dispatch, StringComparison.Ordinal);
-        Assert.Contains("SourceVerification.StartForWorldEntry(nativeDestination, _args.VerifyHash, _worldSwitches)", entry, StringComparison.Ordinal);
+        Assert.Contains("Capture.Verification.StartForWorldEntry(nativeDestination, _args.VerifyHash, _worldSwitches)", entry, StringComparison.Ordinal);
         Assert.DoesNotContain("private void StartRequestedSourceVerification(", entry, StringComparison.Ordinal);
         foreach (string flag in new[]
         {
@@ -65,7 +65,7 @@ public sealed class WorldSmokeArchitectureTests
         // so moving it into the prepare-and-commit lambda would fail this check.
         int completion = entry.IndexOf("_lastCommittedProfileDestination = destinationId;", StringComparison.Ordinal);
         int start = entry.IndexOf("GodotWorldSmokeDispatch.Start(new(", StringComparison.Ordinal);
-        int verify = entry.IndexOf("SourceVerification.StartForWorldEntry(nativeDestination,", StringComparison.Ordinal);
+        int verify = entry.IndexOf("Capture.Verification.StartForWorldEntry(nativeDestination,", StringComparison.Ordinal);
         int save = entry.IndexOf("SaveSharedProfile(\"world transition\");", StringComparison.Ordinal);
         Assert.True(commit >= 0 && completed > commit && completion >= 0 && start > completion && start < verify && verify < save,
             "World diagnostics must observe the committed lease before source verification and profile save.");
