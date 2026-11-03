@@ -161,6 +161,9 @@ internal sealed class ApplicationDiagnostics(ApplicationDiagnosticsContext conte
                 new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]), clock), _hostOperations, _args.MovementCase);
     }
     internal Task CheckControllerWeaponInputAsync() => CreateMovementDiagnosticHarness().RunControllerAsync(_hostOperations.Token);
+
+    private static string ReproPath(string name) =>
+        DiagnosticReproPath.Resolve(Path.Combine(ProjectSettings.GlobalizePath("res://"), "..", "captures"), name);
     private static void SetSyntheticNativeHeading(PlayerHost player, double yaw, double magnitude = 1) => GodotMovementCompatibility.Heading(player, yaw, magnitude);
     private static void AddSyntheticTraversalMesh(Node3D parent, string name, int material, params (Vector3 A, Vector3 B, Vector3 C)[] triangles) =>
         GodotRac1DiagnosticSurface.Add(parent, name, material, triangles);
@@ -318,7 +321,7 @@ internal sealed class ApplicationDiagnostics(ApplicationDiagnosticsContext conte
             () => Rac1WeaponEffectsHost.ResetOrFallback(_worldScenes?.Current?.Resources.Rac1Gameplay, _equipmentPresentation), () => Rac1World.UsePresentation.ResetAdditional(), () => FusionWeapons.ClearTransients()));
         async Task<bool> LoadWeaponStateAsync(string path, CancellationToken token) => await MovementReproduction.LoadMovementStateAsync(path, cancellationToken: token) is not null;
         var reproduction = new GodotWeaponMovementStateFixture(() => MovementReproduction.IsLoading, () => MovementReproduction.CaptureMovementState(), LoadWeaponStateAsync,
-            name => Path.GetFullPath(Path.Combine(ProjectSettings.GlobalizePath("res://"), "..", "captures", "repros", name)), transients);
+            ReproPath, transients);
         return new(movement.Ports, wrench, new(movement.Equipment, targets, CreateRac1EncounterDiagnosticHarness().Combat, capture, bomb, reproduction,
             CreateRac1AdditionalWeaponDiagnosticFixture(worlds), CreateRac1ArsenalDiagnosticFixture(worlds, targets)),
             transients);
