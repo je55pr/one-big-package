@@ -1,4 +1,3 @@
-using OBP.Core;
 using System.Buffers.Binary;
 using OBP.IO;
 using OBP.RAC3;

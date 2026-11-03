@@ -9,8 +9,8 @@ namespace OBP.Tests;
 internal static class Rac3Class5821Fixtures
 {
     /// <summary>
-    /// Copies the source's PVar, lets <paramref name="mutate"/> edit the copy, and returns the source carrying
-    /// only that PVar payload (the synthetic class-5821 fixture has no other payloads).
+    /// Copies the source's PVar, lets <paramref name="mutate"/> edit the copy, and returns the source with only
+    /// that PVar payload replaced; any other payload on <paramref name="source"/> is kept as is.
     /// </summary>
     internal static RuntimeDynamicObject WithPvar(RuntimeDynamicObject source, Action<byte[]> mutate)
     {
@@ -21,12 +21,11 @@ internal static class Rac3Class5821Fixtures
         mutate(pvar);
         return source with
         {
-            NativePayloads =
-            [
-                new RuntimeOpaquePayload(
-                    Rac3MobyRuntimeSession.PVarPayloadFormat,
-                    pvar),
-            ],
+            NativePayloads = source.NativePayloads!
+                .Select(payload => payload.Format == Rac3MobyRuntimeSession.PVarPayloadFormat
+                    ? new RuntimeOpaquePayload(payload.Format, pvar)
+                    : payload)
+                .ToArray(),
         };
     }
 
