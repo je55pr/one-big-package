@@ -159,8 +159,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
                 break;
             case 4:
                 _crouchBlendSource = source;
-                _crouchClock = new Rac1AnimationFrameClock(new[] { 0, 13, 14, 15 }.ToDictionary(
-                    sequence => sequence, sequence => LocomotionClip(sequence).FrameDurationsSeconds),
+                _crouchClock = new Rac1AnimationFrameClock(CrouchClockDurations(),
                     entry.Sequence, entry.EntryFrame, 1);
                 SelectGroundEntry(_crouchClock, entry);
                 _crouchAge = 0;

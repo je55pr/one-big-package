@@ -97,12 +97,16 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         return true;
     }
 
+    private static readonly int[] CrouchClockSequences = { 0, 13, 14, 15 };
+
+    private Dictionary<int, IReadOnlyList<double>> CrouchClockDurations() => CrouchClockSequences.ToDictionary(
+        sequence => sequence, sequence => LocomotionClip(sequence).FrameDurationsSeconds);
+
     private void EnterCrouch(bool previousPoseIsStanding)
     {
         int frame = CurrentClip.FrameIndexAt(Current.ElapsedAt(_clockSeconds), Current.Loop);
         _crouchBlendSource = Current.SampledPose?.LocalPositions ?? CurrentClip.LocalFrames[frame];
-        var durations = new[] { 0, 13, 14, 15 }.ToDictionary(
-            sequence => sequence, sequence => LocomotionClip(sequence).FrameDurationsSeconds);
+        var durations = CrouchClockDurations();
         _crouchClock = new Rac1AnimationFrameClock(durations, 13, Rac1CrouchAnimation.EntryFrame,
             Rac1CrouchAnimation.EntryBlendTicks(previousPoseIsStanding));
         _crouchAge = 0;
