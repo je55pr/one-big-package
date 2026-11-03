@@ -117,9 +117,9 @@ public sealed class Iso9660Filesystem
 
             long volumeSpaceSize = BothEndianUInt32(sector, 80, 84, "volume space size");
             int logicalBlockSize = BothEndianUInt16(sector, 128, 130, "logical block size");
-            if (logicalBlockSize <= 0)
+            if (logicalBlockSize < 512 || (logicalBlockSize & (logicalBlockSize - 1)) != 0)
             {
-                throw new InvalidDataException("ISO-9660 logical block size must be positive.");
+                throw new InvalidDataException($"ISO-9660 logical block size {logicalBlockSize} must be a power of two of at least 512.");
             }
 
             var root = ParseDirectoryRecord(sector, 156);

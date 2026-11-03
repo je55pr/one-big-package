@@ -167,7 +167,7 @@ public static class Elf32Reader
     /// <summary>Resolve one fully file-backed ELF32 virtual range through PT_LOAD metadata.</summary>
     public static Elf32VirtualRangeMapping MapVirtualRange(IReadOnlyList<Elf32ProgramHeader> programHeaders, long virtualAddress, long length)
     {
-        if (virtualAddress < 0 || virtualAddress >= AddressSpaceSize || length < 0 || virtualAddress + length > AddressSpaceSize)
+        if (virtualAddress < 0 || virtualAddress >= AddressSpaceSize || length < 0 || length > AddressSpaceSize - virtualAddress)
         {
             throw new ArgumentOutOfRangeException(nameof(virtualAddress), $"Invalid ELF32 virtual range 0x{virtualAddress:x}+{length}.");
         }
@@ -211,6 +211,11 @@ public static class Elf32Reader
         }
 
         var mapping = MapVirtualRange(programHeaders, virtualAddress, length);
+        if (mapping.Length > int.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(length), $"ELF32 virtual range of {mapping.Length} bytes is too large to read into one array.");
+        }
+
         if (mapping.FileOffset > reader.Length || mapping.Length > reader.Length - mapping.FileOffset)
         {
             throw new ArgumentOutOfRangeException(nameof(virtualAddress), $"Mapped ELF32 virtual range lies outside '{reader.Name}'.");

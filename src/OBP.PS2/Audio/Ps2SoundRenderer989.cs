@@ -54,7 +54,7 @@ public static class Ps2SoundRenderer989
             var single = sound with { Flags = loop ? (ushort)1 : (ushort)0 };
             Rendered? audio = Render(single, new([local], [], Math.Max(0, program.Tick - voice.Start * GrainRate), program.PitchModifier));
             if (audio is null) return null;
-            output.Add(new((int)Math.Round(voice.Start * SampleRate), loop, audio));
+            output.Add(new((int)Math.Min(int.MaxValue, Math.Round(voice.Start * SampleRate)), loop, audio));
         }
         return output.AsReadOnly();
     }
@@ -72,6 +72,7 @@ public static class Ps2SoundRenderer989
             if (pc == skipAt) pc = skipTo;
             if (pc >= sound.Grains.Count) break;
             var grain = sound.Grains[pc]; tick += grain.Delay;
+            if (tick < 0) return null; // A negative cumulative delay cannot schedule a voice.
             var p = grain.Parameters ?? new byte[32];
             short Param(int at) => BinaryPrimitives.ReadInt16LittleEndian(p.AsSpan(at * 2));
             switch (grain.Type)
@@ -172,7 +173,9 @@ public static class Ps2SoundRenderer989
         var mix = new double[length];
         foreach (var voice in voices)
         {
-            int start = (int)Math.Round(voice.Start * SampleRate);
+            double startFrame = Math.Round(voice.Start * SampleRate);
+            if (!(startFrame < length)) continue; // Starts after the clamped render window (or non-finite).
+            int start = (int)startFrame;
             double cursor = 0; var envelope = new Envelope(voice.Tone.Adsr1, voice.Tone.Adsr2);
             bool released = false; var pcm = voice.Source.Samples; var info = voice.Source.Info;
             for (int frame = start; frame < length; frame++)

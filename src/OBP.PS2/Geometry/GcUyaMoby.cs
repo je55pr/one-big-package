@@ -189,6 +189,11 @@ public static partial class GcUyaMoby
     /// </summary>
     private static double[][]? ReadGlobalBind(byte[] buf, int jointCount)
     {
+        if (buf.Length < ClassHeaderSize)
+        {
+            return null;
+        }
+
         int skeletonOffset = BinaryPrimitives.ReadInt32LittleEndian(buf.AsSpan(0x14));
         int commonTransOffset = BinaryPrimitives.ReadInt32LittleEndian(buf.AsSpan(0x18));
         if (jointCount is <= 0 or > 256)
@@ -201,12 +206,12 @@ public static partial class GcUyaMoby
             return null;
         }
 
-        if (skeletonOffset + jointCount * JointStride > buf.Length)
+        if ((long)skeletonOffset + jointCount * JointStride > buf.Length)
         {
             return null;
         }
 
-        if (commonTransOffset + jointCount * CommonTransStride > buf.Length)
+        if ((long)commonTransOffset + jointCount * CommonTransStride > buf.Length)
         {
             return null;
         }
@@ -237,19 +242,19 @@ public static partial class GcUyaMoby
     public static List<MobyJoint> ReadJoints(byte[] buf, int jointCount)
     {
         var joints = new List<MobyJoint>();
-        if (jointCount is <= 0 or > 256)
+        if (jointCount is <= 0 or > 256 || buf.Length < ClassHeaderSize)
         {
             return joints;
         }
 
         int commonTransOffset = BinaryPrimitives.ReadInt32LittleEndian(buf.AsSpan(0x18));
         int skeletonOffset = BinaryPrimitives.ReadInt32LittleEndian(buf.AsSpan(0x14));
-        if (commonTransOffset <= 0 || commonTransOffset + jointCount * CommonTransStride > buf.Length)
+        if (commonTransOffset <= 0 || (long)commonTransOffset + jointCount * CommonTransStride > buf.Length)
         {
             return joints;
         }
 
-        if (skeletonOffset <= 0 || skeletonOffset + jointCount * JointStride > buf.Length)
+        if (skeletonOffset <= 0 || (long)skeletonOffset + jointCount * JointStride > buf.Length)
         {
             return joints;
         }
@@ -346,6 +351,11 @@ public static partial class GcUyaMoby
     public static List<MobySequence> ReadSequences(byte[] buf, int jointCount)
     {
         var sequences = new List<MobySequence>();
+        if (buf.Length < ClassHeaderSize)
+        {
+            return sequences;
+        }
+
         int sequenceCount = buf[0x0c];
         if (sequenceCount is <= 0 or > 64 || jointCount is <= 0 or > 256)
         {
@@ -361,7 +371,7 @@ public static partial class GcUyaMoby
         for (int s = 0; s < sequenceCount; s++)
         {
             int seqOffset = BinaryPrimitives.ReadInt32LittleEndian(buf.AsSpan(listOffset + s * 4));
-            if (seqOffset <= 0 || seqOffset + 0x1c > buf.Length)
+            if (seqOffset <= 0 || seqOffset > buf.Length - 0x1c)
             {
                 continue;
             }
@@ -377,7 +387,7 @@ public static partial class GcUyaMoby
             int triggerDataOffset = BinaryPrimitives.ReadInt32LittleEndian(buf.AsSpan(seqOffset + 0x14));
             float rateOverride = BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(seqOffset + 0x18));
             int frameTable = seqOffset + 0x1c;
-            if (frameCount <= 0 || frameTable + frameCount * 4 > buf.Length)
+            if (frameCount <= 0 || (long)frameTable + frameCount * 4 > buf.Length)
             {
                 sequences.Add(new MobySequence(s, [])
                 {
