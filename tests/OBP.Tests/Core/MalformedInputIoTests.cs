@@ -508,7 +508,7 @@ public sealed class MalformedInputIoTests
     public void EveryElfTruncationFailsWithExpectedExceptionsOnly()
     {
         byte[] bytes = MinimalElf();
-        for (int length = 0; length < bytes.Length; length++)
+        for (int length = 0; length <= bytes.Length; length++)
         {
             var reader = Mem(bytes[..length]);
             var ex = Record.Exception(() =>
