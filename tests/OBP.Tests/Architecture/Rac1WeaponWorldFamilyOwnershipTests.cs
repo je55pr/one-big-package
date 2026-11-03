@@ -282,7 +282,7 @@ public sealed partial class Rac1WeaponWorldOwnershipTests
     public void ContactCallbacksDoNotResolveTheWorldDuringHostConstruction()
     {
         var trees = HostOwnershipAudit.Host.Value.SyntaxTrees
-            .Where(tree => tree.FilePath is "game/scripts/OBPGame.cs" or "game/diagnostics/ApplicationDiagnostics.cs").ToArray();
+            .Where(tree => tree.FilePath is "game/scripts/OBPGame.cs" or "game/diagnostics/ApplicationDiagnostics.cs" or "game/scripts/Rac1WorldComposition.cs").ToArray();
         foreach (string name in new[]
         {
             "CreateFusionWeaponHost", "CreateRac1WorldModule",

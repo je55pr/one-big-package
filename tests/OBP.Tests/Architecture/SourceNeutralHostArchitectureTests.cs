@@ -25,7 +25,7 @@ public sealed class SourceNeutralHostArchitectureTests
         Assert.Contains(subscriptions, binding =>
             binding.Event is IEventSymbol { Name: "Rac1WaterSoundRequested", ContainingType.Name: "PlayerHost" } &&
             binding.Callback is IPropertySymbol { Name: "WaterSound", ContainingType.Name: "Rac1WorldContactPorts" });
-        var composition = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.cs");
+        var composition = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1WorldComposition.cs");
         var factory = composition.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
             .Single(method => method.Identifier.ValueText == "CreateRac1WorldModule");
         var model = compilation.GetSemanticModel(composition);
@@ -52,7 +52,7 @@ public sealed class SourceNeutralHostArchitectureTests
     public void InjectingDestinationDependentAvatarSelectionIntoTheRealHostFails()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.cs");
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1WorldComposition.cs");
         const string mistake = """
             private void ChooseAvatarFromPlanet(OBP.Core.ObpDestination next) {
                 var origin = next;

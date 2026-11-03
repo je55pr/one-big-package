@@ -38,7 +38,7 @@ public sealed class Rac1HostArchitectureTests
             StringComparison.Ordinal);
         Assert.Contains(
             "() => TryCompleteRac1EnvironmentalRestart(automatic: true)",
-            File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs")),
+            CompositionSources.Application,
             StringComparison.Ordinal);
     }
 

@@ -48,7 +48,7 @@ public sealed class Rac1WrenchWorldOwnershipTests
         Assert.DoesNotContain("_reset.Wrench()", module, StringComparison.Ordinal);
         Assert.DoesNotContain("Action Wrench", Script("Rac1WorldPorts.cs"), StringComparison.Ordinal);
         Assert.Contains("Rac1WrenchHost.ResetOrFallback(", Method("OBPGame.cs", "CreatePlayerLifecycle"), StringComparison.Ordinal);
-        Assert.Contains("Rac1WrenchHost.ResetOrFallback(", Method("OBPGame.cs", "CreateRac1WorldModule"), StringComparison.Ordinal);
+        Assert.Contains("Rac1WrenchHost.ResetOrFallback(", Method("Rac1WorldComposition.cs", "CreateRac1WorldModule"), StringComparison.Ordinal);
         Assert.Contains("Rac1WrenchHost.ResetOrFallback(", Method("PlayerAvatarPresentationHost.cs", "ResetPlayerAvatarPhysics"), StringComparison.Ordinal);
         Assert.Contains("if (wrench is not null) wrench.Reset()", host, StringComparison.Ordinal);
         Assert.Contains("GodotRac1PlayerAudioPlayback.ResetWrench(audio)", host, StringComparison.Ordinal);

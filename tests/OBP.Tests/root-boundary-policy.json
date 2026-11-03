@@ -2572,7 +2572,7 @@
       "Owner": "#355",
       "Rationale": "Composition-only report coordinator reference and modal observation. View state, selection, confirmations, persistence requests and child reproduction lifetimes belong to the owned coordinator; the store and recording writer remain independent. Final root composition removes this bridge. #356 binds the same observations/actions to the capture/replay owner; recording, validation, metadata and optional verification state no longer live in the root.",
       "ExpiresWith": "#376",
-      "Hash": "fc06722a4e8bc8b62ae8a64eebd1ff229274583167a8f9255d93a0261ee8d980"
+      "Hash": "4e03234fc56cc7ed5e994b2ed4d304dc51f9ef644d7fb44d754034be579ee614"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::field:_actorHost:ActorWorldHost ?:private",
@@ -2726,21 +2726,21 @@
       "Owner": "#348",
       "Rationale": "Final #376 typed composition/delegation to the owning player, world, navigation, diagnostic, menu or persistence component. No native rules, resource ownership or diagnostic assertions belong in this bound root member. Its exact fingerprint remains reviewed.",
       "ExpiresWith": "#376",
-      "Hash": "8e7cc655dbc949c7388f0124b97bdd62b29c83a0e35f05dd71deb03971c26feb"
+      "Hash": "a85bce7f97c1d4b89e581999cbb0b8c17b96f9f5005f007697bf3f82764f4071"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateSourceSetup():SourceSetupController:private",
       "Owner": "#346",
       "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. #376 delegates idempotent plain bootstrap backdrop construction to GodotSmokeSceneFixture; source setup only chooses when to request it. Source state, admission and repair live outside the root; final world-entry composition removes this bridge. #354 binds the owned native player audio presenter and its copied observations. #356 binds the same observations/actions to the capture/replay owner; recording, validation, metadata and optional verification state no longer live in the root. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #367/#368: preview arsenal inventory snapshot, gadget acquisition, source weapon grants, and rebind admission moved into persistent PlayerSessionHost, preserving native SetEquipmentPreview then the current inventory identity before grants. World reset, UI/report/synchronization and detector refresh remain root orchestration in original order. ResetRac1WeaponAudio and RecordRac1WeaponSound forwarding methods were retired; call sites now borrow the already owned PlayerEquipmentPresentationBinder.WeaponAudio.Reset/Record with unchanged tick/trace inputs. The one-call source-detector forwarding method was inlined. No new world state, independent ammo authority or privileged root exception.",
       "ExpiresWith": "#376",
-      "Hash": "d94c5e369482cf1196fee3421c0f1b00aeb7d730652d39f6a74508466981076a"
+      "Hash": "1724cbb85a6c54f47909bc3551c3f2f5f7aefcb02e21a4dbdb380ad8b7026cde"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:EnsurePlayerSession():void:private",
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Integration with #356 retains the capture/replay coordinator and reads the same source-qualified facts through the lease/persistent owners; no player policy is added. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
       "ExpiresWith": "#376",
-      "Hash": "b5156432763432e01d1aa965547a006415bced0f19ce6ac1eca53fcf7c5f8f37"
+      "Hash": "527d1fe0ffcd8e20ca56c6b3729e86e19fee3f46a96a56c89e64d64dd8897dd2"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:EnterFusionLab():bool:private",
@@ -2845,7 +2845,7 @@
       "Owner": "#348",
       "Rationale": "Final #376 typed composition/delegation to the owning player, world, navigation, diagnostic, menu or persistence component. No native rules, resource ownership or diagnostic assertions belong in this bound root member. Its exact fingerprint remains reviewed.",
       "ExpiresWith": "#376",
-      "Hash": "083d191fa2550071789513f1ba03277b0dbd89c5f2f4817bba8d311c8ef51034"
+      "Hash": "fd8aec95d947eaccf9427a26b358cd36f851d208fa73116e0ef1c1459962f347"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ShowControllerSettingsFromMenu():void:public",
@@ -3160,7 +3160,7 @@
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Integration with #356 retains the capture/replay coordinator and reads the same source-qualified facts through the lease/persistent owners; no player policy is added. #372 binds campaign saves to the existing persistent source owner and authored checkpoint volumes to the current world lease, without new native policy or global mutable state. #372 review: unify native campaign restore ownership and share a typed constant for the explicit campaign-travel durability boundary; no save policy or format change.",
       "ExpiresWith": "#376",
-      "Hash": "0eb088e270845b7de8b717dd37723ade91a348d3d2511a40361c1e81c7b1a548"
+      "Hash": "60cee919a3e2307e427f9bb00a5d26fc0112bbea8df7459ed225d5a4e25d4a00"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:QuickSelectOpen:bool:get/:private",
@@ -3195,7 +3195,7 @@
       "Owner": "#350",
       "Rationale": "Final #376 typed composition/delegation to the owning player, world, navigation, diagnostic, menu or persistence component. No native rules, resource ownership or diagnostic assertions belong in this bound root member. Its exact fingerprint remains reviewed.",
       "ExpiresWith": "#376",
-      "Hash": "56330607c90da65fdeff3383104d38536c5533ce5b5532cac384d6d978baa17b"
+      "Hash": "f80a7af5cad0e4dc7ea913f2aa2a8b017e49a3f60b6501f9f73b27b06f9ebaf8"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ClearPlayerAvatarView():void:private",
@@ -3224,69 +3224,6 @@
       "Rationale": "Final #376 typed composition/delegation to the owning player, world, navigation, diagnostic, menu or persistence component. No native rules, resource ownership or diagnostic assertions belong in this bound root member. Its exact fingerprint remains reviewed.",
       "ExpiresWith": "#376",
       "Hash": "80d29f89c7f17825712f03a74bea470725184af3afd907eff5a0c98dae229681"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_capturePresentation:GodotCapturePresentation ?:private",
-      "Owner": "#356",
-      "Rationale": "Exact capture/replay composition: copied world/player/native facts, focused command actions and independent optional verification lifetime. No recording, checkpoint, native algorithm or diagnostic policy is implemented in the root. Final host composition removes this binding.",
-      "ExpiresWith": "#376",
-      "Hash": "257e5574cac78923aee2f29859d4fcb1613fd5581c06a885bfb5da692f65aee9"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_captureReplay:CaptureReplayCoordinator ?:private",
-      "Owner": "#356",
-      "Rationale": "Exact capture/replay composition: copied world/player/native facts, focused command actions and independent optional verification lifetime. No recording, checkpoint, native algorithm or diagnostic policy is implemented in the root. Final host composition removes this binding.",
-      "ExpiresWith": "#376",
-      "Hash": "41e58ffc993632d22d96edb1bb5a9537b9726aa0127626a21696bc1cbea0042b"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_sourceVerification:SourceVerificationCoordinator ?:private",
-      "Owner": "#356",
-      "Rationale": "Exact capture/replay composition: copied world/player/native facts, focused command actions and independent optional verification lifetime. No recording, checkpoint, native algorithm or diagnostic policy is implemented in the root. Final host composition removes this binding.",
-      "ExpiresWith": "#376",
-      "Hash": "1ce4e374de15a32b2f4609a826004d67b43c3b479e2f2e4621b083a6faa44468"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateCapturePresentation():GodotCapturePresentation:private",
-      "Owner": "#356",
-      "Rationale": "Exact capture/replay composition: copied world/player/native facts, focused command actions and independent optional verification lifetime. No recording, checkpoint, native algorithm or diagnostic policy is implemented in the root. Final host composition removes this binding. #360/#356 integration binds recording observations to the existing lease/persistent owners; callback and native policy ownership are retained.",
-      "ExpiresWith": "#376",
-      "Hash": "f43664300f28c86f0c14e3dcd91890c6f79954b97b49d3a26174deed65de3977"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateCaptureReplay():CaptureReplayCoordinator:private",
-      "Owner": "#356",
-      "Rationale": "Exact capture/replay composition: copied world/player/native facts, focused command actions and independent optional verification lifetime. No recording, checkpoint, native algorithm or diagnostic policy is implemented in the root. Final host composition removes this binding. #360/#356 integration binds recording observations to the existing lease/persistent owners; callback and native policy ownership are retained. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #367/#368: world-scoped Rac1EquipmentProjectileHost now owns Blaster/Suck Cannon carriers, thrown mine/Doom projectiles, Doom agents, Taunter/Suck motes and shrinking flashes. Root use/input, native Pyrocitor particle damage and persistent ammo remain separate. Enemy, Taunter and diagnostic factories borrow typed world views by lease; shared contact and Moby damage rules are delegated unchanged. Retains reset, native movement, collision, sound, source IDs and emission ordering without adding root state. #372 binds campaign saves to the existing persistent source owner and authored checkpoint volumes to the current world lease, without new native policy or global mutable state.",
-      "ExpiresWith": "#376",
-      "Hash": "885ba06e837867770cfc8187e8d7c7a0d49415fffc8de3c4533378664831d350"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlaytestDriverPorts():PlaytestDriverPorts:private",
-      "Owner": "#357",
-      "Rationale": "Exact replay composition: a narrow Godot scene adapter owns player input attachment and UI suspension; report and diagnostic actions receive the driver lifetime. Copied world/player facts and bookmark snapshots retain the existing owners. The root supplies no recording, checkpoint, native algorithm or diagnostic policy. Final host composition removes this binding.",
-      "ExpiresWith": "#376",
-      "Hash": "4329076fe32c22008660b596136b87ebdcf57a19d8aa3992219c36f5bdcea55a"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::property:CapturePresentation:GodotCapturePresentation:get/:private",
-      "Owner": "#356",
-      "Rationale": "Exact capture/replay composition: copied world/player/native facts, focused command actions and independent optional verification lifetime. No recording, checkpoint, native algorithm or diagnostic policy is implemented in the root. Final host composition removes this binding.",
-      "ExpiresWith": "#376",
-      "Hash": "0f79ab419bdfa911e80af1174cb9e6a43cf1499d8f0220937d03306fa35ed810"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::property:CaptureReplay:CaptureReplayCoordinator:get/:private",
-      "Owner": "#356",
-      "Rationale": "Exact capture/replay composition: copied world/player/native facts, focused command actions and independent optional verification lifetime. No recording, checkpoint, native algorithm or diagnostic policy is implemented in the root. Final host composition removes this binding.",
-      "ExpiresWith": "#376",
-      "Hash": "b2b6c605fd01101c8e74f7a1f84b2b28bc94872150e2dc6adaa483d20bc21370"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::property:SourceVerification:SourceVerificationCoordinator:get/:private",
-      "Owner": "#356",
-      "Rationale": "Exact capture/replay composition: copied world/player/native facts, focused command actions and independent optional verification lifetime. No recording, checkpoint, native algorithm or diagnostic policy is implemented in the root. Final host composition removes this binding.",
-      "ExpiresWith": "#376",
-      "Hash": "48dbca80eaa7f220ebe39f9c6fc82b0af31a9920443225f14e1c78ef8ce92b08"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ReadPlayerQuickSlots():IReadOnlyList < SourceWeaponKey ? >:public",
@@ -3338,13 +3275,6 @@
       "Hash": "8b2f57f13cfb667c2f7033e2b19dda2d2a559c91fef4e84376eaa5a6c45d8cbc"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1WorldModule(:RuntimeWorld,:RuntimeWorldScene . Result):Rac1WorldModule:private",
-      "Owner": "#360",
-      "Rationale": "Final #376 typed composition/delegation to the owning player, world, navigation, diagnostic, menu or persistence component. No native rules, resource ownership or diagnostic assertions belong in this bound root member. Its exact fingerprint remains reviewed.",
-      "ExpiresWith": "#376",
-      "Hash": "dbcce9881ccf75e09f80b9271353e090107f6dbafee47d5dbd74dc1ba97cc115"
-    },
-    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RefreshRac1HudState(params:HudFeedbackDraft [  ]):void:private",
       "Owner": "#360",
       "Rationale": "Temporary composition binding to the lease-owned R&C1 module or existing persistent player owner. No collection or native gameplay policy lives in the root; Rac1WorldContextTests and world/player lifecycle reconciliation cover isolation. #353 delegates the same health facts/actions to the scene-bound lifecycle owner.",
@@ -3363,7 +3293,7 @@
       "Owner": "#367",
       "Rationale": "Temporary root composition of the persistent player-owned R&C1 weapon input coordinator. Delegates only borrowed current-player inventory, source host, view and world-lease facts; no new root mutable state. The new weapon path is handled by the coordinator and existing source-native sessions. Retire this factory port with thin-root owner cleanup.",
       "ExpiresWith": "#376",
-      "Hash": "af9f9850498d8f0cb4930ea22cb56b6d194d3d75114ef862557d20dd9a6d4082"
+      "Hash": "c772d62f3989b5df430b50d3e11b990f6e1ce6ba2add0953c4cf93b111595a2a"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:_rac1BoltWallet:Rac1BoltWallet:get/,set/:private",
@@ -3412,7 +3342,7 @@
       "Owner": "#352",
       "Rationale": "Final #376 typed composition/delegation to the owning player, world, navigation, diagnostic, menu or persistence component. No native rules, resource ownership or diagnostic assertions belong in this bound root member. Its exact fingerprint remains reviewed.",
       "ExpiresWith": "#376",
-      "Hash": "7457257a506f1d9a7727195a02428430b28d0e4baa53f68f0cf5a4467269b3f6"
+      "Hash": "4be27c43aebb7e30b36f99c61cf0a4dbe07870cc1faa05925ebbe5778286800f"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ToNumerics(:Vector3):System . Numerics . Vector3:private,static",
@@ -3450,95 +3380,11 @@
       "Hash": "42868dcd177ab57e1666359ece12f1d4dccaa88d37b4caf3a2b85720e3ed8065"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1EnemyHost(:RuntimeWorld,:RuntimeWorldScene . Result,:Rac1WorldModule):Rac1EnemyHost:private",
-      "Owner": "#361",
-      "Rationale": "Exact scene enemy composition: source path/random, current player contact facts, existing combat/reward presentation and bounded frog/Aridia neighbor callbacks. #364 moves amoeboid gates, contacts and family state into the world-scoped enemy adapter; existing native family and replay regressions guard its semantics. The world module owns the host and contacts; native controllers remain source-owned. Existing neighbor reset/state bindings expire as #362/#363/#368 migrate those owners; final composition removes this factory. No root reference or native algorithm escapes to the host. #362 moves all native frog/Queen/carrier state, contact, source timing and visual/camera leases into Rac1FrogEncounter; only guarded diagnostic composition and narrow camera/effect callbacks remain at the root. Native Frog/Queen checks and source-neutral player-selection rejection tests protect this intermediate boundary; #376 retires the remaining composition glue. #363 routes source-authored Aridia setup, script actors, 60Hz ticks, collision contacts, damage and retirement through Rac1EnemyHost.Aridia instead of reciprocal root delegates; only source-specific player damage descriptor binding remains in typed player ports. #367/#368 reviewed the migration to a world-scoped R&C1 weapon/gadget owner and camera lease; existing diagnostic factories now read those owned projections, with unchanged source-native identities and no new root mutable state. #367/#368 now obtains R&C1 target geometry and occlusion through world-scoped Rac1WeaponContactHost with per-physics-frame caches, while preserving the original host contact/ray and damage semantics; native player/equipment authority and replay IDs remain unchanged. #367/#368 defers the world-owned contact/target delegates until their owning R&C1 lease exists; host construction must not resolve Rac1World eagerly. The new ContactCallbacksDoNotResolveTheWorldDuringHostConstruction guard covers each factory. #367/#368 moves native Decoy Glove and Drone Device deployable state into the world-scoped Rac1ArsenalDeployableHost. Enemy decoy attraction, same-attacker cooldown, native movement/hit dispatch and live arsenal diagnostic witnesses are delegated through typed ports with no new root fields. Existing source-native rule constants and lease lifecycle/tick order remain unchanged. #366 forwards explosive admission only through that specific lease's breakable host, preserving the same R&C1 native contact consumer. Combined #366/#367/#368 merge review: source-world breakables and weapon contact/arsenal owners now coexist in the same lease; deferred line-of-sight, enemy admission and diagnostic reads retain their native policy and no new root mutable state is introduced. #367/#368 enemy/Suck Cannon eligibility observes morph identity through the scoped Morph host rather than a root collection. #368: the enemy/actor contact coalescing borrows the owning R&C1 world wrench hit-admission set, without a root mutable collection. #367/#368: native wrench damage admission and crate/hostile world dispatch moved into per-lease Rac1WrenchDamageHost. The persistent player's native wrench controller and reward RNG remain borrowed authorities through typed ports. Existing diagnostics, enemy/actor and bomb callbacks retain their entry points, now routed to the world owner; no duplicate native damage session or new root mutable state. #367/#368: world-scoped Rac1EquipmentProjectileHost now owns Blaster/Suck Cannon carriers, thrown mine/Doom projectiles, Doom agents, Taunter/Suck motes and shrinking flashes. Root use/input, native Pyrocitor particle damage and persistent ammo remain separate. Enemy, Taunter and diagnostic factories borrow typed world views by lease; shared contact and Moby damage rules are delegated unchanged. Retains reset, native movement, collision, sound, source IDs and emission ordering without adding root state. #367/#368 final player input extraction: native input, selection and equipment cycle now use the persistent PlayerSessionHost.Rac1WeaponPlayerInputHost with typed deferred world/source/UI ports; only the source-neutral composition borrow remains in OBPGame. The original root combat partial, no-op swing forwarding and random reward wrapper are retired. Native hand, damage and campaign authorities stay unchanged. #367/#368 final root cleanup: transient R&C1 effects and equipment-use forwarding now live in world-scoped hosts borrowing their original player, source, presentation and damage authorities. No duplicate native inventory, ammunition, persistent root state or runtime authority is introduced. The audited root weapon/weapon-world partials are retired.",
-      "ExpiresWith": "#376",
-      "Hash": "b8b98669ffea7ec6e52999a9c805e990a7526f7a72d5b1569017dc662654b358"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac2WorldModule(:RuntimeWorld,:GodotWorldResources):Rac2WorldModule:private",
-      "Owner": "#373",
-      "Rationale": "Lease-scoped source-world factory selects the existing scene resource, authentic R&C2 build and narrowly typed presentation/player damage ports. Native actor state remains source-owned; no player provider is selected. #373 native opening/actor tests and mixed-source acceptance protect this composition. #373 follow-up labels the individual port callbacks to prevent silent boolean delegate order mistakes; regression and mixed-source native smoke verified.",
-      "ExpiresWith": "#376",
-      "Hash": "99b11e41813764e1cfb2f100a420dca967b0bae1761514bc7b825cc03e364bae"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_movementNotices:GodotMovementStateNotice ?:private",
-      "Owner": "#358",
-      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
-      "ExpiresWith": "#376",
-      "Hash": "cb847d09450238e8ece21e72d4f40716332ef07280123b39b257ff390172490b"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_movementReproduction:MovementReproductionService ?:private",
-      "Owner": "#358",
-      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
-      "ExpiresWith": "#376",
-      "Hash": "d9c1cf1878a839730a37ce9ab5b311c117e41438de8c8ec55369e5417148abdf"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_movementWorldState:Rac1MovementWorldStateAdapter ?:private",
-      "Owner": "#358",
-      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
-      "ExpiresWith": "#376",
-      "Hash": "1ff5ecdde7b74dc0cbdcc6162080ffb22315b75d36239f267a921e46312e86b7"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_replayBookmarkNavigation:GodotReplayBookmarkNavigation ?:private",
-      "Owner": "#358",
-      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
-      "ExpiresWith": "#376",
-      "Hash": "20dea4eed346715d7f89288172b6168dceefe12ea4451667af06e591a2e356ac"
-    },
-    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:LoadMovementStateFromBootstrap():void:public",
       "Owner": "#358",
       "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
       "ExpiresWith": "#376",
-      "Hash": "207bd874c5a8b089a7adc8097c244c24c410fcf4ea22f235084eea7322be740e"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:MovementWorldStateCapture():MovementReproWorld:private",
-      "Owner": "#358",
-      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
-      "ExpiresWith": "#376",
-      "Hash": "936c8a86fd9cda97bf5aff9a984ec94f2b05736419192b99ebe1446905d9cac9"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:PrepareMovementWorld(:MovementReproWorld):void:private",
-      "Owner": "#358",
-      "Rationale": "Final #376 typed composition/delegation to the owning player, world, navigation, diagnostic, menu or persistence component. No native rules, resource ownership or diagnostic assertions belong in this bound root member. Its exact fingerprint remains reviewed.",
-      "ExpiresWith": "#376",
-      "Hash": "bffa9cb84fc5e3034eb819162cac52f24f636325ada5d1397ece546818cb60da"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::property:MovementNotices:GodotMovementStateNotice:get/:private",
-      "Owner": "#358",
-      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
-      "ExpiresWith": "#376",
-      "Hash": "c7a0d863850927e1a38590e1237fabf7916bf0fd37e9d309c88e7934f637cdb5"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::property:MovementReproduction:MovementReproductionService:get/:private",
-      "Owner": "#358",
-      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
-      "ExpiresWith": "#376",
-      "Hash": "2e69bf19f3708fccc38b187a330379ef283de94e9bf0f6f838177251dd141f8a"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::property:MovementWorldState:Rac1MovementWorldStateAdapter:get/:private",
-      "Owner": "#358",
-      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller. #367/#368 moves the Suck Cannon capture/cargo presentations into the Rac1WeaponHost world lease. Actor retirement, arsenal diagnostic snapshots and bookmark restoration now resolve typed world-owned cargo adapters lazily; native inventory, saved identities, damage and pickup authority are unchanged. Movement bookmark cargo restoration now uses explicit lease-owned read/clear/remember operations instead of exposing a mutable ChickenCargo set to the application root. #367/#368. #367/#368 movement replay now borrows a read-only snapshot of transformed enemy keys from the per-world Rac1MorphHost and restores through its explicit Morph transition. Cargo identities remain separate. #367/#368: player-session-owned Rac1AdditionalUseHost now holds R&C1 additional-weapon request admission, native Rac1AdditionalWeaponSession instance, preview inventory binding, equipment use tick/age, Pyrocitor held flag and shot diagnostics. Root continues to render/distribute world effects through existing owners after its player-use result. Native ammo/cadence remain in the single borrowed weapon inventory and native source session; no new RNG or independent world authority. Original selection, preview resets, native step, shot presentation, persistence and audio ordering retained; write-only generations ledger eliminated.",
-      "ExpiresWith": "#376",
-      "Hash": "a4fe9c841d762a8a294bffa50ce323dff162a4264993f054f130a9d574a14935"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::property:ReplayBookmarkNavigation:GodotReplayBookmarkNavigation:get/:private",
-      "Owner": "#358",
-      "Rationale": "Typed movement reproduction, world-state and replay bookmark host composition; the operation and its lifetime are owned by extracted adapters, not by an additional root controller.",
-      "ExpiresWith": "#376",
-      "Hash": "2c91044e611744574ac381484e5d70e96de1e1bee3a463f63be4d463e2c8260f"
+      "Hash": "984dbc43a6abb7b82bb3a74ce5196bb6210e57660340ac60521c20283fc61a16"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ApplyRac1AmmoGrant(:int,:int):Rac1AmmoGrantResult:public",
@@ -3650,21 +3496,21 @@
       "Owner": "#376",
       "Rationale": "Final audited application composition: GodotApplicationPresentation owns scene/view/player nodes; WorldSceneLifetime and GodotWorldResources own world preparation, activation and retirement; navigation owns retained summary metadata; shutdown owns drain/audio policy. This member only binds or projects those existing owners and cannot acquire feature state.",
       "ExpiresWith": "#376",
-      "Hash": "306c6258a40d3c7c29f563fdfe09faff5799713b6c7e53c989c80025bf4d3a9d"
+      "Hash": "179cb5acc50b6725188e7edf2ca04a4cacb619e42cfa5cfe0a783a5aa7aedc13"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:EnterWorld(:string,:Func < RuntimeWorld >,:ObpDestination ?,:string ?,:FusionLabDefinition ?):bool:private",
       "Owner": "#376",
       "Rationale": "Final audited application composition: GodotApplicationPresentation owns scene/view/player nodes; WorldSceneLifetime and GodotWorldResources own world preparation, activation and retirement; navigation owns retained summary metadata; shutdown owns drain/audio policy. This member only binds or projects those existing owners and cannot acquire feature state.",
       "ExpiresWith": "#376",
-      "Hash": "751a6e357b03b76a844656d71b3e3033c38ecd1b42c29b3745ba286cfb5ca353"
+      "Hash": "de9812ea084fe79ace32770caaa8739aa6a036903626613eb81ac9984273e447"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:PrepareForQuitAsync():Task:private",
       "Owner": "#376",
       "Rationale": "Final audited application composition: GodotApplicationPresentation owns scene/view/player nodes; WorldSceneLifetime and GodotWorldResources own world preparation, activation and retirement; navigation owns retained summary metadata; shutdown owns drain/audio policy. This member only binds or projects those existing owners and cannot acquire feature state.",
       "ExpiresWith": "#376",
-      "Hash": "7efd85c4f5d74d2389e7ddae511d05162d6b413428c1ed3b29df12c583085bdc"
+      "Hash": "309221c3e8326a598f7ce72ce47ebeffe78f6e6d66320022987805002f27a7fc"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:Presentation:GodotApplicationPresentation:get/:private",
@@ -3790,7 +3636,63 @@
       "Owner": "#376",
       "Rationale": "Composition-only reference to the diagnostic fixture catalogue in game/diagnostics/ApplicationDiagnostics.cs. The root supplies an explicit context of owned components and named actions; fixture binding, assertions and observation ports live with the diagnostics.",
       "ExpiresWith": "#376",
-      "Hash": "a7b90f47deae8a1e202f081b21ac8b48b1d6ed9e59cedf0d6627d7c3e710c49c"
+      "Hash": "e01e8620ef5174361f7221c99566c416dded5d8acdbf612addb7fb35387c77fa"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_components:ApplicationComponents ?:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition). The module binds owned components to narrow source-world ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "61c287bb947fccba8c6d686ace89b3993b6e12994270aa9df6ff0fb5c438febd"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_rac1Composition:Rac1WorldComposition ?:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition). The module binds owned components to narrow source-world ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "ded9c1dc80a837d737b2e7275f284f754f761c7d6756a60b7d3803b1f146ef11"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_rac2Composition:Rac2WorldComposition ?:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition). The module binds owned components to narrow source-world ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "c75e7a6b04270ad787ea05fff37906a5a5af5cce5a9f4a607d2044ea9b8230d6"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Components:ApplicationComponents:get/:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition). The module binds owned components to narrow source-world ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "e8ba313425b20b4c4dafae83b938e06f13ff676979afb3a00b53b4308aba59e9"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Rac1Composition:Rac1WorldComposition:get/:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition). The module binds owned components to narrow source-world ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "97c94d81024905fc63fd127bdf1da18aa52f45adc81cd2f45b280cdefd2be4e7"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Rac2Composition:Rac2WorldComposition:get/:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition). The module binds owned components to narrow source-world ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "1081a87ef13617dfd864d6247a82a9899c9932cbdf170dec444320a751f0cefa"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_capture:CaptureComposition ?:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition, CaptureComposition). The module binds owned components to narrow ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "f04558d0b05bac62b8ad7d84d3775912c6167246a2ef2bf2da31905e47bca1fb"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Capture:CaptureComposition:get/:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition, CaptureComposition). The module binds owned components to narrow ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "b5712bc75f509b6499169184b4f505ed051d6a0222e654e783317f0c07513898"
     }
   ],
   "RetiredMembers": [

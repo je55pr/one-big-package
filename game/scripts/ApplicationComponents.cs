@@ -1,5 +1,6 @@
 using Godot;
 using OBP.Core;
+using OBP.Game.Diagnostics;
 using OBP.Godot;
 using OBP.RAC1.Progression;
 using OBP.Fusion;
@@ -10,7 +11,7 @@ using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Presentation;
 
-namespace OBP.Game.Diagnostics;
+namespace OBP.Game;
 
 /// <summary>
 /// The complete set of application facts and actions that diagnostic fixtures may be
@@ -19,7 +20,7 @@ namespace OBP.Game.Diagnostics;
 /// ports built from these, never the root node, so a new scenario is registered in
 /// <see cref="ApplicationDiagnostics"/> without touching <c>OBPGame</c>.
 /// </summary>
-internal sealed record ApplicationDiagnosticsContext(
+internal sealed record ApplicationComponents(
     Node3D Host,
     Func<CommandLineArgs> Args,
     Action<CommandLineArgs> ReplaceArgs,
@@ -31,6 +32,7 @@ internal sealed record ApplicationDiagnosticsContext(
     HudStateAdapter Hud,
     Func<GodotApplicationPresentation> Presentation,
     Func<WorldSceneLifetime<GodotWorldResources>> WorldScenes,
+    Func<WorldSceneLifetime<GodotWorldResources>?> WorldScenesIfCreated,
     Func<SourceSetupController> Sources,
     Func<FusionWeaponHost> Fusion,
     Func<GodotPlayerLifecycleHost> Life,
@@ -60,4 +62,8 @@ internal sealed record ApplicationDiagnosticsContext(
     Func<string, Func<RuntimeWorld>, ObpDestination?, string?, bool> EnterWorld,
     Action RefreshPlayerSources,
     Func<int, Rac1DestinationDiscoveryResult> ApplyProgressionEvent,
-    Func<bool, bool> CompleteEnvironmentalRestart);
+    Func<bool, bool> CompleteEnvironmentalRestart,
+    Action<HudFeedbackDraft[]> RefreshHud,
+    Func<Rac1HandPresentationContext> Hand,
+    Func<string> SceneKind,
+    Func<ApplicationDiagnostics> Diagnostics);

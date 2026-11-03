@@ -1,9 +1,9 @@
 [
   {
-    "Key": "game/scripts/OBPGame.cs::OBPGame.CreateCapturePresentation()",
+    "Key": "game/scripts/CaptureComposition.cs::CaptureComposition.CreateCapturePresentation()",
     "Kind": "adapter",
-    "Reason": "Optional capture/debug metadata names the actual loaded world provenance; source-qualified player replay uses its own shared-session header. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added. #356 relocates the unchanged world-provenance read into the capture snapshot binding; CaptureFrameMetadataTests and baseline sidecar comparison protect its wire fields. The binding supplies no player capability. #360/#356 integration reads lease-owned gameplay and the existing owned capture metadata projection; no player service is selected. Metadata wire tests and fresh native/shared replay cover this binding.",
-    "Hash": "f43664300f28c86f0c14e3dcd91890c6f79954b97b49d3a26174deed65de3977"
+    "Reason": "Optional capture/debug metadata names the actual loaded world provenance; source-qualified player replay uses its own shared-session header. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added. #356 relocates the unchanged world-provenance read into the capture snapshot binding; CaptureFrameMetadataTests and baseline sidecar comparison protect its wire fields. The binding supplies no player capability. #360/#356 integration reads lease-owned gameplay and the existing owned capture metadata projection; no player service is selected. Metadata wire tests and fresh native/shared replay cover this binding. #376 moves the unchanged read into CaptureComposition with the capture services; it still supplies no player capability.",
+    "Hash": "fd56c90a88aba352f46ff545021d1e9447480f01fa4889fc5291cf0a16e8966b"
   },
   {
     "Key": "game/scripts/WorldHud.cs::WorldHud.Format(WorldHudFrame)",
