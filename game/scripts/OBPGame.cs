@@ -682,7 +682,7 @@ public partial class OBPGame : Node3D
         Host: this, Args: () => _args, ReplaceArgs: args => _args = args, Operations: _hostOperations,
         Player: _persistentPlayer, Campaign: _rac1Campaign, Avatar: _avatarPresentation,
         Equipment: _equipmentPresentation, Hud: _hudState,
-        Presentation: () => Presentation, WorldScenes: () => WorldScenes, Sources: () => Sources,
+        Presentation: () => Presentation, WorldScenes: () => WorldScenes, WorldScenesIfCreated: () => _worldScenes, Sources: () => Sources,
         Fusion: () => FusionWeapons, Life: () => PlayerLife, Actors: () => ActorHost,
         Reproduction: () => Capture.Reproduction, Capture: () => Capture.Replay, CaptureIfStarted: () => Capture.ReplayIfStarted,
         CapturePresentation: () => Capture.CaptureView, Navigation: () => _navigation, Modals: () => Modals,

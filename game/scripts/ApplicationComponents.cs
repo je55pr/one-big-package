@@ -32,6 +32,7 @@ internal sealed record ApplicationComponents(
     HudStateAdapter Hud,
     Func<GodotApplicationPresentation> Presentation,
     Func<WorldSceneLifetime<GodotWorldResources>> WorldScenes,
+    Func<WorldSceneLifetime<GodotWorldResources>?> WorldScenesIfCreated,
     Func<SourceSetupController> Sources,
     Func<FusionWeaponHost> Fusion,
     Func<GodotPlayerLifecycleHost> Life,

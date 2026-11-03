@@ -20,10 +20,43 @@ namespace OBP.Game.Diagnostics;
 /// <summary>
 /// Diagnostic fixture catalogue. Each factory binds a scenario harness to focused
 /// observation and action ports over the owned application components. This is the
-/// only place those bindings live; <c>OBPGame</c> only supplies the Context.
+/// only place those bindings live; <c>OBPGame</c> only supplies the application components.
 /// </summary>
 internal sealed class ApplicationDiagnostics(ApplicationComponents components) : CompositionBase(components)
 {
+    private bool PlayerAvatarPresentationIsSynchronized() => _avatarPresentation.IsSynchronized;
+    private void UpdateWorldHud() => Presentation.UpdateWorldHud(_worldScenes?.Current, _worldHost, _worldSwitches, Context.Mode().World);
+    private void ApplyOverlaySpec(string? spec) => Presentation.ApplyOverlaySpec(spec);
+    private bool SaveSharedProfile(string reason) => Profiles.Save(reason);
+    private void FlushRac1CampaignSaves(string boundary) => _rac1Campaign.Persistence.FlushAndReport(boundary);
+    private void TickRac1CampaignSaves(double delta) => _rac1Campaign.Persistence.TickAndReport(delta);
+    private Rac1DestinationDiscoveryResult ApplyRac1CampaignProgressionEvent(int id) => Context.ApplyProgressionEvent(id);
+    private Rac1PlanetTravelStartResult TravelRac1CampaignTo(int id) => _navigation.TravelRac1CampaignTo(id);
+    private void RememberCommandLineSource(ObpSourceGame game, string path, bool persist = true) => Sources.Remember(game, path, persist);
+    private void RefreshPlayerSourceAvailability() => Context.RefreshPlayerSources();
+    private bool EnterWorld(string destinationId, Func<RuntimeWorld> load, ObpDestination? nativeDestination, string? sourcePath) =>
+        Context.EnterWorld(destinationId, load, nativeDestination, sourcePath);
+    private void CloseWeaponQuickSelect(SourceWeaponKey? weapon = null) => Modals.CloseQuickSelect(weapon);
+    private bool TryOpenWeaponQuickSelect(InputEvent input) => Modals.OpenQuickSelect(input);
+    private bool TryClosePauseMenu() => Modals.TryClosePause();
+    private bool TryOpenPauseMenu() => Modals.OpenPause();
+    private bool TryHandleInteractiveBack() => _navigation.HandleBack(Modals);
+    private void ShowDestinationSelector() => _navigation.ShowSelector();
+    private void ShowTitleScreen() => _navigation.ShowTitle();
+    private bool EnterProviderWorld(string path, ObpDestination destination) => _navigation.EnterProviderWorld(path, destination);
+    private string? PlayerEquipmentConfigurationIdentity => _persistentPlayer.Equipment.ConfigurationIdentity;
+    private Rac1CampaignRestoreKind _rac1CampaignRestoreKind => _rac1Campaign.Persistence.RestoreKind;
+    private string? _rac1CampaignRestoreWarning => _rac1Campaign.Persistence.RestoreWarning;
+    private bool _profileWriteBlocked => Profiles.WriteBlocked;
+    private ObpProfile? _profileDocument => Profiles.Document;
+    private string? SharedProfilePath => Profiles.SharedProfilePath;
+    private bool BugReportModalOpen => _bugReporting?.IsOpen == true || _captureReplay?.Recorder?.BugInputSuspended == true;
+    private PlayerHud? _playerHud => Presentation.PlayerHud;
+    private Node3D _playerRoot => Presentation.PlayerRoot;
+    private Node3D _worldRoot => Presentation.WorldRoot;
+    private SourceWeaponKey CurrentWeaponKey => Context.CurrentWeapon();
+    private GodotCapturePresentation CapturePresentation => Context.CapturePresentation();
+    private WorldSceneLifetime<GodotWorldResources> WorldScenes => Context.WorldScenes();
     private enum Mode { Smoke, Picker, Selector, World, Title }
     private Mode _mode => Context.Mode() switch { { Title: true } => Mode.Title, { Selector: true } => Mode.Selector, { World: true } => Mode.World, { Picker: true } => Mode.Picker, _ => Mode.Smoke };
 
@@ -100,7 +133,7 @@ internal sealed class ApplicationDiagnostics(ApplicationComponents components) :
             Prepare = () => FusionWeapons.PrepareSources(force: true),
             Reset = () => FusionWeapons.ResetWorld(),
             Clear = () => FusionWeapons.ClearTransients(),
-            Reenter = () => { _args = _args with { FusionTest = false }; return OnDestinationChosen(_activeDestination!); },
+            Reenter = () => { Context.ReplaceArgs(_args with { FusionTest = false }); return OnDestinationChosen(_activeDestination!); },
             ShowDestinations = ShowDestinationSelector,
             Camera = () => _activeCamera,
             Player = () => _player,

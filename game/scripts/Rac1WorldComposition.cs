@@ -19,6 +19,13 @@ namespace OBP.Game;
 /// </summary>
 internal sealed class Rac1WorldComposition(ApplicationComponents components) : CompositionBase(components)
 {
+    private void ShowRac1CombatRetry() => _worldScenes?.Current?.Resources.Rac1Gameplay?.Lifecycle.ShowCombatRetry();
+    private void TickRac1VeldinEnvironmentalDeath() => _worldScenes?.Current?.Resources.Rac1Gameplay?.Lifecycle.TickEnvironmentalDeath();
+    private void PersistRac1CampaignState(string reason) => _rac1Campaign.Persistence.Persist(reason);
+    private void AddChild(Node node) => _host.AddChild(node);
+    private ulong _lastQuickSelectTap { set { if (value == 0) Modals.ResetWheelGesture(); } }
+    private SourceWeaponKey? _previousSelectedWeapon { get => Modals.PreviousSelectedWeapon; set => Modals.PreviousSelectedWeapon = value; }
+    private bool InWorldMode => Context.Mode().World;
 
     internal Rac1WorldModule CreateRac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene) => new(world, scene, _persistentPlayer.Rac1EffectRandom(_args.FixedSeed),
         new Rac1LootPorts(() => _player, () => _world, () => _rac1Weapons, () => _rac1Nanotech,

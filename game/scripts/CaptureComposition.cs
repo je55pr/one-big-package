@@ -19,11 +19,15 @@ namespace OBP.Game;
 /// <summary>
 /// Owns the lazily built capture, replay, movement-reproduction and source-verification
 /// services and binds them to the application's owned components. Recording formats, replay
-/// validation and reproduction semantics stay in their services; _host module only supplies
+/// validation and reproduction semantics stay in their services; this module only supplies
 /// typed observation and action ports.
 /// </summary>
 internal sealed class CaptureComposition(ApplicationComponents components) : CompositionBase(components)
 {
+    private static System.Numerics.Vector3 ToNumerics(Vector3 value) => new(value.X, value.Y, value.Z);
+    private IReadOnlyList<ProfileSource> CaptureProfileSources() => Profiles.CaptureProfileSources();
+    private ObpProfile CaptureSharedProfile() => Profiles.Capture();
+    private ApplicationDiagnostics Diagnostics => Context.Diagnostics();
     // Reproduction owns save/load and forward sampling; the root exposes typed
     // world-entry and presentation ports rather than a second scene loader.
     private GodotMovementStateNotice? _movementNotices;

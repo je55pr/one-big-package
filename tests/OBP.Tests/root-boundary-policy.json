@@ -3664,7 +3664,7 @@
       "Owner": "#376",
       "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition). The module binds owned components to narrow source-world ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
       "ExpiresWith": "#376",
-      "Hash": "8af9606a37be807ca7b98e6fa6ff2b7341008ee72fb067d02e158342c68c8654"
+      "Hash": "e8ba313425b20b4c4dafae83b938e06f13ff676979afb3a00b53b4308aba59e9"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:Rac1Composition:Rac1WorldComposition:get/:private",
