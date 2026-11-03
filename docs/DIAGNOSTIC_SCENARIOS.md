@@ -11,7 +11,8 @@ ownership; it cannot look up the root or arbitrary services.
 > landed, and describe the root permissions, temporary delegations and partial
 > counts as they stood then. Those phases are closed and the retired `OBPGame.*`
 > diagnostic partials no longer exist (see [OBPGAME_ROOT_CENSUS.md](OBPGAME_ROOT_CENSUS.md)).
-> `WorldSmokeHarness` currently registers 22 first-world smoke scenarios.
+> `WorldSmokeHarness` currently registers 22 scenarios: 20 R&C1-sourced, the
+> source-neutral `movement-smoke`, and the R&C3 `rac3-target-seed-audit`.
 
 ## Admission and lifetime
 
