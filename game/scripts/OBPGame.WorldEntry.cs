@@ -221,14 +221,8 @@ public partial class OBPGame
         EnsurePlayerSession();
         RefreshPlayerSourceAvailability();
         _persistentPlayer.ResolvePresentationProfiles();
-        var identity = _playerSession!.Capture().Configuration.Avatar;
-        if (Engine.PhysicsTicksPerSecond != _playerAnimationProfile!.NativeTicksPerSecond)
-            throw new InvalidOperationException($"Selected player animation requires {_playerAnimationProfile.NativeTicksPerSecond} physics ticks per second.");
-        if (identity.SourceGame == ObpSourceGame.Synthetic) return;
-        var availability = _playerSession.Availability(identity.SourceGame, identity.BuildId, true, true);
-        if (!availability.Usable) throw new InvalidOperationException(availability.Reason);
-        var source = Sources.Setup.VerifySelectedSourceFile(identity.SourceGame, identity.BuildId);
-        _avatarPresentation.PrepareSelected(identity, source.Path, source.Stamp,
+        _avatarPresentation.PrepareSelectedWorldEntry(_playerSession!, _playerAnimationProfile!,
+            Engine.PhysicsTicksPerSecond, Sources.Setup.VerifySelectedSourceFile,
             _equipmentPresentation, OrdinaryPlayerSession);
     }
 
