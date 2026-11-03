@@ -41,8 +41,9 @@ contract (one static native routine, one sequential scenario, one census) is fin
 - **Import expensive retail data once.** Use an `IClassFixture` that imports the level or world once per class and
   exposes it as `null` when the ISO variable is unset (`Rac1KerwanRetailFixture`, `Rac2OozlaWorldImportFixture`). Tests
   only read the shared value and build their own session or mutable state.
-- **Retail gating stays explicit.** Each retail test starts with its own  on the matching   variable. When a class, or a family of classes split from one, repeats that preamble many times, a small
-  -style helper () with the same  and message is fine. Do not add a
+- **Retail gating stays explicit.** Each retail test starts with its own `Skip.If` on the matching `OBP_*_ISO`
+  variable. When a class, or a family of classes split from one, repeats that preamble many times, a small
+  `RequireIso()`-style helper (`Rac2RetailLevelFixtures`) with the same `Skip.If` and message is fine. Do not add a
   repository-wide helper just to shorten the preamble. Restructuring never changes whether a test skips, fails or
   passes.
 - **Preserve evidence.** Keep native provenance comments, addresses, offsets, exact retail constants and theory rows
