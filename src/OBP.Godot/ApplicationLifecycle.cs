@@ -68,6 +68,17 @@ public static class ApplicationLifecycle
         }
     }
 
+    /// <summary>
+    /// World preparation is reversible until activation. A superseded request
+    /// is telemetry only; a live uncancelled preparation failure exits the
+    /// non-interactive host with the original error code.
+    /// </summary>
+    public static void ReportWorldPreparationFailure(Node owner, Exception error, bool superseded)
+    {
+        GD.PrintErr($"[lifecycle] deferred world preparation failed (superseded={superseded}): {error}");
+        if (!superseded && owner.IsInsideTree()) RequestQuit(owner, "world-preparation-failed", 2);
+    }
+
     public static void ReportNavigation(string reason) =>
         GD.Print($"[lifecycle] navigation reason={reason}");
 

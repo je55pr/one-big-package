@@ -996,7 +996,8 @@ public partial class OBPGame : Node3D
             SaveNotice: () => PlayerSaveNotice, CurrentDestinationId: () => _worldScenes?.DestinationId,
             FusionPreparing: () => FusionWeapons.Sources.Preparation is not null, FusionFailure: () => FusionWeapons.Sources.Failure,
             CancelPreparation: () => _worldScenes?.CancelPreparation(),
-            AbandonFailedTravel: AbandonFailedRac1Travel, ReportFailure: ReportWorldPreparationFailure,
+            AbandonFailedTravel: AbandonFailedRac1Travel,
+            ReportFailure: (error, superseded) => ApplicationLifecycle.ReportWorldPreparationFailure(this, error, superseded),
             EnterWorld: (id, load, destination, sourcePath, lab) => EnterWorld(id, load, destination, sourcePath, lab),
             EnterPage: isTitle =>
             {

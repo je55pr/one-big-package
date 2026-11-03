@@ -7,7 +7,7 @@ This is an ownership and file accounting snapshot, not a claim that final root c
 | Metric | Frozen origin | Current checkpoint |
 | --- | ---: | ---: |
 | Root-declaring files | 122 | 2 |
-| Root-declaring file lines | 27362 | 2931 |
+| Root-declaring file lines | 27362 | 2921 |
 
 File-by-file inventory. Ownership references are **original migration issue assignments**, not claims about the destination class:
 
@@ -134,7 +134,7 @@ File-by-file inventory. Ownership references are **original migration issue assi
 | `game/scripts/OBPGame.Sources.cs` | #346 | 316 | Retired | 0 |
 | `game/scripts/OBPGame.SourceSetup.cs` | #346 | 82 | Retired | 0 |
 | `game/scripts/OBPGame.StressDiagnostics.cs` | #345 | 114 | Retired | 0 |
-| `game/scripts/OBPGame.WorldEntry.cs` | #376 | 178 | Active | 323 |
+| `game/scripts/OBPGame.WorldEntry.cs` | #376 | 178 | Active | 312 |
 
 #376 now delegates world-debug HUD rendering to `WorldHud`, original-order player-spawn placement selection to `GodotPlayerSpawnPlacement`, and overlay command parsing to the existing `DebugOverlay`. `OBPGame` still owns live player construction, world-lease integration and host wiring; no new all-capabilities controller was introduced.
 
@@ -151,5 +151,7 @@ The world-lease-owned `GodotWorldResources` now constructs the native effects ho
 The selected-avatar admission, animation-rate check and source-file verification orchestration now live with `PlayerAvatarPresentationHost.PrepareSelectedWorldEntry`. The root only ensures the persistent session and profiles are ready and supplies narrow session, source-verification and equipment ports. SourceSetupCoordinator still owns file/build verification, and prepared visuals remain uncommitted until world activation.
 
 The native-world loading adapter and authored entry validation now belong entirely to `WorldEntryPreparationPolicy`, along with the source-file stamp recheck that guards destructive world commit. The root supplies the loader and retains commit/rollback sequencing; the nested `OBPGame.WorldSource` and its `Prepare` member are retired in the frozen ledger.
+
+Navigation now owns browser recovery when a world fails to enter: the root reports the failure and whether an existing world remains, while `ApplicationNavigationCoordinator` chooses when to show the selector and its error hint. `ApplicationLifecycle` now owns deferred preparation failure telemetry and the superseded-vs-live quit gate. The old `OBPGame.ReportWorldPreparationFailure` root member is retired. The root still supplies its scene-node ports but does not implement these two failure policies.
 
 The remaining root files still contain host composition and world-entry glue. The rest of #376 requires migrating those members to existing owners, deleting the WorldEntry partial, tightening architecture guards and validating the full 17-phase authorised real-input suite.

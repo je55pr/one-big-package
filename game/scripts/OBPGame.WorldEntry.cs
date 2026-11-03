@@ -73,12 +73,7 @@ public partial class OBPGame
         catch (Exception error)
         {
             AbandonFailedRac1Travel();
-            DestinationError($"{destinationId} could not load: {error.Message}");
-            if (_world is null)
-            {
-                ShowDestinationSelector();
-                _navigation.SetSelectorHint(error.Message);
-            }
+            _navigation.ReportWorldEntryFailure(destinationId, error, _world is not null);
             if (_args.CaptureFrame is not null || (_args.PlayerSessionSmoke || _args.PlayerCapabilitiesSmoke) && _world is null)
                 ApplicationLifecycle.RequestQuit(this, "world-entry-failed", 2);
             return false;
@@ -122,12 +117,6 @@ public partial class OBPGame
             },
             ScenePresentation: delta => _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero),
             HudPresentation: () => { UpdatePlayerHud(); UpdateWorldHud(); }));
-    }
-
-    private void ReportWorldPreparationFailure(Exception error, bool superseded)
-    {
-        GD.PrintErr($"[lifecycle] deferred world preparation failed (superseded={superseded}): {error}");
-        if (!superseded && IsInsideTree()) ApplicationLifecycle.RequestQuit(this, "world-preparation-failed", 2);
     }
 
     private void ActivateWorld(RuntimeWorld world, GodotWorldResources resources,
