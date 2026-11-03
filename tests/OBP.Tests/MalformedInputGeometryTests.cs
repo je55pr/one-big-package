@@ -756,6 +756,15 @@ public sealed class MalformedInputGeometryTests
 
     // ------------------------------------------------------------- moby ----
 
+    [Theory]
+    [InlineData(int.MaxValue)]
+    [InlineData(int.MaxValue - 8)]
+    [InlineData(int.MinValue)]
+    public void MobyClassTablesRejectOverflowingEntryOffsets(int offset)
+    {
+        Assert.Empty(GcUyaMoby.ReadClasses(new byte[64], new byte[64], [], new(2, offset)));
+    }
+
     [Fact]
     public void MobyReadersTreatShortBuffersAsAbsentNotAsCrashes()
     {

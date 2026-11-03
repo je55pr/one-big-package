@@ -586,12 +586,13 @@ public static partial class GcUyaMoby
 
         for (int i = 0; i < table.Count; i++)
         {
-            int at = table.Offset + i * ClassEntrySize;
-            if (at < 0 || at + ClassEntrySize > index.Length)
+            long entryAt = (long)table.Offset + (long)i * ClassEntrySize;
+            if (entryAt < 0 || entryAt + ClassEntrySize > index.Length)
             {
                 break;
             }
 
+            int at = (int)entryAt;
             int assetOffset = BinaryPrimitives.ReadInt32LittleEndian(index.AsSpan(at));
             int oClass = BinaryPrimitives.ReadInt32LittleEndian(index.AsSpan(at + 4));
             if (assetOffset <= 0 || assetOffset >= assets.Length)
