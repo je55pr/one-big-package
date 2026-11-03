@@ -24,8 +24,9 @@ internal static class WorldEntryPreparationPolicy
     // composition root. Validation still runs before a prepared plan is staged.
     private sealed class PlannedWorldSource(Func<RuntimeWorld> load) : IWorldEntrySource
     {
-        public PreparedWorldEntry Prepare(WorldEntryRequest _)
+        public PreparedWorldEntry Prepare(WorldEntryRequest request)
         {
+            ArgumentNullException.ThrowIfNull(request);
             var world = load();
             var spawn = ValidateSourceEntry(world);
             return new(world, spawn, []); // Mixed native actor adapters are registered by #256.

@@ -25,17 +25,21 @@ public sealed class WorldEntryPolicyOwnershipTests
 
         Assert.Contains("WorldEntryPlanning.ResolveEntryPoint(world)", policy);
         Assert.Contains("private sealed class PlannedWorldSource(Func<RuntimeWorld> load) : IWorldEntrySource", policy);
+        Assert.Contains("ArgumentNullException.ThrowIfNull(request);", policy);
         Assert.Contains("var world = load();", policy);
         Assert.Contains("var spawn = ValidateSourceEntry(world);", policy);
         Assert.Contains("return new(world, spawn, []);", policy);
         Assert.Contains("if (SourceFileStamp(path) != expected)", policy);
         Assert.Contains("The world source changed during preparation.", policy);
 
+        int firstAssets = entry.IndexOf("PrepareSelectedPlayerAssets();", StringComparison.Ordinal);
         int plan = entry.IndexOf("_worldEntries.Prepare(request,", StringComparison.Ordinal);
         int staged = entry.IndexOf("WorldScenes.Prepare(plan,", StringComparison.Ordinal);
+        int secondAssets = entry.IndexOf("PrepareSelectedPlayerAssets();", firstAssets + 1, StringComparison.Ordinal);
         int secondCheck = entry.IndexOf("RequireUnchangedSourceFile(sourcePath, worldSourceStamp)", StringComparison.Ordinal);
         int commit = entry.IndexOf("_worldEntries.Commit(plan, WorldScenes);", StringComparison.Ordinal);
-        Assert.True(plan >= 0 && plan < staged && staged < secondCheck && secondCheck < commit,
+        Assert.True(firstAssets >= 0 && firstAssets < plan && plan < staged && staged < secondAssets &&
+            secondAssets < secondCheck && secondCheck < commit,
             "World source and selected player assets must be checked before the destructive world commit.");
         Assert.Contains("Rac1NovalisWaterMechanism.AdmitCollisionFace", policy);
         Assert.Contains("IncludeMobyMarkers", policy);
