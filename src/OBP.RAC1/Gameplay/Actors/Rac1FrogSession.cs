@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.Numerics;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
+using static OBP.RAC1.Rac1Finite;
 
 namespace OBP.RAC1.Gameplay;
 
@@ -380,8 +381,6 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
             e.Authored.PathIndex, e.Authored.HasCarrier != 0, e.Authored.StartsHidden != 0,
             e.Authored.SwitchSelector != 0, e.CarrierChildOwned, e.CarrierReleased);
 
-    private static bool Finite(Vector3 v) =>
-        float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
 }
 
 public sealed record Rac1FrogFrame(int NativeState, int Sequence, float Health,

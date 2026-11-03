@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.Numerics;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
+using static OBP.RAC1.Rac1Finite;
 
 namespace OBP.RAC1.Gameplay;
 
@@ -222,8 +223,6 @@ public sealed class Rac1SeekerSession : IRac1MobyDamageConsumer
         e.Native.State.NativeState, e.Sequence, e.Health, e.Yaw, delta, e.Countdown,
         !e.Native.IsActive, exploded, fatalBurst);
 
-    private static bool Finite(Vector3 v) =>
-        float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
 }
 
 public sealed record Rac1SeekerFrame(

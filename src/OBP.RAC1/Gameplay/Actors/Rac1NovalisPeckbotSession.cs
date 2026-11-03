@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.Numerics;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
+using static OBP.RAC1.Rac1Finite;
 
 namespace OBP.RAC1.Gameplay;
 
@@ -186,6 +187,5 @@ public sealed class Rac1NovalisPeckbotSession : IRac1MobyDamageConsumer, IRac1Mo
         e.Sequence, Health(e), e.Destination, e.PeckContact, !e.Instance.IsActive, e.InitialLoiter);
     private static float Health(Entry e) =>
         BinaryPrimitives.ReadSingleLittleEndian(e.Instance.MutablePVar.AsSpan(0x20));
-    private static bool Finite(Vector3 p) => float.IsFinite(p.X) && float.IsFinite(p.Y) && float.IsFinite(p.Z);
     private static float Planar(Vector3 a, Vector3 b) => Vector2.Distance(new(a.X, a.Y), new(b.X, b.Y));
 }

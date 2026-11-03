@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.Numerics;
 using OBP.RAC1.Level;
 using OBP.Runtime;
+using static OBP.RAC1.Rac1Finite;
 
 namespace OBP.RAC1.Gameplay;
 
@@ -97,8 +98,6 @@ public sealed class Rac1FrogWaveTriggers
         return new(instance, previous, e.State, launch, e.Position);
     }
 
-    private static bool Finite(Vector3 v) =>
-        float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
 }
 
 public sealed record Rac1FrogWaveTick(int ControllerInstance, int PreviousState,

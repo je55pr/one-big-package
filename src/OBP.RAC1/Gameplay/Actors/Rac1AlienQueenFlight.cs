@@ -1,4 +1,5 @@
 using System.Numerics;
+using static OBP.RAC1.Rac1Finite;
 
 namespace OBP.RAC1.Gameplay;
 
@@ -117,8 +118,6 @@ public sealed class Rac1AlienQueenFlight
     private static Vector3 NormalizedOrZero(Vector3 v) =>
         v.LengthSquared() > 1e-9f ? Vector3.Normalize(v) : Vector3.Zero;
 
-    private static bool Finite(Vector3 v) =>
-        float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
 }
 
 public sealed record Rac1AlienQueenFlightFrame(int NativeState, int Sequence,

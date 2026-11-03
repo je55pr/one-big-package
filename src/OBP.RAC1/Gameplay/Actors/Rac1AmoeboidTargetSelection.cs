@@ -1,4 +1,5 @@
 using System.Numerics;
+using static OBP.RAC1.Rac1Finite;
 
 namespace OBP.RAC1.Gameplay;
 
@@ -37,7 +38,7 @@ public static class Rac1AmoeboidTargetSelection
     {
         ArgumentNullException.ThrowIfNull(candidates);
         if (sourceCandidateGroup < -1 || sourceCandidateGroup > 255 ||
-            !IsFinite(origin) || !IsFinite(currentTarget) ||
+            !Finite(origin) || !Finite(currentTarget) ||
             !float.IsFinite(searchRadius) || searchRadius < 0)
             throw new ArgumentOutOfRangeException(nameof(sourceCandidateGroup));
 
@@ -49,7 +50,7 @@ public static class Rac1AmoeboidTargetSelection
             if (candidate.NativeClassId != TargetClassId ||
                 candidate.Group != sourceCandidateGroup ||
                 !candidate.SourceActive || candidate.NativeState is < 0 or >= 0x7f ||
-                !IsFinite(candidate.Position)) continue;
+                !Finite(candidate.Position)) continue;
             float distance = Vector3.Distance(origin, candidate.Position);
             if (distance >= best) continue;
             nearest = candidate;
@@ -62,6 +63,4 @@ public static class Rac1AmoeboidTargetSelection
                best < Vector3.Distance(origin, currentTarget) ? nearest : null;
     }
 
-    private static bool IsFinite(Vector3 point) =>
-        float.IsFinite(point.X) && float.IsFinite(point.Y) && float.IsFinite(point.Z);
 }

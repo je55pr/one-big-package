@@ -1,4 +1,5 @@
 using System.Numerics;
+using static OBP.RAC1.Rac1Finite;
 
 namespace OBP.RAC1.Presentation;
 
@@ -22,8 +23,8 @@ public static class Rac1MenuPanelProjection
         Vector2 screenScale, Vector2 halfScreenSize)
     {
         ArgumentNullException.ThrowIfNull(nativeViewTransform);
-        if (!Vector3IsFinite(first) || !Vector3IsFinite(opposite) ||
-            !Vector3IsFinite(cameraPosition) || !Vector2IsFinite(screenScale) ||
+        if (!Finite(first) || !Finite(opposite) ||
+            !Finite(cameraPosition) || !Vector2IsFinite(screenScale) ||
             !Vector2IsFinite(halfScreenSize))
             throw new ArgumentOutOfRangeException(nameof(first), "Non-finite native projection inputs.");
         var a = nativeViewTransform(new Vector4((first - cameraPosition) * 1024f, 1f));
@@ -85,8 +86,6 @@ public static class Rac1MenuPanelProjection
         return new(1 << widthLog, 1 << heightLog, widthLog, heightLog);
     }
 
-    private static bool Vector3IsFinite(Vector3 v) =>
-        float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
     private static bool Vector2IsFinite(Vector2 v) =>
         float.IsFinite(v.X) && float.IsFinite(v.Y);
 }

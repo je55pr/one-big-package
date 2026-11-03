@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using static OBP.RAC1.Rac1Finite;
 
 namespace OBP.RAC1.Gameplay;
 
@@ -370,8 +371,6 @@ public static class Rac1AridiaConstructorbotNative
             System.Numerics.Vector3.UnitZ * up;
     }
 
-    private static bool Finite(System.Numerics.Vector3 v) =>
-        float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
 
     /// <summary>
     /// Source walker_move_v invokes sphere_collide_v at most six times,

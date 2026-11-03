@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.Numerics;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
+using static OBP.RAC1.Rac1Finite;
 
 namespace OBP.RAC1.Gameplay;
 
@@ -148,6 +149,4 @@ public sealed class Rac1NovalisBirdbotSession : IRac1MobyClassController, IRac1M
         Health(entry), entry.Destination, entry.Fire, !entry.Instance.IsActive, entry.Cooldown);
     private static float Health(Entry entry) =>
         BinaryPrimitives.ReadSingleLittleEndian(entry.Instance.MutablePVar.AsSpan(0x20));
-    private static bool Finite(Vector3 point) =>
-        float.IsFinite(point.X) && float.IsFinite(point.Y) && float.IsFinite(point.Z);
 }

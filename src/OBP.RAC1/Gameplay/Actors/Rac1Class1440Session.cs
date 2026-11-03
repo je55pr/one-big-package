@@ -4,6 +4,7 @@ using System.Numerics;
 using OBP.RAC1.Level;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
+using static OBP.RAC1.Rac1Finite;
 
 namespace OBP.RAC1.Gameplay;
 
@@ -177,7 +178,6 @@ public sealed class Rac1Class1440Session : IRac1MobyDamageConsumer, IRac1MobyCla
     }
 
     private void Release(Entry entry) => _attackers.Remove(entry.Instance.InstanceIndex);
-    private static bool Finite(Vector3 value) => float.IsFinite(value.X) && float.IsFinite(value.Y) && float.IsFinite(value.Z);
     private static float PlanarDistance(Vector3 a, Vector3 b) => Vector2.Distance(new(a.X, a.Y), new(b.X, b.Y));
     private void Select(Entry entry, int state, int sequence)
     {

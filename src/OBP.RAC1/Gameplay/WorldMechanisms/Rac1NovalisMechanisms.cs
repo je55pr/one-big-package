@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.RAC1.Level;
+using static OBP.RAC1.Rac1Finite;
 
 namespace OBP.RAC1.Gameplay;
 
@@ -30,7 +31,6 @@ public abstract class Rac1NovalisMechanism
 
     protected static int I(byte[] p, int at) => BinaryPrimitives.ReadInt32LittleEndian(p.AsSpan(at));
     protected static float F(byte[] p, int at) => BinaryPrimitives.ReadSingleLittleEndian(p.AsSpan(at));
-    protected static bool Finite(Vector3 v) => float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
     protected static float PlanarDistance(Vector3 a, Vector3 b) => new Vector2(a.X - b.X, a.Y - b.Y).Length();
 
     // EE ADD/SUB/MUL round toward zero; DIV.S rounds to nearest. Restricted

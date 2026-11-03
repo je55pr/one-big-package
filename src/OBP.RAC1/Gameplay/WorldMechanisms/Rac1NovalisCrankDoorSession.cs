@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Numerics;
+using static OBP.RAC1.Rac1Finite;
 
 namespace OBP.RAC1.Gameplay;
 
@@ -136,6 +137,4 @@ public sealed class Rac1NovalisCrankDoorSession
         return door.Interpolate(Progress(door.CrankInstanceIndex));
     }
 
-    private static bool Finite(Vector3 v) =>
-        float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
 }

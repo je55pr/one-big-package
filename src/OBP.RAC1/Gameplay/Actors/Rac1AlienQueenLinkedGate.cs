@@ -2,6 +2,7 @@ using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.Runtime;
+using static OBP.RAC1.Rac1Finite;
 
 namespace OBP.RAC1.Gameplay;
 
@@ -269,8 +270,6 @@ public sealed class Rac1AlienQueenLinkedGate
     private Rac1AlienQueenGateFrame Snapshot(Parent p) => new(p.Instance,
         p.NativeState, p.Visible, p.RotationOffset, p.Position, Children(p.Instance));
 
-    private static bool Finite(Vector3 v) => float.IsFinite(v.X) &&
-        float.IsFinite(v.Y) && float.IsFinite(v.Z);
 }
 
 public sealed record Rac1AlienQueenGateFrame(int AuthoredInstance, int NativeState,

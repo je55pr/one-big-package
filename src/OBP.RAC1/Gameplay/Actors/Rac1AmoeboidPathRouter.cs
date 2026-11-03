@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.RAC1.Level;
+using static OBP.RAC1.Rac1Finite;
 
 namespace OBP.RAC1.Gameplay;
 
@@ -137,6 +138,4 @@ public sealed class Rac1AmoeboidPathRouter
                intersects(region, from + offset, to);
     }
 
-    private static bool Finite(Vector3 p) =>
-        float.IsFinite(p.X) && float.IsFinite(p.Y) && float.IsFinite(p.Z);
 }
