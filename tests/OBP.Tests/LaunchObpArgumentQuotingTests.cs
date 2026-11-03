@@ -39,7 +39,7 @@ public sealed class LaunchObpArgumentQuotingTests
         Assert.Contains("Start-Process -FilePath $gameExe -ArgumentList $quotedGameArgs",
             File.ReadAllText(Path.Combine(RepoPaths.Root, "tools", "launch-obp.ps1")), StringComparison.Ordinal);
 
-        string directory = Path.Combine(Path.GetTempPath(), "obp launch quoting " + Guid.NewGuid().ToString("N"));
+        string directory = Path.Combine(Path.GetTempPath(), "obp launch quoting café " + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
         try
         {
@@ -49,7 +49,7 @@ public sealed class LaunchObpArgumentQuotingTests
                 "$ErrorActionPreference = 'Stop'",
                 "$gameArgs = [string[]](ConvertFrom-Json -InputObject (Get-Content -LiteralPath '" + input.Replace("'", "''") + "' -Raw))",
                 statements[0],
-                "ConvertTo-Json -InputObject @($quotedGameArgs) -Compress"));
+                "ConvertTo-Json -InputObject @($quotedGameArgs) -Compress"), new UTF8Encoding(true));
 
             var start = new ProcessStartInfo(shell!)
             {
