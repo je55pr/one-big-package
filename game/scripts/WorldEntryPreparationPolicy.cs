@@ -12,13 +12,16 @@ namespace OBP.Game;
 /// </summary>
 internal static class WorldEntryPreparationPolicy
 {
-    internal static (long Length, long Written)? SourceFileStamp(string? path)
-    {
-        if (path is null) return null;
-        var file = new FileInfo(path);
-        if (!file.Exists) throw new FileNotFoundException("The world source is missing. Reattach it in Game Sources.");
-        return (file.Length, file.LastWriteTimeUtc.Ticks);
-    }
+    internal static (long Length, long Written)? SourceFileStamp(string? path) =>
+        WorldSourceFileStamp.Capture(path);
+
+    // The engine-neutral entry planner owns loader invocation, request admission
+    // and validation ordering; this Godot policy supplies only authored spawn rules.
+    internal static IWorldEntrySource CreateWorldSource(Func<RuntimeWorld> load) =>
+        WorldEntryPlanning.FromLoader(load, ValidateSourceEntry);
+
+    internal static void RequireUnchangedSourceFile(string? path, (long Length, long Written)? expected) =>
+        WorldSourceFileStamp.RequireUnchanged(path, expected);
 
     internal static RuntimeSpawn ValidateSourceEntry(RuntimeWorld world)
     {
