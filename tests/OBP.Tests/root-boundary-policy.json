@@ -3444,10 +3444,10 @@
     },
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:PrepareSelectedPlayerAssets():void:private",
-      "Owner": "#350",
-      "Rationale": "#376 retains selection of the persistent player profile and source availability refresh at the root boundary; source-size verification and exact build probing now belong to SourceSetupCoordinator.VerifySelectedSourceFile; staged avatar decoding and R&C1 equipment bank staging belong to the existing PlayerAvatarPresentationHost after verification. No player identity, source attachment authority or world lease was transferred. This adapter expires with the final WorldEntry retirement.",
+      "Owner": "#376",
+      "Rationale": "#376 reduces the temporary root adapter to ensuring the persistent player session, source availability and resolved presentation profiles, then delegates selected-avatar admission to PlayerAvatarPresentationHost.PrepareSelectedWorldEntry with typed session, profile and source-verification ports. SourceSetupCoordinator still owns source-file and build verification; the avatar owner gates synthetic diagnostics, validates tick-rate and source availability, and stages assets before world entry. The root does not choose a source-game-specific avatar, own source IO or publish a world lease. This adapter expires with final WorldEntry retirement.",
       "ExpiresWith": "#376",
-      "Hash": "5e01a1cf172c9e13cacf3aeedc01d55be9fe1210c9a54bf1d54d8db6873fb752"
+      "Hash": "80d29f89c7f17825712f03a74bea470725184af3afd907eff5a0c98dae229681"
     },
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:ResetPlayerAvatarPhysics():void:private",

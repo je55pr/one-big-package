@@ -80,6 +80,26 @@ internal sealed class PlayerAvatarPresentationHost
     internal static IPlayerAvatarProvider Provider(ObpSourceGame game) =>
         Providers.Get(game) ?? throw new InvalidOperationException($"No provider for selected avatar source {game}.");
 
+    /// <summary>
+    /// Admit only the session-selected avatar with its resolved animation profile.
+    /// The source owner remains responsible for authenticating the file and build;
+    /// this presentation owner stages visuals without publishing them to a live world.
+    /// </summary>
+    internal void PrepareSelectedWorldEntry(ObpPlayerSession session, PlayerAnimationProfile profile,
+        int physicsTicksPerSecond, Func<ObpSourceGame, string, VerifiedSourceFile> verifySource,
+        PlayerEquipmentPresentationBinder equipment, bool ordinary)
+    {
+        var identity = session.Capture().Configuration.Avatar;
+        if (physicsTicksPerSecond != profile.NativeTicksPerSecond)
+            throw new InvalidOperationException($"Selected player animation requires {profile.NativeTicksPerSecond} physics ticks per second.");
+        if (identity.SourceGame == ObpSourceGame.Synthetic) return;
+
+        var availability = session.Availability(identity.SourceGame, identity.BuildId, true, true);
+        if (!availability.Usable) throw new InvalidOperationException(availability.Reason);
+        var source = verifySource(identity.SourceGame, identity.BuildId);
+        PrepareSelected(identity, source.Path, source.Stamp, equipment, ordinary);
+    }
+
     /// <summary>Stage presentation from a source already verified by the source owner.</summary>
     internal void PrepareSelected(PlayerAvatarIdentity identity, string path,
         (long Length, long Written) stamp, PlayerEquipmentPresentationBinder equipment, bool ordinary)

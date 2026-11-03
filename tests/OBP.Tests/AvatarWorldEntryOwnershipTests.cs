@@ -1,3 +1,4 @@
+
 namespace OBP.Tests;
 
 public sealed class AvatarWorldEntryOwnershipTests
@@ -16,15 +17,30 @@ public sealed class AvatarWorldEntryOwnershipTests
         Assert.Contains("EnsurePlayerSession();", preparation, StringComparison.Ordinal);
         Assert.Contains("RefreshPlayerSourceAvailability();", preparation, StringComparison.Ordinal);
         Assert.Contains("_persistentPlayer.ResolvePresentationProfiles();", preparation, StringComparison.Ordinal);
-        Assert.Contains("_playerSession!.Capture().Configuration.Avatar", preparation, StringComparison.Ordinal);
-        Assert.Contains("Engine.PhysicsTicksPerSecond != _playerAnimationProfile!.NativeTicksPerSecond", preparation, StringComparison.Ordinal);
-        Assert.Contains("identity.SourceGame == ObpSourceGame.Synthetic", preparation, StringComparison.Ordinal);
-        Assert.Contains("_playerSession.Availability(identity.SourceGame, identity.BuildId, true, true)", preparation, StringComparison.Ordinal);
-        Assert.Contains("Sources.Setup.VerifySelectedSourceFile(identity.SourceGame, identity.BuildId)", preparation, StringComparison.Ordinal);
-        Assert.Contains("_avatarPresentation.PrepareSelected(identity, source.Path, source.Stamp,", preparation, StringComparison.Ordinal);
+        Assert.Contains("_avatarPresentation.PrepareSelectedWorldEntry(_playerSession!, _playerAnimationProfile!,", preparation, StringComparison.Ordinal);
+        Assert.Contains("Engine.PhysicsTicksPerSecond, Sources.Setup.VerifySelectedSourceFile,", preparation, StringComparison.Ordinal);
+        Assert.DoesNotContain("_playerSession.Availability(", preparation, StringComparison.Ordinal);
+        Assert.DoesNotContain("identity.SourceGame", preparation, StringComparison.Ordinal);
         Assert.DoesNotContain("new FileInfo", preparation, StringComparison.Ordinal);
         Assert.DoesNotContain("FileRandomAccessReader", preparation, StringComparison.Ordinal);
         Assert.DoesNotContain("PrepareSelectedBank(", preparation, StringComparison.Ordinal);
+
+        int admitStart = avatar.IndexOf("internal void PrepareSelectedWorldEntry(", StringComparison.Ordinal);
+        int admitEnd = avatar.IndexOf("internal void PrepareSelected(PlayerAvatarIdentity identity", admitStart, StringComparison.Ordinal);
+        Assert.True(admitStart >= 0 && admitEnd > admitStart);
+        string admission = avatar[admitStart..admitEnd];
+        Assert.Contains("session.Capture().Configuration.Avatar", admission, StringComparison.Ordinal);
+        Assert.Contains("physicsTicksPerSecond != profile.NativeTicksPerSecond", admission, StringComparison.Ordinal);
+        Assert.Contains("identity.SourceGame == ObpSourceGame.Synthetic", admission, StringComparison.Ordinal);
+        Assert.Contains("session.Availability(identity.SourceGame, identity.BuildId, true, true)", admission, StringComparison.Ordinal);
+        Assert.Contains("verifySource(identity.SourceGame, identity.BuildId)", admission, StringComparison.Ordinal);
+        Assert.Contains("PrepareSelected(identity, source.Path, source.Stamp, equipment, ordinary)", admission, StringComparison.Ordinal);
+        Assert.True(admission.IndexOf("session.Availability(", StringComparison.Ordinal)
+            < admission.IndexOf("verifySource(", StringComparison.Ordinal));
+        Assert.True(admission.IndexOf("verifySource(", StringComparison.Ordinal)
+            < admission.IndexOf("PrepareSelected(identity,", StringComparison.Ordinal));
+        Assert.DoesNotContain("FileInfo", admission, StringComparison.Ordinal);
+        Assert.DoesNotContain("Library.Probe(", admission, StringComparison.Ordinal);
 
         int verify = sources.IndexOf("internal VerifiedSourceFile VerifySelectedSourceFile(", StringComparison.Ordinal);
         int existing = sources.IndexOf("public void Initialize()", verify, StringComparison.Ordinal);
