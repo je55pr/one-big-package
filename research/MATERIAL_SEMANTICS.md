@@ -5,7 +5,7 @@ It deliberately stops below full GS emulation. The production contract is the sm
 material inputs that the existing geometry decoders can prove and preserve.
 
 No retail payload bytes are checked in. The executable fixtures in
-`tests/OBP.Tests/RcMaterialStateTests.cs` synthesize only the documented field layouts.
+`tests/OBP.Tests/Core/RcMaterialStateTests.cs` synthesize only the documented field layouts.
 
 ## Structural authority
 

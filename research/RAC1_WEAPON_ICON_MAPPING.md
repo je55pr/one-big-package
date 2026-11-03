@@ -38,7 +38,7 @@ The retail `draw_menu_item_grid.c` may select frame offset `1` when equipped, `2
 
 - Pure native→sprite ID mapping: `src/OBP.RAC1/Presentation/Rac1WeaponIconCatalog.cs`. Only explicit `Rac1WeaponId` variants receive icons. Wrench and unmapped IDs are left null.
 - Godot wheel: `game/scripts/WeaponQuickSelectUi.cs`. Draws the decoded native sprite; retains the letter fallback for unmapped equipment or an unavailable source. No retail image is compiled into the executable.
-- Tests: `tests/OBP.Tests/Rac1WeaponIconCatalogTests.cs` asserts every named quick-select weapon is covered and IDs are exactly the observed contiguous series, mappings are unique, and unknown IDs have no invented mapping.
+- Tests: `tests/OBP.Tests/Rac1/Menus/Rac1WeaponIconCatalogTests.cs` asserts every named quick-select weapon is covered and IDs are exactly the observed contiguous series, mappings are unique, and unknown IDs have no invented mapping.
 - Local disc asset audit: all fifteen mapped animations have frame 0 in the source bank. `Rac1UiAssetsTests` verifies the whole bank against independently generated RGBA hashes; `ControllerSmoke` checks that all fifteen mapped icons become usable Godot textures without exported files.
 - Still to validate: side-by-side original retail Quick Select screenshots, exact equipped/upgrade frame selection, and actual fully populated native menu-item table (prefer a read-only offline savestate probe rather than interaction with PCSX2).
 

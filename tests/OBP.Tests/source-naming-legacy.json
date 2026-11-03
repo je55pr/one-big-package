@@ -11,8 +11,8 @@
       "src/OBP.PS2/Geometry/GcUyaMoby.DecodeVertices.cs::OBP.PS2.Geometry.GcUyaMoby",
       "src/OBP.PS2/Geometry/GcUyaMoby.Decoder.cs::OBP.PS2.Geometry.GcUyaMoby",
       "src/OBP.PS2/Geometry/GcUyaMobyPose.cs::OBP.PS2.Geometry.GcUyaMobyPose",
-      "tests/OBP.Tests/GcUyaGadgetPoseTests.cs::OBP.Tests.GcUyaGadgetPoseTests",
-      "tests/OBP.Tests/GcUyaMobyDecodeCharacterizationTests.cs::OBP.Tests.GcUyaMobyDecodeCharacterizationTests"
+      "tests/OBP.Tests/Core/GcUyaGadgetPoseTests.cs::OBP.Tests.GcUyaGadgetPoseTests",
+      "tests/OBP.Tests/Core/GcUyaMobyDecodeCharacterizationTests.cs::OBP.Tests.GcUyaMobyDecodeCharacterizationTests"
     ]
   }
 ]

@@ -12,7 +12,7 @@ Cannon recipes and records the independently verified sequel comparison.
 
 ## Checks supplied by the investigation
 
-[EffectsReferenceAuditRetailTests](../tests/OBP.Tests/EffectsReferenceAuditRetailTests.cs)
+[EffectsReferenceAuditRetailTests](../tests/OBP.Tests/GodotHost/EffectsReferenceAuditRetailTests.cs)
 contains three source witnesses:
 
 | Test | What its assertions establish |
