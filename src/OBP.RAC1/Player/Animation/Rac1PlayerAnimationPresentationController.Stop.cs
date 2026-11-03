@@ -97,11 +97,18 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         return true;
     }
 
-    private bool HasStopTimelines() => new[] { 0, 3, 4, 5, 6, 20 }.All(sequence =>
+    private static readonly int[] StopTimelineSequences = [0, 3, 4, 5, 6, 20];
+    private static readonly int[] StopDurationSequences = [0, 5, 6, 20];
+    private static readonly int[] CrouchDurationSequences = [0, 13, 14, 15];
+
+    private bool HasStopTimelines() => StopTimelineSequences.All(sequence =>
         _avatar.AnimationClips.Any(clip => clip.Id == Rac1PlayerAvatarProvider.AnimationDescriptor(sequence).Id &&
             clip.FrameTimelinePositions?.Count == clip.FrameCount));
 
-    private Dictionary<int, IReadOnlyList<double>> StopDurations() => new[] { 0, 5, 6, 20 }.ToDictionary(
+    private Dictionary<int, IReadOnlyList<double>> StopDurations() => StopDurationSequences.ToDictionary(
+        sequence => sequence, sequence => LocomotionClip(sequence).FrameDurationsSeconds);
+
+    private Dictionary<int, IReadOnlyList<double>> CrouchDurations() => CrouchDurationSequences.ToDictionary(
         sequence => sequence, sequence => LocomotionClip(sequence).FrameDurationsSeconds);
 
     private void EnterStanding()

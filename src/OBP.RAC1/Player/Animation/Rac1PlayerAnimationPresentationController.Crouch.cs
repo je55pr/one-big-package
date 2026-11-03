@@ -101,9 +101,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     {
         int frame = CurrentClip.FrameIndexAt(Current.ElapsedAt(_clockSeconds), Current.Loop);
         _crouchBlendSource = Current.SampledPose?.LocalPositions ?? CurrentClip.LocalFrames[frame];
-        var durations = new[] { 0, 13, 14, 15 }.ToDictionary(
-            sequence => sequence, sequence => LocomotionClip(sequence).FrameDurationsSeconds);
-        _crouchClock = new Rac1AnimationFrameClock(durations, 13, Rac1CrouchAnimation.EntryFrame,
+        _crouchClock = new Rac1AnimationFrameClock(CrouchDurations(), 13, Rac1CrouchAnimation.EntryFrame,
             Rac1CrouchAnimation.EntryBlendTicks(previousPoseIsStanding));
         _crouchAge = 0;
         // Native requests loop [3,18], but the checked setter rejects end 18
