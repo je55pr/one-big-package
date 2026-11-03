@@ -24,10 +24,10 @@ public sealed class Rac1BoltMotionSession
     private Vector3 _restPosition;
     private int _bounceLength;
     private int _bounceLeft;
-    private float _launchHeight;
+    private readonly float _launchHeight;
     private Quaternion _spin;
     private Quaternion _surface = Quaternion.Identity;
-    private bool _clockwise;
+    private readonly bool _clockwise;
     private float _angleX;
     private float _angleZ;
     private float _attractYaw;

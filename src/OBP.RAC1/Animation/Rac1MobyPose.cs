@@ -11,6 +11,8 @@ namespace OBP.RAC1.Animation;
 public static partial class Rac1MobyPose
 {
     private const double RigidTolerance = 1e-4;
+    /// <summary>Smallest accepted bind-affine determinant magnitude; below this the joint is treated as degenerate.</summary>
+    private const double MinimumBindDeterminant = 1e-8;
     private const double TailTolerance = 1e-5;
 
     public static bool CanPoseSingleJointRigid(
@@ -390,7 +392,7 @@ public static partial class Rac1MobyPose
         {
             var a = Affine3x3(joints[j].NativeAffine);
             double determinant = Determinant(a);
-            if (!double.IsFinite(determinant) || (allowScaledBindParents ? System.Math.Abs(determinant) : determinant) <= 1e-8) return false;
+            if (!double.IsFinite(determinant) || (allowScaledBindParents ? System.Math.Abs(determinant) : determinant) <= MinimumBindDeterminant) return false;
             // Ordinary equipment (notably class168's barrel hierarchy) retains
             // non-unit inverse-bind scale on parents. Full matrix composition
             // below already preserves it; a rigid-only gate discarded its clips.
@@ -488,24 +490,6 @@ public static partial class Rac1MobyPose
         a[0, 1] * (a[1, 0] * a[2, 2] - a[1, 2] * a[2, 0]) +
         a[0, 2] * (a[1, 0] * a[2, 1] - a[1, 1] * a[2, 0]);
 
-    private static bool IsRigidMatrix(double[,] a)
-    {
-        for (int row = 0; row < 3; row++)
-        {
-            double length2 = 0;
-            for (int col = 0; col < 3; col++) length2 += a[row, col] * a[row, col];
-            if (System.Math.Abs(length2 - 1.0) > RigidTolerance) return false;
-        }
-        for (int aRow = 0; aRow < 3; aRow++)
-            for (int bRow = aRow + 1; bRow < 3; bRow++)
-            {
-                double dot = 0;
-                for (int col = 0; col < 3; col++) dot += a[aRow, col] * a[bRow, col];
-                if (System.Math.Abs(dot) > RigidTolerance) return false;
-            }
-        return System.Math.Abs(Determinant(a) - 1.0) <= RigidTolerance;
-    }
-
     private static double IdentityError(double[,] matrix)
     {
         double error = 0;
@@ -576,11 +560,7 @@ public static partial class Rac1MobyPose
                 if (System.Math.Abs(dot) > RigidTolerance) return false;
             }
         }
-        double det =
-            a[0, 0] * (a[1, 1] * a[2, 2] - a[1, 2] * a[2, 1]) -
-            a[0, 1] * (a[1, 0] * a[2, 2] - a[1, 2] * a[2, 0]) +
-            a[0, 2] * (a[1, 0] * a[2, 1] - a[1, 1] * a[2, 0]);
-        return System.Math.Abs(det - 1.0) <= RigidTolerance;
+        return System.Math.Abs(Determinant(a) - 1.0) <= RigidTolerance;
     }
 
     private static double[,] QuaternionMatrix(Rac1MobyAnimation.JointQuaternion q)

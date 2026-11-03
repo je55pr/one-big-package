@@ -17,7 +17,7 @@ public sealed class Rac1AmmoPickupSession
     public bool Collected { get; private set; }
     public bool GrantedThisTick { get; private set; }
     public Rac1AmmoGrantResult? Grant { get; private set; }
-    private float _launchHeight;
+    private readonly float _launchHeight;
     private bool _settled;
 
     public Rac1AmmoPickupSession(Rac1CrateSupply.AmmoDefinition definition, Vector3 origin, Rac1PickupRandom random)

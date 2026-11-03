@@ -1,4 +1,3 @@
-using OBP.Runtime.Camera;
 
 namespace OBP.RAC1.Camera;
 
