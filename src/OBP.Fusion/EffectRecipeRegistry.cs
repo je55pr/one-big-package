@@ -10,7 +10,7 @@ public sealed class EffectRecipeRegistry
     private readonly Dictionary<RuntimeEffectRecipeKey, IRuntimeEffectFactory> _factories = [];
     public void Source(ObpSourceGame game, string build, RuntimeEffectProblem? problem = null)
     {
-        if (game is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) || string.IsNullOrWhiteSpace(build) ||
+        if (!game.IsTrilogySource() || string.IsNullOrWhiteSpace(build) ||
             problem is not null && (problem.Availability == RuntimeEffectAvailability.Ready || string.IsNullOrWhiteSpace(problem.Reason)))
             throw new ArgumentException("Invalid effect source availability.");
         _sources[game] = (build, problem);

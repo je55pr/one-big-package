@@ -24,7 +24,7 @@ public sealed class PlayerEquipmentCatalog
             item.Item?.Validate();
             if (string.IsNullOrWhiteSpace(item.Id) || string.IsNullOrWhiteSpace(item.DisplayName) || string.IsNullOrWhiteSpace(item.BuildId) ||
                 !Enum.IsDefined(item.Category) || !Enum.IsDefined(item.Implementation) || !Enum.IsDefined(item.Usage) ||
-                item.SourceGame is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) || item.Item is { } key && key.SourceGame != item.SourceGame ||
+                !item.SourceGame.IsTrilogySource() || item.Item is { } key && key.SourceGame != item.SourceGame ||
                 item.Category == EquipmentCategory.Appearance && (item.Appearance is null || item.Item is not null) ||
                 item.Category != EquipmentCategory.Appearance && (item.Item is null || item.Appearance is not null) ||
                 item.Appearance is { } appearance && (appearance.SourceGame != item.SourceGame ||

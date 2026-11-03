@@ -52,7 +52,7 @@ public sealed record ProfileSource([property: JsonConverter(typeof(SourceGameWir
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extensions { get; init; }
     public void Validate()
     {
-        if (Game is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) || string.IsNullOrWhiteSpace(Build) || Build.Length > 128 ||
+        if (!Game.IsTrilogySource() || string.IsNullOrWhiteSpace(Build) || Build.Length > 128 ||
             Digest is null || Digest.Length != 64 || Digest.Any(character => !Uri.IsHexDigit(character)))
             throw new InvalidDataException("Invalid source dependency.");
     }

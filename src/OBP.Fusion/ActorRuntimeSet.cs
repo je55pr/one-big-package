@@ -17,7 +17,7 @@ public sealed record ActorPlacement(string Id, FusionSourceIdentity Source, int 
     {
         if (Source is null) throw new ArgumentException("Actor placement is missing source provenance.");
         Source.Validate();
-        if (Version != CurrentVersion || string.IsNullOrWhiteSpace(Id) || Source.Game is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) ||
+        if (Version != CurrentVersion || string.IsNullOrWhiteSpace(Id) || !Source.Game.IsTrilogySource() ||
             LevelId < 0 || NativeClassId < 0 || SourceInstanceIndex < 0 || InitialNativeState < 0 || string.IsNullOrWhiteSpace(AdapterId) ||
             string.IsNullOrWhiteSpace(NativeContextId) || string.IsNullOrWhiteSpace(ScenarioGroup) ||
             Transform?.Matrix is not { Length: 16 } matrix || matrix.Any(value => !double.IsFinite(value)) ||
@@ -85,7 +85,7 @@ public sealed class ActorRuntimeSet(string worldInstanceId, long generation) : I
     public ActorInstanceKey Allocate(ObpSourceGame sourceGame, int nativeClass)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (sourceGame is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) || nativeClass < 0) throw new ArgumentException("Unsupported native actor identity.");
+        if (!sourceGame.IsTrilogySource() || nativeClass < 0) throw new ArgumentException("Unsupported native actor identity.");
         return new(WorldInstanceId, Generation, new(sourceGame, nativeClass, checked(_nextInstance++)));
     }
 

@@ -11,7 +11,7 @@ public readonly record struct SourceWeaponKey([property: JsonConverter(typeof(So
     private readonly bool _initialised = true;
     public SourceWeaponKey Validate()
     {
-        if (!_initialised || SourceGame is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) || NativeItemId < 0)
+        if (!_initialised || !SourceGame.IsTrilogySource() || NativeItemId < 0)
             throw new ArgumentException("A weapon requires an original game and a nonnegative native item id.");
         return this;
     }

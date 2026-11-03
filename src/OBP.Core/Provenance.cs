@@ -1,8 +1,7 @@
 namespace OBP.Core;
 
 /// <summary>
-/// Which source game a piece of data came from. Mirrors the TypeScript
-/// <c>OBPSourceGame</c>. "synthetic" covers test fixtures.
+/// Which source game a piece of data came from. "synthetic" covers test fixtures.
 /// </summary>
 public enum ObpSourceGame
 {
@@ -13,11 +12,21 @@ public enum ObpSourceGame
     Synthetic,
 }
 
+/// <summary>Classification helpers for <see cref="ObpSourceGame"/>.</summary>
+public static class ObpSourceGameExtensions
+{
+    /// <summary>
+    /// True for the three retail Ratchet &amp; Clank trilogy sources (Rac1, Rac2, Rac3) that carry native
+    /// actor, weapon, effect and profile identities. False for Deadlocked, Synthetic and undefined values.
+    /// </summary>
+    public static bool IsTrilogySource(this ObpSourceGame game) => game is ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3;
+}
+
 /// <summary>
 /// Provenance for a decoded asset: which game / build it came from and, where
 /// meaningful, the native level and asset identity. Every decoded structure
 /// carries one so OBP-created data never gets confused with recovered native
-/// data. Mirrors the TypeScript <c>OBPSourceRef</c>.
+/// data.
 /// </summary>
 public sealed record ObpSourceRef(
     ObpSourceGame Game,

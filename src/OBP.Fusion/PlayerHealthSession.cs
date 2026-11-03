@@ -40,9 +40,9 @@ public sealed class PlayerHealthSession
         ArgumentNullException.ThrowIfNull(policy); ArgumentNullException.ThrowIfNull(controller);
         if (string.IsNullOrWhiteSpace(policy.Id) || string.IsNullOrWhiteSpace(policy.HurtPolicyId) ||
             string.IsNullOrWhiteSpace(policy.CurrencyId) || policy.Capacity <= 0 || policy.RespawnHealth <= 0 || policy.RespawnHealth > policy.Capacity ||
-            policy.DamageConversions.Any(item => item.SourceGame is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) ||
+            policy.DamageConversions.Any(item => !item.SourceGame.IsTrilogySource() ||
                 string.IsNullOrWhiteSpace(item.BuildId) || string.IsNullOrWhiteSpace(item.AdapterId) || string.IsNullOrWhiteSpace(item.DescriptorId)) ||
-            policy.RewardConversions?.Any(item => item.SourceGame is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) ||
+            policy.RewardConversions?.Any(item => !item.SourceGame.IsTrilogySource() ||
                 string.IsNullOrWhiteSpace(item.BuildId) || string.IsNullOrWhiteSpace(item.AdapterId) || item.CurrencyId != policy.CurrencyId) == true)
             throw new ArgumentException("Invalid player health/conversion policy.");
         Policy = policy with

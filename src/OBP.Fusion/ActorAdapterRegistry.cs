@@ -9,7 +9,7 @@ public sealed record ActorAdapterDescriptor(ObpSourceGame Source, string Build, 
     public void Validate()
     {
         new FusionSourceIdentity(Source, Build, AdapterId).Validate();
-        if (Source is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) ||
+        if (!Source.IsTrilogySource() ||
             NativeClassId < 0 || LevelId < 0 || InitialNativeState < 0 ||
             string.IsNullOrWhiteSpace(AdapterId) || string.IsNullOrWhiteSpace(NativeContextId))
             throw new ArgumentException("Invalid source-qualified actor adapter recipe.");

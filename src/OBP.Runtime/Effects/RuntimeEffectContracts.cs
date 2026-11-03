@@ -10,7 +10,7 @@ public readonly record struct RuntimeEffectRecipeKey(ObpSourceRef Source, string
 {
     public void Validate()
     {
-        if (Source is null || Source.Game is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) ||
+        if (Source is null || !Source.Game.IsTrilogySource() ||
             string.IsNullOrWhiteSpace(Source.BuildId) || string.IsNullOrWhiteSpace(Source.LevelId) ||
             string.IsNullOrWhiteSpace(Source.AssetKind) || string.IsNullOrWhiteSpace(Source.OriginalId) || string.IsNullOrWhiteSpace(Recipe))
             throw new ArgumentException("An effect recipe needs its source, build, bank and registered caller identity.");
