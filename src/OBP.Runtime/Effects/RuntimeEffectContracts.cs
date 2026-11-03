@@ -73,20 +73,40 @@ public readonly record struct RuntimeEffectState(long NativeTick, int ParticleCo
 /// <summary>Implemented in RAC modules. Each Step is exactly one source-declared native tick.</summary>
 public interface IRuntimeEffectInstance : IDisposable
 {
+    /// <summary>Counters and flags after the most recent <see cref="Step"/>.</summary>
     RuntimeEffectState State { get; }
+
+    /// <summary>Advances exactly one native tick using the given camera/view.</summary>
     void Step(RuntimeEffectView view);
+
+    /// <summary>Moves the emitter; already-spawned particles keep their own state.</summary>
     void SetPose(RuntimeEffectPose pose);
+
+    /// <summary>Stops spawning new particles; live particles run out.</summary>
     void StopEmission();
+
+    /// <summary>Tells the effect that its attached owner has retired; each source decides what that means for live particles.</summary>
     void RetireOwner();
+
+    /// <summary>Samples drawable sprites for <paramref name="view"/> without advancing the effect clock.</summary>
     RuntimeEffectFrame Capture(RuntimeEffectView view);
 }
 
 /// <summary>Assets and validated typed recipe parameters are bound by the source adapter before registration.</summary>
 public interface IRuntimeEffectFactory
 {
+    /// <summary>Source-qualified recipe identity this factory serves.</summary>
     RuntimeEffectRecipeKey Key { get; }
+
+    /// <summary>Native effect clock rate; the registry accepts 1..240.</summary>
     int NativeTicksPerSecond { get; }
+
+    /// <summary>Optional recovered ceiling on emission ticks for this recipe; null means no recipe-specific limit.</summary>
     int? MaximumEmissionTicks => null;
+
+    /// <summary>Texture bindings, each retaining its own source/build/bank/asset identity.</summary>
     IReadOnlyList<RuntimeEffectTexture> Textures { get; }
+
+    /// <summary>Creates a deterministic instance for <paramref name="seed"/> at <paramref name="pose"/>.</summary>
     IRuntimeEffectInstance Create(uint seed, RuntimeEffectPose pose);
 }

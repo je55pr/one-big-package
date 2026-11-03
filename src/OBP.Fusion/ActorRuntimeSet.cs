@@ -43,9 +43,16 @@ public sealed record ActorHitResult(bool Applied, bool Terminal, string? Reason 
 /// <summary>Native adapter port. Fusion owns ordering/admission; it never advances a native formula itself.</summary>
 public interface IRegisteredActor : IDisposable
 {
+    /// <summary>The validated, source-qualified identity this adapter was registered under.</summary>
     ActorRegistration Registration { get; }
+
+    /// <summary>Reports the actor's current neutral facts without advancing it.</summary>
     ActorObservation Observe();
+
+    /// <summary>Advances the native controller for one scheduled tick.</summary>
     void Tick(ActorTickFacts facts);
+
+    /// <summary>Applies a weapon hit using the source's own rules and reports whether it landed and was terminal.</summary>
     ActorHitResult Apply(WeaponDamageIntent damage);
 }
 

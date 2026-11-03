@@ -18,6 +18,7 @@ public sealed record PreparedWorldEntry(RuntimeWorld World, RuntimeSpawn EntryPo
 /// <summary>Native provider and custom generator implement the same staging port.</summary>
 public interface IWorldEntrySource
 {
+    /// <summary>Stages world content, the entry point and actors for <paramref name="request"/>; creates no scene and touches no player state.</summary>
     PreparedWorldEntry Prepare(WorldEntryRequest request);
 }
 
@@ -75,5 +76,6 @@ public static class WorldEntryPlanning
 /// </summary>
 public interface IWorldEntryHost
 {
+    /// <summary>Activates the staged plan; disposing the result retires only world-local resources.</summary>
     IDisposable Activate(WorldEntryPlan plan);
 }
