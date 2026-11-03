@@ -248,7 +248,7 @@ internal sealed class PlayerAvatarPresentationHost
             ? GloveAsset ?? throw new InvalidOperationException("Selected glove asset was not staged.")
             : null;
         var materials = glove is null ? null : new WorldMaterialFactory(bindings.World() with { Textures = glove.Textures });
-        var (view, controller) = CreateWorldVisual(player, bindings.AnimationProfile(), materials);
+        var (view, _) = CreateWorldVisual(player, bindings.AnimationProfile(), materials);
         if (selected.SourceGame == ObpSourceGame.Rac1)
         {
             if (bindings.Equipment.Assets(bindings.Ordinary(),
