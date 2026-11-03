@@ -19,7 +19,7 @@ CLI/profile/save/replay wire identities.
 > **Status:** this document is a running ledger. Per-migration measurements
 > (file, method and field totals) are snapshots taken when each PR landed, not the
 > current state. The current root is `OBPGame.cs` plus `OBPGame.WorldEntry.cs`
-> (2,942 lines); see [OBPGAME_ROOT_CENSUS.md](OBPGAME_ROOT_CENSUS.md). #333 and
+> (2,836 lines); see [OBPGAME_ROOT_CENSUS.md](OBPGAME_ROOT_CENSUS.md). #333 and
 > #376 remain open, and the guard is `dotnet run --project tools/OBP.ArchitectureTool
 > -c Release -- check .` (see *Reproducing the measurements*).
 
@@ -926,3 +926,25 @@ native explosive states and collider presence, with bounded touch/break actions
 that reject stale generation/actor identities. The native-session tests, source-
 free ownership guards and original engine crate scenario remain the authority
 for behaviours that can be checked without inventing retail source facts.
+
+## #376 selected avatar world lifecycle
+
+The existing `PlayerAvatarPresentationHost` now owns staged visual attachment,
+the ordered native-use/pose/contact/audio/sample physics callback, reset and
+combined avatar/equipment-view cleanup. The root supplies typed existing owners
+and live observations; callbacks retain no root service locator. Subscription
+retirement still removes both player events and releases their bound world
+dependencies. Native controllers, player inventories and the world lease remain
+with their existing owners. No resource identity or persisted format changes.
+
+At this checkpoint the root falls from 2,921 to 2,836 file lines and from 141
+to 139 direct methods. Its 41 fields (34 mutable), 43 exposed members, two root
+files and 112 distinct cross-file references remain unchanged. Three obsolete
+composition permissions retire; the frozen origin and access ledger do not grow.
+The file-by-file census still accounts for all 122 original fragments.
+
+This is an independent portion of #376, not final acceptance. World preparation/
+activation, scene/player spawning, pause-menu projection, campaign persistence
+and diagnostic fixture construction still need final composition cleanup.
+`OBPGame.WorldEntry.cs` remains active. The authorised automated reconciliation
+gate remains distinct from the outstanding human visual and audible review.

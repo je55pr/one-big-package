@@ -204,109 +204,24 @@ public partial class OBPGame
             _equipmentPresentation, OrdinaryPlayerSession);
     }
 
-
-    private PlayerSessionConfiguration SelectedPlayerConfiguration => _playerSession!.Capture().Configuration;
-
-
-
     /// <summary>
     /// Bind the staged, session-selected presentation independently of destination.
     /// Missing required assets fail entry; the capsule is an explicit diagnostic.
     /// </summary>
 
-    private void AttachPlayerAvatarVisual(PlayerHost player)
-    {
-        if (_playerSession is null) return;
-        var selected = SelectedPlayerConfiguration.Avatar;
-        if (selected.SourceGame == ObpSourceGame.Synthetic)
-        {
-            GD.Print("[player-avatar] EXPLICIT DIAGNOSTIC CAPSULE");
-            return;
-        }
-        var avatar = _avatarPresentation.Avatar ?? throw new InvalidOperationException("Selected avatar was not staged before world entry.");
-        ClearPlayerAvatarView();
-        var glove = selected.SourceGame == ObpSourceGame.Rac1
-            ? _avatarPresentation.GloveAsset ?? throw new InvalidOperationException("Selected glove asset was not staged.")
-            : null;
-        var materials = glove is null ? null : new WorldMaterialFactory(_world! with { Textures = glove.Textures });
-        var (view, controller) = _avatarPresentation.CreateWorldVisual(player, _playerAnimationProfile!, materials);
-        if (selected.SourceGame == ObpSourceGame.Rac1)
-        {
-            if (_equipmentPresentation.Assets(OrdinaryPlayerSession, Rac1World.Loot.PickupAssets) is not null)
-                _avatarPresentation.InstallStagedBomb(FusionWeapons.CreateNativeEffect(121, "Rac1RetailStagedBomb_Class121"));
-            _worldScenes?.Current?.Resources.Rac1Gameplay?.UsePresentation.AttachViews(view);
-        }
-        // Shared weapon views belong to any selected avatar, not just RAC1.
-        FusionWeapons.AttachViews(view);
-        player.VisualRoot.ReplaceVisual(view);
-        player.ConfigureAvatarPresentation((float)avatar.AnimationBounds.Height);
-        _avatarPresentation.Subscribe(player, StepPlayerAvatarPhysics, ResetPlayerAvatarPhysics);
-        _equipmentPresentation.BindSelected(_avatarPresentation, _persistentPlayer.Equipment.Sources, _equipmentPresentation.NativeViews.Assets, FusionWeapons.Sources.Assets);
-        _equipmentPresentation.RefreshRac1HandVisibility(Rac1HandPresentation, _avatarPresentation);
-        _avatarPresentation.HideAuthoredWorldRatchetPresentation(_activeDestination, _sceneResult);
-        GD.Print($"[player-avatar] attached selected {avatar.Identity.ModelId}: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
-    }
-
-
-    private void StepPlayerAvatarPhysics(
-        double delta, PlayerAnimationState state, Rac1LocomotionAnimationInput input)
-    {
-        if (_avatarPresentation.Controller is not Rac1PlayerAnimationPresentationController controller)
-            return;
-        Rac1CombatInput.StepInput();
-        _worldScenes?.Current?.Resources.Rac1Gameplay?.Bombs.StepUse();
-        _worldScenes?.Current?.Resources.Rac1Gameplay?.UsePresentation.StepAdditional();
-        FusionWeapons.Step();
-        input = _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.ThrownAnimation.Select(input,
-            PlayerLife.Alive, _player?.Rac1WrenchFrame.Active == true,
-            CurrentPlayerAvatarSourceSequence(), controller.TraversalAuthoredAnimationTime) ?? input;
-        _avatarPresentation.StepNative(state, input);
-
-
-        _equipmentPresentation.ApplyAvatarEquipmentPose(_avatarPresentation, controller, state, input,
-            new(Rac1HandPresentation, _persistentPlayer.Rac1Use.UseTicks, _persistentPlayer.Rac1Use.UseAge,
-                _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.Walloper.Age ?? 0,
-                PlayerLife.Alive, FusionWeapons.Sources.Assets,
-                FusionWeapons.Pose.UseStarted, FusionWeapons.Pose.TriggerHeld));
-        if (_avatarPresentation.PhysicsPlayer is { } player)
-        {
-            _avatarPresentation.StepHandAttachments(controller, player.Rac1WrenchFrame,
-                (_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true),
-                _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.ThrownAnimation.Generation ?? 0);
-            _worldScenes?.Current?.Resources.Rac1Gameplay?.UsePresentation.StepViews(controller);
-            FusionWeapons.StepViews(controller, _avatarPresentation.Avatar);
-        }
-
-
-        GodotRac1PlayerAudioPlayback.Step(_playerAudio, controller, _player, MovementReproduction.IsLoading);
-        _worldScenes?.Current?.Resources.Rac1Gameplay?.Bombs.StepPhysics();
-        _worldScenes?.Current?.Resources.Rac1Gameplay?.Effects.StepAdditionalWeaponWorld();
-        _worldScenes?.Current?.Resources.Rac1Gameplay?.Effects.StepBombEffectsPhysics();
-        _avatarPresentation.SampleClock();
-        _equipmentPresentation.RefreshRac1HandVisibility(Rac1HandPresentation, _avatarPresentation);
-    }
-
-
-    private void ResetPlayerAvatarPhysics()
-    {
-        FusionWeapons.ClearTransients();
-        _playerAudio?.Reset();
-        Rac1WrenchHost.ResetOrFallback(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench, _playerAudio, _player);
-        _worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.ThrownAnimation.Stop();
-        _avatarPresentation.ResetClock();
-    }
+    private void AttachPlayerAvatarVisual(PlayerHost player) => _avatarPresentation.AttachWorldVisual(player, new(
+        Session: () => _playerSession, AnimationProfile: () => _playerAnimationProfile!,
+        World: () => _world!, Destination: () => _activeDestination, Scene: () => _sceneResult,
+        Gameplay: () => _worldScenes?.Current?.Resources.Rac1Gameplay,
+        Hand: () => Rac1HandPresentation, Player: () => _player,
+        Equipment: _equipmentPresentation, Use: _persistentPlayer.Rac1Use,
+        EquipmentSources: () => _persistentPlayer.Equipment.Sources,
+        Weapons: () => FusionWeapons, CombatInput: () => Rac1CombatInput,
+        Alive: () => PlayerLife.Alive, Ordinary: () => OrdinaryPlayerSession,
+        Audio: () => _playerAudio, MovementLoading: () => MovementReproduction.IsLoading));
 
     private int? CurrentPlayerAvatarSourceSequence() => _avatarPresentation.CurrentSourceSequence();
     private bool PlayerAvatarPresentationIsSynchronized() => _avatarPresentation.IsSynchronized;
 
-    private void ClearPlayerAvatarView()
-    {
-        _playerAudio?.Reset();
-        _avatarPresentation.Retire();
-        _equipmentPresentation.NativeViews.ClearViews();
-        _equipmentPresentation.ClearBindings();
-    }
-
-
-
+    private void ClearPlayerAvatarView() => _avatarPresentation.ClearWorldVisual(_playerAudio, _equipmentPresentation);
 }

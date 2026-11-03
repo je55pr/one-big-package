@@ -192,11 +192,14 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
         string combat = Script("Rac1WeaponPlayerInputHost.cs");
         Assert.Contains("views.PlaySelection(weapon)", combat, StringComparison.Ordinal);
         Assert.Contains("weapon => _equipmentPresentation.NativeViews.PlaySelection(weapon)", Script("OBPGame.cs"), StringComparison.Ordinal);
-        string entry = Script("OBPGame.WorldEntry.cs");
-        AssertIncreasing(entry,
-            "_avatarPresentation.Retire()",
-            "_equipmentPresentation.NativeViews.ClearViews()",
-            "_equipmentPresentation.ClearBindings()");
+        string entry = Script("PlayerAvatarPresentationHost.cs");
+        int cleanup = entry.IndexOf("internal void ClearWorldVisual(", StringComparison.Ordinal);
+        int subscription = entry.IndexOf("internal void Subscribe(", cleanup, StringComparison.Ordinal);
+        Assert.True(cleanup >= 0 && subscription > cleanup);
+        AssertIncreasing(entry[cleanup..subscription],
+            "Retire()",
+            "equipment.NativeViews.ClearViews()",
+            "equipment.ClearBindings()");
         string binder = Script("PlayerEquipmentPresentationBinder.cs");
         Assert.Contains("NativeViews.RefreshAttachment(state.Inventory.Equipped, controller)", binder, StringComparison.Ordinal);
         Assert.Contains("NativeViews.RefreshVisibility(item => IsRac1HandEquipmentVisible(item, state))", binder, StringComparison.Ordinal);

@@ -4,6 +4,61 @@ namespace OBP.Tests;
 public sealed class AvatarWorldEntryOwnershipTests
 {
     [Fact]
+    public void AvatarPhysicsKeepsTheNativeUsePoseContactAudioAndClockOrder()
+    {
+        string owner = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerAvatarPresentationHost.cs"));
+        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.WorldEntry.cs"));
+        Assert.DoesNotContain("private void StepPlayerAvatarPhysics", root, StringComparison.Ordinal);
+        Assert.Contains("Weapons: () => FusionWeapons, CombatInput: () => Rac1CombatInput", root, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void ResetPlayerAvatarPhysics", root, StringComparison.Ordinal);
+        Assert.DoesNotContain("OBPGame", owner, StringComparison.Ordinal);
+
+        string tick = Method(owner, "StepPlayerAvatarPhysics");
+        Ordered(tick, "Controller is not Rac1PlayerAnimationPresentationController", "return;",
+            "bindings.CombatInput().StepInput()", "Bombs.StepUse()", "UsePresentation.StepAdditional()",
+            "bindings.Weapons().Step()", "ThrownAnimation.Select(input,", "StepNative(state, input)",
+            "ApplyAvatarEquipmentPose(this,", "StepHandAttachments(controller,", "UsePresentation.StepViews(controller)",
+            "bindings.Weapons().StepViews(controller, Avatar)", "GodotRac1PlayerAudioPlayback.Step(",
+            "Bombs.StepPhysics()", "Effects.StepAdditionalWeaponWorld()", "Effects.StepBombEffectsPhysics()",
+            "SampleClock()", "RefreshRac1HandVisibility(");
+        Ordered(Method(owner, "ResetPlayerAvatarPhysics"), "bindings.Weapons().ClearTransients()",
+            "bindings.Audio()?.Reset()", "Rac1WrenchHost.ResetOrFallback(", "ThrownAnimation.Stop()", "ResetClock()");
+    }
+
+    [Fact]
+    public void VisualReplacementAndRetirementKeepSubscriptionsAndEquipmentInOneLifetime()
+    {
+        string owner = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerAvatarPresentationHost.cs"));
+        Ordered(Method(owner, "AttachWorldVisual"), "session.Capture().Configuration.Avatar",
+            "selected.SourceGame == ObpSourceGame.Synthetic", "return;", "ClearWorldVisual(",
+            "CreateWorldVisual(", "UsePresentation.AttachViews(view)", "bindings.Weapons().AttachViews(view)",
+            "player.VisualRoot.ReplaceVisual(view)", "Subscribe(player,", "BindSelected(this,",
+            "RefreshRac1HandVisibility(", "HideAuthoredWorldRatchetPresentation(");
+        Ordered(Method(owner, "ClearWorldVisual"), "audio?.Reset()", "Retire()",
+            "equipment.NativeViews.ClearViews()", "equipment.ClearBindings()");
+        string retirement = Method(owner, "Retire");
+        Assert.Contains("AnimationPhysicsUpdated -= _step", retirement, StringComparison.Ordinal);
+        Assert.Contains("AnimationPhysicsReset -= _reset", retirement, StringComparison.Ordinal);
+        Assert.Contains("_physicsPlayer = null; _step = null; _reset = null;", retirement, StringComparison.Ordinal);
+    }
+
+    private static string Method(string source, string name) => Assert.Single(
+        Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(source).GetRoot().DescendantNodes()
+            .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax>(),
+        method => method.Identifier.ValueText == name).ToString();
+
+    private static void Ordered(string source, params string[] operations)
+    {
+        int previous = -1;
+        foreach (string operation in operations)
+        {
+            int position = source.IndexOf(operation, previous + 1, StringComparison.Ordinal);
+            Assert.True(position > previous, $"Missing or reordered avatar operation: {operation}");
+            previous = position;
+        }
+    }
+
+    [Fact]
     public void WorldEntryKeepsPlayerSelectionWhileSourceOwnerVerifiesAndAvatarOwnerStages()
     {
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.WorldEntry.cs"));
@@ -11,7 +66,7 @@ public sealed class AvatarWorldEntryOwnershipTests
         string avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerAvatarPresentationHost.cs"));
 
         int start = root.IndexOf("private void PrepareSelectedPlayerAssets()", StringComparison.Ordinal);
-        int end = root.IndexOf("private PlayerSessionConfiguration SelectedPlayerConfiguration", start, StringComparison.Ordinal);
+        int end = root.IndexOf("private void AttachPlayerAvatarVisual(", start, StringComparison.Ordinal);
         Assert.True(start >= 0 && end > start);
         string preparation = root[start..end];
         Assert.Contains("EnsurePlayerSession();", preparation, StringComparison.Ordinal);
@@ -71,16 +126,19 @@ public sealed class AvatarWorldEntryOwnershipTests
     {
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.WorldEntry.cs"));
         string binder = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerEquipmentPresentationBinder.cs"));
+        string avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerAvatarPresentationHost.cs"));
 
-        int start = root.IndexOf("private void StepPlayerAvatarPhysics(", StringComparison.Ordinal);
-        int end = root.IndexOf("private void ResetPlayerAvatarPhysics()", start, StringComparison.Ordinal);
+        int start = avatar.IndexOf("private void StepPlayerAvatarPhysics(", StringComparison.Ordinal);
+        int end = avatar.IndexOf("private void ResetPlayerAvatarPhysics(", start, StringComparison.Ordinal);
         Assert.True(start >= 0 && end > start);
-        string tick = root[start..end];
+        string tick = avatar[start..end];
+        Assert.DoesNotContain("StepPlayerAvatarPhysics", root, StringComparison.Ordinal);
+        Assert.Contains("_avatarPresentation.AttachWorldVisual(player, new(", root, StringComparison.Ordinal);
 
-        Assert.Contains("Rac1CombatInput.StepInput()", tick, StringComparison.Ordinal);
-        Assert.Contains("_avatarPresentation.StepNative(state, input)", tick, StringComparison.Ordinal);
-        Assert.Contains("_equipmentPresentation.ApplyAvatarEquipmentPose(", tick, StringComparison.Ordinal);
-        Assert.Contains("_avatarPresentation.SampleClock()", tick, StringComparison.Ordinal);
+        Assert.Contains("bindings.CombatInput().StepInput()", tick, StringComparison.Ordinal);
+        Assert.Contains("StepNative(state, input)", tick, StringComparison.Ordinal);
+        Assert.Contains("bindings.Equipment.ApplyAvatarEquipmentPose(", tick, StringComparison.Ordinal);
+        Assert.Contains("SampleClock()", tick, StringComparison.Ordinal);
         Assert.DoesNotContain("bool holdGun", tick, StringComparison.Ordinal);
         Assert.DoesNotContain("bool fusionPose", tick, StringComparison.Ordinal);
         Assert.DoesNotContain("ApplySourceEquipment(", tick, StringComparison.Ordinal);

@@ -7,7 +7,7 @@ This is an ownership and file accounting snapshot, not a claim that final root c
 | Metric | Frozen origin | Current checkpoint |
 | --- | ---: | ---: |
 | Root-declaring files | 122 | 2 |
-| Root-declaring file lines | 27362 | 2921 |
+| Root-declaring file lines | 27362 | 2836 |
 
 File-by-file inventory. Ownership references are **original migration issue assignments**, not claims about the destination class:
 
@@ -67,7 +67,7 @@ File-by-file inventory. Ownership references are **original migration issue assi
 | `game/scripts/OBPGame.CaptureSession.cs` | #356 | 84 | Retired | 0 |
 | `game/scripts/OBPGame.ControllerSettings.cs` | #348 | 306 | Retired | 0 |
 | `game/scripts/OBPGame.CrateBolts.cs` | #365 | 108 | Retired | 0 |
-| `game/scripts/OBPGame.cs` | #376 | 840 | Active | 2608 |
+| `game/scripts/OBPGame.cs` | #376 | 840 | Active | 2609 |
 | `game/scripts/OBPGame.Destinations.cs` | #347 | 353 | Retired | 0 |
 | `game/scripts/OBPGame.EquipmentPresentation.cs` | #350 | 151 | Retired | 0 |
 | `game/scripts/OBPGame.FusionLab.cs` | #347 | 100 | Retired | 0 |
@@ -134,7 +134,7 @@ File-by-file inventory. Ownership references are **original migration issue assi
 | `game/scripts/OBPGame.Sources.cs` | #346 | 316 | Retired | 0 |
 | `game/scripts/OBPGame.SourceSetup.cs` | #346 | 82 | Retired | 0 |
 | `game/scripts/OBPGame.StressDiagnostics.cs` | #345 | 114 | Retired | 0 |
-| `game/scripts/OBPGame.WorldEntry.cs` | #376 | 178 | Active | 312 |
+| `game/scripts/OBPGame.WorldEntry.cs` | #376 | 178 | Active | 227 |
 
 #376 now delegates world-debug HUD rendering to `WorldHud`, original-order player-spawn placement selection to `GodotPlayerSpawnPlacement`, and overlay command parsing to the existing `DebugOverlay`. `OBPGame` still owns live player construction, world-lease integration and host wiring; no new all-capabilities controller was introduced.
 

@@ -130,7 +130,7 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
         string root = Script("OBPGame.cs");
         string combat = Script("Rac1WeaponPlayerInputHost.cs");
         string weapons = Script("Rac1WeaponUsePresentationHost.cs");
-        string worldEntry = Script("OBPGame.WorldEntry.cs");
+        string worldEntry = Script("PlayerAvatarPresentationHost.cs");
 
         Assert.Contains("session.Rac1Use.RequestFire()", combat, StringComparison.Ordinal);
         Assert.Contains("_persistentPlayer.Rac1Use.CancelFire()", root, StringComparison.Ordinal);
@@ -138,8 +138,8 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
         Assert.Contains("_persistentPlayer.Rac1Use.StopPyro()", root, StringComparison.Ordinal);
         Assert.Contains("_persistentPlayer.Rac1Use.UseTicks, _persistentPlayer.Rac1Use.ShotsFired", root, StringComparison.Ordinal);
         Assert.Contains("_persistentPlayer.Rac1Use.PyroEmitting", root, StringComparison.Ordinal);
-        Assert.Contains("_persistentPlayer.Rac1Use.UseTicks, _persistentPlayer.Rac1Use.UseAge", worldEntry, StringComparison.Ordinal);
-        Assert.Contains("_equipmentPresentation.ApplyAvatarEquipmentPose(", worldEntry, StringComparison.Ordinal);
+        Assert.Contains("bindings.Use.UseTicks, bindings.Use.UseAge", worldEntry, StringComparison.Ordinal);
+        Assert.Contains("bindings.Equipment.ApplyAvatarEquipmentPose(", worldEntry, StringComparison.Ordinal);
         var equipment = Script("PlayerEquipmentPresentationBinder.cs");
         Assert.Contains("bool holdGun = useTicks > 0", equipment, StringComparison.Ordinal);
         Assert.Contains("walloper ? walloperAge / 60d : useAge / 60d", equipment, StringComparison.Ordinal);

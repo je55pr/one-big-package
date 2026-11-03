@@ -90,7 +90,8 @@ public sealed class WorldEntryPolicyOwnershipTests
         string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.WorldEntry.cs"));
         string avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "PlayerAvatarPresentationHost.cs"));
 
-        Assert.Contains("_avatarPresentation.HideAuthoredWorldRatchetPresentation(_activeDestination, _sceneResult)", entry);
+        Assert.Contains("_avatarPresentation.AttachWorldVisual(player, new(", entry);
+        Assert.Contains("HideAuthoredWorldRatchetPresentation(bindings.Destination(), bindings.Scene())", avatar);
         Assert.DoesNotContain("private void HideAuthoredWorldRatchetPresentation(", entry, StringComparison.Ordinal);
         Assert.Contains("void HideAuthoredWorldRatchetPresentation(ObpDestination? destination, RuntimeWorldScene.Result? scene)", avatar);
         Assert.Contains("animated.Name.StartsWith(\"ratchet_i\"", avatar);

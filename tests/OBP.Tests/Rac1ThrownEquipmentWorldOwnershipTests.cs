@@ -88,7 +88,7 @@ public sealed class Rac1ThrownEquipmentWorldOwnershipTests
         Assert.Contains("ThrownAnimation.Reset()", world, StringComparison.Ordinal);
         Assert.Contains("ThrownAnimation.Dispose()", world, StringComparison.Ordinal);
         var projectiles = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Rac1BombProjectileHost.cs"));
-        var playerFrame = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.WorldEntry.cs"));
+        var playerFrame = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerAvatarPresentationHost.cs"));
         Assert.Contains("_weapons.ThrownAnimation.Begin()", projectiles, StringComparison.Ordinal);
         Assert.Contains("Weapons.ThrownAnimation.Select(input", playerFrame, StringComparison.Ordinal);
         Assert.DoesNotContain("_rac1BombThrowGeneration", projectiles, StringComparison.Ordinal);

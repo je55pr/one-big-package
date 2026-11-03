@@ -37,8 +37,8 @@ public class HostCoordinatorArchitectureTests
         Assert.DoesNotContain("Action<double> Swing", File.ReadAllText(Path.Combine(scripts, "Rac1WorldPorts.cs")), StringComparison.Ordinal);
         Assert.DoesNotContain("_ticks.Swing(delta)", File.ReadAllText(Path.Combine(scripts, "Rac1WorldModule.cs")), StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac1Projectiles.cs")));
-        Assert.Contains("Rac1Gameplay?.Bombs.StepPhysics()",
-            File.ReadAllText(Path.Combine(scripts, "OBPGame.WorldEntry.cs")), StringComparison.Ordinal);
+        Assert.Contains("bindings.Gameplay()?.Bombs.StepPhysics()",
+            File.ReadAllText(Path.Combine(scripts, "PlayerAvatarPresentationHost.cs")), StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac1Enemies.cs")));
         Assert.Contains("internal void TickRac1Hostiles(",
             File.ReadAllText(Path.Combine(scripts, "Rac1EnemyHost.cs")), StringComparison.Ordinal);
