@@ -6,7 +6,7 @@ namespace OBP.Fusion;
 /// </summary>
 public static class WorldSourceFileStamp
 {
-    public const string ChangedMessage =
+    public static string ChangedMessage { get; } =
         "The world source changed during preparation. Reattach it in Game Sources.";
 
     public static (long Length, long Written)? Capture(string? path)
