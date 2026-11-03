@@ -132,7 +132,7 @@ public sealed class TieImporterUvSeamTests
     public void Rac3RetailVeldin_TieSeamPreservesNativeFacesAndRecoversContinuousUv()
     {
         string? path = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
-        Skip.If(string.IsNullOrEmpty(path) || !File.Exists(path),
+        Skip.If(string.IsNullOrWhiteSpace(path),
             "UYA retail ISO is required for source evidence.");
 
         using var disc = new FileRandomAccessReader(path!);
