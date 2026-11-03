@@ -11,8 +11,13 @@ public readonly record struct Rgb(double R, double G, double B)
 {
     public static readonly Rgb White = new(1, 1, 1);
 
+    // Rec. 709 luma weights, shared with MaterialModel.MeanLuminance.
+    internal const double RedLuma = 0.2126;
+    internal const double GreenLuma = 0.7152;
+    internal const double BlueLuma = 0.0722;
+
     /// <summary>Rec. 709 relative luminance.</summary>
-    public double Luminance => (0.2126 * R) + (0.7152 * G) + (0.0722 * B);
+    public double Luminance => (RedLuma * R) + (GreenLuma * G) + (BlueLuma * B);
 
     public Rgb Lerp(Rgb other, double t) =>
         new(R + ((other.R - R) * t), G + ((other.G - G) * t), B + ((other.B - B) * t));

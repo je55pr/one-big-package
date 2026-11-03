@@ -212,6 +212,26 @@ public sealed class PlaytestRunTests : IDisposable
         Assert.Throws<InvalidOperationException>(() => writer.Add(Step(1)));
     }
 
+    [Fact]
+    public async Task Writer_CharacterisesTextAndHeaderPayloadLimits()
+    {
+        using var writer = new PlaytestRunWriter(RunPath, Header());
+        writer.Add(Step(0));
+        writer.Mark(new(0, new string('m', 256)));
+        Assert.Throws<InvalidDataException>(() => writer.Mark(new(0, new string('m', 257))));
+        Assert.Throws<ArgumentException>(() => { _ = writer.FinishAsync(new string('r', 257)); });
+        await writer.FinishAsync(new string('r', 256));
+
+        Header().Validate();
+        using (var campaign = JsonDocument.Parse("{\"pad\":\"" + new string('c', 65536 - 10) + "\"}"))
+        {
+            Assert.Equal(65536, campaign.RootElement.GetRawText().Length);
+            (Header() with { Campaign = campaign.RootElement.Clone() }).Validate();
+        }
+        using (var oversized = JsonDocument.Parse("{\"pad\":\"" + new string('c', 65536 - 9) + "\"}"))
+            Assert.Throws<InvalidDataException>(() => (Header() with { Campaign = oversized.RootElement.Clone() }).Validate());
+    }
+
     private void Write(IEnumerable<PlaytestRunEntry> entries)
     {
         Directory.CreateDirectory(_directory);

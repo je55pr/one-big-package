@@ -23,6 +23,33 @@ public class MaterialModelTests
         return buf;
     }
 
+    [Theory]
+    [InlineData(255, 1, 0, 0, false)]
+    [InlineData(250, 1, 0, 0, false)]
+    [InlineData(249, 0, 0, 1, false)]
+    [InlineData(128, 0, 0, 1, false)]
+    [InlineData(127, 0, 0, 1, true)]
+    [InlineData(9, 0, 0, 1, true)]
+    [InlineData(8, 0, 1, 0, true)]
+    [InlineData(0, 0, 1, 0, true)]
+    public void AlphaProfileBucketBoundariesAreCharacterised(byte alpha, double opaque, double cutout, double translucent, bool belowHalf)
+    {
+        var profile = AlphaProfile.Analyse(Rgba((1, 2, 3, alpha)));
+        Assert.Equal(opaque, profile.OpaqueFraction);
+        Assert.Equal(cutout, profile.CutoutFraction);
+        Assert.Equal(translucent, profile.TranslucentFraction);
+        Assert.Equal(belowHalf, profile.AnyBelowHalf);
+    }
+
+    [Fact]
+    public void RgbAndByteLuminanceShareTheRec709Weights()
+    {
+        Assert.Equal(0.2126, new Rgb(1, 0, 0).Luminance, 12);
+        Assert.Equal(0.7152, new Rgb(0, 1, 0).Luminance, 12);
+        Assert.Equal(0.0722, new Rgb(0, 0, 1).Luminance, 12);
+        Assert.Equal(new Rgb(64 / 255.0, 128 / 255.0, 191 / 255.0).Luminance, MaterialModel.MeanLuminance(Rgba((64, 128, 191, 255))), tolerance: 1e-9);
+    }
+
     [Fact]
     public void AlphaProfile_ClassifiesTexelsAndFlagsBelowHalf()
     {

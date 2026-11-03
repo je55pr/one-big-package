@@ -10,6 +10,18 @@ internal static class PlaytestRunLimits
     internal const int Line = 4 * 1024 * 1024;
     internal const long Expanded = 512L * 1024 * 1024;
     internal const long Compressed = 128L * 1024 * 1024;
+    /// <summary>Largest serialized player profile in a header, in characters (it must fit on one <see cref="Line"/>).</summary>
+    internal const int PlayerProfileJson = Line;
+    /// <summary>Longest marker label or end reason, in characters.</summary>
+    internal const int Text = 256;
+    /// <summary>Most markers a single recording may carry.</summary>
+    internal const int Markers = 4096;
+    /// <summary>Largest serialized campaign payload in a header, in characters.</summary>
+    internal const int CampaignJson = 64 * 1024;
+    /// <summary>Largest serialized camera-options payload in a header, in characters.</summary>
+    internal const int CameraOptionsJson = 4096;
+    /// <summary>Buffer size for the gzip text stream and partial file.</summary>
+    internal const int StreamBuffer = 64 * 1024;
 }
 
 /// <summary>Bounded background writer. Only a completed, flushed run takes the final filename.</summary>
@@ -30,7 +42,7 @@ public sealed class PlaytestRunWriter : IDisposable
         Path = System.IO.Path.GetFullPath(path);
         if (File.Exists(Path) || File.Exists(PartialPath)) throw new IOException("Choose a new recording filename.");
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
-        var file = new FileStream(PartialPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read, 65536, FileOptions.SequentialScan);
+        var file = new FileStream(PartialPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read, PlaytestRunLimits.StreamBuffer, FileOptions.SequentialScan);
         _worker = Task.Run(() =>
         {
             bool completed = false;
@@ -77,7 +89,7 @@ public sealed class PlaytestRunWriter : IDisposable
     }
 
     private static StreamWriter OpenText(Stream stream) => new(
-        new GZipStream(stream, CompressionLevel.Fastest, leaveOpen: true), new UTF8Encoding(false), 65536);
+        new GZipStream(stream, CompressionLevel.Fastest, leaveOpen: true), new UTF8Encoding(false), PlaytestRunLimits.StreamBuffer);
 
     /// <summary>
     /// Export the complete prefix queued so far, without stopping the live writer.
@@ -130,7 +142,7 @@ public sealed class PlaytestRunWriter : IDisposable
 
     public void Mark(PlaytestMarker marker)
     {
-        if (marker.Step < 0 || marker.Step >= _steps || string.IsNullOrWhiteSpace(marker.Label) || marker.Label.Length > 256)
+        if (marker.Step < 0 || marker.Step >= _steps || string.IsNullOrWhiteSpace(marker.Label) || marker.Label.Length > PlaytestRunLimits.Text)
             throw new InvalidDataException("Invalid playtest marker.");
         Enqueue(new(Marker: marker));
     }
@@ -138,7 +150,7 @@ public sealed class PlaytestRunWriter : IDisposable
     public Task FinishAsync(string reason)
     {
         if (_finished) return _worker;
-        if (string.IsNullOrWhiteSpace(reason) || reason.Length > 256) throw new ArgumentException("Invalid recording end reason.", nameof(reason));
+        if (string.IsNullOrWhiteSpace(reason) || reason.Length > PlaytestRunLimits.Text) throw new ArgumentException("Invalid recording end reason.", nameof(reason));
         Enqueue(new(End: new(_steps, reason)));
         _finished = true;
         _queue.CompleteAdding();
@@ -183,7 +195,7 @@ public sealed class PlaytestRunReader : IDisposable
     {
         var file = File.OpenRead(path);
         if (file.Length > PlaytestRunLimits.Compressed) { file.Dispose(); throw new InvalidDataException("Recording exceeds the compressed size limit."); }
-        _reader = new(new GZipStream(file, CompressionMode.Decompress), new UTF8Encoding(false, true), false, 65536);
+        _reader = new(new GZipStream(file, CompressionMode.Decompress), new UTF8Encoding(false, true), false, PlaytestRunLimits.StreamBuffer);
         try
         {
             var first = ReadEntry();
@@ -215,14 +227,14 @@ public sealed class PlaytestRunReader : IDisposable
             }
             if (entry.Marker is { } marker)
             {
-                if (Markers.Count >= 4096 || marker.Step < 0 || marker.Step >= _steps ||
-                    string.IsNullOrWhiteSpace(marker.Label) || marker.Label.Length > 256)
+                if (Markers.Count >= PlaytestRunLimits.Markers || marker.Step < 0 || marker.Step >= _steps ||
+                    string.IsNullOrWhiteSpace(marker.Label) || marker.Label.Length > PlaytestRunLimits.Text)
                     throw new InvalidDataException("Invalid recorded marker.");
                 Markers.Add(marker);
                 continue;
             }
             End = entry.End ?? throw new InvalidDataException("Unexpected recording header.");
-            if (End.Steps != _steps || _steps == 0 || string.IsNullOrWhiteSpace(End.Reason) || End.Reason.Length > 256)
+            if (End.Steps != _steps || _steps == 0 || string.IsNullOrWhiteSpace(End.Reason) || End.Reason.Length > PlaytestRunLimits.Text)
                 throw new InvalidDataException("Invalid recording end record.");
             if (_reader.Read() != -1) throw new InvalidDataException("Data follows the recording end record.");
             _ended = true;

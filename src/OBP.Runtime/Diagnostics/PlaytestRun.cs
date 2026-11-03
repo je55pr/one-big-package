@@ -27,8 +27,8 @@ public sealed record PlaytestRunHeader(
             string.IsNullOrWhiteSpace(EngineVersion) || EngineVersion.Length > 128 ||
             Platform is null || Platform.Length > 128 || PhysicsEngine is null || PhysicsEngine.Length > 128 ||
             Campaign.ValueKind != JsonValueKind.Object || CameraOptions.ValueKind != JsonValueKind.Object ||
-            Campaign.GetRawText().Length > 65536 || CameraOptions.GetRawText().Length > 4096 ||
-            ApplicationVersion is null || ApplicationVersion.Length > 256 || ApplicationVersion.Any(char.IsControl))
+            Campaign.GetRawText().Length > PlaytestRunLimits.CampaignJson || CameraOptions.GetRawText().Length > PlaytestRunLimits.CameraOptionsJson ||
+            ApplicationVersion is null || ApplicationVersion.Length > PlaytestRunLimits.Text || ApplicationVersion.Any(char.IsControl))
             throw new InvalidDataException("Unsupported or incomplete playtest header.");
         if (InitialState is null) throw new InvalidDataException("Recording lacks its initial observation.");
         if (Assemblies is null || Assemblies.Count is < 1 or > 64 ||
@@ -40,7 +40,7 @@ public sealed record PlaytestRunHeader(
         if (Version == LegacyVersion && (!Destination.StartsWith("rac1:LEVEL", StringComparison.Ordinal) ||
             !int.TryParse(Destination.AsSpan("rac1:LEVEL".Length), out int legacyLevel) || legacyLevel is < 0 or > 18))
             throw new InvalidDataException("Legacy capture version 1 describes only native R&C1 world entries.");
-        if (Version == CurrentVersion && (PlayerProfile is not { ValueKind: JsonValueKind.Object } profile || profile.GetRawText().Length > 4 * 1024 * 1024))
+        if (Version == CurrentVersion && (PlayerProfile is not { ValueKind: JsonValueKind.Object } profile || profile.GetRawText().Length > PlaytestRunLimits.PlayerProfileJson))
             throw new InvalidDataException("Recording lacks its source-qualified player profile.");
         ValidateProvenance(Version, Sources, Adapters);
     }

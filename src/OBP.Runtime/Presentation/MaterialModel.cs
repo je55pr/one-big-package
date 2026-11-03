@@ -25,6 +25,15 @@ public readonly record struct AlphaProfile(
     double TranslucentFraction,
     bool AnyBelowHalf)
 {
+    /// <summary>Texels with alpha below this (0..255) count toward <see cref="AnyBelowHalf"/>.</summary>
+    private const byte HalfAlpha = 128;
+
+    /// <summary>Texels at or above this alpha count as opaque (tolerates PS2 near-255 alpha).</summary>
+    private const byte OpaqueAlphaMinimum = 250;
+
+    /// <summary>Texels at or below this alpha count as hard cut-out (effectively invisible).</summary>
+    private const byte CutoutAlphaMaximum = 8;
+
     public static readonly AlphaProfile FullyOpaque = new(1, 0, 0, false);
 
     public bool HasTransparency => CutoutFraction > 0 || TranslucentFraction > 0;
@@ -43,16 +52,16 @@ public readonly record struct AlphaProfile(
         {
             byte a = rgba[i];
             n++;
-            if (a < 128)
+            if (a < HalfAlpha)
             {
                 anyBelowHalf = true;
             }
 
-            if (a >= 250)
+            if (a >= OpaqueAlphaMinimum)
             {
                 opaque++;
             }
-            else if (a <= 8)
+            else if (a <= CutoutAlphaMaximum)
             {
                 cutout++;
             }
@@ -84,20 +93,21 @@ public static class MaterialModel
     /// </summary>
     public static (AlphaMode Mode, float ScissorThreshold) ResolveAlpha(AlphaProfile profile)
     {
+        const float scissorThreshold = 0.5f;
         const double noiseFloor = 0.002;   // < 0.2% of texels — treat as decode noise
         const double blendFloor = 0.02;    // >= 2% partial alpha — a real translucent material
 
         if (profile.TranslucentFraction >= blendFloor)
         {
-            return (AlphaMode.Blend, 0.5f);
+            return (AlphaMode.Blend, scissorThreshold);
         }
 
         if (profile.CutoutFraction > noiseFloor)
         {
-            return (AlphaMode.Scissor, 0.5f);
+            return (AlphaMode.Scissor, scissorThreshold);
         }
 
-        return (AlphaMode.Opaque, 0.5f);
+        return (AlphaMode.Opaque, scissorThreshold);
     }
 
     /// <summary>
@@ -200,7 +210,7 @@ public static class MaterialModel
         long n = 0;
         for (int i = 0; i + 2 < rgba.Length; i += 4)
         {
-            sum += ((0.2126 * rgba[i]) + (0.7152 * rgba[i + 1]) + (0.0722 * rgba[i + 2])) / 255.0;
+            sum += ((Rgb.RedLuma * rgba[i]) + (Rgb.GreenLuma * rgba[i + 1]) + (Rgb.BlueLuma * rgba[i + 2])) / 255.0;
             n++;
         }
 
