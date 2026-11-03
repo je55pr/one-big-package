@@ -7,6 +7,12 @@ namespace OBP.Runtime.Player;
 /// </summary>
 public sealed class PlayerEquipmentAnimationPlayer
 {
+    /// <summary>
+    /// Seconds the use clip advances per sampled presentation step. The fixed 60 Hz step is an existing
+    /// presentation assumption of this player (the retail NTSC rate), not a per-source native rate.
+    /// </summary>
+    private const double UseStepSeconds = 1d / 60;
+
     private PlayerEquipmentAnimationSource? _source;
     private PlayerSkeletalClip? _useClip;
     private readonly Dictionary<int, PlayerSkeletalClip> _armUseClips = [];
@@ -80,7 +86,7 @@ public sealed class PlayerEquipmentAnimationPlayer
             }
             layers.Add(new(clip, clip.SampleAt(_useAge, source.SustainUse), _useWeight));
         }
-        if (_using) _useAge += 1d / 60;
+        if (_using) _useAge += UseStepSeconds;
         return new(source.Skeleton, layers, source.HandJoint, fullBody);
     }
 }
