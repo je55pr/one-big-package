@@ -15,6 +15,9 @@ public static class Rac3Gameplay
     private const int TargetVolumePtr = 0x68, TargetPolygonPtr = 0x78, TargetGroupPtr = 0x98;
     private const int TieBytes = 0x60, ShrubBytes = 0x70, MobyBytes = 0x88;
     private const int TargetVolumeBytes = 0x80, TargetGroupBytes = 0x30;
+    private const int MinimumGameplayBytes = 0x68;  // header must reach the target-volume pointer
+    private const int BlockHeaderSize = 0x10;       // s32 count, padded to 0x10
+    private const int MaxRecordCount = 200_000;
 
     public sealed record MatrixInstance(int Index, int OClass, float[] Matrix);
     public sealed record MobyInstance(int Index, int OClass, float Scale,
@@ -154,297 +157,90 @@ public static class Rac3Gameplay
 
     public static Gameplay Parse(byte[] data)
     {
-        if (data.Length < 0x68) throw new InvalidDataException($"UYA gameplay is only {data.Length} bytes.");
-        int Pointer(int at, string label)
+        if (data.Length < MinimumGameplayBytes) throw new InvalidDataException($"UYA gameplay is only {data.Length} bytes.");
+        int pvarTable = Pointer(data, PvarTablePtr, "PVar table");
+        int pvarData = Pointer(data, PvarDataPtr, "PVar data");
+        // Evaluation order is observable through which malformed block is reported first.
+        List<MobyInstance> mobies = ReadMobies(data, pvarTable, pvarData);
+        List<TargetVolume> targetVolumes = ReadTargetVolumes(data);
+        List<TargetPolygon> targetPolygons = ReadTargetPolygons(data);
+        List<TargetGroup> targetGroups = ReadTargetGroups(data, targetVolumes, targetPolygons);
+        return new Gameplay(
+            ReadMatrices(data, TiePtr, TieBytes, "TIE instances"),
+            ReadMatrices(data, ShrubPtr, ShrubBytes, "shrub instances"),
+            mobies,
+            targetVolumes,
+            targetPolygons,
+            targetGroups,
+            data);
+    }
+
+    private static int Pointer(byte[] data, int at, string label)
+    {
+        int p = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at));
+        if (p <= 0 || p >= data.Length) throw new InvalidDataException($"UYA {label} pointer 0x{p:x} lies outside gameplay data.");
+        return p;
+    }
+
+    private static int OptionalPointer(byte[] data, int at, string label)
+    {
+        if (at < 0 || at + sizeof(int) > data.Length) return 0;
+        int p = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at));
+        if (p == 0) return 0;
+        if (p < 0 || p >= data.Length)
+            throw new InvalidDataException($"UYA {label} pointer 0x{p:x} lies outside gameplay data.");
+        return p;
+    }
+
+    private static List<MatrixInstance> ReadMatrices(byte[] data, int ptrAt, int stride, string label)
+    {
+        int block = Pointer(data, ptrAt, label);
+        if (block + BlockHeaderSize > data.Length) throw new InvalidDataException($"UYA {label} header is truncated.");
+        int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block));
+        if (count < 0 || count > MaxRecordCount || (long)block + BlockHeaderSize + (long)count * stride > data.Length)
+            throw new InvalidDataException($"UYA {label} count/extent is invalid ({count}).");
+        var result = new List<MatrixInstance>(count);
+        for (int i = 0; i < count; i++)
         {
-            int p = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at));
-            if (p <= 0 || p >= data.Length) throw new InvalidDataException($"UYA {label} pointer 0x{p:x} lies outside gameplay data.");
-            return p;
+            int at = block + BlockHeaderSize + i * stride;
+            int oClass = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at));
+            var matrix = new float[16];
+            for (int m = 0; m < 16; m++)
+            {
+                float v = BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + 0x10 + m * 4));
+                if (!float.IsFinite(v)) throw new InvalidDataException($"UYA {label} {i} contains a non-finite matrix component.");
+                matrix[m] = v;
+            }
+            result.Add(new MatrixInstance(i, oClass, matrix));
         }
-        int pvarTable = Pointer(PvarTablePtr, "PVar table");
-        int pvarData = Pointer(PvarDataPtr, "PVar data");
+        return result;
+    }
 
-        List<MatrixInstance> Matrices(int ptrAt, int stride, string label)
-        {
-            int block = Pointer(ptrAt, label);
-            if (block + 0x10 > data.Length) throw new InvalidDataException($"UYA {label} header is truncated.");
-            int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block));
-            if (count < 0 || count > 200_000 || (long)block + 0x10L + (long)count * stride > data.Length)
-                throw new InvalidDataException($"UYA {label} count/extent is invalid ({count}).");
-            var result = new List<MatrixInstance>(count);
-            for (int i = 0; i < count; i++)
-            {
-                int at = block + 0x10 + i * stride;
-                int oClass = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at));
-                var matrix = new float[16];
-                for (int m = 0; m < 16; m++)
-                {
-                    float v = BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + 0x10 + m * 4));
-                    if (!float.IsFinite(v)) throw new InvalidDataException($"UYA {label} {i} contains a non-finite matrix component.");
-                    matrix[m] = v;
-                }
-                result.Add(new MatrixInstance(i, oClass, matrix));
-            }
-            return result;
-        }
+    private static byte[]? ResolvePvar(byte[] data, int pvarTable, int pvarData, int index)
+    {
+        if (index < 0) return null;
+        long entry64 = (long)pvarTable + index * 8L;
+        if (entry64 < 0 || entry64 + 8 > data.Length) throw new InvalidDataException($"UYA PVar index {index} lies outside the table.");
+        int entry = (int)entry64;
+        int rel = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(entry));
+        int size = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(entry + 4));
+        long at64 = (long)pvarData + rel;
+        if (rel < 0 || size < 0 || at64 < 0 || at64 + size > data.Length)
+            throw new InvalidDataException($"UYA PVar {index} range {rel}+{size} lies outside gameplay data.");
+        return data.AsSpan((int)at64, size).ToArray();
+    }
 
-        int OptionalPointer(int at, string label)
-        {
-            if (at < 0 || at + sizeof(int) > data.Length) return 0;
-            int p = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at));
-            if (p == 0) return 0;
-            if (p < 0 || p >= data.Length)
-                throw new InvalidDataException($"UYA {label} pointer 0x{p:x} lies outside gameplay data.");
-            return p;
-        }
-
-        List<TargetVolume> TargetVolumes()
-        {
-            int block = OptionalPointer(TargetVolumePtr, "target volume");
-            if (block == 0) return [];
-            if (block + 0x10 > data.Length)
-                throw new InvalidDataException("UYA target-volume header is truncated.");
-            int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block));
-            long end = (long)block + 0x10L + (long)count * TargetVolumeBytes;
-            if (count < 0 || count > 200_000 || end > data.Length)
-                throw new InvalidDataException($"UYA target-volume count/extent is invalid ({count}).");
-
-            var result = new List<TargetVolume>(count);
-            for (int i = 0; i < count; i++)
-            {
-                int at = block + 0x10 + i * TargetVolumeBytes;
-                float F(int relative)
-                {
-                    float value = BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + relative));
-                    if (!float.IsFinite(value))
-                    {
-                        throw new InvalidDataException(
-                            $"UYA target volume {i} has a non-finite float at +0x{relative:x}.");
-                    }
-                    return value;
-                }
-
-                result.Add(new TargetVolume(
-                    i,
-                    (F(0x30), F(0x34), F(0x38)),
-                    (F(0x40), F(0x44), F(0x48)),
-                    (F(0x50), F(0x54), F(0x58)),
-                    (F(0x60), F(0x64), F(0x68)),
-                    data.AsSpan(at, TargetVolumeBytes).ToArray()));
-            }
-            return result;
-        }
-
-        List<TargetPolygon> TargetPolygons()
-        {
-            int block = OptionalPointer(TargetPolygonPtr, "target polygon");
-            if (block == 0) return [];
-            if (block + 0x10 > data.Length)
-                throw new InvalidDataException("UYA target-polygon header is truncated.");
-
-            int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block));
-            int dataRelative = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block + 4));
-            int dataBytes = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block + 8));
-            long tableEnd = (long)block + 0x10L + (long)count * sizeof(int);
-            long polygonData = (long)block + dataRelative;
-            long polygonEnd = polygonData + dataBytes;
-            if (count < 0 || count > 200_000 || dataRelative < 0 || dataBytes < 0
-                || tableEnd > data.Length || polygonData < tableEnd || polygonEnd > data.Length)
-            {
-                throw new InvalidDataException(
-                    $"UYA target-polygon count/extent is invalid ({count}, rel=0x{dataRelative:x}, bytes=0x{dataBytes:x}).");
-            }
-
-            var offsets = new int[count];
-            for (int i = 0; i < count; i++)
-            {
-                offsets[i] = BinaryPrimitives.ReadInt32LittleEndian(
-                    data.AsSpan(block + 0x10 + i * sizeof(int)));
-                if (offsets[i] < 0 || offsets[i] >= dataBytes)
-                {
-                    throw new InvalidDataException(
-                        $"UYA target polygon {i} offset 0x{offsets[i]:x} lies outside its data blob.");
-                }
-                if (i > 0 && offsets[i] < offsets[i - 1])
-                {
-                    throw new InvalidDataException(
-                        $"UYA target polygon offsets are not monotonic at {i}.");
-                }
-            }
-
-            var result = new List<TargetPolygon>(count);
-            for (int i = 0; i < count; i++)
-            {
-                int at = checked((int)polygonData + offsets[i]);
-                int next = checked((int)polygonData + (i + 1 < count ? offsets[i + 1] : dataBytes));
-                if (at + 0x10 > next)
-                    throw new InvalidDataException($"UYA target polygon {i} header overlaps the next record.");
-
-                int vertexCount = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at));
-                long vertexEnd = (long)at + 0x10L + (long)vertexCount * 0x10L;
-                if (vertexCount < 0 || vertexCount > 200_000 || vertexEnd > next)
-                {
-                    throw new InvalidDataException(
-                        $"UYA target polygon {i} vertex count/extent is invalid ({vertexCount}).");
-                }
-
-                var vertices = new TargetPolygonVertex[vertexCount];
-                for (int vertex = 0; vertex < vertexCount; vertex++)
-                {
-                    int v = at + 0x10 + vertex * 0x10;
-                    float F(int relative)
-                    {
-                        float value = BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(v + relative));
-                        if (!float.IsFinite(value))
-                        {
-                            throw new InvalidDataException(
-                                $"UYA target polygon {i} vertex {vertex} has a non-finite component.");
-                        }
-                        return value;
-                    }
-                    vertices[vertex] = new TargetPolygonVertex(F(0), F(4), F(8), F(12));
-                }
-
-                result.Add(new TargetPolygon(
-                    i,
-                    vertices,
-                    data.AsSpan(at, next - at).ToArray()));
-            }
-
-            return result;
-        }
-
-        List<TargetGroup> TargetGroups(
-            IReadOnlyList<TargetVolume> volumes,
-            IReadOnlyList<TargetPolygon> polygons)
-        {
-            int outer = OptionalPointer(TargetGroupPtr, "target-group");
-            if (outer == 0) return [];
-            if (outer + sizeof(int) > data.Length)
-                throw new InvalidDataException("UYA target-group outer header is truncated.");
-
-            int payloadBytes = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(outer));
-            int payload = outer + sizeof(int);
-            if (payloadBytes < 0x20 || (long)payload + payloadBytes > data.Length)
-                throw new InvalidDataException(
-                    $"UYA target-group payload size 0x{payloadBytes:x} is invalid.");
-
-            int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(payload));
-            if (count < 0 || count > 200_000 ||
-                0x20L + (long)count * TargetGroupBytes > payloadBytes)
-            {
-                throw new InvalidDataException(
-                    $"UYA target-group count/record extent is invalid ({count}).");
-            }
-
-            int[] listBases = new int[5];
-            for (int i = 0; i < listBases.Length; i++)
-            {
-                listBases[i] = BinaryPrimitives.ReadInt32LittleEndian(
-                    data.AsSpan(payload + 4 + i * sizeof(int)));
-                if (listBases[i] < 0 || listBases[i] > payloadBytes)
-                {
-                    throw new InvalidDataException(
-                        $"UYA target-group list {i} base 0x{listBases[i]:x} lies outside its payload.");
-                }
-            }
-
-            var result = new List<TargetGroup>(count);
-            for (int i = 0; i < count; i++)
-            {
-                int at = payload + 0x20 + i * TargetGroupBytes;
-                float F(int rel)
-                {
-                    float value = BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + rel));
-                    if (!float.IsFinite(value))
-                        throw new InvalidDataException(
-                            $"UYA target group {i} has a non-finite float at +0x{rel:x}.");
-                    return value;
-                }
-
-                int[] ReadList(int list)
-                {
-                    int itemCount = BinaryPrimitives.ReadInt16LittleEndian(
-                        data.AsSpan(at + 0x10 + list * sizeof(short)));
-                    if (itemCount < 0)
-                        throw new InvalidDataException(
-                            $"UYA target group {i} list {list} has negative count {itemCount}.");
-                    if (itemCount == 0) return [];
-
-                    int relative = BinaryPrimitives.ReadInt32LittleEndian(
-                        data.AsSpan(at + 0x1c + list * sizeof(int)));
-                    long start = (long)listBases[list] + relative;
-                    long end = start + (long)itemCount * sizeof(int);
-                    if (relative < 0 || start < 0 || end > payloadBytes)
-                    {
-                        throw new InvalidDataException(
-                            $"UYA target group {i} list {list} range 0x{relative:x}+{itemCount} lies outside its payload.");
-                    }
-
-                    var values = new int[itemCount];
-                    int source = checked(payload + (int)start);
-                    for (int item = 0; item < itemCount; item++)
-                    {
-                        values[item] = BinaryPrimitives.ReadInt32LittleEndian(
-                            data.AsSpan(source + item * sizeof(int)));
-                    }
-                    return values;
-                }
-
-                float radius = F(0x0c);
-                if (radius < 0f)
-                    throw new InvalidDataException(
-                        $"UYA target group {i} has negative radius {radius}.");
-
-                int[] polygonIndices = ReadList(0);
-                int[] orientedVolumes = ReadList(1);
-                if (polygonIndices.Any(index => index < 0 || index >= polygons.Count))
-                {
-                    throw new InvalidDataException(
-                        $"UYA target group {i} references an out-of-range target polygon.");
-                }
-                if (orientedVolumes.Any(index => index < 0 || index >= volumes.Count))
-                {
-                    throw new InvalidDataException(
-                        $"UYA target group {i} references an out-of-range target volume.");
-                }
-
-                result.Add(new TargetGroup(
-                    i,
-                    (F(0x00), F(0x04), F(0x08)),
-                    radius,
-                    polygonIndices,
-                    orientedVolumes,
-                    ReadList(2),
-                    ReadList(3),
-                    ReadList(4)));
-            }
-            return result;
-        }
-
-        byte[]? ResolvePvar(int index)
-        {
-            if (index < 0) return null;
-            long entry64 = (long)pvarTable + index * 8L;
-            if (entry64 < 0 || entry64 + 8 > data.Length) throw new InvalidDataException($"UYA PVar index {index} lies outside the table.");
-            int entry = (int)entry64;
-            int rel = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(entry));
-            int size = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(entry + 4));
-            long at64 = (long)pvarData + rel;
-            if (rel < 0 || size < 0 || at64 < 0 || at64 + size > data.Length)
-                throw new InvalidDataException($"UYA PVar {index} range {rel}+{size} lies outside gameplay data.");
-            return data.AsSpan((int)at64, size).ToArray();
-        }
-
-        int mobyBlock = Pointer(MobyPtr, "Moby instances");
-        if (mobyBlock + 0x10 > data.Length) throw new InvalidDataException("UYA Moby block header is truncated.");
+    private static List<MobyInstance> ReadMobies(byte[] data, int pvarTable, int pvarData)
+    {
+        int mobyBlock = Pointer(data, MobyPtr, "Moby instances");
+        if (mobyBlock + BlockHeaderSize > data.Length) throw new InvalidDataException("UYA Moby block header is truncated.");
         int mobyCount = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(mobyBlock));
-        if (mobyCount < 0 || mobyCount > 200_000 || (long)mobyBlock + 0x10L + (long)mobyCount * MobyBytes > data.Length)
+        if (mobyCount < 0 || mobyCount > MaxRecordCount || (long)mobyBlock + BlockHeaderSize + (long)mobyCount * MobyBytes > data.Length)
             throw new InvalidDataException($"UYA Moby count/extent is invalid ({mobyCount}).");
         var mobies = new List<MobyInstance>(mobyCount);
         for (int i = 0; i < mobyCount; i++)
         {
-            int at = mobyBlock + 0x10 + i * MobyBytes;
+            int at = mobyBlock + BlockHeaderSize + i * MobyBytes;
             int size = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at));
             if (size != MobyBytes) throw new InvalidDataException($"UYA Moby {i} size is 0x{size:x}, expected 0x88.");
             int S(int rel) => BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at + rel));
@@ -457,19 +253,234 @@ public static class Rac3Gameplay
             int pvarIndex = S(0x68);
             mobies.Add(new MobyInstance(i, S(0x28), F(0x2c), (F(0x40), F(0x44), F(0x48)),
                 (F(0x4c), F(0x50), F(0x54)), S(0x10), S(0x14), pvarIndex, S(0x70),
-                data.AsSpan(at, MobyBytes).ToArray(), ResolvePvar(pvarIndex)));
+                data.AsSpan(at, MobyBytes).ToArray(), ResolvePvar(data, pvarTable, pvarData, pvarIndex)));
         }
-        List<TargetVolume> targetVolumes = TargetVolumes();
-        List<TargetPolygon> targetPolygons = TargetPolygons();
-        List<TargetGroup> targetGroups = TargetGroups(targetVolumes, targetPolygons);
-        return new Gameplay(
-            Matrices(TiePtr, TieBytes, "TIE instances"),
-            Matrices(ShrubPtr, ShrubBytes, "shrub instances"),
-            mobies,
-            targetVolumes,
-            targetPolygons,
-            targetGroups,
-            data);
+        return mobies;
+    }
+
+    private static List<TargetVolume> ReadTargetVolumes(byte[] data)
+    {
+        int block = OptionalPointer(data, TargetVolumePtr, "target volume");
+        if (block == 0) return [];
+        if (block + BlockHeaderSize > data.Length)
+            throw new InvalidDataException("UYA target-volume header is truncated.");
+        int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block));
+        long end = (long)block + BlockHeaderSize + (long)count * TargetVolumeBytes;
+        if (count < 0 || count > MaxRecordCount || end > data.Length)
+            throw new InvalidDataException($"UYA target-volume count/extent is invalid ({count}).");
+
+        var result = new List<TargetVolume>(count);
+        for (int i = 0; i < count; i++)
+        {
+            int at = block + BlockHeaderSize + i * TargetVolumeBytes;
+            float F(int relative)
+            {
+                float value = BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + relative));
+                if (!float.IsFinite(value))
+                {
+                    throw new InvalidDataException(
+                        $"UYA target volume {i} has a non-finite float at +0x{relative:x}.");
+                }
+                return value;
+            }
+
+            result.Add(new TargetVolume(
+                i,
+                (F(0x30), F(0x34), F(0x38)),
+                (F(0x40), F(0x44), F(0x48)),
+                (F(0x50), F(0x54), F(0x58)),
+                (F(0x60), F(0x64), F(0x68)),
+                data.AsSpan(at, TargetVolumeBytes).ToArray()));
+        }
+        return result;
+    }
+
+    private static List<TargetPolygon> ReadTargetPolygons(byte[] data)
+    {
+        int block = OptionalPointer(data, TargetPolygonPtr, "target polygon");
+        if (block == 0) return [];
+        if (block + BlockHeaderSize > data.Length)
+            throw new InvalidDataException("UYA target-polygon header is truncated.");
+
+        int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block));
+        int dataRelative = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block + 4));
+        int dataBytes = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block + 8));
+        long tableEnd = (long)block + BlockHeaderSize + (long)count * sizeof(int);
+        long polygonData = (long)block + dataRelative;
+        long polygonEnd = polygonData + dataBytes;
+        if (count < 0 || count > MaxRecordCount || dataRelative < 0 || dataBytes < 0
+            || tableEnd > data.Length || polygonData < tableEnd || polygonEnd > data.Length)
+        {
+            throw new InvalidDataException(
+                $"UYA target-polygon count/extent is invalid ({count}, rel=0x{dataRelative:x}, bytes=0x{dataBytes:x}).");
+        }
+
+        var offsets = new int[count];
+        for (int i = 0; i < count; i++)
+        {
+            offsets[i] = BinaryPrimitives.ReadInt32LittleEndian(
+                data.AsSpan(block + 0x10 + i * sizeof(int)));
+            if (offsets[i] < 0 || offsets[i] >= dataBytes)
+            {
+                throw new InvalidDataException(
+                    $"UYA target polygon {i} offset 0x{offsets[i]:x} lies outside its data blob.");
+            }
+            if (i > 0 && offsets[i] < offsets[i - 1])
+            {
+                throw new InvalidDataException(
+                    $"UYA target polygon offsets are not monotonic at {i}.");
+            }
+        }
+
+        var result = new List<TargetPolygon>(count);
+        for (int i = 0; i < count; i++)
+        {
+            int at = checked((int)polygonData + offsets[i]);
+            int next = checked((int)polygonData + (i + 1 < count ? offsets[i + 1] : dataBytes));
+            if (at + 0x10 > next)
+                throw new InvalidDataException($"UYA target polygon {i} header overlaps the next record.");
+
+            int vertexCount = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at));
+            long vertexEnd = (long)at + 0x10L + (long)vertexCount * 0x10L;
+            if (vertexCount < 0 || vertexCount > MaxRecordCount || vertexEnd > next)
+            {
+                throw new InvalidDataException(
+                    $"UYA target polygon {i} vertex count/extent is invalid ({vertexCount}).");
+            }
+
+            var vertices = new TargetPolygonVertex[vertexCount];
+            for (int vertex = 0; vertex < vertexCount; vertex++)
+            {
+                int v = at + 0x10 + vertex * 0x10;
+                float F(int relative)
+                {
+                    float value = BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(v + relative));
+                    if (!float.IsFinite(value))
+                    {
+                        throw new InvalidDataException(
+                            $"UYA target polygon {i} vertex {vertex} has a non-finite component.");
+                    }
+                    return value;
+                }
+                vertices[vertex] = new TargetPolygonVertex(F(0), F(4), F(8), F(12));
+            }
+
+            result.Add(new TargetPolygon(
+                i,
+                vertices,
+                data.AsSpan(at, next - at).ToArray()));
+        }
+
+        return result;
+    }
+
+    private static List<TargetGroup> ReadTargetGroups(
+        byte[] data,
+        IReadOnlyList<TargetVolume> volumes,
+        IReadOnlyList<TargetPolygon> polygons)
+    {
+        int outer = OptionalPointer(data, TargetGroupPtr, "target-group");
+        if (outer == 0) return [];
+        if (outer + sizeof(int) > data.Length)
+            throw new InvalidDataException("UYA target-group outer header is truncated.");
+
+        int payloadBytes = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(outer));
+        int payload = outer + sizeof(int);
+        if (payloadBytes < 0x20 || (long)payload + payloadBytes > data.Length)
+            throw new InvalidDataException(
+                $"UYA target-group payload size 0x{payloadBytes:x} is invalid.");
+
+        int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(payload));
+        if (count < 0 || count > MaxRecordCount ||
+            0x20L + (long)count * TargetGroupBytes > payloadBytes)
+        {
+            throw new InvalidDataException(
+                $"UYA target-group count/record extent is invalid ({count}).");
+        }
+
+        int[] listBases = new int[5];
+        for (int i = 0; i < listBases.Length; i++)
+        {
+            listBases[i] = BinaryPrimitives.ReadInt32LittleEndian(
+                data.AsSpan(payload + 4 + i * sizeof(int)));
+            if (listBases[i] < 0 || listBases[i] > payloadBytes)
+            {
+                throw new InvalidDataException(
+                    $"UYA target-group list {i} base 0x{listBases[i]:x} lies outside its payload.");
+            }
+        }
+
+        var result = new List<TargetGroup>(count);
+        for (int i = 0; i < count; i++)
+        {
+            int at = payload + 0x20 + i * TargetGroupBytes;
+            float F(int rel)
+            {
+                float value = BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + rel));
+                if (!float.IsFinite(value))
+                    throw new InvalidDataException(
+                        $"UYA target group {i} has a non-finite float at +0x{rel:x}.");
+                return value;
+            }
+
+            int[] ReadList(int list)
+            {
+                int itemCount = BinaryPrimitives.ReadInt16LittleEndian(
+                    data.AsSpan(at + 0x10 + list * sizeof(short)));
+                if (itemCount < 0)
+                    throw new InvalidDataException(
+                        $"UYA target group {i} list {list} has negative count {itemCount}.");
+                if (itemCount == 0) return [];
+
+                int relative = BinaryPrimitives.ReadInt32LittleEndian(
+                    data.AsSpan(at + 0x1c + list * sizeof(int)));
+                long start = (long)listBases[list] + relative;
+                long end = start + (long)itemCount * sizeof(int);
+                if (relative < 0 || start < 0 || end > payloadBytes)
+                {
+                    throw new InvalidDataException(
+                        $"UYA target group {i} list {list} range 0x{relative:x}+{itemCount} lies outside its payload.");
+                }
+
+                var values = new int[itemCount];
+                int source = checked(payload + (int)start);
+                for (int item = 0; item < itemCount; item++)
+                {
+                    values[item] = BinaryPrimitives.ReadInt32LittleEndian(
+                        data.AsSpan(source + item * sizeof(int)));
+                }
+                return values;
+            }
+
+            float radius = F(0x0c);
+            if (radius < 0f)
+                throw new InvalidDataException(
+                    $"UYA target group {i} has negative radius {radius}.");
+
+            int[] polygonIndices = ReadList(0);
+            int[] orientedVolumes = ReadList(1);
+            if (polygonIndices.Any(index => index < 0 || index >= polygons.Count))
+            {
+                throw new InvalidDataException(
+                    $"UYA target group {i} references an out-of-range target polygon.");
+            }
+            if (orientedVolumes.Any(index => index < 0 || index >= volumes.Count))
+            {
+                throw new InvalidDataException(
+                    $"UYA target group {i} references an out-of-range target volume.");
+            }
+
+            result.Add(new TargetGroup(
+                i,
+                (F(0x00), F(0x04), F(0x08)),
+                radius,
+                polygonIndices,
+                orientedVolumes,
+                ReadList(2),
+                ReadList(3),
+                ReadList(4)));
+        }
+        return result;
     }
 
     /// <summary>Native Rz*Ry*Rx transform conjugated by the Y/Z basis swap into OBP Y-up.</summary>
