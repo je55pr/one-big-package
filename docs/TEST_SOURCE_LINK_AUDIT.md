@@ -1,6 +1,6 @@
 # OBP.Tests linked host source audit (#384)
 
-**Audit bases:** issue freeze `3d9c4b5` (49 files), current dev `1aab1b4` (159 files).
+**Audit bases:** issue freeze `3d9c4b5` (49 files), dev `1aab1b4` (159 files at that revision; later dev has more, see note).
 **Disposition:** retain the 49 frozen links, remove no links, add no projects, and harden coverage attribution plus future compilation-mode guards.
 
 > **Snapshot note:** the counts in this audit (49 frozen, 159 at `1aab1b4`) are as of
@@ -11,11 +11,11 @@
 
 ## Findings
 
-The 49 explicit linked sources in the issue snapshot are **all still present**, in the same physical paths: 19 in game/scripts and 30 in game/diagnostics. Later decomposition PRs added 110 independent links. The current total is **50 scripts and 109 diagnostics**. The regression checks evaluate **all current links**, not a frozen count, so additional independent source/diagnostic moves do not need a second hard-coded list.
+The 49 explicit linked sources in the issue snapshot are **all still present**, in the same physical paths: 19 in game/scripts and 30 in game/diagnostics. Later decomposition PRs added 110 independent links. The total at `1aab1b4` was **50 scripts and 109 diagnostics** (dev now links 170; see the snapshot note). The regression checks evaluate **all current links**, not a frozen count, so additional independent source/diagnostic moves do not need a second hard-coded list.
 
 Every linked path is compiled canonically into **OBP.Game** through game/OBP.Game.csproj and is compiled a second time for portable **OBP.Tests**. These two host type instances are deliberately different assembly identities. OBP.Tests references the existing OBP.Core, OBP.Runtime, OBP.Fusion, OBP.Godot and other shared assemblies directly; it does **not** reference OBP.Game. No linked host declaration collides with a type in a referenced shared assembly. There is no demonstrated two-consumer canonical host-type identity requirement that warrants moving these contracts into shared projects.
 
-**Important build-mode difference:** the Godot SDK defines GODOT, GODOT4, Godot version/platform symbols, TRACE and RELEASE for the game. The test project defines TRACE and RELEASE, but not the Godot symbols. Both projects use C# 12, nullable enabled and implicit usings enabled. The 159 currently linked files have no #if, #elif, #define or #undef directives, so this real symbol difference does not currently change their compiled source. The new test guard rejects future conditional compilation in linked files until the divergent mode is deliberately addressed.
+**Important build-mode difference:** the Godot SDK defines GODOT, GODOT4, Godot version/platform symbols, TRACE and RELEASE for the game. The test project defines TRACE and RELEASE, but not the Godot symbols. Both projects use C# 12, nullable enabled and implicit usings enabled. The 159 files linked at `1aab1b4` have no #if, #elif, #define or #undef directives, so this real symbol difference does not currently change their compiled source. The new test guard rejects future conditional compilation in linked files until the divergent mode is deliberately addressed.
 
 The word "portable" means **not requiring a running Godot editor or retail source files**; it does not mean every file is pure .NET. ApplicationPointer.cs in the baseline uses the Godot API and retains private static pointer state. Its portable test exercises the pure ResolveDesktopMode method and does not prove live desktop behaviour. The later ActorContactGeometry.cs link also uses Godot types. LegacyDiagnosticCancellation has a per-assembly AsyncLocal and DiagnosticAvatarProvider has a singleton. None of these test instances should be treated as the runtime instance. Source/link type identity is an intentionally limited testing technique, not an inter-assembly contract.
 
@@ -79,7 +79,7 @@ Each file below is owned by OBP.Game, and each is **retained**. The production a
 
 ## Newer links, kept under the same guard
 
-The post-freeze 110 links comprise 31 scripts and 79 diagnostics. Their owners and reasons are the same in kind, but were introduced by independent feature/diagnostic decomposition work after the frozen census. The diagnostics represent scenario runners, named scenario implementations, typed observations and fixtures for movement, weapons, combat, routes, capture, replay, profiles and campaign tests. The scripts represent small host policies, lifetime state, actor/player composition, capture/replay and world/weapon adapters. None is automatically promoted into OBP.Core, OBP.Runtime, OBP.Fusion or OBP.Godot. The current compile-link guard checks all 159 filenames, ownership boundary, canonical type separation, conditional compilation and link virtual paths. The existing explicit diagnostic coverage permissions test covers all 109 current diagnostic links.
+The post-freeze 110 links comprise 31 scripts and 79 diagnostics. Their owners and reasons are the same in kind, but were introduced by independent feature/diagnostic decomposition work after the frozen census. The diagnostics represent scenario runners, named scenario implementations, typed observations and fixtures for movement, weapons, combat, routes, capture, replay, profiles and campaign tests. The scripts represent small host policies, lifetime state, actor/player composition, capture/replay and world/weapon adapters. None is automatically promoted into OBP.Core, OBP.Runtime, OBP.Fusion or OBP.Godot. The compile-link guard, as audited at `1aab1b4`, checked all 159 filenames, ownership boundary, canonical type separation, conditional compilation and link virtual paths. The existing explicit diagnostic coverage permissions test covered all 109 diagnostic links at `1aab1b4`.
 
 ## Verification and future moves
 
