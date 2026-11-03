@@ -107,4 +107,18 @@ public sealed class AnimatedMeshFramingTests
     [InlineData("x_tab", "x_tab")]
     public void InstanceKeyStripsOnlyTheSurfaceSuffix(string name, string expected) =>
         Assert.Equal(expected, AnimatedMeshFraming.InstanceKey(name));
+
+    [Fact]
+    public void MaterialAndTexturedSurfacesOfOneInstanceAreMeasuredTogether()
+    {
+        var r = AnimatedMeshFraming.MeasureFirstInstance([
+            Mesh("ratchet_i0_t-1", [0, 0, 0]),
+            Mesh("ratchet_i0_t0", [4, 5, 6]),
+        ]);
+        Assert.True(r.Succeeded);
+        Assert.Equal(2, r.MeshCount);
+        Assert.Equal("ratchet_i0", r.Instance);
+        Assert.Equal(4, r.Bounds!.Value.Max.X);
+        Assert.Equal(6, r.Bounds!.Value.Max.Z);
+    }
 }

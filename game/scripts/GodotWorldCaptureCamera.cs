@@ -40,7 +40,7 @@ internal static class GodotWorldCaptureCamera
         var centre = RuntimeWorldScene.ToScene(bounds.Center.X, bounds.Center.Y, bounds.Center.Z);
         var min = RuntimeWorldScene.ToScene(bounds.Min.X, bounds.Min.Y, bounds.Min.Z);
         var max = RuntimeWorldScene.ToScene(bounds.Max.X, bounds.Max.Y, bounds.Max.Z);
-        if (!float.IsFinite(centre.X + centre.Y + centre.Z + min.X + min.Y + min.Z + max.X + max.Y + max.Z))
+        if (!IsFinite(centre) || !IsFinite(min) || !IsFinite(max))
         {
             GD.PushError("[OBPGame] anim-solo camera not framed (bounds outside float range)");
             return;
@@ -52,4 +52,6 @@ internal static class GodotWorldCaptureCamera
         camera.Current = true;
         GD.Print($"[OBPGame] anim-solo camera at {camera.Position}, {measured.MeshCount} meshes of {measured.Instance}");
     }
+
+    private static bool IsFinite(Vector3 v) => float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
 }
