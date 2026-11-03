@@ -7,7 +7,7 @@ The implementation has one composition script. Final-revision engine/retail acce
 | Metric | Frozen origin | Current checkpoint |
 | --- | ---: | ---: |
 | Root-declaring files | 122 | 1 |
-| Root-declaring file lines | 27362 | 2181 |
+| Root-declaring file lines | 27362 | 2180 |
 
 File-by-file inventory. Ownership references are **original migration issue assignments**, not claims about the destination class:
 
@@ -67,7 +67,7 @@ File-by-file inventory. Ownership references are **original migration issue assi
 | `game/scripts/OBPGame.CaptureSession.cs` | #356 | 84 | Retired | 0 |
 | `game/scripts/OBPGame.ControllerSettings.cs` | #348 | 306 | Retired | 0 |
 | `game/scripts/OBPGame.CrateBolts.cs` | #365 | 108 | Retired | 0 |
-| `game/scripts/OBPGame.cs` | #376 | 840 | Active | 2181 |
+| `game/scripts/OBPGame.cs` | #376 | 840 | Active | 2180 |
 | `game/scripts/OBPGame.Destinations.cs` | #347 | 353 | Retired | 0 |
 | `game/scripts/OBPGame.EquipmentPresentation.cs` | #350 | 151 | Retired | 0 |
 | `game/scripts/OBPGame.FusionLab.cs` | #347 | 100 | Retired | 0 |
@@ -141,7 +141,7 @@ Compared with the integration base for PR #526 (`cff1b4eb`):
 | Metric | Before #376 | Current implementation |
 | --- | ---: | ---: |
 | Root files | 2 | 1 |
-| Root lines | 2921 | 2181 |
+| Root lines | 2921 | 2180 |
 | Direct methods | 141 | 130 |
 | Fields / mutable fields | 41 / 34 | 29 / 22 |
 | Exposed members | 43 | 43 |
@@ -161,3 +161,10 @@ and ordered shutdown. No all-capabilities replacement root is introduced.
 See [ROOT_DECOMPOSITION.md](ROOT_DECOMPOSITION.md#376-final-composition-implementation)
 for the ownership table, intentional composition exceptions, extension examples
 and remaining acceptance work. All 122 original rows remain accounted for.
+
+Final local validation for this implementation: source-free Release tests pass
+(3,907 passed, 312 source-dependent skips), the warnings-as-errors Godot build
+and solution formatting verification pass, and UID coverage includes 420 scripts.
+GitHub reports conflicts with the latest `dev`; resolve those and rerun affected
+checks before final acceptance. The expanded revision still needs the full
+authorised engine/retail gate described in the PR.
