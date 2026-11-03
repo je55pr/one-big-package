@@ -36,10 +36,17 @@ public sealed class BugReportReplayProcessTests : IDisposable
     [InlineData("invalid")]
     public async Task CompletedReproductionRetainsItsResultAndOutcome(string outcome)
     {
-        File.WriteAllText(Result, "{\"Result\":\"" + outcome + "\"}");
-        var ports = new BugReportProcessPorts(arguments => { Assert.Equal(new[] { "--playtest-inspect-marker" }, arguments); return 42; },
+        int starts = 0;
+        var ports = new BugReportProcessPorts(arguments =>
+        {
+            starts++;
+            Assert.Equal(new[] { "--playtest-inspect-marker" }, arguments);
+            File.WriteAllText(Result, "{\"Result\":\"" + outcome + "\"}");
+            return 42;
+        },
             _ => false, _ => Assert.Fail("An exited child must not be stopped."), _ => Task.CompletedTask, () => 0);
         var result = await BugReportReplayProcess.RunAsync(new(Result, ["--playtest-inspect-marker"]), ports, CancellationToken.None);
+        Assert.Equal(1, starts);
         Assert.Equal(outcome, result.Outcome);
         Assert.True(File.Exists(Result));
     }

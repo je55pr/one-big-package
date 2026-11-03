@@ -137,8 +137,8 @@ public sealed class FusionWeaponLifetimeTests
         Assert.NotSame(original, campaign.Session);
         Assert.Empty(gold);
         gold.Add(99);
-        campaign.Session.Weapons.TryEquip(Rac1WeaponId.FirstRanged);
-        campaign.Session.Weapons.TryConsumeAmmo(10, 1);
+        Assert.True(campaign.Session.Weapons.TryEquip(Rac1WeaponId.FirstRanged));
+        Assert.True(campaign.Session.Weapons.TryConsumeAmmo(10, 1));
         fixture.Dispose();
         Assert.Same(original, campaign.Session);
         Assert.Same(wallet, campaign.Wallet);
