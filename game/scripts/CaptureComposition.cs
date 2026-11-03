@@ -71,7 +71,7 @@ internal sealed class CaptureComposition(ApplicationComponents components) : Com
             return source is not null && source.Identity.BuildId == build && File.Exists(source.Path);
         },
         OpenDestination: OpenDestinationFromBootstrap,
-        PauseMenuOpen: () => PauseMenuOpen, ClosePauseMenu: Modals.ClosePause,
+        PauseMenuOpen: () => PauseMenuOpen, ClosePauseMenu: () => Modals.ClosePause(),
         ClearSmokeInput: GodotMovementCompatibility.Clear, SetAnalogueSmokeInput: GodotMovementCompatibility.Analogue,
         RefreshWrench: () => _equipmentPresentation.RefreshRac1HandVisibility(Rac1HandPresentation, _avatarPresentation), RefreshHud: () => RefreshRac1HudState(),
         WorldLifetime: () => _worldScenes?.Current?.Lifetime ??
