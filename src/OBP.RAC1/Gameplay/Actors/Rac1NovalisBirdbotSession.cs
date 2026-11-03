@@ -140,7 +140,7 @@ public sealed class Rac1NovalisBirdbotSession : IRac1MobyClassController, IRac1M
         return (Snapshot(entry), health <= 0);
     }
 
-    private void Select(Entry entry, HostMode mode, int sequence)
+    private static void Select(Entry entry, HostMode mode, int sequence)
     {
         entry.Mode = mode; entry.Sequence = sequence;
     }

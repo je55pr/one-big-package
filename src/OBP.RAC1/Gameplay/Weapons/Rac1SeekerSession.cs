@@ -205,7 +205,7 @@ public sealed class Rac1SeekerSession : IRac1MobyDamageConsumer
         return new(Snapshot(e, Vector3.Zero), e.Health <= 0);
     }
 
-    private void SetCountdown(Entry entry, int count)
+    private static void SetCountdown(Entry entry, int count)
     {
         entry.Countdown = count;
         BinaryPrimitives.WriteInt32LittleEndian(entry.Native.MutablePVar.AsSpan(0x184), count);

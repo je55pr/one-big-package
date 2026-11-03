@@ -230,7 +230,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController : IPlayerA
         _currentSequenceId = sequenceId;
         Current = Presentation(state, sequenceId, nativeState, loop, started);
     }
-    private PlayerAnimationPresentation Presentation(
+    private static PlayerAnimationPresentation Presentation(
         PlayerAnimationState state,
         int sequenceId,
         int nativeState,
