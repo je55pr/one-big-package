@@ -119,6 +119,9 @@ public sealed class Rac3GameplayParseTests
         Assert.Equal((0f, 1f, 0f), volume.InverseColumnY);
         Assert.Equal((0f, 0f, 1f), volume.InverseColumnZ);
         Assert.Equal(0x80, volume.RawRecord.Length);
+        Assert.True(volume.Contains(10f, 20f, 30f));
+        Assert.True(volume.Contains(11f, 20f, 30f)); // inclusive face
+        Assert.False(volume.Contains(11.01f, 20f, 30f));
 
         var polygon = Assert.Single(g.TargetPolygons);
         Assert.Equal(3, polygon.Vertices.Count);
@@ -179,6 +182,25 @@ public sealed class Rac3GameplayParseTests
         { "group polygon index", d => I32(d, GroupOuter + 4 + 0x50, 5), "UYA target group 0 references an out-of-range target polygon." },
         { "group volume index", d => I32(d, GroupOuter + 4 + 0x54, 5), "UYA target group 0 references an out-of-range target volume." },
         { "group list base", d => I32(d, GroupOuter + 4 + 4, 0x7000), "UYA target-group list 0 base 0x7000 lies outside its payload." },
+        { "tie header truncated", d => I32(d, TiePtr, BufferSize - 8), "UYA TIE instances header is truncated." },
+        { "shrub header truncated", d => I32(d, ShrubPtr, BufferSize - 8), "UYA shrub instances header is truncated." },
+        { "moby header truncated", d => I32(d, MobyPtr, BufferSize - 8), "UYA Moby block header is truncated." },
+        { "volume header truncated", d => I32(d, TargetVolumePtr, BufferSize - 8), "UYA target-volume header is truncated." },
+        { "polygon header truncated", d => I32(d, TargetPolygonPtr, BufferSize - 8), "UYA target-polygon header is truncated." },
+        { "group outer header truncated", d => I32(d, TargetGroupPtr, BufferSize - 2), "UYA target-group outer header is truncated." },
+        { "negative moby count", d => I32(d, MobyBlock, -1), "UYA Moby count/extent is invalid (-1)." },
+        { "negative tie count", d => I32(d, TieBlock, -1), "UYA TIE instances count/extent is invalid (-1)." },
+        { "negative shrub count", d => I32(d, ShrubBlock, -1), "UYA shrub instances count/extent is invalid (-1)." },
+        { "negative group count", d => I32(d, GroupOuter + 4, -1), "UYA target-group count/record extent is invalid (-1)." },
+        { "negative optional pointer", d => I32(d, TargetVolumePtr, -4), "UYA target volume pointer 0xfffffffc lies outside gameplay data." },
+        { "polygon table overlaps data", d => I32(d, PolygonBlock + 4, 0), "UYA target-polygon count/extent is invalid (1, rel=0x0, bytes=0x40)." },
+        { "polygon large offset", d => I32(d, PolygonBlock + 0x10, int.MaxValue), "UYA target polygon 0 offset 0x7fffffff lies outside its data blob." },
+        { "polygon nonmonotonic", d => { I32(d, PolygonBlock, 2); I32(d, PolygonBlock + 0x10, 0x20); I32(d, PolygonBlock + 0x14, 0x10); }, "UYA target polygon offsets are not monotonic at 1." },
+        { "polygon header overlaps next", d => I32(d, PolygonBlock, 2), "UYA target polygon 0 header overlaps the next record." },
+        { "negative group list count", d => S16(d, GroupOuter + 4 + 0x20 + 0x10, -1), "UYA target group 0 list 0 has negative count -1." },
+        { "group list range", d => I32(d, GroupOuter + 4 + 0x20 + 0x1c, 0x7000), "UYA target group 0 list 0 range 0x7000+1 lies outside its payload." },
+        { "group nonfinite centre", d => F32(d, GroupOuter + 4 + 0x20, float.NaN), "UYA target group 0 has a non-finite float at +0x0." },
+        { "two malformed blocks use Moby-first validation", d => { I32(d, MobyBlock, -1); I32(d, TieBlock, -1); }, "UYA Moby count/extent is invalid (-1)." },
     };
 
     [Theory]

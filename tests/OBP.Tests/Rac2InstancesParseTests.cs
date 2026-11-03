@@ -37,8 +37,7 @@ public sealed class Rac2InstancesParseTests
         }
         I32(d, ShrubPtr, 0x400); I32(d, 0x400, 1);
         I32(d, 0x410, 77);
-        for (int m = 0; m < 16; m++) F32(d, 0x420 + m, 0); // matrix floats overlap-free zero fill
-        F32(d, 0x410 + 0x10 + 15 * 4, 9f);
+        F32(d, 0x410 + 0x10 + 15 * 4, 9f); // remaining matrix entries are zero
 
         // Moby block: valid, non-finite position (skipped), valid with PVar 0, bad size (stops the walk).
         I32(d, MobyPtr, 0x500); I32(d, 0x500, 4);
@@ -77,7 +76,10 @@ public sealed class Rac2InstancesParseTests
         int tr = 0xc20;
         for (int j = 0; j < 16; j++) F32(d, tr + j * 4, j);
         d[tr + 0x40] = 255; d[tr + 0x41] = 0; d[tr + 0x42] = 51;
+        d[tr + 0x44] = 51; d[tr + 0x45] = 153; d[tr + 0x46] = 255;
         I32(d, tr + 0x48, 7); I32(d, tr + 0x4c, 8);
+        d[tr + 0x54] = 13; d[tr + 0x55] = 26; d[tr + 0x56] = 39;
+        d[tr + 0x58] = 52; d[tr + 0x59] = 65; d[tr + 0x5a] = 78;
         BinaryPrimitives.WriteUInt32LittleEndian(d.AsSpan(tr + 0x50), 2);
         F32(d, tr + 0x5c, 11); F32(d, tr + 0x60, 12); F32(d, tr + 0x64, 13); F32(d, tr + 0x68, 14);
         F32(d, tr + 0x6c, 21); F32(d, tr + 0x70, 22); F32(d, tr + 0x74, 23); F32(d, tr + 0x78, 24);
@@ -121,6 +123,7 @@ public sealed class Rac2InstancesParseTests
         var shrub = Assert.Single(g.ShrubInstances);
         Assert.Equal(77, shrub.OClass);
         Assert.Equal(9f, shrub.Matrix[15]);
+        Assert.All(shrub.Matrix.Take(15), value => Assert.Equal(0f, value));
     }
 
     [Fact]
@@ -185,6 +188,9 @@ public sealed class Rac2InstancesParseTests
         Assert.False(t.EnableHero);
         Assert.True(t.EnableFog);
         Assert.Equal((1f, 0f, 51f / 255f), t.StateA.HeroColour);
+        Assert.Equal((51f / 255f, 153f / 255f, 1f), t.StateB.HeroColour);
+        Assert.Equal((13f / 255f, 26f / 255f, 39f / 255f), t.StateA.FogColour);
+        Assert.Equal((52f / 255f, 65f / 255f, 78f / 255f), t.StateB.FogColour);
         Assert.Equal(7, t.StateA.HeroLightIndex);
         Assert.Equal(8, t.StateB.HeroLightIndex);
         Assert.Equal((11f, 13f, 12f, 14f), (t.StateA.FogNearDistance, t.StateA.FogFarDistance, t.StateA.FogNearIntensity, t.StateA.FogFarIntensity));
@@ -229,6 +235,31 @@ public sealed class Rac2InstancesParseTests
         Assert.Empty(g.PointLights);
         Assert.Empty(g.EnvTransitions);
         Assert.Single(g.ShrubInstances);
+    }
+
+    [Theory]
+    [InlineData(int.MaxValue)]
+    [InlineData(int.MaxValue - 8)]
+    [InlineData(-1)]
+    public void HostileBlockPointersAreIgnoredWithoutOffsetOverflow(int hostilePointer)
+    {
+        foreach (int pointer in new[] { TiePtr, ShrubPtr, MobyPtr, DirLightsPtr,
+                     PointLightsPtr, EnvSamplesPtr, EnvTransitionsPtr })
+        {
+            byte[] data = Populated();
+            I32(data, pointer, hostilePointer);
+            Rac2Instances.Gameplay result = Rac2Instances.Parse(data);
+            switch (pointer)
+            {
+                case TiePtr: Assert.Empty(result.TieInstances); break;
+                case ShrubPtr: Assert.Empty(result.ShrubInstances); break;
+                case MobyPtr: Assert.Empty(result.MobyInstances); break;
+                case DirLightsPtr: Assert.Empty(result.DirLights); break;
+                case PointLightsPtr: Assert.Empty(result.PointLights); break;
+                case EnvSamplesPtr: Assert.Empty(result.EnvSamples); break;
+                case EnvTransitionsPtr: Assert.Empty(result.EnvTransitions); break;
+            }
+        }
     }
 
     [Fact]

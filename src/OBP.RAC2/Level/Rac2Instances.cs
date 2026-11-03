@@ -140,7 +140,7 @@ public static class Rac2Instances
         }
 
         blockOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(pointerOffset));
-        if (blockOffset <= 0 || blockOffset + BlockHeaderSize > data.Length)
+        if (blockOffset <= 0 || blockOffset > data.Length - BlockHeaderSize)
         {
             return false;
         }
@@ -196,11 +196,13 @@ public static class Rac2Instances
 
         for (int i = 0; i < count; i++)
         {
-            int at = blockOffset + BlockHeaderSize + i * structSize;
-            if (at + MatrixInstanceMinBytes > data.Length)
+            long position = (long)blockOffset + BlockHeaderSize + (long)i * structSize;
+            if (position > data.Length - MatrixInstanceMinBytes)
             {
                 break;
             }
+
+            int at = (int)position;
 
             var matrix = new float[16];
             for (int m = 0; m < 16; m++)
@@ -226,11 +228,13 @@ public static class Rac2Instances
         int pvarDataBlock = BlockPointer(data, PVarDataPtr);
         for (int i = 0; i < count; i++)
         {
-            int at = blockOffset + BlockHeaderSize + i * MobyInstanceSize;
-            if (at + MobyInstanceSize > data.Length)
+            long recordStart = (long)blockOffset + BlockHeaderSize + (long)i * MobyInstanceSize;
+            if (recordStart > data.Length - MobyInstanceSize)
             {
                 break;
             }
+
+            int at = (int)recordStart;
 
             if (BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at)) != MobyInstanceSize)
             {
@@ -275,11 +279,13 @@ public static class Rac2Instances
 
         for (int i = 0; i < count; i++)
         {
-            int at = blockOffset + BlockHeaderSize + i * DirLightSize;
-            if (at + DirLightSize > data.Length)
+            long position = (long)blockOffset + BlockHeaderSize + (long)i * DirLightSize;
+            if (position > data.Length - DirLightSize)
             {
                 break;
             }
+
+            int at = (int)position;
 
             (float, float, float) V3(int o) => (
                 BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + o)),
@@ -301,11 +307,13 @@ public static class Rac2Instances
 
         for (int i = 0; i < count; i++)
         {
-            int at = blockOffset + BlockHeaderSize + PointLightRecordsOffset + i * PointLightSize;
-            if (at + PointLightSize > data.Length)
+            long position = (long)blockOffset + BlockHeaderSize + PointLightRecordsOffset + (long)i * PointLightSize;
+            if (position > data.Length - PointLightSize)
             {
                 break;
             }
+
+            int at = (int)position;
 
             ushort U(int o) => BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(at + o));
             float radius = U(0x06) / 64f;
@@ -333,11 +341,13 @@ public static class Rac2Instances
 
         for (int i = 0; i < count; i++)
         {
-            int at = blockOffset + BlockHeaderSize + i * EnvSampleSize;
-            if (at + EnvSampleSize > data.Length)
+            long position = (long)blockOffset + BlockHeaderSize + (long)i * EnvSampleSize;
+            if (position > data.Length - EnvSampleSize)
             {
                 break;
             }
+
+            int at = (int)position;
 
             short S16(int o) => BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(at + o));
             byte B(int o) => data[at + o];
@@ -364,16 +374,18 @@ public static class Rac2Instances
         }
 
         // Layout: count bounding spheres first, then count 0x80 transition structs.
-        int spheresAt = blockOffset + BlockHeaderSize;
-        int structsAt = spheresAt + count * EnvTransitionSphereSize;
+        long spheresAt = (long)blockOffset + BlockHeaderSize;
+        long structsAt = spheresAt + (long)count * EnvTransitionSphereSize;
         for (int i = 0; i < count; i++)
         {
-            int so = spheresAt + i * EnvTransitionSphereSize;
-            int at = structsAt + i * EnvTransitionSize;
-            if (at + EnvTransitionSize > data.Length)
+            long structPosition = structsAt + (long)i * EnvTransitionSize;
+            if (structPosition > data.Length - EnvTransitionSize)
             {
                 break;
             }
+
+            int so = (int)(spheresAt + (long)i * EnvTransitionSphereSize);
+            int at = (int)structPosition;
 
             float F(int o) => BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + o));
             float Sph(int o) => BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(so + o));

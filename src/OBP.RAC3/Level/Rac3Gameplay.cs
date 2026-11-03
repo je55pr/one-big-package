@@ -15,7 +15,7 @@ public static class Rac3Gameplay
     private const int TargetVolumePtr = 0x68, TargetPolygonPtr = 0x78, TargetGroupPtr = 0x98;
     private const int TieBytes = 0x60, ShrubBytes = 0x70, MobyBytes = 0x88;
     private const int TargetVolumeBytes = 0x80, TargetGroupBytes = 0x30;
-    private const int MinimumGameplayBytes = 0x68;  // header must reach the target-volume pointer
+    private const int MinimumGameplayBytes = 0x68;  // minimum accepted header; optional pointers may be absent
     private const int BlockHeaderSize = 0x10;       // s32 count, padded to 0x10
     private const int MaxRecordCount = 200_000;
 
@@ -195,7 +195,7 @@ public static class Rac3Gameplay
     private static List<MatrixInstance> ReadMatrices(byte[] data, int ptrAt, int stride, string label)
     {
         int block = Pointer(data, ptrAt, label);
-        if (block + BlockHeaderSize > data.Length) throw new InvalidDataException($"UYA {label} header is truncated.");
+        if (block > data.Length - BlockHeaderSize) throw new InvalidDataException($"UYA {label} header is truncated.");
         int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block));
         if (count < 0 || count > MaxRecordCount || (long)block + BlockHeaderSize + (long)count * stride > data.Length)
             throw new InvalidDataException($"UYA {label} count/extent is invalid ({count}).");
@@ -233,7 +233,7 @@ public static class Rac3Gameplay
     private static List<MobyInstance> ReadMobies(byte[] data, int pvarTable, int pvarData)
     {
         int mobyBlock = Pointer(data, MobyPtr, "Moby instances");
-        if (mobyBlock + BlockHeaderSize > data.Length) throw new InvalidDataException("UYA Moby block header is truncated.");
+        if (mobyBlock > data.Length - BlockHeaderSize) throw new InvalidDataException("UYA Moby block header is truncated.");
         int mobyCount = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(mobyBlock));
         if (mobyCount < 0 || mobyCount > MaxRecordCount || (long)mobyBlock + BlockHeaderSize + (long)mobyCount * MobyBytes > data.Length)
             throw new InvalidDataException($"UYA Moby count/extent is invalid ({mobyCount}).");
@@ -262,7 +262,7 @@ public static class Rac3Gameplay
     {
         int block = OptionalPointer(data, TargetVolumePtr, "target volume");
         if (block == 0) return [];
-        if (block + BlockHeaderSize > data.Length)
+        if (block > data.Length - BlockHeaderSize)
             throw new InvalidDataException("UYA target-volume header is truncated.");
         int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block));
         long end = (long)block + BlockHeaderSize + (long)count * TargetVolumeBytes;
@@ -299,7 +299,7 @@ public static class Rac3Gameplay
     {
         int block = OptionalPointer(data, TargetPolygonPtr, "target polygon");
         if (block == 0) return [];
-        if (block + BlockHeaderSize > data.Length)
+        if (block > data.Length - BlockHeaderSize)
             throw new InvalidDataException("UYA target-polygon header is truncated.");
 
         int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block));
@@ -337,7 +337,7 @@ public static class Rac3Gameplay
         {
             int at = checked((int)polygonData + offsets[i]);
             int next = checked((int)polygonData + (i + 1 < count ? offsets[i + 1] : dataBytes));
-            if (at + 0x10 > next)
+            if (at > next - 0x10)
                 throw new InvalidDataException($"UYA target polygon {i} header overlaps the next record.");
 
             int vertexCount = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at));
@@ -381,7 +381,7 @@ public static class Rac3Gameplay
     {
         int outer = OptionalPointer(data, TargetGroupPtr, "target-group");
         if (outer == 0) return [];
-        if (outer + sizeof(int) > data.Length)
+        if (outer > data.Length - sizeof(int))
             throw new InvalidDataException("UYA target-group outer header is truncated.");
 
         int payloadBytes = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(outer));
