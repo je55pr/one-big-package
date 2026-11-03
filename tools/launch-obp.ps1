@@ -62,5 +62,8 @@ $gameArgs = @('--path', (Join-Path $root 'game'))
 $gameArgs += @(Get-ObpWindowArguments -Windowed:$Windowed)
 
 Write-Host '  Launching.' -ForegroundColor Green
-Start-Process -FilePath $gameExe -ArgumentList $gameArgs -WorkingDirectory $root
+# Start-Process joins its array as a native command line on Windows. Quote each
+# argument using the CRT rules so a checkout path with spaces stays one argument.
+$quotedGameArgs = $gameArgs | ForEach-Object { '"' + ($_ -replace '(\\*)"', '$1$1\"' -replace '(\\+)$', '$1$1') + '"' }
+Start-Process -FilePath $gameExe -ArgumentList $quotedGameArgs -WorkingDirectory $root
 Start-Sleep -Milliseconds 400
