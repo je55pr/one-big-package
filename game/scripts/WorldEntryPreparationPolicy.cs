@@ -20,20 +20,10 @@ internal static class WorldEntryPreparationPolicy
         return (file.Length, file.LastWriteTimeUtc.Ticks);
     }
 
-    // Source preparation owns the native world loading adapter, not the Godot
-    // composition root. Validation still runs before a prepared plan is staged.
-    private sealed class PlannedWorldSource(Func<RuntimeWorld> load) : IWorldEntrySource
-    {
-        public PreparedWorldEntry Prepare(WorldEntryRequest request)
-        {
-            ArgumentNullException.ThrowIfNull(request);
-            var world = load();
-            var spawn = ValidateSourceEntry(world);
-            return new(world, spawn, []); // Mixed native actor adapters are registered by #256.
-        }
-    }
-
-    internal static IWorldEntrySource CreateWorldSource(Func<RuntimeWorld> load) => new PlannedWorldSource(load);
+    // The engine-neutral entry planner owns loader invocation, request admission
+    // and validation ordering; this Godot policy supplies only authored spawn rules.
+    internal static IWorldEntrySource CreateWorldSource(Func<RuntimeWorld> load) =>
+        WorldEntryPlanning.FromLoader(load, ValidateSourceEntry);
 
     internal static void RequireUnchangedSourceFile(string? path, (long Length, long Written)? expected)
     {

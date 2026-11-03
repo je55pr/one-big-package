@@ -38,6 +38,43 @@ public sealed class WorldEntryContractTests
     }
 
     [Fact]
+    public void LoadedWorldSourceRejectsNullRequestWithoutInvokingTheLoader()
+    {
+        bool loaded = false;
+        var source = WorldEntryPlanning.FromLoader(
+            () => { loaded = true; throw new InvalidOperationException("Load should not run."); },
+            _ => throw new InvalidOperationException("Validation should not run."));
+        Assert.Throws<ArgumentNullException>(() => source.Prepare(null!));
+        Assert.False(loaded);
+    }
+
+    [Fact]
+    public void LoadedWorldSourceValidatesEntryExactlyOnceAndDoesNotPublishOnFailure()
+    {
+        var world = new RuntimeWorld(ObpSourceGame.Rac2, "synthetic-v1", 0, "Fixture", null, [], [], 0, [],
+            new ObpBounds(Vec3.Zero, new(10, 10, 10)), null, null);
+        var spawn = new RuntimeSpawn(4, 5, 6, .7);
+        int loads = 0, validations = 0;
+        var source = WorldEntryPlanning.FromLoader(() => { loads++; return world; }, observed =>
+        {
+            validations++;
+            Assert.Same(world, observed);
+            return spawn;
+        });
+        var prepared = source.Prepare(Request());
+        Assert.Same(world, prepared.World);
+        Assert.Equal(spawn, prepared.EntryPoint);
+        Assert.Empty(prepared.Actors);
+        Assert.Equal(1, loads);
+        Assert.Equal(1, validations);
+
+        var failure = WorldEntryPlanning.FromLoader(() => { loads++; return world; }, _ =>
+            throw new InvalidDataException("Authored spawn unavailable."));
+        Assert.Throws<InvalidDataException>(() => failure.Prepare(Request()));
+        Assert.Equal(2, loads);
+    }
+
+    [Fact]
     public void MissingAvatarCannotSelectAnotherSourceProviderOrAHiddenCapsule()
     {
         var session = new TestSession(Snapshot());

@@ -8,6 +8,7 @@ public sealed class WorldEntryPolicyOwnershipTests
         string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.WorldEntry.cs"));
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
         string policy = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "WorldEntryPreparationPolicy.cs"));
+        string planning = File.ReadAllText(Path.Combine(RepoPaths.Root, "src", "OBP.Fusion", "WorldEntryContracts.cs"));
 
         Assert.Contains("WorldEntryPreparationPolicy.SourceFileStamp(sourcePath)", entry);
         Assert.Contains("WorldEntryPreparationPolicy.CreateWorldSource(load)", entry);
@@ -24,11 +25,13 @@ public sealed class WorldEntryPolicyOwnershipTests
         Assert.DoesNotContain("private static (long Length, long Written)? SourceFileStamp(", entry, StringComparison.Ordinal);
 
         Assert.Contains("WorldEntryPlanning.ResolveEntryPoint(world)", policy);
-        Assert.Contains("private sealed class PlannedWorldSource(Func<RuntimeWorld> load) : IWorldEntrySource", policy);
-        Assert.Contains("ArgumentNullException.ThrowIfNull(request);", policy);
-        Assert.Contains("var world = load();", policy);
-        Assert.Contains("var spawn = ValidateSourceEntry(world);", policy);
-        Assert.Contains("return new(world, spawn, []);", policy);
+        Assert.Contains("WorldEntryPlanning.FromLoader(load, ValidateSourceEntry)", policy);
+        Assert.DoesNotContain("class PlannedWorldSource", policy, StringComparison.Ordinal);
+        Assert.Contains("private sealed class LoadedWorldSource(", planning);
+        Assert.Contains("ArgumentNullException.ThrowIfNull(request);", planning);
+        Assert.Contains("var world = load();", planning);
+        Assert.Contains("var spawn = validateEntry(world);", planning);
+        Assert.Contains("return new(world, spawn, []);", planning);
         Assert.Contains("if (SourceFileStamp(path) != expected)", policy);
         Assert.Contains("The world source changed during preparation.", policy);
 
@@ -37,9 +40,10 @@ public sealed class WorldEntryPolicyOwnershipTests
         int staged = entry.IndexOf("WorldScenes.Prepare(plan,", StringComparison.Ordinal);
         int secondAssets = entry.IndexOf("PrepareSelectedPlayerAssets();", firstAssets + 1, StringComparison.Ordinal);
         int secondCheck = entry.IndexOf("RequireUnchangedSourceFile(sourcePath, worldSourceStamp)", StringComparison.Ordinal);
+        int sourceAdmission = entry.IndexOf("Sources.RequireOrdinary(\"world activation\")", StringComparison.Ordinal);
         int commit = entry.IndexOf("_worldEntries.Commit(plan, WorldScenes);", StringComparison.Ordinal);
         Assert.True(firstAssets >= 0 && firstAssets < plan && plan < staged && staged < secondAssets &&
-            secondAssets < secondCheck && secondCheck < commit,
+            secondAssets < secondCheck && secondCheck < sourceAdmission && sourceAdmission < commit,
             "World source and selected player assets must be checked before the destructive world commit.");
         Assert.Contains("Rac1NovalisWaterMechanism.AdmitCollisionFace", policy);
         Assert.Contains("IncludeMobyMarkers", policy);

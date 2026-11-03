@@ -31,6 +31,28 @@ public sealed record WorldEntryPlan(
 /// </summary>
 public static class WorldEntryPlanning
 {
+    /// <summary>
+    /// Adapt a native or synthetic world loader to the same prepared-world
+    /// contract, without introducing player or Godot scene authority.
+    /// </summary>
+    public static IWorldEntrySource FromLoader(Func<RuntimeWorld> load, Func<RuntimeWorld, RuntimeSpawn> validateEntry)
+    {
+        ArgumentNullException.ThrowIfNull(load);
+        ArgumentNullException.ThrowIfNull(validateEntry);
+        return new LoadedWorldSource(load, validateEntry);
+    }
+
+    private sealed class LoadedWorldSource(Func<RuntimeWorld> load, Func<RuntimeWorld, RuntimeSpawn> validateEntry) : IWorldEntrySource
+    {
+        public PreparedWorldEntry Prepare(WorldEntryRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            var world = load();
+            var spawn = validateEntry(world);
+            return new(world, spawn, []); // Mixed native actor adapters register separately.
+        }
+    }
+
     /// <summary>Authored starts win; an unauthored ship point must be within usable world bounds.</summary>
     public static RuntimeSpawn ResolveEntryPoint(RuntimeWorld world)
     {
