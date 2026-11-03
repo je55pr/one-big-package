@@ -54,10 +54,10 @@
     "Hash": "fd72e166578f668651d7223b3559093b84ba1e54c044c9901b5711f4adf04824"
   },
   {
-    "Key": "game/scripts/SourceVerificationCoordinator.cs::SourceVerificationCoordinator.StartForWorldEntry(ObpDestination,bool,int)",
+    "Key": "game/scripts/SourceVerificationCoordinator.cs::SourceVerificationCoordinator.StartForWorldEntry(ObpDestination?,bool,int)",
     "Kind": "adapter",
-    "Reason": "Opt-in first-world R&C2 source hash verification is now admitted by the existing source-verification owner under #376, not by OBPGame. The game identity is read solely to choose the optional source-specific hash job; this adapter never selects a player service or avatar. SourceVerificationCoordinatorTests cover first-world, foreign-game and disabled-hash gates, with the existing independent cancellation/failure tests protecting job lifetime.",
-    "Hash": "be07ef127427ca8240f59d02db944dfd95465944216077ee490a7caf0063df9c"
+    "Reason": "Opt-in first-world R&C2 source hash verification is now admitted by the existing source-verification owner under #376, not by OBPGame. The game identity is read solely to choose the optional source-specific hash job; this adapter never selects a player service or avatar. SourceVerificationCoordinatorTests cover first-world, foreign-game and disabled-hash gates, with the existing independent cancellation/failure tests protecting job lifetime. A null Lab destination skips source verification without selecting any player service.",
+    "Hash": "e3ca62fc36f4b57ab46bb7e93b6d4539fd3a71eec2a9fb0d35df579662833a69"
   },
   {
     "Key": "src/OBP.Godot/DebugOverlay.cs::DebugOverlay.BuildEnvGizmos()",

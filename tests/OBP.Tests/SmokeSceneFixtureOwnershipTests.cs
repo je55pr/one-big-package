@@ -17,10 +17,10 @@ public sealed class SmokeSceneFixtureOwnershipTests
         string glue = root[start..end];
         Assert.Contains("_mode = Mode.Smoke;", glue, StringComparison.Ordinal);
         Assert.Contains("_sceneKind = scene;", glue, StringComparison.Ordinal);
-        Assert.Contains("GodotSmokeSceneFixture.EnsurePlainEnvironment(this);", glue, StringComparison.Ordinal);
-        Assert.Contains("GodotSmokeSceneFixture.Build(this, _worldRoot, _ui, _camera, scene)", glue, StringComparison.Ordinal);
-        Assert.Contains("EnsurePlayerHud();", glue, StringComparison.Ordinal);
-        Assert.Contains("_playerHud!.Render(_hudState.BeginSession(SmokeHudFixtureState.Create()))", glue, StringComparison.Ordinal);
+        Assert.Contains("GodotSmokeSceneFixture.BuildApplicationScene(this, Presentation, _hudState, scene)", glue, StringComparison.Ordinal);
+        Assert.Contains("EnsurePlainEnvironment(root)", fixture, StringComparison.Ordinal);
+        Assert.Contains("application.EnsurePlayerHud()", fixture, StringComparison.Ordinal);
+        Assert.Contains("application.PlayerHud!.Render(hud.BeginSession(SmokeHudFixtureState.Create()))", fixture, StringComparison.Ordinal);
         Assert.DoesNotContain("new MeshInstance3D", glue, StringComparison.Ordinal);
         Assert.DoesNotContain("new DirectionalLight3D", glue, StringComparison.Ordinal);
         Assert.DoesNotContain("new HudHealth(", glue, StringComparison.Ordinal);
@@ -45,13 +45,13 @@ public sealed class SmokeSceneFixtureOwnershipTests
     public void BootstrapEnvironmentAndCleanupAreOwnedByTheSameFixture()
     {
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
-        string worldEntry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.WorldEntry.cs"));
+        string worldEntry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotWorldResources.cs"));
         string fixture = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/GodotSmokeSceneFixture.cs"));
 
         Assert.DoesNotContain("private void EnsurePlainEnvironment()", root, StringComparison.Ordinal);
         Assert.DoesNotContain("private void ClearBootstrapSceneArtifacts()", root, StringComparison.Ordinal);
         Assert.DoesNotContain("new WorldEnvironment", root, StringComparison.Ordinal);
-        Assert.Equal(4, root.Split("GodotSmokeSceneFixture.EnsurePlainEnvironment(this);", StringSplitOptions.None).Length - 1);
+        Assert.Equal(3, root.Split("GodotSmokeSceneFixture.EnsurePlainEnvironment(this);", StringSplitOptions.None).Length - 1);
 
         Assert.Contains("var existing = root.GetNodeOrNull<Node>(\"PlainEnvironment\");", fixture, StringComparison.Ordinal);
         int queuedGuard = fixture.IndexOf("if (!existing.IsQueuedForDeletion())", StringComparison.Ordinal);
@@ -62,8 +62,8 @@ public sealed class SmokeSceneFixtureOwnershipTests
         Assert.Contains("BackgroundColor = new Color(0.04f, 0.05f, 0.08f)", fixture, StringComparison.Ordinal);
         Assert.Contains("AmbientLightEnergy = 1.0f", fixture, StringComparison.Ordinal);
 
-        int retire = worldEntry.IndexOf("GodotSmokeSceneFixture.RetireBootstrap(this, _worldRoot, _ui);", StringComparison.Ordinal);
-        int playerBind = worldEntry.IndexOf("entry.Resources.PlayerLife = PlayerLife.BindWorld(", StringComparison.Ordinal);
+        int retire = worldEntry.IndexOf("GodotSmokeSceneFixture.RetireBootstrap(bindings.Host, application.WorldRoot, application.Ui);", StringComparison.Ordinal);
+        int playerBind = worldEntry.IndexOf("PlayerLife = bindings.PlayerLife.BindWorld(", StringComparison.Ordinal);
         Assert.True(retire >= 0 && playerBind > retire);
 
         int position = fixture.IndexOf("internal static void RetireBootstrap(", StringComparison.Ordinal);

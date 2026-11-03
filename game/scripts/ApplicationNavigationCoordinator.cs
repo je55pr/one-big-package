@@ -32,6 +32,71 @@ internal sealed class ApplicationNavigationCoordinator
     internal TitleScreen? Title => _title;
     internal DestinationSelectorUi? Selector => _selector;
     internal bool PlanetMapOpen => _planetMap.IsOpen;
+    internal string LoadSummary { get; set; } = string.Empty;
+
+    internal bool HandleBack(UiModalCoordinator modals)
+    {
+        switch (modals.HandleBack())
+        {
+            case ModalBackResult.WheelClosed:
+                return true;
+            case ModalBackResult.SettingsClosed:
+                ApplicationLifecycle.ReportNavigation("controller-settings-close");
+                return true;
+            case ModalBackResult.PauseClosed:
+                ApplicationLifecycle.ReportNavigation("pause-menu-close");
+                return true;
+        }
+
+        if (TryClosePlanetMap())
+        {
+            ApplicationLifecycle.ReportNavigation("rac1-planet-map-close");
+            return true;
+        }
+
+        if (modals.OpenPause())
+        {
+            ApplicationLifecycle.ReportNavigation("world-pause-menu-open");
+            return true;
+        }
+
+        if (TryReturnWorldToDestinations())
+        {
+            ApplicationLifecycle.ReportNavigation("world-to-destinations");
+            return true;
+        }
+
+        if (TryReturnSelectorToMenu())
+        {
+            ApplicationLifecycle.ReportNavigation("selector-to-menu");
+            return true;
+        }
+
+        return false;
+    }
+
+    internal bool EnterPreparedWorld(string destinationId, Func<bool> prepareAndCommit,
+        Action completed, Action discardPrepared)
+    {
+        _ports.CancelPreparation();
+        if (!_ports.Sources().RequireOrdinary("world entry")) return false;
+        try
+        {
+            if (!prepareAndCommit()) return false;
+            completed();
+            return true;
+        }
+        catch (Exception error)
+        {
+            _ports.AbandonFailedTravel();
+            ReportWorldEntryFailure(destinationId, error, _ports.World() is not null);
+            var args = _ports.Args();
+            if (args.CaptureFrame is not null || (args.PlayerSessionSmoke || args.PlayerCapabilitiesSmoke) && _ports.World() is null)
+                ApplicationLifecycle.RequestQuit(_owner, "world-entry-failed", 2);
+            return false;
+        }
+        finally { discardPrepared(); }
+    }
 
     internal void SetSelectorVisible(bool visible)
     {

@@ -9,7 +9,7 @@ public sealed class Rac1HandPresentationOwnershipArchitectureTests
     [Fact]
     public void HandVisibilityAndAttachmentMutationBelongToTheExistingEquipmentBinder()
     {
-        string entry = Script("OBPGame.WorldEntry.cs");
+        string entry = Script("PlayerAvatarPresentationHost.cs");
         string root = Script("OBPGame.cs");
         string binder = Script("PlayerEquipmentPresentationBinder.cs");
 

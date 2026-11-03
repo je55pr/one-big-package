@@ -3,6 +3,8 @@ using OBP.Core;
 using OBP.Fusion;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
+using OBP.RAC1.Presentation;
+using OBP.Runtime.Presentation;
 using OBP.Runtime.Diagnostics;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Player;
@@ -41,6 +43,30 @@ internal sealed record PlayerEquipmentPorts(
 /// </summary>
 internal sealed class PlayerEquipmentFacade(PlayerEquipmentPorts ports) : IDisposable
 {
+    internal Rac1ItemAcquisitionResult AcquireNativeItem(int id, Rac1WeaponInventory campaign,
+        Action<Rac1MovementCapabilities> applyMovement, Action<string> persist, Action<HudFeedbackDraft> feedback)
+    {
+        var result = (Ports.Native()?.Inventory ?? campaign).AcquireNativeItem(id);
+        applyMovement(Rac1MovementCapabilities.FromInventory(Ports.Inventory()));
+        RefreshMovementEquipment();
+        persist($"item acquisition {id}");
+        if (id == (int)Rac1WeaponId.FirstRanged && result.IsFirstAcquisition)
+            feedback(Rac1HudProjection.BombGloveAcquiredFeedback(result.AmmoGranted));
+        return result;
+    }
+
+    internal Rac1AmmoGrantResult GrantNativeAmmo(int id, int amount, Rac1WeaponInventory campaign,
+        Action<string> persist, Action<HudFeedbackDraft> feedback)
+    {
+        var result = (Ports.Native()?.Inventory ?? campaign).GrantAmmoClamped(id, amount);
+        if (result.Changed)
+        {
+            persist($"ammo grant item {id}");
+            if (id == (int)Rac1WeaponId.FirstRanged)
+                feedback(Rac1HudProjection.BombGloveAmmoPickupFeedback(result.AmmoGranted));
+        }
+        return result;
+    }
     private PlayerEquipmentPorts? _ports = ports;
     private PlayerEquipmentPorts Ports => _ports ?? throw new ObjectDisposedException(nameof(PlayerEquipmentFacade));
     private static PlayerEquipmentCatalog Catalog => PlayerEquipmentRegistrations.Catalog;

@@ -32,7 +32,9 @@ public sealed class WorldSceneOwnershipArchitectureTests
         Assert.True(HasGenerationComparison(deferred, SyntaxKind.NotEqualsExpression),
             "Deferred preparation must reject a stale navigation generation.");
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
-        Assert.Contains("await scenes.PendingPreparation;", root, StringComparison.Ordinal);
+        string shutdown = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotApplicationShutdown.cs"));
+        Assert.Contains("GodotApplicationShutdown.PrepareAsync(", root, StringComparison.Ordinal);
+        Assert.Contains("await scenes.PendingPreparation;", shutdown, StringComparison.Ordinal);
         Assert.Contains("_worldScenes?.Dispose();", root, StringComparison.Ordinal);
     }
 

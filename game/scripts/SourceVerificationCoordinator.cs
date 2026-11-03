@@ -16,8 +16,9 @@ internal sealed class SourceVerificationCoordinator(Func<ObpSourceGame, Verifica
 
     // The optional first-world hash belongs to source verification, not
     // destination activation. R&C2 remains the only admitted automatic target.
-    internal void StartForWorldEntry(ObpDestination destination, bool verifyHash, int worldSwitches)
+    internal void StartForWorldEntry(ObpDestination? destination, bool verifyHash, int worldSwitches)
     {
+        if (destination is null) return;
         if (verifyHash && worldSwitches == 1 && destination.Game == ObpSourceGame.Rac2) Start(ObpSourceGame.Rac2);
     }
 

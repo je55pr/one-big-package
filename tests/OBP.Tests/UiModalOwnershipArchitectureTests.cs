@@ -59,7 +59,8 @@ public sealed class UiModalOwnershipArchitectureTests
         int settings = back.IndexOf("if (SettingsOpen)", StringComparison.Ordinal);
         int pause = back.IndexOf("if (PauseOpen)", StringComparison.Ordinal);
         Assert.True(wheel >= 0 && wheel < settings && settings < pause);
-        Assert.Contains("Modals.HandleBack()", Method(root, "TryHandleInteractiveBack").ToFullString(), StringComparison.Ordinal);
+        Assert.Contains("_navigation.HandleBack(Modals)", Method(root, "TryHandleInteractiveBack").ToFullString(), StringComparison.Ordinal);
+        Assert.Contains("modals.HandleBack()", Method(Read("ApplicationNavigationCoordinator.cs"), "HandleBack").ToFullString(), StringComparison.Ordinal);
 
         string retirement = Method(owner, "RetireAll").ToFullString();
         Assert.Contains("CloseQuickSelect(retiring: true)", retirement, StringComparison.Ordinal);
@@ -67,7 +68,8 @@ public sealed class UiModalOwnershipArchitectureTests
         Assert.Contains("ReleasePauseLease()", retirement, StringComparison.Ordinal);
         Assert.Contains("TearDownInteractiveOverlays()", Method(root, "RetireWorldBindings").ToFullString(), StringComparison.Ordinal);
         Assert.Contains("_modals?.RetireAll()", Method(root, "ReleaseAudioForExit").ToFullString(), StringComparison.Ordinal);
-        Assert.Contains("_modals?.RetireAll()", Method(root, "PrepareForQuitAsync").ToFullString(), StringComparison.Ordinal);
+        Assert.Contains("GodotApplicationShutdown.PrepareAsync(", Method(root, "PrepareForQuitAsync").ToFullString(), StringComparison.Ordinal);
+        Assert.Contains("modals?.RetireAll()", Method(Read("GodotApplicationShutdown.cs"), "PrepareAsync").ToFullString(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -109,13 +111,14 @@ public sealed class UiModalOwnershipArchitectureTests
     {
         string ports = Read("UiModalPorts.cs");
         string owner = Read("UiModalCoordinator.cs");
-        string composition = Read("OBPGame.cs");
+        string composition = Read("PauseMenuUi.cs");
+        Assert.Contains("PauseMenuUi.Create(new(", Read("OBPGame.cs"), StringComparison.Ordinal);
         Assert.Contains("record ModalEquipmentPorts(", ports, StringComparison.Ordinal);
         Assert.Contains("equipment.SelectWeapon(weapon)", owner, StringComparison.Ordinal);
         Assert.Contains("equipment.WheelEntries()", owner, StringComparison.Ordinal);
         Assert.Contains("equip.AssignNativeSlot", composition, StringComparison.Ordinal);
         Assert.Contains("CatalogEquip = equip.Equip", composition, StringComparison.Ordinal);
-        Assert.Contains("RetailEnabled = !OrdinaryPlayerSession", composition, StringComparison.Ordinal);
-        Assert.Contains("CatalogReader = OrdinaryPlayerSession ? equip.Catalog", composition, StringComparison.Ordinal);
+        Assert.Contains("RetailEnabled = !bindings.Ordinary()", composition, StringComparison.Ordinal);
+        Assert.Contains("CatalogReader = bindings.Ordinary() ? equip.Catalog", composition, StringComparison.Ordinal);
     }
 }

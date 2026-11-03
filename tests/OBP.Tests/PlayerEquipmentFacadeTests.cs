@@ -16,6 +16,48 @@ namespace OBP.Tests;
 public sealed class PlayerEquipmentFacadeTests
 {
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AcquisitionUsesTheExistingInventoryAndPublishesFeedbackAfterPersistence(bool ordinary)
+    {
+        using var fixture = new Fixture(ordinary);
+        var campaign = new Rac1WeaponInventory(ownsFirstRanged: false);
+        var selected = fixture.Native?.Inventory ?? campaign;
+        var events = new List<string>();
+        int id = (int)Rac1WeaponId.FirstRanged;
+        bool first = !selected.OwnsFirstRanged;
+
+        var result = fixture.Equipment.AcquireNativeItem(id, campaign,
+            _ => events.Add("movement"), reason => events.Add(reason), _ => events.Add("feedback"));
+
+        Assert.True(selected.OwnsFirstRanged);
+        Assert.Equal(first, result.IsFirstAcquisition);
+        Assert.Equal("movement", events[0]);
+        Assert.Equal("item acquisition 10", events[1]);
+        Assert.Equal(first ? new[] { "movement", "item acquisition 10", "feedback" } :
+            new[] { "movement", "item acquisition 10" }, events);
+        if (ordinary) Assert.False(campaign.OwnsFirstRanged);
+    }
+
+    [Fact]
+    public void AmmoGrantPersistsAndReportsOnlyAcceptedNativeAmmo()
+    {
+        using var fixture = new Fixture(ordinary: false);
+        var campaign = Rac1WeaponInventory.CreateOpeningLoadout();
+        var events = new List<string>();
+        void Persist(string reason) => events.Add(reason);
+
+        var changed = fixture.Equipment.GrantNativeAmmo(10, 100, campaign, Persist, _ => events.Add("feedback"));
+        Assert.True(changed.Changed);
+        Assert.Equal(40, campaign.FirstRangedAmmo);
+        Assert.Equal(new[] { "ammo grant item 10", "feedback" }, events);
+        events.Clear();
+        var full = fixture.Equipment.GrantNativeAmmo(10, 100, campaign, Persist, _ => events.Add("feedback"));
+        Assert.False(full.Changed);
+        Assert.Empty(events);
+    }
+
+    [Theory]
     [InlineData(EquipmentUsability.MissingSource)]
     [InlineData(EquipmentUsability.UnsupportedBuild)]
     [InlineData(EquipmentUsability.MissingModel)]

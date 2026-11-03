@@ -18,8 +18,8 @@ CLI/profile/save/replay wire identities.
 
 > **Status:** this document is a running ledger. Per-migration measurements
 > (file, method and field totals) are snapshots taken when each PR landed, not the
-> current state. The current root is `OBPGame.cs` plus `OBPGame.WorldEntry.cs`
-> (2,836 lines); see [OBPGAME_ROOT_CENSUS.md](OBPGAME_ROOT_CENSUS.md). #333 and
+> current state. The current root is the single `OBPGame.cs`;
+> `OBPGame.WorldEntry.cs` is retired. For current measurements, see [OBPGAME_ROOT_CENSUS.md](OBPGAME_ROOT_CENSUS.md). #333 and
 > #376 remain open, and the guard is `dotnet run --project tools/OBP.ArchitectureTool
 > -c Release -- check .` (see *Reproducing the measurements*).
 
@@ -927,24 +927,66 @@ that reject stale generation/actor identities. The native-session tests, source-
 free ownership guards and original engine crate scenario remain the authority
 for behaviours that can be checked without inventing retail source facts.
 
-## #376 selected avatar world lifecycle
+## #376 final composition implementation
 
-The existing `PlayerAvatarPresentationHost` now owns staged visual attachment,
-the ordered native-use/pose/contact/audio/sample physics callback, reset and
-combined avatar/equipment-view cleanup. The root supplies typed existing owners
-and live observations; callbacks retain no root service locator. Subscription
-retirement still removes both player events and releases their bound world
-dependencies. Native controllers, player inventories and the world lease remain
-with their existing owners. No resource identity or persisted format changes.
+The root now delegates responsibilities to their existing owners:
 
-At this checkpoint the root falls from 2,921 to 2,836 file lines and from 141
-to 139 direct methods. Its 41 fields (34 mutable), 43 exposed members, two root
-files and 112 distinct cross-file references remain unchanged. Three obsolete
-composition permissions retire; the frozen origin and access ledger do not grow.
-The file-by-file census still accounts for all 122 original fragments.
+| Responsibility | Owner and lifetime |
+| --- | --- |
+| Prepare/revalidate a candidate and commit its lease | `WorldSceneLifetime`; candidate/live world |
+| Activate source modules, actors, equipment, effects and tick schedule | `GodotWorldResources`; world lease |
+| Failed-entry recovery and Back/menu routing | `ApplicationNavigationCoordinator`; application |
+| Selected avatar attachment, ordered physics callback and retirement | `PlayerAvatarPresentationHost`; selected player/world binding |
+| Pause-menu and Quick Select projection | `PauseMenuUi` and `WeaponQuickSelectUi`; presentation |
+| Campaign save admission, reporting and durability boundaries | `Rac1CampaignPersistenceHost`; source campaign |
+| Native acquisition and ammo feedback | `PlayerEquipmentFacade`; persistent player |
+| Native wrench completion, captured-target retirement and damage dispatch | Existing source action, wrench, world and Fusion owners |
+| Smoke fixture construction, entry admission and traversal runner | Existing diagnostic fixture/harness/scenario owners |
 
-This is an independent portion of #376, not final acceptance. World preparation/
-activation, scene/player spawning, pause-menu projection, campaign persistence
-and diagnostic fixture construction still need final composition cleanup.
-`OBPGame.WorldEntry.cs` remains active. The authorised automated reconciliation
-gate remains distinct from the outstanding human visual and audible review.
+Two plain Godot-side components provide distinct remaining ownership:
+`GodotApplicationPresentation` owns scene roots, the player node, cameras,
+HUD and inspection views; `GodotApplicationShutdown` owns draining, audio-mix
+retirement and ordered final disposal. Neither takes an `OBPGame` reference
+or replaces the persistent player, campaign, actor registry or world lease.
+Shutdown resolves lazily created services after audio cleanup, including when
+cleanup throws. Preparation revalidates selected assets and the source file
+before the existing destructive commit. Native clocks and callback order stay
+with their original controllers and scheduler.
+
+`OBPGame.WorldEntry.cs` and its UID are retired. The required main script,
+its UID, scene association and public host fixture/bootstrap contracts remain.
+The frozen origin/access inventory is unchanged; removed members retire their
+permissions, and remaining composition bodies retain exact reviewed hashes.
+The single-root regression rejects reintroduced view construction, inventories,
+terminal native-state mutations and direct audio-server shutdown logic.
+
+Intentional root wiring is owned by #376: Godot lifecycle/input callbacks;
+component factories and typed observation/action bindings; application mode,
+frame and bootstrap CLI state; and public fixture/bootstrap forwarding methods.
+Factories may register an existing source implementation and expose a native
+controller's facts, but may not implement its formula, tick, damage dispatch or
+scenario assertions. Exact `Composition` entries document these seams, not a
+permission for routine feature growth. New work belongs in its owner.
+
+Examples of extending those owners without editing `OBPGame`:
+
+- An enemy family adds a source-qualified recipe/factory to
+  `ActorNativeAdapters`/`ActorAdapterRegistry`; the existing actor host binds it.
+  `ActorAdapterRegistryTests.ANewFamilyRegistersWithoutChangingTheWorldHost`
+  proves distinct source/class registrations and rejects duplicates.
+- An authored R&C1 mechanic implements `Rac1AuthoredMechanism` and registers
+  in `Rac1AuthoredMechanismCatalog`. The world registry supplies configure,
+  tick/physics phases and reverse-order retirement; its source session remains
+  in `OBP.RAC1`.
+- A smoke scenario registers its stable identity/admission in
+  `WorldSmokeHarness`/`DiagnosticScenarioRegistry` and uses an existing typed
+  diagnostic harness. `DiagnosticRegistryTests` and
+  `WorldSmokeArchitectureTests` pin aliases, source/first-entry admission,
+  owner selection and bounded dispatch. A new CLI flag, if needed, belongs in
+  `CommandLineArgs`, not a root diagnostic partial.
+
+This implementation checkpoint still needs fresh final-revision authorised
+reconciliation (all 17 phases), Godot import/startup/bootstrap/player-session
+and audio-shutdown smokes, CI/review resolution and the separate human visual/
+audible review before final acceptance. Prior revision results do not validate
+these expanded changes. The PR records exactly which checks have completed.

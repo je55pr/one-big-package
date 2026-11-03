@@ -2,12 +2,12 @@
 
 Interim checkpoint for issue #376, based on frozen origin commit `eea806399f864f30949d665701d39d510549a7ac`.
 The historical ledger tracks 121 `OBPGame*.cs` files and one extra root fragment, `ControllerSmoke.cs`.
-This is an ownership and file accounting snapshot, not a claim that final root collapse or real-input reconciliation is complete.
+The implementation has one composition script. Final-revision engine/retail acceptance remains outstanding; see the PR validation record.
 
 | Metric | Frozen origin | Current checkpoint |
 | --- | ---: | ---: |
-| Root-declaring files | 122 | 2 |
-| Root-declaring file lines | 27362 | 2836 |
+| Root-declaring files | 122 | 1 |
+| Root-declaring file lines | 27362 | 2181 |
 
 File-by-file inventory. Ownership references are **original migration issue assignments**, not claims about the destination class:
 
@@ -67,7 +67,7 @@ File-by-file inventory. Ownership references are **original migration issue assi
 | `game/scripts/OBPGame.CaptureSession.cs` | #356 | 84 | Retired | 0 |
 | `game/scripts/OBPGame.ControllerSettings.cs` | #348 | 306 | Retired | 0 |
 | `game/scripts/OBPGame.CrateBolts.cs` | #365 | 108 | Retired | 0 |
-| `game/scripts/OBPGame.cs` | #376 | 840 | Active | 2609 |
+| `game/scripts/OBPGame.cs` | #376 | 840 | Active | 2181 |
 | `game/scripts/OBPGame.Destinations.cs` | #347 | 353 | Retired | 0 |
 | `game/scripts/OBPGame.EquipmentPresentation.cs` | #350 | 151 | Retired | 0 |
 | `game/scripts/OBPGame.FusionLab.cs` | #347 | 100 | Retired | 0 |
@@ -134,24 +134,30 @@ File-by-file inventory. Ownership references are **original migration issue assi
 | `game/scripts/OBPGame.Sources.cs` | #346 | 316 | Retired | 0 |
 | `game/scripts/OBPGame.SourceSetup.cs` | #346 | 82 | Retired | 0 |
 | `game/scripts/OBPGame.StressDiagnostics.cs` | #345 | 114 | Retired | 0 |
-| `game/scripts/OBPGame.WorldEntry.cs` | #376 | 178 | Active | 227 |
+| `game/scripts/OBPGame.WorldEntry.cs` | #376 | 178 | Retired | 0 |
 
-#376 now delegates world-debug HUD rendering to `WorldHud`, original-order player-spawn placement selection to `GodotPlayerSpawnPlacement`, and overlay command parsing to the existing `DebugOverlay`. `OBPGame` still owns live player construction, world-lease integration and host wiring; no new all-capabilities controller was introduced.
+Compared with the integration base for PR #526 (`cff1b4eb`):
 
-The next #376 extraction delegates already-selected source-file size and build verification to the existing `SourceSetupCoordinator`, validated avatar and R&C1 equipment-bank staging to `PlayerAvatarPresentationHost`, and native equipment body-pose presentation to `PlayerEquipmentPresentationBinder`. `OBPGame.WorldEntry.cs` retains player-profile readiness and current-world integration without owning source IO or equipment pose rules.
+| Metric | Before #376 | Current implementation |
+| --- | ---: | ---: |
+| Root files | 2 | 1 |
+| Root lines | 2921 | 2181 |
+| Direct methods | 141 | 130 |
+| Fields / mutable fields | 41 / 34 | 29 / 22 |
+| Exposed members | 43 | 43 |
+| Distinct cross-file references | 112 | 33 |
 
-The synthetic `--test-scene` geometry, idempotent plain bootstrap environment and retirement of bootstrap-only scene nodes now belong to Godot-only `GodotSmokeSceneFixture`; deterministic HUD observations remain in the engine-free `SmokeHudFixtureState` compiled by portable tests. `OBPGame` retains mode selection, environment invocation, scene-tree/world-lease composition and the HUD session. The former root `BuildHudFixture`, `EnsurePlainEnvironment` and `ClearBootstrapSceneArtifacts` members are retired in the frozen boundary ledger; the world-activation cleanup order is unchanged.
+The reference reduction includes removal of cross-partial edges when the last
+partial retires. Public host contracts are preserved; fewer exposed members is
+not the objective. Root line count includes explicit typed component factories,
+diagnostic fixture bindings and lifecycle/bootstrap forwarding methods.
 
-The 22 legacy world-smoke scenario bindings now resolve through typed harness factories owned by `WorldSmokeHarness`, not a per-scenario mapping inside `OBPGame.WorldEntry.cs`. The Godot root still supplies its eight host factories and the R&C3 seed fixture, while portable tests pin the complete lazy scenario-to-owner route map.
+`WorldSceneLifetime` and `GodotWorldResources` own preparation/activation;
+navigation owns recovery and Back routing; existing avatar, equipment, campaign,
+source-world and diagnostic owners hold their respective behavior. Plain
+`GodotApplicationPresentation` and `GodotApplicationShutdown` own scene views
+and ordered shutdown. No all-capabilities replacement root is introduced.
 
-The world-lease-owned `GodotWorldResources` now constructs the native effects host from typed camera/source/actor/replay ports, retains explicit failure reporting and disposes it with the lease. `GodotEffectsSmoke` owns the separate first-world effects acceptance admission, fixture, runner and dispatch. The root still supplies narrow live observations and navigation callbacks, but no longer creates the effects host or the effects acceptance scenario.
-
-`GodotWorldSmokeDispatch` now owns the Godot runner, source snapshots and dispatch of the 22 registered world-smoke scenarios, borrowing typed factories and world observations from the root. The optional first-world R&C2 hash gate lives with `SourceVerificationCoordinator`; the former root helper (including its unused source path) is retired and its admission rules are covered by data-driven portable tests.
-
-The selected-avatar admission, animation-rate check and source-file verification orchestration now live with `PlayerAvatarPresentationHost.PrepareSelectedWorldEntry`. The root only ensures the persistent session and profiles are ready and supplies narrow session, source-verification and equipment ports. SourceSetupCoordinator still owns file/build verification, and prepared visuals remain uncommitted until world activation.
-
-The native-world loading adapter and authored entry validation now belong entirely to `WorldEntryPreparationPolicy`, along with the source-file stamp recheck that guards destructive world commit. The root supplies the loader and retains commit/rollback sequencing; the nested `OBPGame.WorldSource` and its `Prepare` member are retired in the frozen ledger.
-
-Navigation now owns browser recovery when a world fails to enter: the root reports the failure and whether an existing world remains, while `ApplicationNavigationCoordinator` chooses when to show the selector and its error hint. `ApplicationLifecycle` now owns deferred preparation failure telemetry and the superseded-vs-live quit gate. The old `OBPGame.ReportWorldPreparationFailure` root member is retired. The root still supplies its scene-node ports but does not implement these two failure policies.
-
-The remaining root files still contain host composition and world-entry glue. The rest of #376 requires migrating those members to existing owners, deleting the WorldEntry partial, tightening architecture guards and validating the full 17-phase authorised real-input suite.
+See [ROOT_DECOMPOSITION.md](ROOT_DECOMPOSITION.md#376-final-composition-implementation)
+for the ownership table, intentional composition exceptions, extension examples
+and remaining acceptance work. All 122 original rows remain accounted for.

@@ -13,6 +13,18 @@ public interface IFusionLabTraversalFixture
 /// <summary>Input-driven entrance/hub/chamber traversal; only the explicitly requested fixture subscribes to frames.</summary>
 public sealed class FusionLabTraversalScenario(IFusionLabTraversalFixture fixture, Action<string> log, Action<string> error) : IDiagnosticScenario
 {
+    internal static void Start(IFusionLabTraversalFixture fixture, IDiagnosticFrameClock clock,
+        IDiagnosticSources sources, HostOperationScope operations, Action<string> log, Action<string> error)
+    {
+        var runner = new DiagnosticScenarioRunner(sources, clock);
+        var scenario = new FusionLabTraversalScenario(fixture, log, error);
+        operations.Start("fusion-lab-traversal", async token =>
+        {
+            var result = await runner.RunAsync(scenario, explicitlyRequested: true, token);
+            if (result.Status is not (DiagnosticRunStatus.Passed or DiagnosticRunStatus.Canceled))
+                throw result.Error ?? new InvalidOperationException(result.Detail);
+        }, lifetime: CancellationToken.None);
+    }
     public DiagnosticScenarioDefinition Definition { get; } = new("fusion-lab-traversal/v1", DiagnosticSourceAccess.AssetFree,
         DiagnosticSetup.AssetFreeFixture, [], TimeSpan.FromSeconds(90), 5400);
     public async Task RunAsync(DiagnosticRunContext run)

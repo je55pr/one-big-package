@@ -49,6 +49,11 @@ internal interface ICaptureReplaySession
 /// <summary>Recording policy and wire observations, independent of UI, Godot callbacks and optional disc hashing.</summary>
 internal sealed class CaptureReplayCoordinator(CaptureReplayPorts ports, CaptureEnvironment environment, CaptureBuildIdentity build)
 {
+    internal void WorldEntered(string destinationId)
+    {
+        if (Recorder is { HasEntered: true }) RecordCommand(new("destination", destinationId));
+        Recorder?.WorldEntered();
+    }
     private ObpProfile? _startingProfile;
     private bool _controllersInitialized;
     private IReadOnlyList<VerificationSourceStamp>? _recordingSources;

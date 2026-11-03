@@ -13,14 +13,16 @@ public sealed class PlayerSpawnPlacementOwnershipTests
     public void RootOnlyBindsTheSelectedPlayerAfterASeparatePlacementDecision()
     {
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
+        string presentation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotApplicationPresentation.cs"));
         string placement = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotPlayerSpawnPlacement.cs"));
 
-        Assert.Contains("GodotPlayerSpawnPlacement.Resolve(world, _worldPlayerEntry", root, StringComparison.Ordinal);
-        Assert.Contains("Scripted = scripted", root, StringComparison.Ordinal);
-        Assert.Contains("InitialGroundSnapUpwardReach = _worldEntrySnapReach", root, StringComparison.Ordinal);
-        Assert.Contains("Rac1CurrentYaw = -placement.Yaw", root, StringComparison.Ordinal);
-        Assert.Contains("Position = placement.Position", root, StringComparison.Ordinal);
-        Assert.Contains("player.RotateY(placement.Yaw)", root, StringComparison.Ordinal);
+        Assert.Contains("Presentation.SpawnPlayer(world, _worldPlayerEntry", root, StringComparison.Ordinal);
+        Assert.Contains("GodotPlayerSpawnPlacement.Resolve(world, start", presentation, StringComparison.Ordinal);
+        Assert.Contains("Scripted = scripted", presentation, StringComparison.Ordinal);
+        Assert.Contains("InitialGroundSnapUpwardReach = snapReach", presentation, StringComparison.Ordinal);
+        Assert.Contains("Rac1CurrentYaw = -placement.Yaw", presentation, StringComparison.Ordinal);
+        Assert.Contains("Position = placement.Position", presentation, StringComparison.Ordinal);
+        Assert.Contains("player.RotateY(placement.Yaw)", presentation, StringComparison.Ordinal);
         Assert.Contains("PlayerLife.BindPlayer(player)", root, StringComparison.Ordinal);
 
         Assert.DoesNotContain("nativeStartUsable", root, StringComparison.Ordinal);

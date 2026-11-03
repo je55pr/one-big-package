@@ -10,16 +10,16 @@ public sealed class WorldCaptureCameraArchitectureTests
     public void NativeWorldAndAnimatedMobyCameraFramingBelongToPresentationAdapter()
     {
         string root = Script("OBPGame.cs");
-        string entry = Script("OBPGame.WorldEntry.cs");
+        string entry = Script("GodotWorldResources.cs");
         string camera = Script("GodotWorldCaptureCamera.cs");
 
         Assert.DoesNotContain("private void FrameShowcaseCamera(", root, StringComparison.Ordinal);
         Assert.DoesNotContain("private void FrameAnimatedMobies(", root, StringComparison.Ordinal);
 
-        Assert.Contains("GodotWorldCaptureCamera.FrameShowcase(_camera, world)", entry);
+        Assert.Contains("GodotWorldCaptureCamera.FrameShowcase(application.Camera, world)", entry);
         Assert.Contains("GodotWorldCaptureCamera.FrameShowcase(_camera, world)", root);
-        Assert.Contains("GodotWorldCaptureCamera.FrameAnimated(_camera, world)", entry);
-        Assert.Contains("_activeCamera = _camera;", entry);
+        Assert.Contains("GodotWorldCaptureCamera.FrameAnimated(application.Camera, world)", entry);
+        Assert.Contains("application.ActiveCamera = application.Camera;", entry);
 
         // The authored capture framings are preserved, not recalibrated.
         Assert.Contains("azimuthDegrees: 38f, elevationDegrees: 26f", camera);

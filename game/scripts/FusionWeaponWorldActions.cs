@@ -10,6 +10,21 @@ namespace OBP.Game;
 /// <summary>Physics projection for the existing native sessions and source-qualified actor ports.</summary>
 internal sealed class FusionWeaponWorldActions(FusionWeaponContactPorts ports)
 {
+    internal static bool Apply(WeaponDamageIntent intent, bool ordinary, Func<ActorWorldHost> actors,
+        Func<Rac1WorldModule> world, Action<WeaponDamageIntent, bool> record)
+    {
+        if (ordinary)
+        {
+            bool accepted = actors().Combat.Apply(intent);
+            record(intent, accepted);
+            return accepted;
+        }
+        var source = world();
+        var target = source.Weapons.Contacts.Targets.FirstOrDefault(node => node.Source.SourceGame == intent.Target.SourceGame &&
+            node.Source.NativeClassId == intent.Target.NativeClassId && node.Source.InstanceIndex == intent.Target.InstanceIndex);
+        return target is not null && FusionDamagePolicy.Translate(intent) is { } damage && source.WeaponDamage.Apply(target, damage);
+    }
+
     internal Vector3 Muzzle(SourceWeaponKey selected, IReadOnlyDictionary<SourceWeaponKey, FusionMeshView> held)
     {
         var player = ports.Player() ?? throw new InvalidOperationException("Weapon physics requires a player.");

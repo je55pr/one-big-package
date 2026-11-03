@@ -7,7 +7,7 @@ public sealed class AvatarWorldEntryOwnershipTests
     public void AvatarPhysicsKeepsTheNativeUsePoseContactAudioAndClockOrder()
     {
         string owner = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerAvatarPresentationHost.cs"));
-        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.WorldEntry.cs"));
+        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
         Assert.DoesNotContain("private void StepPlayerAvatarPhysics", root, StringComparison.Ordinal);
         Assert.Contains("Weapons: () => FusionWeapons, CombatInput: () => Rac1CombatInput", root, StringComparison.Ordinal);
         Assert.DoesNotContain("private void ResetPlayerAvatarPhysics", root, StringComparison.Ordinal);
@@ -61,7 +61,7 @@ public sealed class AvatarWorldEntryOwnershipTests
     [Fact]
     public void WorldEntryKeepsPlayerSelectionWhileSourceOwnerVerifiesAndAvatarOwnerStages()
     {
-        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.WorldEntry.cs"));
+        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
         string sources = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/SourceSetupCoordinator.cs"));
         string avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerAvatarPresentationHost.cs"));
 
@@ -124,7 +124,7 @@ public sealed class AvatarWorldEntryOwnershipTests
     [Fact]
     public void EquipmentPoseSelectionBelongsToTheExistingBinderInsteadOfTheWorldRoot()
     {
-        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.WorldEntry.cs"));
+        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
         string binder = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerEquipmentPresentationBinder.cs"));
         string avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerAvatarPresentationHost.cs"));
 

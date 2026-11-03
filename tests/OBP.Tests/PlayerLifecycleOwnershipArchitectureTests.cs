@@ -29,8 +29,8 @@ public sealed class PlayerLifecycleOwnershipArchitectureTests
         string resources = Read("GodotWorldResources.cs");
         Assert.Contains("public IDisposable? PlayerLife", resources, StringComparison.Ordinal);
         Assert.Contains("PlayerLife?.Dispose()", resources, StringComparison.Ordinal);
-        string entry = Read("OBPGame.WorldEntry.cs");
-        Assert.Contains("entry.Resources.PlayerLife = PlayerLife.BindWorld", entry, StringComparison.Ordinal);
+        string entry = Read("GodotWorldResources.cs");
+        Assert.Contains("PlayerLife = bindings.PlayerLife.BindWorld", entry, StringComparison.Ordinal);
         var host = CSharpSyntaxTree.ParseText(Read("GodotPlayerLifecycleHost.cs")).GetRoot();
         var bind = Assert.Single(host.DescendantNodes().OfType<MethodDeclarationSyntax>(), method => method.Identifier.ValueText == "BindPlayer");
         Assert.Contains("ReferenceEquals(_world, world)", bind.ToString(), StringComparison.Ordinal);

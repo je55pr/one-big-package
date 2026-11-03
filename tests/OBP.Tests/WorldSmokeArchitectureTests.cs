@@ -11,7 +11,7 @@ public sealed class WorldSmokeArchitectureTests
     {
         string scripts = Path.Combine(RepoPaths.Root, "game", "scripts");
         string loader = File.ReadAllText(Path.Combine(scripts, "ApplicationNavigationCoordinator.cs"));
-        string entry = File.ReadAllText(Path.Combine(scripts, "OBPGame.WorldEntry.cs"));
+        string entry = File.ReadAllText(Path.Combine(scripts, "OBPGame.cs"));
         string harness = File.ReadAllText(Path.Combine(
             RepoPaths.Root, "game", "diagnostics", "WorldSmokeHarness.cs"));
         string dispatch = File.ReadAllText(Path.Combine(
@@ -45,7 +45,7 @@ public sealed class WorldSmokeArchitectureTests
     [Fact]
     public void GodotDispatchUsesCommittedWorldAndLiveSourceBuildSnapshots()
     {
-        string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.WorldEntry.cs"));
+        string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
         string dispatch = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "GodotWorldSmokeDispatch.cs"));
 
         Assert.Contains("WorldSmokeHarness.Create(", dispatch, StringComparison.Ordinal);
@@ -58,11 +58,13 @@ public sealed class WorldSmokeArchitectureTests
 
         // The prior world must be committed before any scenario observes it.
         // Hash verification remains after smoke dispatch, before profile save.
-        int commit = entry.IndexOf("_worldEntries.Commit(plan, WorldScenes);", StringComparison.Ordinal);
+        string navigation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/ApplicationNavigationCoordinator.cs"));
+        int commit = navigation.IndexOf("if (!prepareAndCommit()) return false;", StringComparison.Ordinal);
+        int completed = navigation.IndexOf("completed();", commit, StringComparison.Ordinal);
         int start = entry.IndexOf("GodotWorldSmokeDispatch.Start(new(", StringComparison.Ordinal);
         int verify = entry.IndexOf("SourceVerification.StartForWorldEntry(nativeDestination,", StringComparison.Ordinal);
         int save = entry.IndexOf("SaveSharedProfile(\"world transition\");", StringComparison.Ordinal);
-        Assert.True(commit >= 0 && commit < start && start < verify && verify < save,
+        Assert.True(commit >= 0 && completed > commit && start >= 0 && start < verify && verify < save,
             "World diagnostics must observe the committed lease before source verification and profile save.");
     }
 

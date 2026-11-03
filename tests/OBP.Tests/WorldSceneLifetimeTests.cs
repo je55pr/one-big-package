@@ -9,6 +9,79 @@ namespace OBP.Tests;
 
 public sealed class WorldSceneLifetimeTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EntryAdmissionIsTheBoundaryBetweenCandidateCleanupAndLiveWorldReplacement(bool admitted)
+    {
+        using var fixture = new Fixture();
+        var live = fixture.Enter("rac1:LEVEL0");
+        var player = fixture.Player.Capture();
+        var candidate = new Resources();
+        int playerPreparations = 0;
+        var preparation = new WorldSceneLifetime<Resources>.EntryPreparation(
+            () => playerPreparations++, () => { }, () => fixture.Entries,
+            () => WorldEntryMode.OrdinaryFusion, new([new AvatarProvider()]), _ => 8,
+            (_, _) => candidate, () =>
+            {
+                Assert.Same(live, fixture.Scenes.Current!.Resources);
+                Assert.Equal(0, live.Disposals);
+                Assert.Equal(0, candidate.Disposals);
+                return admitted;
+            });
+        Assert.Equal(admitted, fixture.Scenes.Enter("rac2:LEVEL1", new Source(ObpSourceGame.Rac2), null, null, null, preparation));
+        Assert.Equal(2, playerPreparations);
+        Assert.Equal(admitted ? 1 : 0, live.Disposals);
+        Assert.Equal(admitted ? 0 : 1, candidate.Disposals);
+        Assert.Same(admitted ? candidate : live, fixture.Scenes.Current!.Resources);
+        Assert.Equal(player.Configuration, fixture.Player.Capture().Configuration);
+        Assert.Equal(player.Generation, fixture.Player.Capture().Generation);
+    }
+
+    [Fact]
+    public void SelectedAssetLossDuringEntryRevalidationKeepsTheLiveWorldAndDisposesTheCandidate()
+    {
+        using var fixture = new Fixture();
+        var live = fixture.Enter("rac1:LEVEL0");
+        var candidate = new Resources();
+        int attempts = 0;
+        var preparation = new WorldSceneLifetime<Resources>.EntryPreparation(
+            () => { if (++attempts == 2) throw new InvalidDataException("Selected source removed."); },
+            () => { }, () => fixture.Entries, () => WorldEntryMode.OrdinaryFusion,
+            new([new AvatarProvider()]), _ => 8, (_, _) => candidate,
+            () => throw new InvalidOperationException("Admission must not follow failed revalidation."));
+        Assert.Throws<InvalidDataException>(() => fixture.Scenes.Enter("rac2:LEVEL1",
+            new Source(ObpSourceGame.Rac2), null, null, null, preparation));
+        Assert.Same(live, fixture.Scenes.Current!.Resources);
+        Assert.Equal(0, live.Disposals);
+        Assert.Equal(1, candidate.Disposals);
+        Assert.Same(fixture.Player, fixture.Entries.Player);
+    }
+
+    [Fact]
+    public void ChangedSourceBytesRejectEntryBeforeDestructiveActivation()
+    {
+        string path = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(path, "fixture");
+            using var fixture = new Fixture();
+            var live = fixture.Enter("rac1:LEVEL0");
+            var candidate = new Resources();
+            var preparation = new WorldSceneLifetime<Resources>.EntryPreparation(
+                () => { }, () => { }, () => fixture.Entries, () => WorldEntryMode.OrdinaryFusion,
+                new([new AvatarProvider()]), _ => 8,
+                (_, _) => { File.AppendAllText(path, "changed"); return candidate; },
+                () => throw new InvalidOperationException("Changed bytes must not reach admission."));
+            Assert.Throws<InvalidDataException>(() => fixture.Scenes.Enter("rac2:LEVEL1",
+                new Source(ObpSourceGame.Rac2), null, path, null, preparation));
+            Assert.Same(live, fixture.Scenes.Current!.Resources);
+            Assert.Equal(0, live.Disposals);
+            Assert.Equal(1, candidate.Disposals);
+        }
+        finally { File.Delete(path); }
+    }
+
     [Fact]
     public void RetiringAWorldCancelsItsWorkBeforeDisposingResourcesAndCannotCancelTheReplacement()
     {

@@ -172,7 +172,7 @@ not a universal mission VM. The Godot host still wires
 these sessions (through lease-scoped world modules and ports rather than the
 retired `OBPGame` feature partials); the reconciliation contract assigns
 engine-neutral gameplay coordination to Fusion and retains scene/contact
-plumbing in the host. Remaining root-collapse work is tracked by #376. Neither layer
+plumbing in the host. The final composition and its acceptance gates are tracked by #376. Neither layer
 defines native constants or invents shared class semantics.
 
 ## Player movement, camera and animation
@@ -214,6 +214,11 @@ The [host ownership map](OBPGAME_HOST_OWNERSHIP.md) records the field census and
 the #308 extraction; [the root census](OBPGAME_ROOT_CENSUS.md) tracks the #333/#376 decomposition. `WorldSceneLifetime` owns candidate/live scene resources
 and deferred navigation; Fusion retains player/entry policy and source adapters
 retain authored starts. Root world facts are read-only views of that owner.
+The single `OBPGame.cs` composes these owners; the WorldEntry partial is retired.
+`GodotWorldResources` activates the lease, `GodotApplicationPresentation` owns
+scene views, and `GodotApplicationShutdown` owns draining and ordered disposal.
+See [ROOT_DECOMPOSITION.md](ROOT_DECOMPOSITION.md#376-final-composition-implementation)
+for intentional composition seams and final acceptance work.
 
 `ApplicationLifecycle` owns explicit quit requests with a reason/exit code.
 Desktop close remains distinct from Back/navigation; Escape from gameplay or

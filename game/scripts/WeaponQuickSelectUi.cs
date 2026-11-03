@@ -13,6 +13,41 @@ namespace OBP.Game;
 /// </summary>
 public sealed partial class WeaponQuickSelectUi : CanvasLayer
 {
+    internal static Entry[] ReadEntries(Rac1WeaponInventory inventory, Rac1AdditionalUseHost use,
+        PlayerSessionNativeState? native, PlayerEquipmentFacade equipment, Func<FusionWeaponHost> fusion)
+    {
+        var available = Rac1WeaponProfiles.Additional.Select(p => p.Item).Prepend(Rac1WeaponId.FirstRanged)
+            .Where(inventory.Owns).ToArray();
+        // Respect native ring order, then expose owned implemented items not yet
+        // inserted by the incomplete acquisition adapter. Extra pages are OBP UI.
+        var order = inventory.QuickSelect.Where(id => available.Contains((Rac1WeaponId)id))
+            .Select(id => (Rac1WeaponId)id).Concat(available).Distinct().ToArray();
+        var entries = order.Select(weapon => new WeaponQuickSelectUi.Entry(new(ObpSourceGame.Rac1, (int)weapon),
+            weapon == Rac1WeaponId.FirstRanged ? "Bomb Glove" : Rac1WeaponProfiles.Get(weapon).Name,
+            (int)weapon == 9 ? $"{use.Session?.Cargo.Count ?? 0} captured" :
+            Rac1ItemAmmoDescriptors.Get((int)weapon).MaxAmmo > 0 ? $"{inventory.GetAmmo((int)weapon)} ammo" : "")).ToArray();
+        if (fusion().Session is not null && native is null)
+        {
+            var keys = equipment.WeaponOrder();
+            entries = keys.Select(key => key.SourceGame == ObpSourceGame.Rac1 && !fusion().TestActive ? entries.Single(e => e.Weapon == key) :
+                new WeaponQuickSelectUi.Entry(key, FusionWeaponHost.WeaponName(key) + $" [{SourceIdentityWire.FormatSource(key.SourceGame)}]",
+                    fusion().Sources.Assets?.Available(key) == false ? "Source unavailable" : fusion().Detail(key))).ToArray();
+        }
+        if (native is not null)
+        {
+            var catalog = equipment.Read();
+            entries = equipment.QuickSelectOrder().Select(key =>
+            {
+                if (key is null) return new WeaponQuickSelectUi.Entry(null, "Empty", "Unassigned slot");
+                var entry = catalog.Single(entry => entry.Definition.Item == key);
+                return new WeaponQuickSelectUi.Entry(key, entry.Definition.DisplayName + $" [{SourceIdentityWire.FormatSource(entry.Definition.SourceGame)}]",
+                    entry.Reason ?? (entry.State.Capacity is { } capacity ? $"{entry.State.Ammo}/{capacity}" : ""));
+            }).ToArray();
+        }
+        return entries;
+    }
+
+
     public sealed record Entry(SourceWeaponKey? Weapon, string Name, string Ammo);
     public IReadOnlyList<Entry> Entries { get; init; } = [];
     public SourceWeaponKey CurrentWeapon { get; init; }

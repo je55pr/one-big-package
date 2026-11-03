@@ -44,6 +44,16 @@ internal sealed record Rac1WrenchContactPorts(
 /// </summary>
 internal sealed class Rac1WrenchHost(Rac1WrenchFramePorts framePorts, Rac1WrenchContactPorts contactPorts) : IDisposable
 {
+    internal static void ApplyPlayerAttack(Rac1RatchetNanotechSession health, PlayerHost player, int profile)
+    {
+        health.Actions.ApplyWrenchAttack(Rac1WrenchAttackProfile.Profiles[profile]);
+        player.Rac1GameplayState = health.Probe();
+    }
+
+    internal static void EndPlayerAttack(Rac1RatchetNanotechSession health, PlayerHost player)
+    {
+        if (health.Actions.CompleteWrenchAttack()) player.Rac1GameplayState = health.Probe();
+    }
     private readonly Rac1WrenchThrowSession _throw = new();
     private readonly HashSet<Rac1MobyRuntimeKey> _victims = [];
     private long _generation;

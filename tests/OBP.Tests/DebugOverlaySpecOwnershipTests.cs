@@ -10,7 +10,9 @@ public sealed class DebugOverlaySpecOwnershipTests
         int end = root.IndexOf("private void SpawnPlayer(RuntimeWorld world)", start, StringComparison.Ordinal);
         Assert.True(start >= 0 && end > start);
         string glue = root[start..end];
-        Assert.Contains("_overlay?.ApplySpec(spec, message => GD.PrintErr(message))", glue, StringComparison.Ordinal);
+        Assert.Contains("Presentation.ApplyOverlaySpec(spec)", glue, StringComparison.Ordinal);
+        string presentation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotApplicationPresentation.cs"));
+        Assert.Contains("_overlay?.ApplySpec(spec, message => GD.PrintErr(message))", presentation, StringComparison.Ordinal);
         Assert.DoesNotContain("TryIsolateKind", glue, StringComparison.Ordinal);
         Assert.DoesNotContain("TryParse<DebugOverlay.Layer>", glue, StringComparison.Ordinal);
 

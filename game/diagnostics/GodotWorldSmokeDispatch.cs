@@ -14,7 +14,7 @@ internal static class GodotWorldSmokeDispatch
     internal sealed record Ports(
         Node Host,
         CommandLineArgs Args,
-        ObpDestination Destination,
+        ObpDestination? Destination,
         int WorldSwitches,
         WorldSmokeHarness.Factories Factories,
         bool OrdinarySourceAccess,
@@ -26,6 +26,7 @@ internal static class GodotWorldSmokeDispatch
 
     internal static void Start(Ports ports)
     {
+        if (ports.Destination is null) return;
         var scenarios = WorldSmokeHarness.Create(
             ports.Args, ports.Destination, ports.WorldSwitches,
             WorldSmokeHarness.Bind(ports.Factories), ports.OrdinarySourceAccess,

@@ -34,6 +34,16 @@ internal static class WorldSmokeHarness
         Func<PlayerSessionDiagnosticHarness> Player,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario> Rac3SeedAudit);
 
+    internal static void StartEntryChecks(CommandLineArgs args, int switches, Factories factories,
+        Func<UiDiagnosticHarness> ui, Func<FusionWeaponDiagnosticHarness> fusion, Action notifyRecorder)
+    {
+        if (args.SourceSetupCheck && switches == 1) ui().Start("source-setup-check");
+        notifyRecorder();
+        if (args.FusionSmoke && switches == 1 && !args.PlaytestRequested) fusion().Start();
+        if (switches == 1 && PlayerSessionDiagnosticHarness.IsRequested(args)) factories.Player().StartRequested();
+        if (args.TrilogyGameplaySmoke && switches == 1) factories.Capture().StartTrilogy();
+    }
+
     internal static Entrypoints Bind(Factories factories) => new(
         definition => factories.Encounter().CreateVeldin(definition),
         definition => factories.Encounter().CreateMovementContact(definition),

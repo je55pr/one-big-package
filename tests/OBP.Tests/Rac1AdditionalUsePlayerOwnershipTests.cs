@@ -133,7 +133,8 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
         string worldEntry = Script("PlayerAvatarPresentationHost.cs");
 
         Assert.Contains("session.Rac1Use.RequestFire()", combat, StringComparison.Ordinal);
-        Assert.Contains("_persistentPlayer.Rac1Use.CancelFire()", root, StringComparison.Ordinal);
+        Assert.Contains("Rac1WeaponUsePresentationHost.ForeignSelectionChanged(", root, StringComparison.Ordinal);
+        Assert.Contains("use.CancelFire()", weapons, StringComparison.Ordinal);
         Assert.Contains("_persistentPlayer.Rac1Use.ClearUseTicks()", root, StringComparison.Ordinal);
         Assert.Contains("_persistentPlayer.Rac1Use.StopPyro()", root, StringComparison.Ordinal);
         Assert.Contains("_persistentPlayer.Rac1Use.UseTicks, _persistentPlayer.Rac1Use.ShotsFired", root, StringComparison.Ordinal);

@@ -30,8 +30,9 @@ public sealed class Rac1WrenchDamageWorldOwnershipTests
         Assert.Contains("internal Rac1WrenchDamageHost WrenchDamage { get; }", module, StringComparison.Ordinal);
         Assert.Matches(@"(?s)if \(retiring\)\s*\{\s*WeaponDamage\.Dispose\(\);\s*WrenchDamage\.Dispose\(\);\s*Enemies\.Dispose\(\);\s*\}", module);
         Assert.Contains("new Rac1WrenchDamagePorts(() => _persistentPlayer.Wrench, centre => _persistentPlayer.SelectRac1CrateReward(centre, _args.FixedSeed))", rootFactory, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.WrenchDamage.TryStrikeCrate(target, result)", rootFactory, StringComparison.Ordinal);
-        Assert.Contains("Rac1World.WrenchDamage.TryStrikeHostile(target, result)", rootFactory, StringComparison.Ordinal);
+        Assert.Contains("Rac1World.WrenchDamage.Strike(target, result)", rootFactory, StringComparison.Ordinal);
+        Assert.Contains("=> TryStrikeCrate(target, result)", host, StringComparison.Ordinal);
+        Assert.Contains("=> TryStrikeHostile(target, result)", host, StringComparison.Ordinal);
         Assert.Contains("owner.WrenchDamage.CompleteCrateDamage(node, admission)", rootFactory, StringComparison.Ordinal);
         Assert.Contains("wrenchDamage.CompleteCrateDamage(target,", additionalDamage, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", host, StringComparison.Ordinal);

@@ -8,6 +8,17 @@ namespace OBP.Game;
 /// </summary>
 internal static class GodotSmokeSceneFixture
 {
+    internal static void BuildApplicationScene(Node3D root, GodotApplicationPresentation application,
+        OBP.Runtime.Presentation.HudStateAdapter hud, string scene)
+    {
+        EnsurePlainEnvironment(root);
+        Build(root, application.WorldRoot, application.Ui, application.Camera, scene);
+        if (scene.Equals("hud", StringComparison.OrdinalIgnoreCase))
+        {
+            application.EnsurePlayerHud();
+            application.PlayerHud!.Render(hud.BeginSession(SmokeHudFixtureState.Create()));
+        }
+    }
     /// <summary>Create the plain bootstrap backdrop only if it does not already exist.</summary>
     internal static void EnsurePlainEnvironment(Node3D root)
     {
