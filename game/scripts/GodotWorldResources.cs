@@ -1,9 +1,11 @@
 using Godot;
-using OBP.Godot;
-using OBP.Runtime;
+using OBP.Core;
 using OBP.Fusion;
 using OBP.Game.Diagnostics;
+using OBP.Godot;
+using OBP.IO;
 using OBP.RAC2.Gameplay;
+using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
 namespace OBP.Game;
@@ -49,6 +51,37 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
             Rac3Gameplay = null;
             try { Rac1Gameplay?.Dispose(); }
             finally { Rac1Gameplay = null; }
+        }
+    }
+
+    // Only the scene lease may publish and retire this world's effects. The host
+    // supplies narrow callbacks; it does not construct effect resources itself.
+    internal sealed record EffectBindings(
+        Func<Camera3D?> Camera,
+        Func<IReadOnlyList<ObpAttachedSource>> Sources,
+        Func<ActorInstanceKey, bool> ActorAlive,
+        Func<System.Numerics.Vector3> PlacementOffset,
+        Func<bool> Suspended,
+        Action<string> RecordOperation,
+        Func<bool> CommandAllowed,
+        Action<string> LogError);
+
+    internal void BindEffects(EffectBindings bindings)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (Effects is not null || EffectsFailure is not null)
+            throw new InvalidOperationException("This world already attempted to bind effects.");
+        var scope = EffectScope ?? throw new InvalidOperationException("Effects require the existing world lease.");
+        try
+        {
+            Effects = new WorldEffectHost(Scene.Root, scope.WorldInstanceId, scope.Generation,
+                bindings.Camera, bindings.Sources, bindings.ActorAlive, bindings.PlacementOffset,
+                bindings.Suspended, bindings.RecordOperation, bindings.CommandAllowed);
+        }
+        catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException or ArgumentException or InvalidOperationException)
+        {
+            EffectsFailure = "Native effects setup is unavailable (" + error.GetType().Name + "). Check the experiment definition.";
+            bindings.LogError("[effects] " + EffectsFailure);
         }
     }
 
