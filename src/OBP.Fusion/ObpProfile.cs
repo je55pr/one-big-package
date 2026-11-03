@@ -97,8 +97,9 @@ public sealed record ObpProfile(int Version, string Integration, ProfilePlayer P
     public const int CurrentVersion = 1;
     public const string CurrentIntegration = "obp/shared-player/v1";
     public const int MaximumBytes = 4 * 1024 * 1024;
+    private const int MaximumJsonDepth = 64;
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extensions { get; init; }
-    public static JsonSerializerOptions Options { get; } = new() { MaxDepth = 64, WriteIndented = true };
+    public static JsonSerializerOptions Options { get; } = new() { MaxDepth = MaximumJsonDepth, WriteIndented = true };
     [JsonIgnore] public JsonElement? RetainedPlayerFields { get; init; }
 
     public static bool IsDestination(string? destination)
@@ -144,14 +145,14 @@ public sealed record ObpProfile(int Version, string Integration, ProfilePlayer P
     {
         if (bytes.Length > MaximumBytes) throw new InvalidDataException("Shared profile exceeds its size limit.");
         // Recognize future envelopes before decoding this version's required fields.
-        using var document = JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = 64 });
-        if (document.RootElement.ValueKind != JsonValueKind.Object || !document.RootElement.TryGetProperty("Version", out var version) ||
+        using var document = JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = MaximumJsonDepth });
+        if (document.RootElement.ValueKind != JsonValueKind.Object || !document.RootElement.TryGetProperty(nameof(Version), out var version) ||
             version.ValueKind != JsonValueKind.Number || !version.TryGetInt32(out int number))
             throw new InvalidDataException("Shared profile lacks a schema version.");
         if (number != CurrentVersion) throw new UnsupportedProfileVersionException(number);
         var profile = JsonSerializer.Deserialize<ObpProfile>(bytes, Options) ?? throw new InvalidDataException("Shared profile is empty.");
         profile.Validate();
-        return profile with { RetainedPlayerFields = document.RootElement.GetProperty("Player").Clone() };
+        return profile with { RetainedPlayerFields = document.RootElement.GetProperty(nameof(Player)).Clone() };
     }
 }
 

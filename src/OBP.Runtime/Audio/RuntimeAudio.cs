@@ -28,10 +28,8 @@ public sealed record RuntimeAudioClip
         int channelCount,
         short[] interleavedPcm16, int loopStartFrame = 0, int? loopEndFrame = null)
     {
-        if (sampleRateHz <= 0)
-            throw new ArgumentOutOfRangeException(nameof(sampleRateHz));
-        if (channelCount <= 0)
-            throw new ArgumentOutOfRangeException(nameof(channelCount));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sampleRateHz);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(channelCount);
         ArgumentNullException.ThrowIfNull(interleavedPcm16);
         if (interleavedPcm16.LongLength % channelCount != 0)
         {

@@ -14,12 +14,11 @@ public sealed record FusionLabDefinition
     public IReadOnlyList<FusionLabStation> Stations { get; init; } = Array.Empty<FusionLabStation>();
     public IReadOnlyList<ActorPlacement> Actors { get; init; } = Array.Empty<ActorPlacement>();
 
+    private static readonly JsonSerializerOptions ParseOptions = new() { PropertyNameCaseInsensitive = true };
+
     public static FusionLabDefinition Parse(string json)
     {
-        var definition = JsonSerializer.Deserialize<FusionLabDefinition>(json, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-        }) ?? throw new JsonException("Fusion Lab definition is null.");
+        var definition = JsonSerializer.Deserialize<FusionLabDefinition>(json, ParseOptions) ?? throw new JsonException("Fusion Lab definition is null.");
         definition.Validate();
         return definition;
     }
