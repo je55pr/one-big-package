@@ -268,7 +268,7 @@ tool, explosion controllers and checkpoint writes are **not** yet wired into
 the running Godot gameplay. This is archaeological implementation groundwork,
 not a claim that those four classes now function.
 
-`tests/OBP.Tests/Rac1CommonMobyAuthoredTests.cs` covers all four placement
+`tests/OBP.Tests/Rac1/World/Rac1CommonMobyAuthoredTests.cs` covers all four placement
 counts on the authorized ISO, validates typed PVars and native global gates,
 and verifies the independent level-2 / instance-708 checkpoint witness.
 Tests do not commit any source game bytes.
