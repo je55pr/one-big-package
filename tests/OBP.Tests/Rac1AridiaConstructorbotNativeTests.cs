@@ -4,6 +4,7 @@ using OBP.IO;
 using OBP.RAC1;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Level;
+using Native = OBP.RAC1.Gameplay.Rac1AridiaConstructorbotNative;
 
 namespace OBP.Tests;
 
@@ -17,34 +18,38 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     }
 
     [Fact]
-    public void NativeClipRecordWaypointIndexAndFullThreeDimensionalDistanceAreBounded()
+    public void NativeClipRecordWaypointIndexIsBounded()
     {
         var p = Pvar(3);
         BinaryPrimitives.WriteInt32LittleEndian(p.AsSpan(0x188), 12);
-        Assert.Equal(12, Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(p, 86));
+        Assert.Equal(12, Native.ReadWaypointRecordIndex(p, 86));
         Assert.Throws<InvalidDataException>(() =>
-            Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(p, 12));
+            Native.ReadWaypointRecordIndex(p, 12));
         Assert.Throws<InvalidDataException>(() =>
-            Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(p, 0));
+            Native.ReadWaypointRecordIndex(p, 0));
         Assert.Throws<InvalidDataException>(() =>
-            Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(new byte[0x188], 86));
+            Native.ReadWaypointRecordIndex(new byte[0x188], 86));
         BinaryPrimitives.WriteInt32LittleEndian(p.AsSpan(0x188), -1);
         Assert.Throws<InvalidDataException>(() =>
-            Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(p, 86));
+            Native.ReadWaypointRecordIndex(p, 86));
+    }
 
+    [Fact]
+    public void NativeWaypointActivationUsesFullThreeDimensionalDistance()
+    {
         Vector3 centre = new(100, 200, 50);
-        Assert.True(Rac1AridiaConstructorbotNative.NativeWaypointActivation(
+        Assert.True(Native.NativeWaypointActivation(
             centre + new Vector3(3, 4, 0), centre, 5.01f));
-        Assert.False(Rac1AridiaConstructorbotNative.NativeWaypointActivation(
+        Assert.False(Native.NativeWaypointActivation(
             centre + new Vector3(3, 4, 0), centre, 5f));
-        Assert.False(Rac1AridiaConstructorbotNative.NativeWaypointActivation(
+        Assert.False(Native.NativeWaypointActivation(
             centre + new Vector3(0, 0, 20), centre, 20f));
-        Assert.True(Rac1AridiaConstructorbotNative.NativeWaypointActivation(
+        Assert.True(Native.NativeWaypointActivation(
             centre, centre, .01f));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.NativeWaypointActivation(centre, centre, -1f));
+            Native.NativeWaypointActivation(centre, centre, -1f));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.NativeWaypointActivation(
+            Native.NativeWaypointActivation(
                 new Vector3(float.NaN, 0, 0), centre, 20f));
     }
 
@@ -55,9 +60,9 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     [InlineData(3, 9, 15)]
     public void NativeInitUsesAuthoredModeRatherThanUniversalFlamethrower(int mode, int state, int sequence)
     {
-        var init = Rac1AridiaConstructorbotNative.Initialize(Pvar(mode));
+        var init = Native.Initialize(Pvar(mode));
         Assert.Equal(new(state, sequence), init);
-        Assert.Equal(mode, Rac1AridiaConstructorbotNative.ReadInitialMode(Pvar(mode)));
+        Assert.Equal(mode, Native.ReadInitialMode(Pvar(mode)));
         var session = new Rac1AridiaEnemySession();
         session.Register(55, Rac1AridiaEnemies.Constructorbot, constructorbotStartupSequence: sequence);
         var noPlayer = new Rac1AridiaEnemyFacts(Vector3.Zero, new(100, 0, 0), false, false);
@@ -74,9 +79,9 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     [Fact]
     public void ModeReaderRejectsMissingAndUnrecognizedSourcePvar()
     {
-        Assert.Throws<InvalidDataException>(() => Rac1AridiaConstructorbotNative.Initialize(new byte[0x194]));
-        Assert.Throws<InvalidDataException>(() => Rac1AridiaConstructorbotNative.Initialize(Pvar(-1)));
-        Assert.Throws<InvalidDataException>(() => Rac1AridiaConstructorbotNative.Initialize(Pvar(4)));
+        Assert.Throws<InvalidDataException>(() => Native.Initialize(new byte[0x194]));
+        Assert.Throws<InvalidDataException>(() => Native.Initialize(Pvar(-1)));
+        Assert.Throws<InvalidDataException>(() => Native.Initialize(Pvar(4)));
     }
 
     [Fact]
@@ -84,10 +89,10 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     {
         byte[] pvar = Pvar(0);
         BinaryPrimitives.WriteSingleLittleEndian(pvar.AsSpan(0x180), 18f);
-        Assert.Equal(18f, Rac1AridiaConstructorbotNative.ReadEngagementRadius(pvar));
+        Assert.Equal(18f, Native.ReadEngagementRadius(pvar));
         bool Accept(float target = 17.99f, float vertical = 3.99f,
             float anchor = .99f, float yaw = .08f) =>
-            Rac1AridiaConstructorbotNative.State7AdmitsJointContact(
+            Native.State7AdmitsJointContact(
                 target, vertical, anchor, yaw, 18f);
 
         Assert.True(Accept());
@@ -100,33 +105,33 @@ public sealed class Rac1AridiaConstructorbotNativeTests
         Assert.False(Accept(target: float.NaN));
         Assert.False(Accept(yaw: float.PositiveInfinity));
         Assert.Throws<InvalidDataException>(() =>
-            Rac1AridiaConstructorbotNative.ReadEngagementRadius(new byte[0x180]));
+            Native.ReadEngagementRadius(new byte[0x180]));
         BinaryPrimitives.WriteSingleLittleEndian(pvar.AsSpan(0x180), float.NaN);
         Assert.Throws<InvalidDataException>(() =>
-            Rac1AridiaConstructorbotNative.ReadEngagementRadius(pvar));
+            Native.ReadEngagementRadius(pvar));
     }
 
     [Fact]
     public void SourceParticle15EmitsOnlyOnNativeStateEightFourTickGateAndActiveMoby()
     {
-        Assert.Equal(15, Rac1AridiaConstructorbotNative.SourceEmitterParticleId);
-        Assert.Equal(3, Rac1AridiaConstructorbotNative.NativeEmitterCadenceMask);
+        Assert.Equal(15, Native.SourceEmitterParticleId);
+        Assert.Equal(3, Native.NativeEmitterCadenceMask);
         int emitted = 0;
         for (uint tick = 0; tick < 64; tick++)
         {
-            bool emission = Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
-                Rac1AridiaConstructorbotNative.ParticleModeState, tick, mobyActive: true);
+            bool emission = Native.ShouldEmitSourceParticle(
+                Native.ParticleModeState, tick, mobyActive: true);
             if (emission) emitted++;
             Assert.Equal((tick & 3) == 0, emission);
-            Assert.False(Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
-                Rac1AridiaConstructorbotNative.ParticleAlternateState, tick, true));
-            Assert.False(Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
-                Rac1AridiaConstructorbotNative.ParticleModeState, tick, false));
-            Assert.False(Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
-                Rac1AridiaConstructorbotNative.JointContactState, tick, true));
+            Assert.False(Native.ShouldEmitSourceParticle(
+                Native.ParticleAlternateState, tick, true));
+            Assert.False(Native.ShouldEmitSourceParticle(
+                Native.ParticleModeState, tick, false));
+            Assert.False(Native.ShouldEmitSourceParticle(
+                Native.JointContactState, tick, true));
         }
         Assert.Equal(16, emitted);
-        Assert.True(Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
+        Assert.True(Native.ShouldEmitSourceParticle(
             8, uint.MaxValue - 3, true));
     }
 
@@ -146,21 +151,21 @@ public sealed class Rac1AridiaConstructorbotNativeTests
         {
             bool oldStateEightFlame = host.Step(80, close).FlameActive;
             bool oldStateNineFlame = host.Step(90, close).FlameActive;
-            bool eightParticle = Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
-                Rac1AridiaConstructorbotNative.ParticleModeState, tick, true);
-            bool nineParticle = Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
-                Rac1AridiaConstructorbotNative.ParticleAlternateState, tick, true);
+            bool eightParticle = Native.ShouldEmitSourceParticle(
+                Native.ParticleModeState, tick, true);
+            bool nineParticle = Native.ShouldEmitSourceParticle(
+                Native.ParticleAlternateState, tick, true);
 
-            bool eightVisual = Rac1AridiaConstructorbotNative.HostFlameVisible(
-                Rac1AridiaConstructorbotNative.ParticleModeState,
+            bool eightVisual = Native.HostFlameVisible(
+                Native.ParticleModeState,
                 oldStateEightFlame, eightParticle);
-            bool nineVisual = Rac1AridiaConstructorbotNative.HostFlameVisible(
-                Rac1AridiaConstructorbotNative.ParticleAlternateState,
+            bool nineVisual = Native.HostFlameVisible(
+                Native.ParticleAlternateState,
                 oldStateNineFlame, nineParticle);
             Assert.Equal((tick & 3) == 0, eightVisual);
             Assert.False(nineVisual);
-            Assert.False(Rac1AridiaConstructorbotNative.HostFlameVisible(
-                Rac1AridiaConstructorbotNative.ParticleModeState,
+            Assert.False(Native.HostFlameVisible(
+                Native.ParticleModeState,
                 oldStateEightFlame, sourceParticlePreview: false));
             if (oldStateEightFlame && oldStateNineFlame)
                 inRangeLegacyFlameTicks++;
@@ -171,11 +176,11 @@ public sealed class Rac1AridiaConstructorbotNativeTests
             "Fixture must exercise the legacy continuous host flame in range.");
         Assert.Equal(18, nativeEightPreviewTicks);
         // Source-independent unfinished states retain their previous host look.
-        Assert.True(Rac1AridiaConstructorbotNative.HostFlameVisible(
-            Rac1AridiaConstructorbotNative.RestState,
+        Assert.True(Native.HostFlameVisible(
+            Native.RestState,
             hostFallbackFlame: true, sourceParticlePreview: false));
-        Assert.False(Rac1AridiaConstructorbotNative.HostFlameVisible(
-            Rac1AridiaConstructorbotNative.RestState,
+        Assert.False(Native.HostFlameVisible(
+            Native.RestState,
             hostFallbackFlame: false, sourceParticlePreview: false));
     }
 
@@ -185,25 +190,25 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     public void NativeVolumeOrWaypointActivationRequiresAffirmativeEvidence(
         int start, int activatedState, int activatedSequence)
     {
-        Assert.Equal(start, Rac1AridiaConstructorbotNative.StepActivation(start, null).NativeState);
-        Assert.Equal(start, Rac1AridiaConstructorbotNative.StepActivation(start, false).NativeState);
+        Assert.Equal(start, Native.StepActivation(start, null).NativeState);
+        Assert.Equal(start, Native.StepActivation(start, false).NativeState);
         Assert.Equal(new(activatedState, activatedSequence),
-            Rac1AridiaConstructorbotNative.StepActivation(start, true));
+            Native.StepActivation(start, true));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepActivation(7, true));
+            Native.StepActivation(7, true));
     }
 
     [Fact]
     public void WalkerVerticalProbeClampsNativeGroundAndRejectsBadExtents()
     {
         Assert.Equal((12.5f, 11.5f),
-            Rac1AridiaConstructorbotNative.WalkerProbeHeights(12, .5f, .5f));
+            Native.WalkerProbeHeights(12, .5f, .5f));
         Assert.Equal((.7f, 0f),
-            Rac1AridiaConstructorbotNative.WalkerProbeHeights(.2f, .5f, .5f));
+            Native.WalkerProbeHeights(.2f, .5f, .5f));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerProbeHeights(12, -.1f, .5f));
+            Native.WalkerProbeHeights(12, -.1f, .5f));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerProbeHeights(float.NaN, .5f, .5f));
+            Native.WalkerProbeHeights(float.NaN, .5f, .5f));
     }
 
     [Theory]
@@ -214,37 +219,37 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     public void WalkerMissingFloorProbeSelectsActualRecordLedgeMode(
         bool hasSupport, int recordFlags, int expected)
     {
-        Assert.Equal(expected, Rac1AridiaConstructorbotNative.WalkerInitialProbeFlags(
+        Assert.Equal(expected, Native.WalkerInitialProbeFlags(
             hasSupport, recordFlags));
     }
 
     [Fact]
     public void WalkerRejectsFloorHeightOutsideOriginalAsymmetricBounds()
     {
-        Assert.False(Rac1AridiaConstructorbotNative.WalkerFloorHeightRejectsStep(
+        Assert.False(Native.WalkerFloorHeightRejectsStep(
             10, 9.5f, .5f, .5f));
-        Assert.False(Rac1AridiaConstructorbotNative.WalkerFloorHeightRejectsStep(
+        Assert.False(Native.WalkerFloorHeightRejectsStep(
             10, 10.5f, .5f, .5f));
-        Assert.True(Rac1AridiaConstructorbotNative.WalkerFloorHeightRejectsStep(
+        Assert.True(Native.WalkerFloorHeightRejectsStep(
             10, 9.49f, .5f, .5f));
-        Assert.True(Rac1AridiaConstructorbotNative.WalkerFloorHeightRejectsStep(
+        Assert.True(Native.WalkerFloorHeightRejectsStep(
             10, 10.51f, .5f, .5f));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerFloorHeightRejectsStep(
+            Native.WalkerFloorHeightRejectsStep(
                 10, 10, float.NaN, .5f));
     }
 
     [Fact]
     public void WalkerLookaheadOnlyRunsAboveNativeSlopeAndSpeedThresholds()
     {
-        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+        Assert.Equal(0, Native.WalkerLookaheadFlags(
             1f, .1f, null, 0, 2, 0, 2, 0));
-        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+        Assert.Equal(0, Native.WalkerLookaheadFlags(
             0f, 2f, null, 0, 2, 0, 2, 0));
-        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+        Assert.Equal(0, Native.WalkerLookaheadFlags(
             MathF.Sin(.5f), 2f, null, 0, 2, 0, 2, 0));
         Assert.Throws<InvalidDataException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+            Native.WalkerLookaheadFlags(
                 1f, 2f, null, 0, 2, 0, 2, 0));
     }
 
@@ -252,15 +257,15 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     public void WalkerLookaheadBlocksMissingGroundAndSecondSteepHit()
     {
         // Native class612 behavior flags +0x38 = 0 cannot use bit8 ledge mode.
-        Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+        Assert.Equal(0x22, Native.WalkerLookaheadFlags(
             1, .11f, false, 0, 10, 0, 10, 0));
-        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+        Assert.Equal(0, Native.WalkerLookaheadFlags(
             1, .11f, true, 0, 10, 10, 10, 0));
-        Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+        Assert.Equal(0x22, Native.WalkerLookaheadFlags(
             1, .11f, true, 1, 9.9f, 9.9f, 10, 0));
         // Second normal exactly at 0.5-radian threshold still blocks,
         // although first-hit admission requires strictly greater than 0.5.
-        Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+        Assert.Equal(0x22, Native.WalkerLookaheadFlags(
             1, .11f, true, MathF.Sin(.5f), 10, 10, 10, 0));
     }
 
@@ -268,59 +273,59 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     public void WalkerLedgeModeRequiresOriginalHitHeightChecks()
     {
         int ledgeMode = 8;
-        Assert.Equal(8, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+        Assert.Equal(8, Native.WalkerLookaheadFlags(
             1, 1, false, 0, 9.9f, 0, 10, ledgeMode));
-        Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+        Assert.Equal(0x22, Native.WalkerLookaheadFlags(
             1, 1, false, 0, 10.1f, 0, 10, ledgeMode));
-        Assert.Equal(8, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+        Assert.Equal(8, Native.WalkerLookaheadFlags(
             1, 1, true, 1, 9.9f, 9.99f, 10, ledgeMode));
-        Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+        Assert.Equal(0x22, Native.WalkerLookaheadFlags(
             1, 1, true, 1, 9.9f, 10.05f, 10, ledgeMode));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+            Native.WalkerLookaheadFlags(
                 1, 1, true, float.NaN, 10, 10, 10, ledgeMode));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+            Native.WalkerLookaheadFlags(
                 1, 1, true, 1, 10, 10, 10, 0x400));
     }
 
     [Fact]
     public void WalkerSteepOrFlatSurfaceLookaheadUsesNativeThresholdAndSpeed()
     {
-        Assert.True(Rac1AridiaConstructorbotNative.WalkerNeedsLookahead(
+        Assert.True(Native.WalkerNeedsLookahead(
             1, .10001f));
-        Assert.False(Rac1AridiaConstructorbotNative.WalkerNeedsLookahead(
+        Assert.False(Native.WalkerNeedsLookahead(
             1, .1f));
-        Assert.False(Rac1AridiaConstructorbotNative.WalkerNeedsLookahead(
+        Assert.False(Native.WalkerNeedsLookahead(
             0, 2));
-        Assert.False(Rac1AridiaConstructorbotNative.WalkerNeedsLookahead(
+        Assert.False(Native.WalkerNeedsLookahead(
             MathF.Sin(.5f), 2));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerNeedsLookahead(2, .2f));
+            Native.WalkerNeedsLookahead(2, .2f));
     }
 
     [Fact]
     public void WalkerFlagsPreserveNativeBitmaskAndNeverInventCollision()
     {
-        Assert.Equal(4, Rac1AridiaConstructorbotNative.WalkerFlags(.099f, 0, 0));
-        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerFlags(.1f, 0, 0));
-        Assert.Equal(0x14, Rac1AridiaConstructorbotNative.WalkerFlags(.099f, MathF.PI, 0));
-        Assert.Equal(0x16, Rac1AridiaConstructorbotNative.WalkerFlags(.099f, MathF.PI, 0x2));
-        Assert.Equal(0x26, Rac1AridiaConstructorbotNative.WalkerFlags(.05f, 0, 0x22));
-        Assert.Equal(0x5, Rac1AridiaConstructorbotNative.WalkerFlags(0, 0, 1));
+        Assert.Equal(4, Native.WalkerFlags(.099f, 0, 0));
+        Assert.Equal(0, Native.WalkerFlags(.1f, 0, 0));
+        Assert.Equal(0x14, Native.WalkerFlags(.099f, MathF.PI, 0));
+        Assert.Equal(0x16, Native.WalkerFlags(.099f, MathF.PI, 0x2));
+        Assert.Equal(0x26, Native.WalkerFlags(.05f, 0, 0x22));
+        Assert.Equal(0x5, Native.WalkerFlags(0, 0, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerFlags(-1, 0, 0));
+            Native.WalkerFlags(-1, 0, 0));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerFlags(0, float.NaN, 0));
+            Native.WalkerFlags(0, float.NaN, 0));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerFlags(0, 0, 0x40));
+            Native.WalkerFlags(0, 0, 0x40));
     }
 
     [Fact]
     public void WalkerSpherePushoutUsesExactlySixNativeAttemptsAndStopsAtFirstMiss()
     {
         int probes = 0;
-        var frame = Rac1AridiaConstructorbotNative.StepSpherePushouts(
+        var frame = Native.StepSpherePushouts(
             Vector3.Zero, position =>
             {
                 probes++;
@@ -332,24 +337,34 @@ public sealed class Rac1AridiaConstructorbotNativeTests
         Assert.InRange(frame.Position.X, .29999f, .30001f);
         Assert.Equal(0f, frame.Position.Y);
         Assert.Equal(0f, frame.Position.Z);
-        var none = Rac1AridiaConstructorbotNative.StepSpherePushouts(
+    }
+
+    [Fact]
+    public void WalkerSpherePushoutWithoutContactLeavesPositionUnchanged()
+    {
+        var none = Native.StepSpherePushouts(
             new(2, 0, 0), _ => null);
         Assert.Equal(0, none.Contacts);
         Assert.False(none.AttemptLimitReached);
         Assert.Equal(new(2, 0, 0), none.Position);
+    }
+
+    [Fact]
+    public void WalkerSpherePushoutReportsAttemptLimitAndRejectsBadArguments()
+    {
         int busy = 0;
-        var limit = Rac1AridiaConstructorbotNative.StepSpherePushouts(
+        var limit = Native.StepSpherePushouts(
             Vector3.Zero, position => { busy++; return position + Vector3.UnitX * .01f; });
-        Assert.Equal(Rac1AridiaConstructorbotNative.WalkerSpherePushoutAttempts, busy);
+        Assert.Equal(Native.WalkerSpherePushoutAttempts, busy);
         Assert.Equal(6, limit.Contacts);
         Assert.True(limit.AttemptLimitReached);
         Assert.InRange(limit.Position.X, .05999f, .06001f);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepSpherePushouts(Vector3.Zero, _ => null, 7));
+            Native.StepSpherePushouts(Vector3.Zero, _ => null, 7));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepSpherePushouts(Vector3.Zero, _ => null, 0));
+            Native.StepSpherePushouts(Vector3.Zero, _ => null, 0));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepSpherePushouts(Vector3.Zero, _ => new(float.NaN, 0, 0)));
+            Native.StepSpherePushouts(Vector3.Zero, _ => new(float.NaN, 0, 0)));
     }
 
     [Fact]
@@ -357,16 +372,16 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     {
         // Godot returns sphere-surface point first, world collision point
         // second, unlike the original PS2 +0x173e70 corrected centre.
-        var correction = Rac1AridiaConstructorbotNative.SpherePairCorrection(
+        var correction = Native.SpherePairCorrection(
             new(1, 0, 0), new(.8f, .1f, 0), .625f);
         Assert.InRange(correction.X, -.200001f, -.199999f);
         Assert.Equal(.1f, correction.Y);
         Assert.Equal(0f, correction.Z);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.SpherePairCorrection(
+            Native.SpherePairCorrection(
                 Vector3.Zero, new(5, 0, 0), .625f));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.SpherePairCorrection(
+            Native.SpherePairCorrection(
                 Vector3.Zero, new(float.NaN, 0, 0), .625f));
     }
 
@@ -377,31 +392,44 @@ public sealed class Rac1AridiaConstructorbotNativeTests
         // closest world contact to that elevated centre wins, even when
         // another reported Godot pair has a larger penetration correction.
         Vector3 centre = new(0, 0, 1);
-        Rac1AridiaConstructorbotNative.WalkerSpherePointPair[] contacts =
+        Native.WalkerSpherePointPair[] contacts =
         [
             new(new(-.4f, 0, 1), new(.5f, 0, 1)), // larger push, farther contact
             new(new(.5f, 0, 1), new(.2f, 0, 1)), // nearest contact
             new(new(0, 0, 5), new(0, 0, 6)), // out of sphere range
             new(new(float.NaN, 0, 0), Vector3.Zero), // malformed host pair
         ];
-        var chosen = Rac1AridiaConstructorbotNative.NearestSpherePairCorrection(
+        var chosen = Native.NearestSpherePairCorrection(
             centre, contacts, .625f);
         Assert.Equal(new Vector3(-.3f, 0, 0), chosen);
         Assert.Equal(new Vector3(-.3f, 0, 0),
-            Rac1AridiaConstructorbotNative.NearestSpherePairCorrection(
+            Native.NearestSpherePairCorrection(
                 centre, [contacts[1], contacts[0]], .625f));
+    }
+
+    [Fact]
+    public void SourceNearestSphereContactIsEvaluatedFromRaisedCentreNotMobyGround()
+    {
+        Vector3 centre = new(0, 0, 1);
+        Native.WalkerSpherePointPair[] contacts =
+        [
+            new(new(-.4f, 0, 1), new(.5f, 0, 1)), // larger push, farther contact
+            new(new(.5f, 0, 1), new(.2f, 0, 1)), // nearest contact
+            new(new(0, 0, 5), new(0, 0, 6)), // out of sphere range
+            new(new(float.NaN, 0, 0), Vector3.Zero), // malformed host pair
+        ];
 
         // The exact same contact set must not be evaluated relative to
         // Moby ground level or a distant surface becomes eligible.
-        Assert.Null(Rac1AridiaConstructorbotNative.NearestSpherePairCorrection(
+        Assert.Null(Native.NearestSpherePairCorrection(
             centre, [new(new(0, 0, 4), new(0, 0, 4.1f))], .625f));
-        Assert.Null(Rac1AridiaConstructorbotNative.NearestSpherePairCorrection(
+        Assert.Null(Native.NearestSpherePairCorrection(
             centre, [], .625f));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.NearestSpherePairCorrection(
+            Native.NearestSpherePairCorrection(
                 new(float.NaN, 0, 0), contacts, .625f));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.NearestSpherePairCorrection(
+            Native.NearestSpherePairCorrection(
                 centre, contacts, 0));
     }
 
@@ -415,10 +443,10 @@ public sealed class Rac1AridiaConstructorbotNativeTests
             item => item.LevelId == Rac1AridiaEnemies.LevelId);
         var core = Rac1LevelCore.Open(reader, level);
         var classes = Rac1StaticClasses.Read(core).Mobies;
-        Rac1AridiaConstructorbotNative.WalkerNativeCollisionResource Read(int classId)
+        Native.WalkerNativeCollisionResource Read(int classId)
         {
             var cls = classes[classId];
-            return Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(
+            return Native.ReadWalkerNativeCollisionResource(
                 core.Assets.AsSpan(cls.AssetOffset, cls.AssetLength))!;
         }
         var bot = Read(Rac1AridiaEnemies.Constructorbot);
@@ -435,7 +463,7 @@ public sealed class Rac1AridiaConstructorbotNativeTests
                 (2, 2), (2, 2), (2, -32766)
             }, bot.Primitives.Select(p => (p.Type, p.ModeBits)).ToArray());
         Assert.Equal(new[] { 0, 3 }, bot.Primitives.Select((p, i) => (p, i))
-            .Where(t => Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(
+            .Where(t => Native.WalkerMobyPrimitiveAdmitted(
                 t.p.ModeBits, 0, t.i))
             .Select(t => t.i).ToArray());
 
@@ -445,7 +473,7 @@ public sealed class Rac1AridiaConstructorbotNativeTests
         Assert.Equal((uint)0x20, shark.PrimitiveRecordBytes);
         Assert.Equal((uint)0, shark.TriangleCount);
         Assert.Equal((uint)0, shark.VertexBytes);
-        Assert.Equal(new Rac1AridiaConstructorbotNative.WalkerNativeCollisionPrimitive(
+        Assert.Equal(new Native.WalkerNativeCollisionPrimitive(
             1, -32765), Assert.Single(shark.Primitives));
 
         var controller = Read(604);
@@ -458,7 +486,7 @@ public sealed class Rac1AridiaConstructorbotNativeTests
             controller.Primitives.Select(p => (p.Type, p.ModeBits)).ToArray());
 
         var sandmouseClass = classes[Rac1AridiaEnemies.Sandmouse];
-        Assert.Null(Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(
+        Assert.Null(Native.ReadWalkerNativeCollisionResource(
             core.Assets.AsSpan(sandmouseClass.AssetOffset, sandmouseClass.AssetLength)));
     }
 
@@ -466,136 +494,136 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     public void SourceMobyCollisionHeaderParserIsBoundedAndDoesNotInventRecords()
     {
         Assert.Throws<InvalidDataException>(() =>
-            Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(
+            Native.ReadWalkerNativeCollisionResource(
                 new byte[0x13]));
         byte[] payload = new byte[0x80];
-        Assert.Null(Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(payload));
+        Assert.Null(Native.ReadWalkerNativeCollisionResource(payload));
         BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0x10), 0x20);
         BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(0x20), 2);
         BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0x24), 0x20);
         payload[0x30] = 3;
         BinaryPrimitives.WriteInt16LittleEndian(payload.AsSpan(0x32), 1);
-        var decoded = Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(payload)!;
+        var decoded = Native.ReadWalkerNativeCollisionResource(payload)!;
         Assert.Equal(0x20, decoded.ClassRelativeOffset);
         Assert.Equal((ushort)2, decoded.JointCountForFlag4);
         Assert.Equal((uint)0x20, decoded.PrimitiveRecordBytes);
-        Assert.Equal(new Rac1AridiaConstructorbotNative.WalkerNativeCollisionPrimitive(
+        Assert.Equal(new Native.WalkerNativeCollisionPrimitive(
             3, 1), Assert.Single(decoded.Primitives));
 
         BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0x10), 0x80);
         Assert.Throws<InvalidDataException>(() =>
-            Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(payload));
+            Native.ReadWalkerNativeCollisionResource(payload));
         BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0x10), 0x20);
         BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0x24), 0x21);
         Assert.Throws<InvalidDataException>(() =>
-            Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(payload));
+            Native.ReadWalkerNativeCollisionResource(payload));
         BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0x24), 0x80);
         Assert.Throws<InvalidDataException>(() =>
-            Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(payload));
+            Native.ReadWalkerNativeCollisionResource(payload));
         BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0x10), uint.MaxValue);
         Assert.Throws<InvalidDataException>(() =>
-            Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(payload));
+            Native.ReadWalkerNativeCollisionResource(payload));
     }
 
     [Fact]
     public void OriginalWalkerSphereMobyBroadphaseRequiresSourceCollisionMetadata()
     {
-        Assert.Equal(4, Rac1AridiaConstructorbotNative.WalkerSphereMobyQueryFlags);
-        Assert.Equal(1, Rac1AridiaConstructorbotNative.WalkerSpherePrimitiveMode);
-        const float r = Rac1AridiaConstructorbotNative.WalkerCollisionRadius;
+        Assert.Equal(4, Native.WalkerSphereMobyQueryFlags);
+        Assert.Equal(1, Native.WalkerSpherePrimitiveMode);
+        const float r = Native.WalkerCollisionRadius;
         // The source broadphase uses Moby+0 centre, not its gameplay
         // position at +0x10. A bounds hit is not enough if there is no
         // source collision-data header at Moby+0x94.
-        var source = new Rac1AridiaConstructorbotNative.WalkerMobyCollisionCandidate(
+        var source = new Native.WalkerMobyCollisionCandidate(
             548, new(1, 2, 3), .5f,
             HasNativeCollisionHeader: true, AlreadyVisited: false,
             JointCount: 2, VertexBytes: 0x20, HasPrimitiveRecords: true);
         var query = new Vector3(1, 2, 4.125f);
-        var admitted = Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+        var admitted = Native.AdmitWalkerMobyCollision(
             query, r, 551, source);
         Assert.Equal(new(true, true, true), admitted);
         Assert.Equal(default,
-            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+            Native.AdmitWalkerMobyCollision(
                 query, r, 548, source));
         Assert.Equal(default,
-            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+            Native.AdmitWalkerMobyCollision(
                 query, r, 551, source with { HasNativeCollisionHeader = false }));
         Assert.Equal(default,
-            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+            Native.AdmitWalkerMobyCollision(
                 query, r, 551, source with { AlreadyVisited = true }));
         Assert.Equal(default,
-            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+            Native.AdmitWalkerMobyCollision(
                 query + Vector3.UnitZ * .0001f, r, 551, source));
 
         // The flags4/flags2-off branch's native joint/vbytes==1 skip,
         // and independently gated triangle/primitive data.
         Assert.Equal(default,
-            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+            Native.AdmitWalkerMobyCollision(
                 query, r, 551, source with { VertexBytes = 1 }));
         Assert.Equal(new(true, true, true),
-            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+            Native.AdmitWalkerMobyCollision(
                 query, r, 551, source with { JointCount = 0, VertexBytes = 1 }));
         Assert.Equal(new(true, false, true),
-            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+            Native.AdmitWalkerMobyCollision(
                 query, r, 551, source with { VertexBytes = 0 }));
         Assert.Equal(new(true, true, false),
-            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+            Native.AdmitWalkerMobyCollision(
                 query, r, 551, source with { HasPrimitiveRecords = false }));
         Assert.Equal(new(true, false, false),
-            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+            Native.AdmitWalkerMobyCollision(
                 query, r, 551, source with { VertexBytes = 0, HasPrimitiveRecords = false }));
 
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+            Native.AdmitWalkerMobyCollision(
                 new(float.NaN, 0, 0), r, 551, source));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+            Native.AdmitWalkerMobyCollision(
                 query, 0, 551, source));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+            Native.AdmitWalkerMobyCollision(
                 query, r, 551, source with { BroadphaseRadius = -1 }));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+            Native.AdmitWalkerMobyCollision(
                 query, r, -1, source));
 
         // Primitive records with rec+2 mode bit2 alone are not in the
         // original class612 flags4 collision category. A disabled bit
         // at Moby+0x98 excludes the record regardless of its mode bits.
-        Assert.True(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(1, 0, 0));
-        Assert.True(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(3, 0, 0));
-        Assert.False(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(2, 0, 0));
-        Assert.False(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(0, 0, 0));
-        Assert.False(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(1, 1, 0));
-        Assert.False(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(1, 8, 3));
-        Assert.True(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(1, 8, 2));
-        Assert.False(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(1, 0x80000000, 31));
-        Assert.True(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(1, 0xffffffff, 32));
+        Assert.True(Native.WalkerMobyPrimitiveAdmitted(1, 0, 0));
+        Assert.True(Native.WalkerMobyPrimitiveAdmitted(3, 0, 0));
+        Assert.False(Native.WalkerMobyPrimitiveAdmitted(2, 0, 0));
+        Assert.False(Native.WalkerMobyPrimitiveAdmitted(0, 0, 0));
+        Assert.False(Native.WalkerMobyPrimitiveAdmitted(1, 1, 0));
+        Assert.False(Native.WalkerMobyPrimitiveAdmitted(1, 8, 3));
+        Assert.True(Native.WalkerMobyPrimitiveAdmitted(1, 8, 2));
+        Assert.False(Native.WalkerMobyPrimitiveAdmitted(1, 0x80000000, 31));
+        Assert.True(Native.WalkerMobyPrimitiveAdmitted(1, 0xffffffff, 32));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(1, 0, -1));
+            Native.WalkerMobyPrimitiveAdmitted(1, 0, -1));
     }
 
     [Fact]
     public void OriginalWalkerFixedPointCollisionRadiusIsNotBehaviorFlags()
     {
-        Assert.Equal(640, Rac1AridiaConstructorbotNative.WalkerCollisionRadiusFixed);
-        Assert.Equal(.625f, Rac1AridiaConstructorbotNative.WalkerCollisionRadius);
-        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerInitialRecordFlags);
-        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerRecordBehaviorFlags);
-        Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerInitialProbeFlags(
-            false, Rac1AridiaConstructorbotNative.WalkerRecordBehaviorFlags));
-        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerInitialProbeFlags(
-            true, Rac1AridiaConstructorbotNative.WalkerRecordBehaviorFlags));
+        Assert.Equal(640, Native.WalkerCollisionRadiusFixed);
+        Assert.Equal(.625f, Native.WalkerCollisionRadius);
+        Assert.Equal(0, Native.WalkerInitialRecordFlags);
+        Assert.Equal(0, Native.WalkerRecordBehaviorFlags);
+        Assert.Equal(0x22, Native.WalkerInitialProbeFlags(
+            false, Native.WalkerRecordBehaviorFlags));
+        Assert.Equal(0, Native.WalkerInitialProbeFlags(
+            true, Native.WalkerRecordBehaviorFlags));
     }
 
     [Fact]
     public void SourceSweepOnlyStartsWhenRequestedMotionStrictlyExceedsNativeRadius()
     {
         Vector3 old = new(1, 2, 3);
-        Assert.Null(Rac1AridiaConstructorbotNative.BuildWalkerSweep(
+        Assert.Null(Native.BuildWalkerSweep(
             old, Vector3.Zero, .625f, 1));
-        Assert.Null(Rac1AridiaConstructorbotNative.BuildWalkerSweep(
+        Assert.Null(Native.BuildWalkerSweep(
             old, new(.625f, 0, 0), .625f, 1));
-        var sweep = Rac1AridiaConstructorbotNative.BuildWalkerSweep(
+        var sweep = Native.BuildWalkerSweep(
             old, new(1, 0, 0), .625f, 1);
         Assert.True(sweep.HasValue);
         Assert.Equal(new(1, 2, 4), sweep.Value.Start);
@@ -603,22 +631,22 @@ public sealed class Rac1AridiaConstructorbotNativeTests
         Assert.Equal(new(.625f, 0, 0), sweep.Value.RadiusAdvance);
         // Source hit is backed off by the radius AND then un-raised.
         Assert.Equal(new(1.625f, 2, 3),
-            Rac1AridiaConstructorbotNative.WalkerSweptHitPosition(
+            Native.WalkerSweptHitPosition(
                 new(2.25f, 2, 4), sweep.Value, 1));
 
-        var diagonal = Rac1AridiaConstructorbotNative.BuildWalkerSweep(
+        var diagonal = Native.BuildWalkerSweep(
             Vector3.Zero, new(3, 4, 0), .625f, 1)!.Value;
         Assert.Equal(new(0, 0, 1), diagonal.Start);
         Assert.Equal(new(.375f, .5f, 0), diagonal.RadiusAdvance);
         Assert.Equal(new(3.375f, 4.5f, 1), diagonal.End);
         // Source vec3_length includes the height component.
-        Assert.NotNull(Rac1AridiaConstructorbotNative.BuildWalkerSweep(
+        Assert.NotNull(Native.BuildWalkerSweep(
             Vector3.Zero, new(0, 0, .7f), .625f, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.BuildWalkerSweep(
+            Native.BuildWalkerSweep(
                 Vector3.Zero, Vector3.UnitX, -.01f, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.BuildWalkerSweep(
+            Native.BuildWalkerSweep(
                 Vector3.Zero, new(float.NaN, 0, 0), .625f, 1));
     }
 
@@ -626,26 +654,26 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     public void WalkerContactOnlyMarksActualTouchAndForwardTravelBelowNativeTwentyPercent()
     {
         Vector3 requested = new(1, 0, 0);
-        var untouched = Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+        var untouched = Native.WalkerPostMoveContact(
             requested, Vector3.Zero, 0, 10, null);
         Assert.Equal(new(0, false), untouched);
         // walker_move bit2 is floor contact, NOT a walker_record return bit.
-        var floorOnly = Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+        var floorOnly = Native.WalkerPostMoveContact(
             requested, new(.6f, 0, 0), 2, 10, null);
         Assert.Equal(new(0, false), floorOnly);
-        var mild = Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+        var mild = Native.WalkerPostMoveContact(
             requested, new(.201f, .5f, 0), 3, 10, 9.9f);
         Assert.Equal(new(1, false), mild);
-        var exact = Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+        var exact = Native.WalkerPostMoveContact(
             requested, new(.2f, .5f, 0), 1, 10, 10);
         Assert.Equal(new(1, false), exact);
-        var blocked = Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+        var blocked = Native.WalkerPostMoveContact(
             requested, new(.199f, .5f, 0), 1, 10, 10);
         Assert.Equal(new(3, false), blocked);
-        var backwards = Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+        var backwards = Native.WalkerPostMoveContact(
             requested, new(-.25f, 0, 0), 1, 10, 10);
         Assert.Equal(new(3, false), backwards);
-        var orthogonal = Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+        var orthogonal = Native.WalkerPostMoveContact(
             new(0, 4, 0), new(2, 0, 0), 1, 10, 10);
         Assert.Equal(new(3, false), orthogonal);
     }
@@ -654,79 +682,79 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     public void WalkerContactRollbackOnlyAfterActualTouchAndInvalidFollowUpFloor()
     {
         Vector3 request = new(1, 0, 0);
-        Assert.Equal(new(0x23, true), Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+        Assert.Equal(new(0x23, true), Native.WalkerPostMoveContact(
             request, new(.6f, 0, 0), 1, 10, null));
-        Assert.Equal(new(0x23, true), Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+        Assert.Equal(new(0x23, true), Native.WalkerPostMoveContact(
             request, new(.6f, 0, 0), 1, 10, 9.499f));
-        Assert.Equal(new(0x23, true), Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+        Assert.Equal(new(0x23, true), Native.WalkerPostMoveContact(
             request, new(.6f, 0, 0), 1, 10, 10.501f));
-        Assert.Equal(new(1, false), Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+        Assert.Equal(new(1, false), Native.WalkerPostMoveContact(
             request, new(.6f, 0, 0), 1, 10, 9.5f));
-        Assert.Equal(new(1, false), Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+        Assert.Equal(new(1, false), Native.WalkerPostMoveContact(
             request, new(.6f, 0, 0), 1, 10, 10.5f));
-        Assert.Equal(new(0, false), Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+        Assert.Equal(new(0, false), Native.WalkerPostMoveContact(
             request, Vector3.Zero, 0, 10, null));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+            Native.WalkerPostMoveContact(
                 request, new(float.NaN, 0, 0), 1, 10, 10));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+            Native.WalkerPostMoveContact(
                 request, Vector3.Zero, 4, 10, 10));
     }
 
     [Fact]
     public void NativeWalkerMoveFloorLiftAppliesSourceThirtyPercentWithoutForcedDrop()
     {
-        Assert.Equal(0f, Rac1AridiaConstructorbotNative.ConstructorbotFloorDrop);
-        var nativeSegment = Rac1AridiaConstructorbotNative.WalkerGroundSegment(
-            new Vector3(3, 4, 10), Rac1AridiaConstructorbotNative.WalkerCollisionUp,
-            Rac1AridiaConstructorbotNative.ConstructorbotFloorDrop);
+        Assert.Equal(0f, Native.ConstructorbotFloorDrop);
+        var nativeSegment = Native.WalkerGroundSegment(
+            new Vector3(3, 4, 10), Native.WalkerCollisionUp,
+            Native.ConstructorbotFloorDrop);
         Assert.Equal(new Vector3(3, 4, 11), nativeSegment.Start);
         Assert.Equal(new Vector3(3, 4, 9.95f), nativeSegment.End);
         // The original class612 drop is ZERO. A level floor at the
         // current Moby height cannot raise the actor by 0.3 * 0.5.
-        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerGroundLift(
-            10, 10, Rac1AridiaConstructorbotNative.ConstructorbotFloorDrop));
-        Assert.Equal(.075f, Rac1AridiaConstructorbotNative.WalkerGroundLift(
-            10, 10.25f, Rac1AridiaConstructorbotNative.ConstructorbotFloorDrop), 5);
-        Assert.Equal(0f, Rac1AridiaConstructorbotNative.WalkerGroundLift(
-            10, 9.95f, Rac1AridiaConstructorbotNative.ConstructorbotFloorDrop));
+        Assert.Equal(0, Native.WalkerGroundLift(
+            10, 10, Native.ConstructorbotFloorDrop));
+        Assert.Equal(.075f, Native.WalkerGroundLift(
+            10, 10.25f, Native.ConstructorbotFloorDrop), 5);
+        Assert.Equal(0f, Native.WalkerGroundLift(
+            10, 9.95f, Native.ConstructorbotFloorDrop));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerGroundSegment(
+            Native.WalkerGroundSegment(
                 new(float.NaN, 0, 0), 1, 0));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerGroundSegment(
+            Native.WalkerGroundSegment(
                 Vector3.Zero, 1, -.01f));
-        Assert.Equal(.075f, Rac1AridiaConstructorbotNative.WalkerGroundLift(
+        Assert.Equal(.075f, Native.WalkerGroundLift(
             10, 9.75f, .5f), 5);
-        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerGroundLift(
+        Assert.Equal(0, Native.WalkerGroundLift(
             10, 9.25f, .5f));
-        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerGroundLift(
+        Assert.Equal(0, Native.WalkerGroundLift(
             10, 9.5f, .5f));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerGroundLift(10, 9.5f, -.1f));
-        Assert.Equal(6, Rac1AridiaConstructorbotNative.WalkerSpherePushoutAttempts);
-        Assert.Equal(.05f, Rac1AridiaConstructorbotNative.WalkerMoveGroundProbeExtension);
+            Native.WalkerGroundLift(10, 9.5f, -.1f));
+        Assert.Equal(6, Native.WalkerSpherePushoutAttempts);
+        Assert.Equal(.05f, Native.WalkerMoveGroundProbeExtension);
     }
 
     [Fact]
     public void WalkerSourceSpeedAcceleratesDragsAndClampsWithoutOverwritingPhysics()
     {
         float speed = 0;
-        speed = Rac1AridiaConstructorbotNative.WalkerSpeed(speed, 100f, 1f);
+        speed = Native.WalkerSpeed(speed, 100f, 1f);
         Assert.Equal(.3f, speed, 4);
-        speed = Rac1AridiaConstructorbotNative.WalkerSpeed(speed, 100f, 1f);
+        speed = Native.WalkerSpeed(speed, 100f, 1f);
         Assert.Equal(.6f, speed, 4);
         for (int i = 0; i < 30; i++)
-            speed = Rac1AridiaConstructorbotNative.WalkerSpeed(speed, 100f, 1f);
-        Assert.Equal(Rac1AridiaConstructorbotNative.WalkerMaxSpeed, speed, 4);
-        float near = Rac1AridiaConstructorbotNative.WalkerSpeed(1f, .05f, 1f);
+            speed = Native.WalkerSpeed(speed, 100f, 1f);
+        Assert.Equal(Native.WalkerMaxSpeed, speed, 4);
+        float near = Native.WalkerSpeed(1f, .05f, 1f);
         Assert.InRange(near, .70f, .72f);
-        Assert.Equal(0f, Rac1AridiaConstructorbotNative.WalkerSpeed(.7f, 10, 0));
+        Assert.Equal(0f, Native.WalkerSpeed(.7f, 10, 0));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerSpeed(float.NaN, 1, 1));
+            Native.WalkerSpeed(float.NaN, 1, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerSpeed(0, 0, 1.1f));
+            Native.WalkerSpeed(0, 0, 1.1f));
     }
 
     [Fact]
@@ -735,66 +763,66 @@ public sealed class Rac1AridiaConstructorbotNativeTests
         var grounded = new Vector3(10, 20, 24.8906f);
         var sourceRecord = new Vector3(10.02f, 20.03f, 25.1346f);
         Assert.True(Vector3.Distance(grounded, sourceRecord) > .2f);
-        float planar = Rac1AridiaConstructorbotNative.WalkerPlanarDistance(
+        float planar = Native.WalkerPlanarDistance(
             grounded, sourceRecord);
         Assert.InRange(planar, .03f, .04f);
-        Assert.Equal(Rac1AridiaConstructorbotNative.WalkerNearTargetFlag,
-            Rac1AridiaConstructorbotNative.WalkerFlags(planar, 0, 0));
-        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(
-            5, Rac1AridiaConstructorbotNative.WalkerFlags(planar, 0, 0), true));
+        Assert.Equal(Native.WalkerNearTargetFlag,
+            Native.WalkerFlags(planar, 0, 0));
+        Assert.Equal(new(7, 0), Native.StepWalkerState(
+            5, Native.WalkerFlags(planar, 0, 0), true));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.WalkerPlanarDistance(
+            Native.WalkerPlanarDistance(
                 grounded, new Vector3(float.NaN, 20, 25)));
     }
 
     [Fact]
     public void WalkerDampedYawMatchesSourceAccelerationDampingAndLimits()
     {
-        Assert.Equal(.03f, Rac1AridiaConstructorbotNative.WalkerTurnAcceleration);
-        Assert.Equal(.3f, Rac1AridiaConstructorbotNative.WalkerTurnDamping);
-        Assert.Equal(.25f, Rac1AridiaConstructorbotNative.WalkerTurnMaximum);
-        var first = Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(0, 0, 1);
+        Assert.Equal(.03f, Native.WalkerTurnAcceleration);
+        Assert.Equal(.3f, Native.WalkerTurnDamping);
+        Assert.Equal(.25f, Native.WalkerTurnMaximum);
+        var first = Native.StepWalkerDampedYaw(0, 0, 1);
         Assert.Equal(.03f, first.AngularVelocity, 5);
         Assert.Equal(.03f, first.Yaw, 5);
         Assert.Equal(.97f, first.RemainingError, 5);
-        var second = Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(
+        var second = Native.StepWalkerDampedYaw(
             first.Yaw, first.AngularVelocity, first.RemainingError);
         Assert.Equal(.051f, second.AngularVelocity, 5);
         Assert.Equal(.081f, second.Yaw, 5);
         Assert.Equal(.919f, second.RemainingError, 5);
 
-        var negative = Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(0, 0, -1);
+        var negative = Native.StepWalkerDampedYaw(0, 0, -1);
         Assert.Equal(-.03f, negative.AngularVelocity, 5);
         Assert.Equal(-.03f, negative.Yaw, 5);
-        var limited = Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(0, .5f, 1);
+        var limited = Native.StepWalkerDampedYaw(0, .5f, 1);
         Assert.Equal(.25f, limited.AngularVelocity, 5);
-        var snapped = Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(0, .2f, .001f);
+        var snapped = Native.StepWalkerDampedYaw(0, .2f, .001f);
         Assert.Equal(.001f, snapped.AngularVelocity, 5);
         Assert.Equal(0, snapped.RemainingError, 5);
-        var stopped = Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(0, -.2f, 0);
+        var stopped = Native.StepWalkerDampedYaw(0, -.2f, 0);
         Assert.Equal(0, stopped.AngularVelocity);
     }
 
     [Fact]
     public void WalkerDampedYawWrapsSourceAnglesAndRejectsNonFiniteState()
     {
-        var wrapped = Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(3.13f, 0, .2f);
+        var wrapped = Native.StepWalkerDampedYaw(3.13f, 0, .2f);
         Assert.InRange(wrapped.Yaw, -3.13f, -3.11f);
         Assert.Equal(.03f, wrapped.AngularVelocity, 5);
         Assert.Equal(.17f, wrapped.RemainingError, 5);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(float.NaN, 0, 1));
+            Native.StepWalkerDampedYaw(float.NaN, 0, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(0, float.PositiveInfinity, 1));
+            Native.StepWalkerDampedYaw(0, float.PositiveInfinity, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(0, 0, float.NaN));
+            Native.StepWalkerDampedYaw(0, 0, float.NaN));
     }
 
     [Fact]
     public void StateSevenOnlySelectsRoamAfterNativeAnimationCompletion()
     {
-        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepStateSevenRoam(false));
-        Assert.Equal(new(6, 6), Rac1AridiaConstructorbotNative.StepStateSevenRoam(true));
+        Assert.Equal(new(7, 0), Native.StepStateSevenRoam(false));
+        Assert.Equal(new(6, 6), Native.StepStateSevenRoam(true));
     }
 
     [Fact]
@@ -802,72 +830,72 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     {
         var anchor = new Vector3(50, 60, 70);
         Assert.Equal(new Vector3(51, 60, 70),
-            Rac1AridiaConstructorbotNative.CreateRoamingDestination(anchor, 0, 1, 2));
-        var target = Rac1AridiaConstructorbotNative.CreateRoamingDestination(
+            Native.CreateRoamingDestination(anchor, 0, 1, 2));
+        var target = Native.CreateRoamingDestination(
             anchor, MathF.PI / 2, 1, 2);
         Assert.InRange(target.X, 49.9999f, 50.0001f);
         Assert.InRange(target.Y, 61.9999f, 62.0001f);
         Assert.Equal(70, target.Z);
-        var diagonal = Rac1AridiaConstructorbotNative.CreateRoamingDestination(
+        var diagonal = Native.CreateRoamingDestination(
             anchor, MathF.PI / 4, 1, 2);
         Assert.InRange(diagonal.X, 50.70f, 50.72f);
         Assert.InRange(diagonal.Y, 61.41f, 61.42f);
         Assert.Equal(70, diagonal.Z);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.CreateRoamingDestination(anchor, 0, .99f, 2));
+            Native.CreateRoamingDestination(anchor, 0, .99f, 2));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.CreateRoamingDestination(anchor, 0, 1, 2.01f));
+            Native.CreateRoamingDestination(anchor, 0, 1, 2.01f));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.CreateRoamingDestination(anchor, float.NaN, 1, 1));
+            Native.CreateRoamingDestination(anchor, float.NaN, 1, 1));
     }
 
     [Fact]
     public void WalkerStateFiveNeedsExactlyBitFourAndStateSixTestsBitsTwoOrFour()
     {
         // LEVEL2:0x2d7b6c tests the entire return word ==4, not a bitwise flag.
-        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(5, 4, true));
+        Assert.Equal(new(7, 0), Native.StepWalkerState(5, 4, true));
         foreach (int flags in new[] { 0, 1, 2, 5, 6, 8, 0x14, 0x24 })
-            Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepWalkerState(5, flags, true));
-        Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepWalkerState(5, 4, false));
+            Assert.Equal(new(5, 6), Native.StepWalkerState(5, flags, true));
+        Assert.Equal(new(5, 6), Native.StepWalkerState(5, 4, false));
 
         // Source state6 only goes to state7 on flags & 6 != 0;
         // when clear, proximity can instead lead to state5.
-        Assert.Equal(new(6, 6), Rac1AridiaConstructorbotNative.StepWalkerState(6, 0, true));
-        Assert.Equal(new(6, 6), Rac1AridiaConstructorbotNative.StepWalkerState(6, 0x10, true));
-        Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepWalkerState(
+        Assert.Equal(new(6, 6), Native.StepWalkerState(6, 0, true));
+        Assert.Equal(new(6, 6), Native.StepWalkerState(6, 0x10, true));
+        Assert.Equal(new(5, 6), Native.StepWalkerState(
             6, 0, true, playerNearAnchor: true));
-        Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepWalkerState(
+        Assert.Equal(new(5, 6), Native.StepWalkerState(
             6, 0x10, true, playerNearAnchor: true));
-        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(6, 2, true));
-        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(6, 4, true));
+        Assert.Equal(new(7, 0), Native.StepWalkerState(6, 2, true));
+        Assert.Equal(new(7, 0), Native.StepWalkerState(6, 4, true));
         // On an observed native no-floor probe, 0x22 supplies bit2 and the
         // heading flag may also be present. Player admission cannot override
         // a blocked state6 return, nor can unknown solver flags force idle.
-        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(
+        Assert.Equal(new(7, 0), Native.StepWalkerState(
             6, 0x32, true, playerNearAnchor: true));
-        Assert.Equal(new(6, 6), Rac1AridiaConstructorbotNative.StepWalkerState(
+        Assert.Equal(new(6, 6), Native.StepWalkerState(
             6, 0x32, false, playerNearAnchor: true));
-        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(
+        Assert.Equal(new(7, 0), Native.StepWalkerState(
             6, 0x14, true, playerNearAnchor: true));
-        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(
+        Assert.Equal(new(7, 0), Native.StepWalkerState(
             6, 6, true, playerNearAnchor: true));
-        Assert.Equal(new(6, 6), Rac1AridiaConstructorbotNative.StepWalkerState(6, 0, false));
+        Assert.Equal(new(6, 6), Native.StepWalkerState(6, 0, false));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepWalkerState(7, 0, true));
+            Native.StepWalkerState(7, 0, true));
     }
 
     [Fact]
     public void SourceApproachScalarClampsBothSignsAndReachesExactTarget()
     {
-        Assert.Equal(1.25f, Rac1AridiaConstructorbotNative.ApproachNativeScalar(1, 2, .25f));
-        Assert.Equal(.75f, Rac1AridiaConstructorbotNative.ApproachNativeScalar(1, 0, .25f));
-        Assert.Equal(2, Rac1AridiaConstructorbotNative.ApproachNativeScalar(1.99f, 2, .25f));
-        Assert.Equal(0, Rac1AridiaConstructorbotNative.ApproachNativeScalar(.01f, 0, .25f));
-        Assert.Equal(1, Rac1AridiaConstructorbotNative.ApproachNativeScalar(1, 2, 0));
+        Assert.Equal(1.25f, Native.ApproachNativeScalar(1, 2, .25f));
+        Assert.Equal(.75f, Native.ApproachNativeScalar(1, 0, .25f));
+        Assert.Equal(2, Native.ApproachNativeScalar(1.99f, 2, .25f));
+        Assert.Equal(0, Native.ApproachNativeScalar(.01f, 0, .25f));
+        Assert.Equal(1, Native.ApproachNativeScalar(1, 2, 0));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.ApproachNativeScalar(0, 1, -1));
+            Native.ApproachNativeScalar(0, 1, -1));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.ApproachNativeScalar(float.NaN, 1, 1));
+            Native.ApproachNativeScalar(float.NaN, 1, 1));
     }
 
     [Fact]
@@ -877,7 +905,7 @@ public sealed class Rac1AridiaConstructorbotNativeTests
         float speed = 0;
         for (int i = 0; i < 8; i++)
         {
-            var frame = Rac1AridiaConstructorbotNative.StepStateThreeVertical(
+            var frame = Native.StepStateThreeVertical(
                 height, speed, 24.9f, 1f / 60f, 1f / 60f);
             Assert.InRange(frame.VerticalStep, 0, 10f / 60);
             Assert.True(frame.Height <= height);
@@ -889,7 +917,7 @@ public sealed class Rac1AridiaConstructorbotNativeTests
         bool landed = false;
         for (int i = 0; i < 200; i++)
         {
-            var frame = Rac1AridiaConstructorbotNative.StepStateThreeVertical(
+            var frame = Native.StepStateThreeVertical(
                 height, speed, 24.9f, 1f / 60f, 1f / 60f);
             height = frame.Height;
             speed = frame.VerticalStep;
@@ -900,14 +928,14 @@ public sealed class Rac1AridiaConstructorbotNativeTests
         Assert.True(landed);
         Assert.Equal(24.9f, height);
         Assert.Equal(10f / 60, speed, 5);
-        var noFloor = Rac1AridiaConstructorbotNative.StepStateThreeVertical(
+        var noFloor = Native.StepStateThreeVertical(
             height, speed, null, 1f / 60f, 1f / 60f);
         Assert.Equal(height, noFloor.Height);
         Assert.False(noFloor.ReachedFloor);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepStateThreeVertical(10, 0, float.NaN, 1f / 60f, .01f));
+            Native.StepStateThreeVertical(10, 0, float.NaN, 1f / 60f, .01f));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepStateThreeVertical(10, 0, 0, 1f / 60f, -.01f));
+            Native.StepStateThreeVertical(10, 0, 0, 1f / 60f, -.01f));
     }
 
     [Fact]
@@ -915,7 +943,7 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     {
         var current = new Vector3(0, 0, 100);
         var waypoint = new Vector3(3, 4, -200);
-        var step = Rac1AridiaConstructorbotNative.StepStateThreeHorizontal(
+        var step = Native.StepStateThreeHorizontal(
             current, waypoint, 1f / 60f);
         Assert.InRange(step.Length(), .0999f, .1001f);
         Assert.Equal(0, step.Z);
@@ -924,18 +952,18 @@ public sealed class Rac1AridiaConstructorbotNativeTests
 
         Vector3 location = current;
         for (int i = 0; i < 50; i++)
-            location += Rac1AridiaConstructorbotNative.StepStateThreeHorizontal(
+            location += Native.StepStateThreeHorizontal(
                 location, waypoint, 1f / 60f);
         Assert.InRange(location.X, 2.999f, 3.001f);
         Assert.InRange(location.Y, 3.999f, 4.001f);
         Assert.Equal(100, location.Z);
 
-        Assert.Equal(Vector3.Zero, Rac1AridiaConstructorbotNative.StepStateThreeHorizontal(
+        Assert.Equal(Vector3.Zero, Native.StepStateThreeHorizontal(
             location, waypoint, 0));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepStateThreeHorizontal(current, waypoint, -1));
+            Native.StepStateThreeHorizontal(current, waypoint, -1));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepStateThreeHorizontal(
+            Native.StepStateThreeHorizontal(
                 current, new(float.NaN, 0, 0), 1f / 60f));
     }
 
@@ -943,24 +971,24 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     public void StateThreeYawCapsPerFrameRotationTowardTrackedTarget()
     {
         float max = MathF.PI / 120f;
-        Assert.InRange(Rac1AridiaConstructorbotNative.StepStateThreeYaw(
+        Assert.InRange(Native.StepStateThreeYaw(
             0, MathF.PI, 1f / 60f), -max - .00001f, max + .00001f);
-        Assert.Equal(.01f, Rac1AridiaConstructorbotNative.StepStateThreeYaw(0, .01f, 1f / 60f), 4);
-        Assert.InRange(Rac1AridiaConstructorbotNative.StepStateThreeYaw(
+        Assert.Equal(.01f, Native.StepStateThreeYaw(0, .01f, 1f / 60f), 4);
+        Assert.InRange(Native.StepStateThreeYaw(
             0, -.5f, 1f / 60f), -max - .00001f, -max + .00001f);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepStateThreeYaw(0, float.NaN, 1f / 60f));
+            Native.StepStateThreeYaw(0, float.NaN, 1f / 60f));
     }
 
     [Fact]
     public void StateThreeLandingAndFourCompletionRequireActualSourceSignals()
     {
         for (int i = 0; i < 600; i++)
-            Assert.Equal(new(3, 4), Rac1AridiaConstructorbotNative.StepStateThreeLanding(null));
-        Assert.Equal(new(3, 4), Rac1AridiaConstructorbotNative.StepStateThreeLanding(false));
-        Assert.Equal(new(4, 5), Rac1AridiaConstructorbotNative.StepStateThreeLanding(true));
-        Assert.Equal(new(4, 5), Rac1AridiaConstructorbotNative.StepStateFour(false));
-        Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepStateFour(true));
+            Assert.Equal(new(3, 4), Native.StepStateThreeLanding(null));
+        Assert.Equal(new(3, 4), Native.StepStateThreeLanding(false));
+        Assert.Equal(new(4, 5), Native.StepStateThreeLanding(true));
+        Assert.Equal(new(4, 5), Native.StepStateFour(false));
+        Assert.Equal(new(5, 6), Native.StepStateFour(true));
     }
 
     [Theory]
@@ -970,33 +998,33 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     {
         for (int tick = 0; tick < 200; tick++)
             Assert.Equal(new(2, sequence),
-                Rac1AridiaConstructorbotNative.StepActivatedAnimation(false, sequence));
+                Native.StepActivatedAnimation(false, sequence));
         Assert.Equal(new(3, 4),
-            Rac1AridiaConstructorbotNative.StepActivatedAnimation(true, sequence));
+            Native.StepActivatedAnimation(true, sequence));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepActivatedAnimation(true, 15));
+            Native.StepActivatedAnimation(true, 15));
     }
 
     [Fact]
     public void NativeStateTwelveChecksAnimationThenRangeAndHeightWithoutInventedCooldown()
     {
-        Assert.Equal(new(12, 9), Rac1AridiaConstructorbotNative.StepFollowup(false, 500, 25, 18));
-        Assert.Equal(new(12, 9), Rac1AridiaConstructorbotNative.StepFollowup(true, 18.99f, 2.99f, 18));
-        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepFollowup(true, 19f, 0, 18));
-        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepFollowup(true, 0, 3f, 18));
-        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepFollowup(true, 0, -3f, 18));
+        Assert.Equal(new(12, 9), Native.StepFollowup(false, 500, 25, 18));
+        Assert.Equal(new(12, 9), Native.StepFollowup(true, 18.99f, 2.99f, 18));
+        Assert.Equal(new(7, 0), Native.StepFollowup(true, 19f, 0, 18));
+        Assert.Equal(new(7, 0), Native.StepFollowup(true, 0, 3f, 18));
+        Assert.Equal(new(7, 0), Native.StepFollowup(true, 0, -3f, 18));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepFollowup(true, float.NaN, 0, 18));
+            Native.StepFollowup(true, float.NaN, 0, 18));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1AridiaConstructorbotNative.StepFollowup(true, 0, float.PositiveInfinity, 18));
+            Native.StepFollowup(true, 0, float.PositiveInfinity, 18));
     }
 
     [Fact]
     public void NativeStateThirteenWaitsForPhysicsContactInsteadOfElapsedTicks()
     {
         for (int tick = 0; tick < 800; tick++)
-            Assert.Equal(new(13, 10), Rac1AridiaConstructorbotNative.StepRecovery(false, 10));
-        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepRecovery(true, 10));
+            Assert.Equal(new(13, 10), Native.StepRecovery(false, 10));
+        Assert.Equal(new(7, 0), Native.StepRecovery(true, 10));
     }
 
     [Fact]
@@ -1005,34 +1033,34 @@ public sealed class Rac1AridiaConstructorbotNativeTests
         var pvar = Pvar(3);
         BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x18c), -1);
         BinaryPrimitives.WriteSingleLittleEndian(pvar.AsSpan(0x184), 20);
-        Assert.Equal(-1, Rac1AridiaConstructorbotNative.ReadActivationVolume(pvar));
-        Assert.Equal(20, Rac1AridiaConstructorbotNative.ReadActivationDistance(pvar));
+        Assert.Equal(-1, Native.ReadActivationVolume(pvar));
+        Assert.Equal(20, Native.ReadActivationDistance(pvar));
         BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x18c), 21);
-        Assert.Equal(21, Rac1AridiaConstructorbotNative.ReadActivationVolume(pvar));
+        Assert.Equal(21, Native.ReadActivationVolume(pvar));
         BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x18c), -2);
         Assert.Throws<InvalidDataException>(() =>
-            Rac1AridiaConstructorbotNative.ReadActivationVolume(pvar));
+            Native.ReadActivationVolume(pvar));
         BinaryPrimitives.WriteSingleLittleEndian(pvar.AsSpan(0x184), float.NaN);
         Assert.Throws<InvalidDataException>(() =>
-            Rac1AridiaConstructorbotNative.ReadActivationDistance(pvar));
+            Native.ReadActivationDistance(pvar));
         Assert.Throws<InvalidDataException>(() =>
-            Rac1AridiaConstructorbotNative.ReadActivationVolume(new byte[0x18c]));
+            Native.ReadActivationVolume(new byte[0x18c]));
     }
 
     [Fact]
     public void NativeAimAndJointContactAreDifferentStates()
     {
-        Assert.Equal(10, Rac1AridiaConstructorbotNative.AimState);
-        Assert.Equal(11, Rac1AridiaConstructorbotNative.JointContactState);
-        Assert.Equal(12, Rac1AridiaConstructorbotNative.FollowupState);
-        Assert.Equal(13, Rac1AridiaConstructorbotNative.ContactRecoveryState);
-        Assert.Equal(new(10, 0), Rac1AridiaConstructorbotNative.StepAim(false));
-        Assert.Equal(new(12, 9), Rac1AridiaConstructorbotNative.StepAim(true));
+        Assert.Equal(10, Native.AimState);
+        Assert.Equal(11, Native.JointContactState);
+        Assert.Equal(12, Native.FollowupState);
+        Assert.Equal(13, Native.ContactRecoveryState);
+        Assert.Equal(new(10, 0), Native.StepAim(false));
+        Assert.Equal(new(12, 9), Native.StepAim(true));
 
-        var contact = Rac1AridiaConstructorbotNative.StepJointContact(false, false);
+        var contact = Native.StepJointContact(false, false);
         Assert.Equal(new(11, 8, true), contact);
         Assert.True(contact.JointContactQuery);
-        Assert.Equal(new(13, 8, true), Rac1AridiaConstructorbotNative.StepJointContact(true, false));
-        Assert.Equal(new(13, 10, true), Rac1AridiaConstructorbotNative.StepJointContact(true, true));
+        Assert.Equal(new(13, 8, true), Native.StepJointContact(true, false));
+        Assert.Equal(new(13, 10, true), Native.StepJointContact(true, true));
     }
 }
