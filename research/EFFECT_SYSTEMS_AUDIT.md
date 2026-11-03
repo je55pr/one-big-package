@@ -24,7 +24,7 @@ comparison, not permission to substitute one game's updates for another's.
 ## Evidence and authority
 
 - **Verified**: locally checked retail structure, instruction/call edge or hash;
-  the three new [retail witness tests](../tests/OBP.Tests/EffectsReferenceAuditRetailTests.cs)
+  the three new [retail witness tests](../tests/OBP.Tests/GodotHost/EffectsReferenceAuditRetailTests.cs)
   reproduce those checks. This does not mean a recovered update was executed.
 - **Inferred**: interpretation from upstream code/disassembly, call context or
   matching structure, with the remaining experiment stated.
@@ -247,7 +247,7 @@ a Runtime-to-Fusion dependency or a second actor identity.
 
 | Milestone | Write scope and first proof | Stop / remaining question |
 |---|---|---|
-| #282 | `src/OBP.RAC1/Gameplay/Rac1ParticleSession*.cs`, source-owned class-27 PVar/owner adapter and `Level/Rac1ParticleAssets.cs` only as evidence requires; `tests/OBP.Tests/Rac1ParticleTests.cs` plus focused emitter tests | Run fixture R1-A below through spawn/150 updates/drain, owner movement and saturation. Keep seven existing families passing. Independently confirm packed colour/float order, null definitions and collision; explicitly reject unsupported collision in the first admitted slice. No host/gallery refactor. |
+| #282 | `src/OBP.RAC1/Gameplay/Rac1ParticleSession*.cs`, source-owned class-27 PVar/owner adapter and `Level/Rac1ParticleAssets.cs` only as evidence requires; `tests/OBP.Tests/Rac1/World/Rac1ParticleTests.cs` plus focused emitter tests | Run fixture R1-A below through spawn/150 updates/drain, owner movement and saturation. Keep seven existing families passing. Independently confirm packed colour/float order, null definitions and collision; explicitly reject unsupported collision in the first admitted slice. No host/gallery refactor. |
 | #283 | New source-owned `src/OBP.RAC2/Gameplay/` pool, type-85/type-97 updates and Museum recipe adapter; bank interpretation in `OBP.RAC2/Level/`; focused tests | Prove GC-A and GC-B including editor texture/depth overrides. Resolve constructor ABI, timer quantisation and native draw/texture state. A C decomp match alone cannot close this stage. |
 | #284 | New `src/OBP.RAC3/Gameplay/` pool and charge/muzzle updates; `OBP.RAC3/Level/` Part loader; retain existing beam/Fx owners | Prove UYA-A and UYA-B, then compare actual GC/UYA records, operations and draw packets. Type 107 remains a separate caller-search lead. Move code into PS2 only if independently measured codec equivalence justifies it. |
 | #285, last | Proposed neutral presentation extensions in `OBP.Runtime`; registered admission in `OBP.Fusion`; renderer in `OBP.Godot`; composition-root/lifetime wiring in `game/` | Wait for #264 reconciliation and #282–#284 evidence. Coordinate equipment attachments with #271, scenario/reset with #257 and gallery with #258. Show one admitted generator from each game together, retirement/re-entry, missing-source failure and repeatability. |

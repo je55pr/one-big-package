@@ -57,7 +57,7 @@ under #295; see [the retirement and research note](WORLD_COMPOSITION.md).
 
 ## `OBP.Runtime.Presentation`
 
-Pure, `OBP.Godot`-free, unit-tested (`tests/OBP.Tests/WorldPresentationTests`,
+Pure, `OBP.Godot`-free, unit-tested (`tests/OBP.Tests/GodotHost/WorldPresentationTests`,
 `EnvResolverTests`):
 
 | Type | Role |

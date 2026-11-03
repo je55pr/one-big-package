@@ -60,7 +60,7 @@ correction is explicitly presentation policy, not a recovered native formula.
 
 ## Regression policy
 
-[`PlayerHostBoundaryTests`](../tests/OBP.Tests/PlayerHostBoundaryTests.cs)
+[`PlayerHostBoundaryTests`](../tests/OBP.Tests/Architecture/PlayerHostBoundaryTests.cs)
 scans every `PlayerHost` class partial with Roslyn, not file size or partial
 filename alone. It rejects unowned persistent campaign/equipment/actor
 state declarations, new collection-backed actor managers, standalone numeric
