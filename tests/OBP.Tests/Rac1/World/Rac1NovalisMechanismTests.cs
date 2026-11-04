@@ -134,6 +134,8 @@ public sealed class Rac1NovalisMechanismTests
         var witness = JsonNode.Parse(File.ReadAllText(WitnessPath))!;
         var code = witness["code"]!.AsArray();
         var trials = witness["trials"]!.AsArray();
+        var door = trials.Single(trial =>
+            trial!["instance"]!.GetValue<int>() == 711 && !trial["restoredFallen"]!.GetValue<bool>())!;
         switch (fault)
         {
             case "complete": break;
@@ -142,9 +144,9 @@ public sealed class Rac1NovalisMechanismTests
             case "empty-range": code[0]!["end"] = code[0]!["start"]!.GetValue<int>(); break;
             case "missing-trial": trials.RemoveAt(0); break;
             case "duplicate-trial": trials[1] = trials[0]!.DeepClone(); break;
-            case "short-segment": trials[0]!["segments"]![0]!["ticks"] = 1; break;
-            case "missing-sample": trials[0]!["samples"]!.AsArray().RemoveAt(0); break;
-            case "duplicate-sample": trials[0]!["samples"]![1] = trials[0]!["samples"]![0]!.DeepClone(); break;
+            case "short-segment": door["segments"]![0]!["ticks"] = 1; break;
+            case "missing-sample": door["samples"]!.AsArray().RemoveAt(0); break;
+            case "duplicate-sample": door["samples"]![1] = door["samples"]![0]!.DeepClone(); break;
             default: throw new ArgumentOutOfRangeException(nameof(fault), fault, "Unknown witness fault.");
         }
         void Check() => RequireWitnessCohorts(JsonSerializer.SerializeToElement(witness));
