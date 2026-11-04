@@ -154,6 +154,7 @@ public sealed class Rac2LevelWorldImportTests : IClassFixture<Rac2OozlaWorldImpo
         foreach (var m in tfrags)
         {
             Assert.NotEmpty(m.Positions);
+            Assert.Equal(0, m.Positions.Length % 3);
             Assert.NotNull(m.Colors);
             Assert.Equal(m.Positions.Length / 3 * 4, m.Colors!.Length);
             for (int i = 0; i < m.Colors.Length; i += 4)
