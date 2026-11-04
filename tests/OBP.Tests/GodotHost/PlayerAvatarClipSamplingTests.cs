@@ -108,7 +108,10 @@ public sealed class PlayerAvatarClipSamplingTests
         var middle = middleController.ApplyEquipmentPose(51, midway, loop: true, fullBody: true);
         independent.Reset(asset.Clips[0], new PlayerSkeletalSample(0, 1, 0));
         independent.Apply(asset.Clips[51], new PlayerSkeletalSample(1, 2, .25f), .2f);
-        Assert.All(independent.Skin().Zip(middle.SampledPose!.LocalPositions),
+        var expected = independent.Skin();
+        Assert.NotEmpty(expected);
+        Assert.Equal(expected.Length, middle.SampledPose!.LocalPositions.Length);
+        Assert.All(expected.Zip(middle.SampledPose.LocalPositions),
             pair => Assert.InRange(Math.Abs(pair.First - pair.Second), 0, .00001));
     }
 }
