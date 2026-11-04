@@ -20,6 +20,7 @@ public sealed class SmokeProcessResultTests
             {
                 "ERROR: callback failed", "SCRIPT ERROR: invalid call", "SHADER ERROR: invalid shader",
                 "Unhandled exception. System.InvalidDataException", "System.ArgumentException: invalid sample",
+                "Unhandled exception. System.InvalidOperationException: injected", "System.InvalidDataException",
                 "2026-10-29 12:35:20 ERROR: callback failed", "E 0:00:04:123: engine error",
                 "WARNING: 2 ObjectDB instances were leaked at exit (run with --verbose for details).",
                 "WARNING: 1 resources still in use at exit.", "Leaked instance: RefCounted:123",
