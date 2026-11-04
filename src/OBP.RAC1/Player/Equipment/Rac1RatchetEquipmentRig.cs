@@ -12,6 +12,8 @@ public sealed class Rac1RatchetEquipmentRig
     private readonly IReadOnlyDictionary<int, PlayerSkeletalClip> _armClips;
     public PlayerSkeletalAsset Asset { get; }
     public IReadOnlyList<int> LayerJoints { get; }
+    /// <summary>Retail procedural joint table; absent for rigs built without the original overlay.</summary>
+    public Rac1HeroEaseTable? HeroEases { get; init; }
 
     public Rac1RatchetEquipmentRig(Rac1RatchetAvatar.Asset asset, IReadOnlyList<int> layerJoints)
     {
@@ -99,6 +101,39 @@ public sealed class Rac1RatchetEquipmentRig
         // The entire skin and the hand sockets consume the same blended pose.
         // Leaving the torso on baked vertices would give the arms different ancestors.
         return _sampler.Skin();
+    }
+
+    /// <summary>
+    /// Procedural joint rotations (the native hero eases) layered over the resolved
+    /// body pose. The offsets are composed onto the animation basis and the
+    /// resulting vertex and joint change is added to <paramref name="current"/>, so
+    /// blends already resolved into the current vertices are preserved. Joint
+    /// deltas let hand sockets follow the same final transforms as the skin.
+    /// </summary>
+    public (double[] Positions, IReadOnlyDictionary<int, Matrix4x4> JointDeltas) ApplyJointOffsets(
+        Rac1AnimationFrameClock.Sample basis, double[] current,
+        IReadOnlyList<Rac1RatchetJointEases.Offset> offsets, IReadOnlyCollection<int> deltaJoints)
+    {
+        if (offsets.Count == 0 || !Asset.Clips.TryGetValue(basis.Sequence, out var clip))
+            return (current, new Dictionary<int, Matrix4x4>());
+        var target = basis.IsBlending ? basis with { CurrentFrame = basis.NextFrame, Fraction = 0 } : basis;
+        var changed = new List<int>(offsets.Count);
+        foreach (var offset in offsets)
+            changed.Add(Asset.Skeleton.Attachments.TryGetValue(offset.AttachmentId, out var attachment)
+                ? attachment.Joint
+                : throw new InvalidDataException($"Ratchet ease attachment {offset.AttachmentId} is absent from the skeleton."));
+        _sampler.Reset(clip, Sample(target));
+        var before = _sampler.Skin(null, changed.Distinct().ToArray());
+        var worldBefore = _sampler.JointMatrices.ToArray();
+        for (int i = 0; i < offsets.Count; i++) _sampler.ComposeLocalRotation(changed[i], offsets[i].Rotation);
+        var after = _sampler.Skin(null, changed.Distinct().ToArray());
+        var result = (double[])current.Clone();
+        for (int i = 0; i < result.Length; i++) result[i] += after[i] - before[i];
+        var deltas = new Dictionary<int, Matrix4x4>();
+        foreach (int joint in deltaJoints)
+            if ((uint)joint < worldBefore.Length && Matrix4x4.Invert(worldBefore[joint], out var inverse))
+                deltas[joint] = inverse * _sampler.JointMatrices[joint];
+        return (result, deltas);
     }
 
     public PlayerSkeletalPose BasePose(Rac1AnimationFrameClock.Sample basis, PlayerSkeletalPose? source = null)

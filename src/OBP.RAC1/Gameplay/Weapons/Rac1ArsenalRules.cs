@@ -44,6 +44,20 @@ public static class Rac1ArsenalRules
         _ => -1,
     };
 
+    /// <summary>
+    /// Item table +0x18 (arm slot animation count), verified from the Veldin overlay: Suck Cannon 2,
+    /// Devastator 2, Visibomb 2, Pyrocitor 2, RYNO 2, Taunter 1, Blaster 1, Tesla 1, Morph-o-Ray 1. The
+    /// gloves, Walloper and gadgets have none. Slot 0 is the right arm and slot 1 the left. While such a
+    /// weapon is held its arms play the hold layer (0x20dd20), and a wall in front raises it (0x20a990).
+    /// </summary>
+    public static int ArmSlotCount(Rac1WeaponId weapon) => weapon switch
+    {
+        Rac1WeaponId.SuckCannon or Rac1WeaponId.Devastator or Rac1WeaponId.VisibombGun or
+            Rac1WeaponId.Pyrocitor or Rac1WeaponId.Ryno => 2,
+        Rac1WeaponId.Taunter or Rac1WeaponId.Blaster or Rac1WeaponId.TeslaClaw or Rac1WeaponId.MorphORay => 1,
+        _ => 0,
+    };
+
     public static int FireTicks(Rac1WeaponId weapon) => weapon switch
     {
         Rac1WeaponId.Devastator => 35, // 0x2b2d48 -> PVar+0.

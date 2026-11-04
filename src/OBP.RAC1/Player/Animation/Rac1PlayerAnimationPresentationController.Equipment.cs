@@ -14,6 +14,12 @@ public sealed partial class Rac1PlayerAnimationPresentationController
 
     private void RestoreEquipmentBasePose()
     {
+        // The procedural joint layer is applied last, so it is undone first.
+        if (_easeBase is not null)
+        {
+            Current = _easeBase;
+            _easeBase = null;
+        }
         if (_equipmentBase is null) return;
         Current = _equipmentBase;
         _equipmentBase = null;
@@ -24,6 +30,12 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     /// The ordinary animation clock and its unmodified vertices stay intact.
     /// </summary>
     public PlayerAnimationPresentation ApplyEquipmentPose(int? sourceSequence, double? phaseSeconds = null, bool loop = true, bool fullBody = false)
+    {
+        ApplyEquipmentPoseCore(sourceSequence, phaseSeconds, loop, fullBody);
+        return ApplyJointEases();
+    }
+
+    private PlayerAnimationPresentation ApplyEquipmentPoseCore(int? sourceSequence, double? phaseSeconds, bool loop, bool fullBody)
     {
         RestoreEquipmentBasePose();
         if (_equipmentMask is null) { _equipmentAmount = 0; return Current; }

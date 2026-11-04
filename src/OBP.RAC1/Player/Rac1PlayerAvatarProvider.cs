@@ -116,7 +116,9 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
             for (int influence = 0; influence < 3; influence++)
                 if (upper[native.Mesh.VertexJoints[vertex * 3 + influence]])
                     mask[vertex] += native.Mesh.VertexWeights[vertex * 3 + influence];
-        var rig = new Rac1RatchetEquipmentRig(native, layerJoints);
+        // The procedural joint (hero ease) table lives in the same canonical level overlay.
+        var eases = Rac1HeroEaseTable.Read(Rac1ExecutableOverlay.Read(reader, level));
+        var rig = new Rac1RatchetEquipmentRig(native, layerJoints) { HeroEases = eases };
         avatar = avatar with { Skeleton = new(rig.Asset.Skeleton.Joints.Select(j => j.Parent).ToArray()), Skeletal = rig.Asset };
         _equipmentMasks.Add(avatar, mask);
         _equipmentRigs.Add(avatar, rig);
