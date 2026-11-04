@@ -41,12 +41,8 @@ public sealed class Rac1RatchetJointEases
         Rac1EasePose Pose,
         /// <summary>Remaining signed yaw to the stick target after this update's turn.</summary>
         float YawError = 0,
-        /// <summary>Planar displacement this update, in native units.</summary>
-        float FlatSpeed = 0,
         /// <summary>Native animation sequence currently playing (idle gating).</summary>
         int Sequence = 0,
-        /// <summary>Native run state step 1 (the alternate run pose).</summary>
-        bool RunStepOne = false,
         /// <summary>The held item has arm animations (item table slot count nonzero): the wall response applies.</summary>
         bool CarriesEquipment = false,
         /// <summary>Distance from the hero to the forward wall probe hit, or null when it found nothing.</summary>
@@ -84,7 +80,10 @@ public sealed class Rac1RatchetJointEases
         }
         // 180..300 updates before the first look at level start (hero initializer).
         _headDelay = _random.Next(180, 301); _idleYaw = _idlePitch = 0;
-        _idleAccel = 0.007f; _idleMax = 0.3f; _wasIdle = false; _wallHit = false;
+        _idleAccel = 0.007f; _idleMax = 0.3f; _wallHit = false;
+        // Start as if already idle so the first idle update keeps the level-start delay instead of
+        // rerolling the shorter delay a fresh idle entry gets.
+        _wasIdle = true;
         Array.Clear(_tailTimer); Array.Clear(_tailPitch); Array.Clear(_tailYaw);
     }
 
@@ -133,7 +132,7 @@ public sealed class Rac1RatchetJointEases
     /// <summary>Advance one 60 Hz update and return the non-settled joint offsets.</summary>
     public IReadOnlyList<Offset> Step(Input input)
     {
-        if (!float.IsFinite(input.YawError) || !float.IsFinite(input.FlatSpeed))
+        if (!float.IsFinite(input.YawError))
             throw new ArgumentOutOfRangeException(nameof(input));
         Array.Clear(_target);
         switch (input.Pose)
@@ -141,6 +140,8 @@ public sealed class Rac1RatchetJointEases
             case Rac1EasePose.Run: RunTargets(input); break;
             case Rac1EasePose.Land: LandTargets(input.YawError); break;
             case Rac1EasePose.Airborne: AirborneTargets(input.YawError); break;
+            // Idle and None set no per-state targets here; idle wander is stepped below.
+            default: break;
         }
         bool idle = input.Pose == Rac1EasePose.Idle;
         if (idle && !_wasIdle) EnterIdle();
@@ -180,25 +181,6 @@ public sealed class Rac1RatchetJointEases
         SetParameters(LowerSpine, 0.04f, 0.2f);
         SetParameters(Chest, 0.04f, 0.2f);
         SetParameters(Neck, 0.02f, 0.2f);
-        if (input.RunStepOne)
-        {
-            float error = Math.Clamp(input.YawError, -1.4f, 1.4f);
-            float negated = -error;
-            float speedScale = Math.Clamp(input.FlatSpeed / (FrameTime * 5.7f), 0f, 1f);
-            _target[Root, 0] = negated * 0.14f * speedScale;
-            _target[LowerSpine, 2] = error * 0.16f;
-            _target[Chest, 0] = error * -0.12f;
-            _target[Neck, 2] = error * 0.65f;
-            _target[Neck, 1] = Math.Abs(error) * -0.15f;
-            _target[Neck, 0] = Math.Abs(error) * 0.16f;
-            _target[TailFirst, 2] = negated * 0.35f;
-            _target[TailFirst + 1, 2] = negated * 0.3f;
-            _target[TailFirst + 2, 2] = negated * 0.3f;
-            _target[TailLast, 2] = negated * 0.3f;
-            _target[TailFirst, 1] = Math.Abs(error) * 0.35f;
-            _target[TailFirst + 1, 1] = Math.Abs(error) * 0.2f;
-            return;
-        }
         float weight = Math.Clamp(input.YawError * 0.5f, -0.8f, 0.8f);
         weight = weight * Math.Abs(weight) * 1.25f;
         _target[LowerSpine, 2] = weight;

@@ -323,7 +323,7 @@ internal sealed class PlayerAvatarPresentationHost
             var (height, length) = controller.JointEaseWallProbe(active);
             wall = player.ProbeRac1ForwardWall(height, length, ignoreMovables: active);
         }
-        controller.StepJointEases(input.YawError, input.ScalarAtSelection, carries, wall);
+        controller.StepJointEases(input.YawError, carries, wall);
     }
 
     private void ResetPlayerAvatarPhysics(WorldBindings bindings)

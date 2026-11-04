@@ -24,6 +24,8 @@ public partial class PlayerHost
         query.Exclude = new global::Godot.Collections.Array<Rid> { GetRid() };
         var hit = GetWorld3D().DirectSpaceState.IntersectRay(query);
         if (hit.Count == 0 || !hit.ContainsKey("position")) return null;
+        // Retail (0x20a990) returns on the first hit when it is a crate while the item is in use; it does
+        // not keep looking for the wall behind it, so neither does this.
         if (ignoreMovables && !(hit.ContainsKey("collider") &&
             hit["collider"].As<Node>() is RuntimeWorldScene.RuntimeCollisionBody3D))
             return null;

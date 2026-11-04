@@ -13,7 +13,33 @@ public sealed class Rac1RatchetEquipmentRig
     public PlayerSkeletalAsset Asset { get; }
     public IReadOnlyList<int> LayerJoints { get; }
     /// <summary>Retail procedural joint table; absent for rigs built without the original overlay.</summary>
-    public Rac1HeroEaseTable? HeroEases { get; init; }
+    public Rac1HeroEaseTable? HeroEases { get; private set; }
+
+    /// <summary>Why the procedural joint layer is unavailable, or null when it is admitted.</summary>
+    public string? HeroEaseStatus { get; private set; } = "Procedural joint layer unavailable: no ease table was admitted.";
+
+    /// <summary>
+    /// Admit the retail ease table once, after the rig exists, so every attachment it names is resolved
+    /// against the skeleton here instead of failing on each update. A rejected table leaves the avatar
+    /// without the procedural layer and records the reason in <see cref="HeroEaseStatus"/>.
+    /// </summary>
+    public void AdmitHeroEases(Rac1HeroEaseTable table)
+    {
+        foreach (var record in table.Body)
+            if (!Asset.Skeleton.Attachments.ContainsKey(record.AttachmentId))
+            {
+                RejectHeroEases($"ease attachment {record.AttachmentId} is absent from the skeleton");
+                return;
+            }
+        HeroEases = table;
+        HeroEaseStatus = null;
+    }
+
+    public void RejectHeroEases(string reason)
+    {
+        HeroEases = null;
+        HeroEaseStatus = $"Procedural joint layer unavailable: {reason}.";
+    }
 
     public Rac1RatchetEquipmentRig(Rac1RatchetAvatar.Asset asset, IReadOnlyList<int> layerJoints)
     {

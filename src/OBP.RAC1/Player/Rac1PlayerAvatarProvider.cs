@@ -116,9 +116,12 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
             for (int influence = 0; influence < 3; influence++)
                 if (upper[native.Mesh.VertexJoints[vertex * 3 + influence]])
                     mask[vertex] += native.Mesh.VertexWeights[vertex * 3 + influence];
-        // The procedural joint (hero ease) table lives in the same canonical level overlay.
-        var eases = Rac1HeroEaseTable.Read(Rac1ExecutableOverlay.Read(reader, level));
-        var rig = new Rac1RatchetEquipmentRig(native, layerJoints) { HeroEases = eases };
+        var rig = new Rac1RatchetEquipmentRig(native, layerJoints);
+        // The procedural joint (hero ease) table lives in the same canonical level overlay. It is an
+        // optional layer: a table that does not match leaves Ratchet loading without it, with the reason
+        // available as the rig's HeroEaseStatus, instead of failing the whole avatar.
+        try { rig.AdmitHeroEases(Rac1HeroEaseTable.Read(Rac1ExecutableOverlay.Read(reader, level))); }
+        catch (InvalidDataException ex) { rig.RejectHeroEases(ex.Message.TrimEnd('.')); }
         avatar = avatar with { Skeleton = new(rig.Asset.Skeleton.Joints.Select(j => j.Parent).ToArray()), Skeletal = rig.Asset };
         _equipmentMasks.Add(avatar, mask);
         _equipmentRigs.Add(avatar, rig);

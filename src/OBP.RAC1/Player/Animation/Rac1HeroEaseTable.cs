@@ -48,7 +48,7 @@ public sealed class Rac1HeroEaseTable
             if ((i < BodyRecordCount) != (kind == 0))
                 throw new InvalidDataException("R&C1 hero ease table does not match the recovered layout.");
             if (i >= BodyRecordCount) continue;
-            body[i] = new(attachment, BitConverter.ToSingle(bytes[0xa4..]), BitConverter.ToSingle(bytes[0xa8..]));
+            body[i] = new(attachment, BinaryPrimitives.ReadSingleLittleEndian(bytes[0xa4..]), BinaryPrimitives.ReadSingleLittleEndian(bytes[0xa8..]));
         }
         return Create(body);
     }

@@ -13,19 +13,22 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     /// <summary>True once a retail ease table has been admitted for this avatar.</summary>
     public bool HasJointEases => _equipmentRig?.HeroEases is not null;
 
+    /// <summary>Why the joint layer is unavailable for this avatar, or null when it is running.</summary>
+    public string? JointLayerStatus => _equipmentRig?.HeroEaseStatus ?? (_equipmentRig is null ? "Procedural joint layer unavailable: avatar has no skeletal rig." : null);
+
     /// <summary>The last stepped ease angles, for diagnostics and tests.</summary>
     public Rac1RatchetJointEases? JointEases => _jointEases;
+
+    /// <summary>Height and length of the forward wall probe the host should cast before the next step.</summary>
+    public (float Height, float Length) JointEaseWallProbe(bool equipmentActive) =>
+        (Rac1RatchetJointEases.WallProbeHeight(equipmentActive), _jointEases?.WallProbeLength ?? 1.3f);
 
     /// <summary>
     /// Step Ratchet's procedural joint layer once per 60 Hz update, after the
     /// ordinary animation step and before equipment is evaluated. The layer is a
     /// presentation overlay: it never alters native clocks, sequences or movement.
     /// </summary>
-    /// <summary>Height and length of the forward wall probe the host should cast before the next step.</summary>
-    public (float Height, float Length) JointEaseWallProbe(bool equipmentActive) =>
-        (Rac1RatchetJointEases.WallProbeHeight(equipmentActive), _jointEases?.WallProbeLength ?? 1.3f);
-
-    public void StepJointEases(float yawError, float flatSpeed, bool carriesEquipment = false,
+    public void StepJointEases(float yawError, bool carriesEquipment = false,
         float? forwardWallDistance = null)
     {
         if (_equipmentRig?.HeroEases is not { } table) return;
@@ -39,7 +42,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
             PlayerAnimationState.Idle when sequence is 0 or 1 or 2 => Rac1EasePose.Idle,
             _ => Rac1EasePose.None,
         };
-        _easeOffsets = _jointEases.Step(new(pose, yawError, flatSpeed, sequence,
+        _easeOffsets = _jointEases.Step(new(pose, yawError, sequence,
             CarriesEquipment: carriesEquipment, ForwardWallDistance: forwardWallDistance));
     }
 
