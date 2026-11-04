@@ -62,6 +62,7 @@ public sealed class HudTransientFeedbackTests
         animator.Accept(damage);
         HudTransientFeedbackState halfway = animator.Advance(
             HudTransientFeedbackAnimator.HealthPulseSeconds / 2d);
+        Assert.Equal(0.5d, halfway.HealthPulse);
 
         HudTransientFeedbackState repeated = animator.Accept(damage);
 
@@ -141,10 +142,12 @@ public sealed class HudTransientFeedbackTests
         var animator = new HudTransientFeedbackAnimator();
 
         animator.Accept(adapter.BeginSession(State(health: 4)));
-        animator.Accept(adapter.Publish(
+        HudTransientFeedbackState active = animator.Accept(adapter.Publish(
             State(health: 3),
             new HudFeedbackDraft(HudFeedbackKind.Damage, "nanotech", -1),
             new HudFeedbackDraft(HudFeedbackKind.Pickup, "bolts", 5)));
+        Assert.Equal(1d, active.HealthPulse);
+        Assert.Equal(1d, active.PickupPulse);
 
         HudSnapshot unsupported = adapter.ResetSession();
         HudTransientFeedbackState reset = animator.Accept(unsupported);
