@@ -239,6 +239,152 @@ public sealed class SmokeProcessResultTests
 
     private static string Quote(string value) => "'" + value.Replace("'", "''") + "'";
 
+    [SkippableTheory]
+    [InlineData("powershell.exe", "player-session-smoke.ps1", "clean", true)]
+    [InlineData("pwsh", "player-session-smoke.ps1", "clean", true)]
+    [InlineData("powershell.exe", "player-session-smoke.ps1", "leak", false)]
+    [InlineData("pwsh", "player-session-smoke.ps1", "leak", false)]
+    [InlineData("powershell.exe", "player-session-smoke.ps1", "error", false)]
+    [InlineData("pwsh", "player-session-smoke.ps1", "error", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "clean", true)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "clean", true)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "leak", false)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "leak", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "error", false)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "error", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "stale", false)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "stale", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "empty", false)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "empty", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "partial", false)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "partial", false)]
+    [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "clean", true)]
+    [InlineData("pwsh", "test-diagnostic-cli.ps1", "clean", true)]
+    [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "leak", false)]
+    [InlineData("pwsh", "test-diagnostic-cli.ps1", "leak", false)]
+    [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "error", false)]
+    [InlineData("pwsh", "test-diagnostic-cli.ps1", "error", false)]
+    [InlineData("powershell.exe", "fusion-weapons-smoke.ps1", "clean", true)]
+    [InlineData("pwsh", "fusion-weapons-smoke.ps1", "clean", true)]
+    [InlineData("powershell.exe", "fusion-weapons-smoke.ps1", "leak", false)]
+    [InlineData("pwsh", "fusion-weapons-smoke.ps1", "leak", false)]
+    [InlineData("powershell.exe", "fusion-weapons-smoke.ps1", "error", false)]
+    [InlineData("pwsh", "fusion-weapons-smoke.ps1", "error", false)]
+    public async Task LifecycleRunnersRejectLeaksAndRequireFreshCompleteTrials(string shell, string runner, string fault, bool expected)
+    {
+        shell = RequireShell(shell);
+        string directory = Path.Combine(Path.GetTempPath(), "obp lifecycle result " + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string script = $$$$$"""
+                $ErrorActionPreference = 'Stop'
+                $root = {{{{{Quote(directory)}}}}}
+                $tools = Join-Path $root 'tools'
+                $out = Join-Path $root 'evidence'
+                New-Item -ItemType Directory $tools,(Join-Path $root '.tools/godot') | Out-Null
+                Copy-Item {{{{{Quote(Path.Combine(RepoPaths.Root, "tools", runner))}}}}} $tools
+                Copy-Item {{{{{Quote(Path.Combine(RepoPaths.Root, "tools", "obp-smoke-process.ps1"))}}}}} $tools
+                Set-Content (Join-Path $tools 'godot-toolchain.json') '{"godot":{"artifacts":{"win64":{"exe":"fake.ps1"}}}}'
+                Set-Content (Join-Path $root 'source.iso') 'Synthetic prerequisite only; never decoded.'
+                Set-Content (Join-Path $tools 'prepare-game-smoke.ps1') "return 'unused-engine'"
+                $env:OBP_TEST_RUNNER_FAULT = {{{{{Quote(fault)}}}}}
+                Set-Content (Join-Path $tools 'obp-native-process.ps1') @'
+                function Invoke-ObpNativeProcessCapture {
+                    param($FilePath,[string[]]$ArgumentList,$WorkingDirectory,$StandardOutputPath,$StandardErrorPath)
+                    $pathIndex=[Array]::IndexOf($ArgumentList,'--path')
+                    if($pathIndex -lt 0 -or $ArgumentList[$pathIndex+1] -ne (Join-Path $WorkingDirectory 'game')){throw 'Fixture received an invalid game path.'}
+                    if($ArgumentList -contains '--player-session-smoke' -or $ArgumentList -contains '--player-capabilities-smoke' -or $ArgumentList -contains '--fusion-smoke'){
+                        foreach($option in '--rac1-iso','--rac2-iso','--rac3-iso'){
+                            $index=[Array]::IndexOf($ArgumentList,$option)
+                            if($index -lt 0 -or $ArgumentList[$index+1] -ne (Join-Path $WorkingDirectory 'source.iso')){throw 'Fixture source argument boundary was lost.'}
+                        }
+                    }
+                    $marker = '[player-session-smoke] PASS: fixture'
+                    $code = 0
+                    if ($ArgumentList -contains '--player-capabilities-smoke') {
+                        $marker = '[player-capabilities-smoke] PASS: fixture'
+                        $report = $ArgumentList[[Array]::IndexOf($ArgumentList,'--player-capabilities-out')+1]
+                        if ($env:OBP_TEST_RUNNER_FAULT -ne 'stale') {
+                            $samples = @(1..40 | ForEach-Object { @{Tick=$_*6;Clock=$_/10.0} })
+                            $document = @{Version=1;Baselines=@{'rac2/item:30'=$samples;'rac3/item:43'=$samples}}
+                            if ($env:OBP_TEST_RUNNER_FAULT -eq 'empty') { $document.Baselines=@{} }
+                            if ($env:OBP_TEST_RUNNER_FAULT -eq 'partial') { $document.Baselines['rac2/item:30']=@($samples[0]) }
+                            $document | ConvertTo-Json -Depth 6 -Compress | Set-Content -LiteralPath $report
+                        }
+                    } elseif ($ArgumentList -contains '--shots') {
+                        if ($ArgumentList -contains '--shots-world') { $marker='reason=shots-missing-gc-source exitCode=2' }
+                        else { $marker='reason=shots-list-read-failed exitCode=2' }
+                        $code=2
+                    } elseif ($ArgumentList -contains '--quit-after') { $marker='[cli-tool-engine-smoke] started' }
+                    elseif ($ArgumentList -contains 'res://diagnostics/CliToolEngineSmoke.tscn') { $marker='[cli-tool-engine-smoke] PASS:' }
+                    elseif ($ArgumentList -contains '--test-scene') { $marker='[fusion-smoke] PASS:' }
+                    elseif ($ArgumentList -contains '--fusion-smoke') { $marker='[fusion-smoke] PASS:' }
+                    [IO.File]::WriteAllText($StandardOutputPath,$marker)
+                    $errorText=switch($env:OBP_TEST_RUNNER_FAULT){'leak'{'WARNING: 2 ObjectDB instances were leaked at exit.'} 'error'{'ERROR: injected late engine failure'} default{''}}
+                    [IO.File]::WriteAllText($StandardErrorPath,$errorText)
+                    if($ArgumentList -contains '--log-file'){Set-Content -LiteralPath $ArgumentList[[Array]::IndexOf($ArgumentList,'--log-file')+1] ($marker+"`n"+$errorText)}
+                    return $code
+                }
+                '@
+                Set-Content (Join-Path $root '.tools/godot/fake.ps1') @'
+                $log = $args[[Array]::IndexOf($args,'--log-file')+1]
+                $text='[fusion-smoke] PASS:'
+                if($env:OBP_TEST_RUNNER_FAULT -eq 'leak'){$text += "`nWARNING: 2 ObjectDB instances were leaked at exit."}
+                if($env:OBP_TEST_RUNNER_FAULT -eq 'error'){$text += "`nERROR: injected late engine failure"}
+                Set-Content -LiteralPath $log $text
+                $global:LASTEXITCODE=0
+                '@
+                Set-Content (Join-Path $tools 'record-playtest.ps1') @'
+                $path=$args[[Array]::IndexOf($args,'-Out')+1]
+                $writer=[IO.StreamWriter]::new([IO.Compression.GZipStream]::new([IO.File]::Create($path),[IO.Compression.CompressionLevel]::Fastest))
+                try{$writer.WriteLine('{"Header":{"Weapons":{"Sources":{"rac2":"fixture"}}}}')}finally{$writer.Dispose()}
+                $global:LASTEXITCODE=0
+                '@
+                Set-Content (Join-Path $tools 'replay-playtest.ps1') @'
+                $path=$args[[Array]::IndexOf($args,'-Report')+1]
+                $invalid=$args -contains '-AllowBuildChange'
+                if($invalid){$result=@{Result='invalid';Error='Recorded cross-game weapon sources do not match (rac2). Attach the exact original sources used by the recording.'}}
+                else{$result=@{Result='matched';Markers=@(1,2,3);CheckpointsCompared=10}}
+                $result|ConvertTo-Json|Set-Content -LiteralPath $path
+                $global:LASTEXITCODE=if($invalid){2}else{0}
+                '@
+                if ({{{{{Quote(fault)}}}}} -eq 'stale') {
+                    New-Item -ItemType Directory $out | Out-Null
+                    $samples = @(1..40 | ForEach-Object { @{Tick=$_*6;Clock=$_/10.0} })
+                    $history = @{Version=1;Baselines=@{'rac2/item:30'=$samples;'rac3/item:43'=$samples}} | ConvertTo-Json -Depth 6 -Compress
+                    foreach($fps in 30,120){Set-Content (Join-Path $out "trace-$fps.json") $history}
+                }
+                $source = Join-Path $root 'source.iso'
+                $parameters = @{Out=$out;SkipBuild=$true}
+                if ({{{{{Quote(runner)}}}}} -ne 'test-diagnostic-cli.ps1') {
+                    $parameters.Rac1Iso=$source;$parameters.Rac2Iso=$source;$parameters.Rac3Iso=$source
+                }
+                & (Join-Path $tools {{{{{Quote(runner)}}}}}) @parameters
+                """;
+            var result = await Run(shell, script);
+            Assert.True((result.Code == 0) == expected, runner + ": " + fault + "\n" + result.Error + result.Output);
+            if (!expected)
+            {
+                string reason = fault switch
+                {
+                    "stale" => "Native player report was not produced by this run.",
+                    "empty" => "missing its two weapon baselines",
+                    "partial" => "does not contain a complete four-second trial",
+                    _ => runner switch
+                    {
+                        "player-session-smoke.ps1" => "Player session lifecycle smoke failed",
+                        "player-capabilities-smoke.ps1" => "Player capabilities smoke failed",
+                        "test-diagnostic-cli.ps1" => "Diagnostic CLI check lab failed",
+                        _ => "Fusion fixtures failed",
+                    },
+                };
+                Assert.Contains(reason, result.Error + result.Output);
+            }
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
     private static string RequireShell(string name)
     {
         Skip.If(name == "powershell.exe" && !OperatingSystem.IsWindows(), "Windows PowerShell compatibility case.");

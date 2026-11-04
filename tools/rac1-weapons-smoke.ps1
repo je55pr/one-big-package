@@ -8,20 +8,10 @@ param(
     [switch]$SelfTest
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'obp-smoke-process.ps1')
 
 function Test-WeaponsSmokeLog([int]$exitCode, [string]$log) {
-    # Godot can report a managed exception and still exit 0 after the fixture passes.
-    # Inspect stderr as well as stdout before accepting the fixture's result.
-    # Godot emits both plain ERROR lines and E <time> diagnostics. Managed
-    # exceptions may be standalone or appear inside a timestamped engine line.
-    $failure = '(?im)^\s*(?:(?:\[[^\]\r\n]+\]|20\d{2}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?)\s*)*' +
-        '(?:ERROR\s*:|SCRIPT ERROR\s*:|Unhandled\s+exception\b|FATAL(?:\s+ERROR)?\b|' +
-        'E\s+\d+:\d{2}:\d{2}(?::\d+|\.\d+)?(?:\s*:|\s+)|' +
-        '(?:System\.)?[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*Exception\s*:|' +
-        '\[(?:weapons|arsenal)-smoke\]\s+FAIL\b)'
-    return $exitCode -eq 0 -and
-        $log.Contains('[lifecycle] quit-request reason=rac1-weapons-smoke-pass exitCode=0') -and
-        -not [regex]::IsMatch($log, $failure)
+    return Test-ObpSmokeLog -ExitCode $exitCode -Log $log -CompletionMarker '[lifecycle] quit-request reason=rac1-weapons-smoke-pass exitCode=0'
 }
 
 if ($SelfTest) {
@@ -36,6 +26,7 @@ if ($SelfTest) {
         'E 0:00:04:123: Another engine error',
         'E 0:00:04:123   godot_scene: cannot load asset',
         'System.ArgumentException: Invalid skeletal layer sample.',
+        'WARNING: 2 ObjectDB instances were leaked at exit (run with --verbose for details).',
         '[weapons-smoke] FAIL: fixture assertion failed'
     )) {
         if (Test-WeaponsSmokeLog 0 "$good`n$problem") { throw "Exit-0 runtime error was accepted: $problem" }
