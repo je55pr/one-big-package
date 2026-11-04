@@ -49,7 +49,7 @@ function Invoke-CliCheck {
     $passed = $code -eq $ExpectedExit -and (Select-String -LiteralPath $log -SimpleMatch $Expected -Quiet)
     if ($ExpectedExit -eq 0 -and -not (Test-ObpSmokeLog -ExitCode $code -Log ([IO.File]::ReadAllText($log) + "`n" + [IO.File]::ReadAllText($errors)) -CompletionMarker $Expected)) { $passed = $false }
     $combined = [IO.File]::ReadAllText($log) + "`n" + [IO.File]::ReadAllText($errors)
-    if ($combined -match 'SCRIPT ERROR:|SHADER ERROR:|Unhandled\s+exception\b|FATAL\b|ObjectDB instances (?:were )?leaked|resources still in use|Leaked instance:|RIDs? of type [^\r\n]* (?:was|were) leaked|quit preparation failed|\[cli-tool-engine-smoke\] FAIL:') { $passed = $false }
+    if (Test-ObpSmokeFailure -Log $combined) { $passed = $false }
     $results.Add([pscustomobject]@{ Name = $Name; Passed = $passed; ExitCode = $code; Log = ($Name + '.log') })
     if (-not $passed) { throw "Diagnostic CLI check $Name failed. Inspect its local logs." }
     Write-Information "$Name passed" -InformationAction Continue

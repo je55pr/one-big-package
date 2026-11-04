@@ -272,6 +272,10 @@ public sealed class SmokeProcessResultTests
     [InlineData("pwsh", "test-diagnostic-cli.ps1", "negative-shader-err", false)]
     [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "negative-unhandled-out", false)]
     [InlineData("pwsh", "test-diagnostic-cli.ps1", "negative-unhandled-out", false)]
+    [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "negative-engine-err", false)]
+    [InlineData("pwsh", "test-diagnostic-cli.ps1", "negative-engine-err", false)]
+    [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "negative-managed-out", false)]
+    [InlineData("pwsh", "test-diagnostic-cli.ps1", "negative-managed-out", false)]
     [InlineData("powershell.exe", "fusion-weapons-smoke.ps1", "clean", true)]
     [InlineData("pwsh", "fusion-weapons-smoke.ps1", "clean", true)]
     [InlineData("powershell.exe", "fusion-weapons-smoke.ps1", "leak", false)]
@@ -336,6 +340,8 @@ public sealed class SmokeProcessResultTests
                             'negative-rids-err' { $errorText = 'WARNING: 2 RIDs of type CanvasItem were leaked.' }
                             'negative-shader-err' { $errorText = 'SHADER ERROR: invalid shader' }
                             'negative-unhandled-out' { $marker += "`nUnhandled exception. System.InvalidOperationException: injected" }
+                            'negative-engine-err' { $errorText = 'E 0:00:04:123: engine error' }
+                            'negative-managed-out' { $marker += "`nSystem.ArgumentException: invalid sample" }
                         }
                         [IO.File]::WriteAllText($StandardOutputPath,$marker)
                     }
