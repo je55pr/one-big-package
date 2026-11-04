@@ -1,19 +1,43 @@
-# OBPGame root migration census
+# OBPGame root census
 
-Interim checkpoint for issue #376, based on frozen origin commit `eea806399f864f30949d665701d39d510549a7ac`.
-The historical ledger tracks 121 `OBPGame*.cs` files and one extra root fragment, `ControllerSmoke.cs`.
-The implementation has one composition script. Final-revision engine/retail acceptance remains outstanding; see the PR validation record.
+Final census for issue #376 (parent #333). Source: `dotnet run --project tools/OBP.ArchitectureTool -c Release -- census .`
+on `dev` after the final composition extractions, measured against the frozen origin commit
+`eea806399f864f30949d665701d39d510549a7ac`. The historical ledger tracks 121 `OBPGame*.cs` files plus one extra
+root fragment, `ControllerSmoke.cs` (122 semantic files). The guard is `... -- check .`; see
+[ROOT_DECOMPOSITION.md](ROOT_DECOMPOSITION.md) for the architecture and rules.
 
-| Metric | Frozen origin | Current checkpoint |
+| Metric | Frozen origin | Final |
 | --- | ---: | ---: |
 | Root-declaring files | 122 | 1 |
-| Root-declaring file lines | 27362 | 2180 |
+| Root-declaring file lines | 27,362 | 926 |
+| Direct methods | 756 | 90 |
+| Fields / mutable fields | 457 / 312 | 24 / 17 |
+| Exposed members | 44 | 39 |
+| Reviewed composition members (all `permanent`) | n/a | 150 |
 
-File-by-file inventory. Ownership references are **original migration issue assignments**, not claims about the destination class:
+The remaining root is `game/scripts/OBPGame.cs`. Its line count includes the Godot lifecycle/input callbacks,
+bootstrap command-line handling, world-entry/activation wiring, modal/pause factories and the public host
+contracts that the bootstrap scene and diagnostic fixtures call. Fewer exposed members is not the objective:
+public host contracts are preserved.
+
+Composition moved out of the root, by owner:
+
+| Responsibility | Owner |
+| --- | --- |
+| Diagnostic fixture catalogue and shot/stress CLI services | `ApplicationDiagnostics` (`game/diagnostics`) |
+| R&C1 world-module and enemy-host port binding | `Rac1WorldComposition` |
+| R&C2 world-module port binding | `Rac2WorldComposition` |
+| Capture, replay, playtest, movement reproduction, source verification | `CaptureComposition` |
+| Player lifecycle, Fusion weapons, R&C1 combat input, profile, actor host | `PlayerServicesComposition` |
+| Shared read views for composition code only | `CompositionBase` over `ApplicationComponents` (ceiling-pinned) |
+
+File-by-file inventory. "Original owner ticket" is the original migration assignment. Every original file is accounted for:
+121 `OBPGame*.cs` partials plus the `ControllerSmoke.cs` fragment; only `OBPGame.cs` remains as a root declaration.
 
 | Original root file | Original owner ticket | Baseline lines | Root today | Current lines |
 | --- | --- | ---: | --- | ---: |
-| `game/diagnostics/ControllerSmoke.cs` | #339 | 583 | Migrated to a non-root helper | 585 |
+| --- | --- | ---: | --- | ---: |
+| `game/diagnostics/ControllerSmoke.cs` | #339 | 583 | Non-root helper (not an OBPGame partial) | 585 |
 | `game/diagnostics/OBPGame.AcceptanceEvidence.cs` | #336 | 40 | Retired | 0 |
 | `game/diagnostics/OBPGame.BugReporterSmoke.cs` | #344 | 176 | Retired | 0 |
 | `game/diagnostics/OBPGame.FusionWeaponsSmoke.cs` | #341 | 493 | Retired | 0 |
@@ -67,7 +91,7 @@ File-by-file inventory. Ownership references are **original migration issue assi
 | `game/scripts/OBPGame.CaptureSession.cs` | #356 | 84 | Retired | 0 |
 | `game/scripts/OBPGame.ControllerSettings.cs` | #348 | 306 | Retired | 0 |
 | `game/scripts/OBPGame.CrateBolts.cs` | #365 | 108 | Retired | 0 |
-| `game/scripts/OBPGame.cs` | #376 | 840 | Active | 2180 |
+| `game/scripts/OBPGame.cs` | #376 | 840 | Thin Godot composition root (permanent) | 926 |
 | `game/scripts/OBPGame.Destinations.cs` | #347 | 353 | Retired | 0 |
 | `game/scripts/OBPGame.EquipmentPresentation.cs` | #350 | 151 | Retired | 0 |
 | `game/scripts/OBPGame.FusionLab.cs` | #347 | 100 | Retired | 0 |
@@ -136,35 +160,20 @@ File-by-file inventory. Ownership references are **original migration issue assi
 | `game/scripts/OBPGame.StressDiagnostics.cs` | #345 | 114 | Retired | 0 |
 | `game/scripts/OBPGame.WorldEntry.cs` | #376 | 178 | Retired | 0 |
 
-Compared with the integration base for PR #526 (`cff1b4eb`):
+## Remaining root members
 
-| Metric | Before #376 | Current implementation |
-| --- | ---: | ---: |
-| Root files | 2 | 1 |
-| Root lines | 2921 | 2180 |
-| Direct methods | 141 | 130 |
-| Fields / mutable fields | 41 / 34 | 29 / 22 |
-| Exposed members | 43 | 43 |
-| Distinct cross-file references | 112 | 33 |
+Every remaining `OBPGame` member is a reviewed composition member recorded in
+`tests/OBP.Tests/root-boundary-policy.json` with owner `#376`, disposition `permanent` and a one-sentence reason;
+`RootBoundaryArchitectureTests` pins that disposition and a ceiling of 150 that can only go down, and the guard fails
+on any new root member. The reviewed members fall into five kinds:
 
-The reference reduction includes removal of cross-partial edges when the last
-partial retires. Public host contracts are preserved; fewer exposed members is
-not the objective. Root line count includes explicit typed component factories,
-diagnostic fixture bindings and lifecycle/bootstrap forwarding methods.
+| Kind | Count | Why it belongs on the root |
+| --- | ---: | --- |
+| Application-lifetime owner references and lazy accessors | 27 | The Godot node is the composition point; it creates owners lazily and holds no rules or state. |
+| Established public host contracts | 31 | The bootstrap scene, navigation, pause menu and diagnostic fixtures call these; each is a one-line forward to its owner. |
+| Lazy factories | 3 | Bind an owner's narrow ports to the owned components; rules, formulas and ticks stay in the owner. |
+| Read-only projections | 48 | Short views of an owner used by the root's remaining wiring and lifecycle callbacks; not a second source of state. |
+| Private one-line forwards | 41 | Used by the root's wiring and lifecycle callbacks. |
 
-`WorldSceneLifetime` and `GodotWorldResources` own preparation/activation;
-navigation owns recovery and Back routing; existing avatar, equipment, campaign,
-source-world and diagnostic owners hold their respective behavior. Plain
-`GodotApplicationPresentation` and `GodotApplicationShutdown` own scene views
-and ordered shutdown. No all-capabilities replacement root is introduced.
-
-See [ROOT_DECOMPOSITION.md](ROOT_DECOMPOSITION.md#376-final-composition-implementation)
-for the ownership table, intentional composition exceptions, extension examples
-and remaining acceptance work. All 122 original rows remain accounted for.
-
-Final local validation for this implementation: source-free Release tests pass
-(3,907 passed, 312 source-dependent skips), the warnings-as-errors Godot build
-and solution formatting verification pass, and UID coverage includes 420 scripts.
-GitHub reports conflicts with the latest `dev`; resolve those and rerun affected
-checks before final acceptance. The expanded revision still needs the full
-authorised engine/retail gate described in the PR.
+The Godot lifecycle and input overrides (`_Ready`, `_Process`, `_PhysicsProcess`, `_UnhandledInput`, `_Notification`,
+`_ExitTree`) are not listed because the script is the Godot entry point.

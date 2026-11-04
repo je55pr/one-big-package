@@ -163,7 +163,6 @@ public partial class OBPGame : Node3D
     public EquipmentChangeResult AssignPlayerQuickSelect(int slot, string? catalogId) => _persistentPlayer.Equipment.AssignQuickSelect(slot, catalogId);
     public EquipmentChangeResult UnequipPlayerEquipment() => _persistentPlayer.Equipment.Unequip();
     public EquipmentChangeResult SetPlayerGadgetEnabled(string catalogId, bool enabled) => _persistentPlayer.Equipment.SetGadgetEnabled(catalogId, enabled);
-    public string? PlayerEquipmentConfigurationIdentity => _persistentPlayer.Equipment.ConfigurationIdentity;
 
     private void InitializeSharedProfile() => PlayerServices.ProfileService.Initialize();
     private void ApplySharedProfile(ObpProfile profile) => PlayerServices.ProfileService.Apply(profile);
@@ -591,7 +590,7 @@ public partial class OBPGame : Node3D
     internal Task CheckControllerWeaponInputAsync() => Diagnostics.CheckControllerWeaponInputAsync();
 
 
-    public EquipmentChangeResult ResetPlacedActor(string id) => PlayerServices.Actors.ResetPlacement(id);
+    private EquipmentChangeResult ResetPlacedActor(string id) => PlayerServices.Actors.ResetPlacement(id);
 
     private void BuildScene(string scene)
     {
@@ -696,14 +695,13 @@ public partial class OBPGame : Node3D
             Equipment: equipment));
     }
 
-    public void ShowControllerSettingsFromMenu()
+    private void ShowControllerSettingsFromMenu()
     {
         if (!ControllerSettingsOpen) Modals.OpenSettings(fromPause: false);
     }
 
     public bool TryOpenPauseMenu() => Modals.OpenPause();
     public bool TryClosePauseMenu() => Modals.TryClosePause();
-    public bool TryCloseControllerSettings() => Modals.TryCloseSettings();
     private void ClosePauseMenu() => Modals.ClosePause();
     private void CloseWeaponQuickSelect(SourceWeaponKey? weapon = null) => Modals.CloseQuickSelect(weapon);
     private void TearDownInteractiveOverlays() => Modals.RetireAll();

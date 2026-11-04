@@ -195,6 +195,25 @@ public sealed class RootBoundaryArchitectureTests
         Assert.Contains(RootBoundaryAudit.BoundaryViolations(changed, FixturePolicy(original)), error => error.Contains("New privileged root member", StringComparison.Ordinal));
     }
 
+
+    // The root is final: every remaining composition member is individually reviewed, permanent,
+    // and explained. The ceiling can only go down; new feature or diagnostic logic belongs in an owner.
+    private const int PermanentRootMemberCeiling = 150;
+
+    [Fact]
+    public void EveryRemainingRootCompositionMemberIsPermanentAndIndividuallyExplained()
+    {
+        var composition = Policy.Composition;
+        Assert.True(composition.Length <= PermanentRootMemberCeiling,
+            $"The root has {composition.Length} reviewed members (ceiling {PermanentRootMemberCeiling}); move new logic to an owner.");
+        foreach (var entry in composition)
+        {
+            Assert.Equal(RootBoundaryAudit.PermanentDisposition, entry.ExpiresWith);
+            Assert.Equal("#376", entry.Owner);
+            Assert.InRange(entry.Rationale.Length, 40, 400);
+        }
+        Assert.Equal(composition.Length, composition.Select(entry => entry.Key).Distinct(StringComparer.Ordinal).Count());
+    }
     [Fact]
     public void CompositionExceptionsAreExactOwnedAndExpireAfterMigration()
     {

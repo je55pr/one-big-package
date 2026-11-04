@@ -13,6 +13,12 @@ ownership; it cannot look up the root or arbitrary services.
 > diagnostic partials no longer exist (see [OBPGAME_ROOT_CENSUS.md](OBPGAME_ROOT_CENSUS.md)).
 > `WorldSmokeHarness` currently registers 22 scenarios: 20 R&C1-sourced, the
 > source-neutral `movement-smoke`, and the R&C3 `rac3-target-seed-audit`.
+>
+> All temporary root delegations and "exact composition entries" described below are
+> gone. Fixture and CLI-service composition lives in `ApplicationDiagnostics`
+> (`game/diagnostics`); the root only supplies its context, and every remaining root
+> member is a reviewed `permanent` composition member (see
+> [ROOT_DECOMPOSITION.md](ROOT_DECOMPOSITION.md)).
 
 ## Admission and lifetime
 

@@ -217,7 +217,7 @@ retain authored starts. Root world facts are read-only views of that owner.
 The single `OBPGame.cs` composes these owners; the WorldEntry partial is retired.
 `GodotWorldResources` activates the lease, `GodotApplicationPresentation` owns
 scene views, and `GodotApplicationShutdown` owns draining and ordered disposal.
-See [ROOT_DECOMPOSITION.md](ROOT_DECOMPOSITION.md#376-final-composition-implementation)
+See [ROOT_DECOMPOSITION.md](ROOT_DECOMPOSITION.md#final-architecture)
 for intentional composition seams and final acceptance work.
 
 `ApplicationLifecycle` owns explicit quit requests with a reason/exit code.
