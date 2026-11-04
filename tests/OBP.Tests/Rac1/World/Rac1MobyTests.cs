@@ -183,10 +183,12 @@ public sealed class Rac1MobyTests
         Assert.True(Rac1MobyPose.IsRestAnchor(cls.Joints[0], rest.Frames[0]));
 
         var posedRest = Rac1MobyPose.PoseSingleJointRigid(cls.Mesh, cls.Joints, rest.Frames[0]);
+        Assert.Equal(cls.Mesh.Positions.Length, posedRest.Length);
         double restError = posedRest.Zip(cls.Mesh.Positions, (a, b) => System.Math.Abs(a - b)).Max();
         Assert.InRange(restError, 0, 0.00002);
 
         var posedAnimated = Rac1MobyPose.PoseSingleJointRigid(cls.Mesh, cls.Joints, animated.Frames[0]);
+        Assert.Equal(cls.Mesh.Positions.Length, posedAnimated.Length);
         double animatedDelta = posedAnimated.Zip(cls.Mesh.Positions, (a, b) => System.Math.Abs(a - b)).Max();
         Assert.True(animatedDelta > 0.5, $"Expected a visibly distinct retail animation pose, got max delta {animatedDelta}.");
     }
@@ -207,10 +209,12 @@ public sealed class Rac1MobyTests
         Assert.True(Rac1MobyPose.CanPoseRigidHierarchy(cls.Mesh, cls.Joints, rest.Frames[0]));
         Assert.True(Rac1MobyPose.IsRigidHierarchyRestAnchor(cls.Joints, rest.Frames[0]));
         var posedRest = Rac1MobyPose.PoseRigidHierarchy(cls.Mesh, cls.Joints, rest.Frames[0]);
+        Assert.Equal(cls.Mesh.Positions.Length, posedRest.Length);
         double restError = posedRest.Zip(cls.Mesh.Positions, (a, b) => Math.Abs(a - b)).Max();
         Assert.InRange(restError, 0, 0.002);
 
         var posedAnimated = Rac1MobyPose.PoseRigidHierarchy(cls.Mesh, cls.Joints, animated.Frames[1]);
+        Assert.Equal(cls.Mesh.Positions.Length, posedAnimated.Length);
         Assert.All(posedAnimated, value => Assert.True(double.IsFinite(value)));
         double animatedDelta = posedAnimated.Zip(cls.Mesh.Positions, (a, b) => Math.Abs(a - b)).Max();
         Assert.True(animatedDelta > 0.01,
@@ -237,6 +241,7 @@ public sealed class Rac1MobyTests
                     !Rac1MobyPose.IsRigidHierarchyRestAnchor(cls.Joints, rest.Frames[0])) continue;
                 Assert.True(Rac1MobyPose.CanPoseRigidHierarchy(cls.Mesh, cls.Joints, rest.Frames[0]));
                 var posed = Rac1MobyPose.PoseRigidHierarchy(cls.Mesh, cls.Joints, rest.Frames[0]);
+                Assert.Equal(cls.Mesh.Positions.Length, posed.Length);
                 double error = posed.Zip(cls.Mesh.Positions, (a, b) => Math.Abs(a - b)).Max();
                 Assert.InRange(error, 0, 0.002);
                 maxRestError = Math.Max(maxRestError, error);
@@ -277,6 +282,7 @@ public sealed class Rac1MobyTests
                     {
                         Assert.True(Rac1MobyPose.CanPoseRigidHierarchy(cls.Mesh, cls.Joints, frame));
                         var posed = Rac1MobyPose.PoseRigidHierarchy(cls.Mesh, cls.Joints, frame);
+                        Assert.Equal(cls.Mesh.Positions.Length, posed.Length);
                         double posedExtent = 0;
                         foreach (double value in posed)
                         {
@@ -460,6 +466,7 @@ public sealed class Rac1MobyTests
         Assert.True(Rac1MobyPose.CanPoseRatchetHierarchy(cls.Mesh, cls.Joints, sequence.Frames[0]));
         Assert.True(Rac1MobyPose.IsRatchetHierarchyBindLinearAnchor(cls.Joints, sequence.Frames[0]));
         var moved = Rac1MobyPose.PoseRatchetHierarchy(cls.Mesh, cls.Joints, sequence.Frames[1]);
+        Assert.Equal(cls.Mesh.Positions.Length, moved.Length);
         Assert.All(moved, value => Assert.True(double.IsFinite(value)));
         double movedDelta = moved.Zip(cls.Mesh.Positions, (a, b) => Math.Abs(a - b)).Max();
         Assert.True(movedDelta > 0.04,
@@ -494,6 +501,7 @@ public sealed class Rac1MobyTests
             {
                 Assert.True(Rac1MobyPose.CanPoseRatchetHierarchy(cls.Mesh, cls.Joints, frame));
                 var posed = Rac1MobyPose.PoseRatchetHierarchy(cls.Mesh, cls.Joints, frame);
+                Assert.Equal(cls.Mesh.Positions.Length, posed.Length);
                 Assert.All(posed, value => Assert.True(double.IsFinite(value)));
                 double ratio = posed.Max(Math.Abs) / restExtent;
                 // Retail stores Ratchet matrices in row-vector layout. Treating their
