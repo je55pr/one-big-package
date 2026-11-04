@@ -45,6 +45,7 @@ public sealed class FusionWeaponOwnershipArchitectureTests
         int reset = entry.IndexOf("Rac1Gameplay.Configure()", StringComparison.Ordinal);
         int bind = entry.IndexOf("FusionWeapons = bindings.EquipmentWorld(Scene.Root)", StringComparison.Ordinal);
         int spawn = entry.IndexOf("bindings.SpawnPlayer(world)", StringComparison.Ordinal);
+        Assert.True(reset >= 0, "Native gameplay configuration is missing before equipment binding.");
         Assert.InRange(bind, reset + 1, spawn - 1);
     }
 

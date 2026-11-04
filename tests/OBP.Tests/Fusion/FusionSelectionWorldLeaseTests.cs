@@ -19,6 +19,8 @@ public sealed class FusionSelectionWorldLeaseTests
         Assert.Equal(2, body.Statements.Count);
         var fusionGuard = Assert.IsType<IfStatementSyntax>(body.Statements[0]);
         Assert.Contains("fusion().TestActive", fusionGuard.Condition.ToString(), StringComparison.Ordinal);
+        var rejection = Assert.IsType<BlockSyntax>(fusionGuard.Statement);
+        Assert.IsType<ReturnStatementSyntax>(rejection.Statements.Last());
         var leaseGuard = Assert.IsType<IfStatementSyntax>(body.Statements[1]);
         Assert.Contains("currentWorld() is { } world", leaseGuard.Condition.ToString(), StringComparison.Ordinal);
         Assert.Contains("world.UsePresentation.SetPreview(disable)", leaseGuard.Statement.ToString(), StringComparison.Ordinal);

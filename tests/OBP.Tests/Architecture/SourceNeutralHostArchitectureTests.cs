@@ -144,6 +144,7 @@ public sealed class SourceNeutralHostArchitectureTests
         var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == path);
         string source = original.GetText().ToString().Replace("\r\n", "\n", StringComparison.Ordinal)
             .Replace(anchor, "/* ownership comment */ " + anchor, StringComparison.Ordinal);
+        Assert.Contains("/* ownership comment */ " + anchor, source, StringComparison.Ordinal);
         Assert.Empty(HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
             CSharpSyntaxTree.ParseText(source, path: original.FilePath))), HostOwnershipAudit.Policy()));
     }

@@ -77,7 +77,7 @@ public sealed class Rac1WrenchDamageWorldOwnershipTests
         int publish = host.IndexOf("_context.DamageTransport.Publish(damageEvent)", StringComparison.Ordinal);
         int dispatch = host.IndexOf("DispatchDamage<Rac1BoltCrateDamageAdmission>", StringComparison.Ordinal);
         int complete = host.IndexOf("CompleteCrateDamage(target, admission)", StringComparison.Ordinal);
-        Assert.True(admit < publish && publish < dispatch && dispatch < complete);
+        Assert.True(admit >= 0 && admit < publish && publish < dispatch && dispatch < complete);
     }
 
     [Fact]
