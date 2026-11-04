@@ -154,6 +154,16 @@ public sealed class Rac2ParticleRetailTests
                 : rows.Where(row => row[0] != kind || row[1] != "0").ToArray()));
     }
 
+    [SkippableFact]
+    public void OriginalInstructionComparisonRejectsMissingNativeParticleRows()
+    {
+        string program = Oracle(); using var fixture = new Fixture();
+        var instance = fixture.Instances[0];
+        Compare(program, fixture, instance, instance.PVarData!, 1234, 1, false, 100);
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => Compare(program, fixture, instance,
+            instance.PVarData!, 1234, 1, false, 100, rows => rows.Where(row => row[0] != "R").ToArray()));
+    }
+
     private static void Compare(string program, Fixture fixture, Rac2Instances.MobyInstance instance, byte[] pvars, uint seed, int frames, bool repeat, float distance,
         Func<string[][], string[][]>? observe = null)
     {
