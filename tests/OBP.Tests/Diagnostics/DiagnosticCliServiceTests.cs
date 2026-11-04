@@ -109,6 +109,7 @@ public sealed class DiagnosticCliServiceTests
     [InlineData("campaign")]
     [InlineData("admitted")]
     [InlineData("missing-world")]
+    [InlineData("missing-world-rejected")]
     public async Task StressRejectsFailedImportThatChangesAnyRetainedOwner(string changed)
     {
         var world = new StressWorld { Corrupt = changed }; var exits = new List<(string, int)>();
@@ -116,6 +117,31 @@ public sealed class DiagnosticCliServiceTests
             .RunStressSwitchAsync("__bad-import,rac1:LEVEL0", default);
         Assert.Equal(("stress-import-retention-failed", 1), Assert.Single(exits));
         Assert.Equal(["bad-import"], world.Events);
+    }
+
+    [Theory]
+    [InlineData("wrong-destination")]
+    [InlineData("missing-scene")]
+    [InlineData("missing-player")]
+    public async Task StressCannotCompleteAVisitWithoutTheRequestedLiveWorld(string navigationFault)
+    {
+        var world = new StressWorld { NavigationFault = navigationFault };
+        var exits = new List<(string, int)>();
+        await new StressSwitchCliService(world, new Clock(), (reason, code) => exits.Add((reason, code)), _ => { }, _ => { })
+            .RunStressSwitchAsync("rac1:LEVEL0,rac3:TABLE1", default);
+        Assert.Equal(("stress-world-load-failed", 1), Assert.Single(exits));
+        Assert.Equal(["open:rac1:LEVEL0"], world.Events);
+    }
+
+    [Fact]
+    public async Task StressRejectsUnchangedWorldOnSameDestinationReload()
+    {
+        var world = new StressWorld { NavigationFault = "unchanged-same-destination" };
+        var exits = new List<(string, int)>();
+        await new StressSwitchCliService(world, new Clock(), (reason, code) => exits.Add((reason, code)), _ => { }, _ => { })
+            .RunStressSwitchAsync("rac1:LEVEL0,rac1:LEVEL0", default);
+        Assert.Equal(("stress-world-load-failed", 1), Assert.Single(exits));
+        Assert.Equal(["open:rac1:LEVEL0", "open:rac1:LEVEL0"], world.Events);
     }
 
     [Fact]
@@ -178,8 +204,9 @@ public sealed class DiagnosticCliServiceTests
     {
         private StressRetentionSnapshot _retained = new(new("rac2:LEVEL1", ObpSourceGame.Rac2, "world", 1), 10, 11, 0);
         public string? Corrupt;
+        public string? NavigationFault;
         public List<string> Events { get; } = [];
-        public StressRetentionSnapshot ReadRetention() => Corrupt == "missing-world" ? new(new(null, null, null, 0), null, null, 0) : _retained;
+        public StressRetentionSnapshot ReadRetention() => Corrupt is "missing-world" or "missing-world-rejected" ? new(new(null, null, null, 0), null, null, 0) : _retained;
         public bool RejectImport(string missingPath)
         {
             Assert.False(File.Exists(missingPath)); Events.Add("bad-import");
@@ -194,7 +221,23 @@ public sealed class DiagnosticCliServiceTests
             return Corrupt is not ("admitted" or "missing-world");
         }
         public void ShowSelector() => Events.Add("selector");
-        public void OpenDestination(string destinationId) => Events.Add("open:" + destinationId);
+        public void OpenDestination(string destinationId)
+        {
+            Events.Add("open:" + destinationId);
+            if (NavigationFault == "wrong-destination" ||
+                NavigationFault == "unchanged-same-destination" && _retained.World.DestinationId == destinationId)
+                return;
+            _retained = _retained with
+            {
+                World = _retained.World with
+                {
+                    DestinationId = destinationId,
+                    Generation = _retained.World.Generation + 1,
+                },
+                SceneRoot = NavigationFault == "missing-scene" ? null : 10,
+                Player = NavigationFault == "missing-player" ? null : 11,
+            };
+        }
         public StressCounterSnapshot ReadCounters() => new(1, 12, 13, 14, 0, 4, true);
     }
 }
