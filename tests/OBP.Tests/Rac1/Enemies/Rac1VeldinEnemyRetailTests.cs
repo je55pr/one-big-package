@@ -20,12 +20,35 @@ public sealed class Rac1VeldinEnemyRetailTests
     private static void RequireWitnessCohorts(JsonElement report)
     {
         var blocks = report.GetProperty("blocks").EnumerateObject().ToArray();
-        Assert.Equal(22, blocks.Length);
-        Assert.Equal(22, blocks.Select(block => (Convert.ToInt32(block.Value.GetProperty("start").GetString(), 16),
-            Convert.ToInt32(block.Value.GetProperty("end").GetString(), 16))).Distinct().Count());
+        // Independently pinned to tools/rac1-veldin-enemy-probe.py; the witness is the subject.
+        (string Name, int Start, int End)[] expectedBlocks =
+        [
+            ("class749Update", 0x2d4610, 0x2d5160), ("class749Damage", 0x2d5160, 0x2d549c),
+            ("class749Navigation", 0x2d54c8, 0x2d56dc), ("class749IdleRoaming", 0x261630, 0x261858),
+            ("class1440Update", 0x2e0b88, 0x2e1678), ("class1440Damage", 0x2e1678, 0x2e1aa8),
+            ("class1440AttackSlots", 0x2e1f28, 0x2e2110), ("meleeDescriptor", 0x2598b0, 0x259bc8),
+            ("queryDamageRecordBridge", 0x1f0c40, 0x1f0d60), ("scalarSteering", 0x25b970, 0x25bb38),
+            ("angularSteering", 0x25be00, 0x25bfdc), ("sequenceSelection", 0x257880, 0x257b50),
+            ("playerDamageIntake", 0x210ce8, 0x211248), ("ordinaryPlayerHurtEntry", 0x2265e0, 0x22668c),
+            ("playerNativeTimerUpdate", 0x221604, 0x2216b0), ("integerTimerDecrement", 0x1fef68, 0x1fef98),
+            ("nativeDistanceHelpers", 0x1ff450, 0x1ff4b8), ("nativeVectorLength", 0x1ff3d8, 0x1ff408),
+            ("reactionLaunch", 0x25c558, 0x25c698), ("reactionStep", 0x25c698, 0x25c758),
+            ("class749ReactionParameters", 0x161970, 0x161980), ("class1440ReactionParameters", 0x161bd4, 0x161be4),
+        ];
+        Assert.Equal(expectedBlocks.Order(), blocks.Select(block => (block.Name,
+            Convert.ToInt32(block.Value.GetProperty("start").GetString(), 16),
+            Convert.ToInt32(block.Value.GetProperty("end").GetString(), 16))).Order());
         var signatures = report.GetProperty("signatures").EnumerateArray().ToArray();
-        Assert.Equal(38, signatures.Length);
-        Assert.Equal(38, signatures.Select(row => Convert.ToInt32(row.GetProperty("address").GetString(), 16)).Distinct().Count());
+        int[] expectedAddresses =
+        [
+            0x2d46f8, 0x2d4adc, 0x2d4b14, 0x2d4fec, 0x2e0d20, 0x2e0d24, 0x2e0d28,
+            0x2e0f2c, 0x2e0fa4, 0x2e0fac, 0x2d51cc, 0x2e16e4, 0x2d5288, 0x2d5334,
+            0x2598bc, 0x25998c, 0x2599a8, 0x259a04, 0x259a5c, 0x2e0cb4, 0x2e1784,
+            0x2e1850, 0x2e1238, 0x2e12ac, 0x2e1310, 0x1f0ccc, 0x1f0cd0, 0x1f0cdc,
+            0x1f0ce0, 0x22666c, 0x22665c, 0x226678, 0x210d34, 0x210d40, 0x22163c,
+            0x221640, 0x1fef78, 0x1ff490,
+        ];
+        Assert.Equal(expectedAddresses.Order(), signatures.Select(row => Convert.ToInt32(row.GetProperty("address").GetString(), 16)).Order());
     }
 
     [Theory]
@@ -50,6 +73,32 @@ public sealed class Rac1VeldinEnemyRetailTests
         }
         using var incomplete = JsonDocument.Parse(root.ToJsonString());
         Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => RequireWitnessCohorts(incomplete.RootElement));
+    }
+
+    [Theory]
+    [InlineData("block-range")]
+    [InlineData("block-name")]
+    [InlineData("signature-address")]
+    public void WitnessRejectsSubstitutedObservationIdentities(string cohort)
+    {
+        using var witness = JsonDocument.Parse(File.ReadAllText(WitnessPath));
+        RequireWitnessCohorts(witness.RootElement);
+        var root = JsonNode.Parse(witness.RootElement.GetRawText())!;
+        if (cohort == "block-range")
+        {
+            var block = root["blocks"]!["class749Update"]!;
+            block["start"] = block["end"]!.DeepClone();
+            block["sha256"] = Convert.ToHexString(SHA256.HashData(Array.Empty<byte>())).ToLowerInvariant();
+        }
+        else if (cohort == "block-name")
+        {
+            var block = root["blocks"]!["class749Update"]!.DeepClone();
+            root["blocks"]!.AsObject().Remove("class749Update");
+            root["blocks"]!["missing-code-observation"] = block;
+        }
+        else root["signatures"]![0]!["address"] = "0x002d46fc";
+        using var replaced = JsonDocument.Parse(root.ToJsonString());
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => RequireWitnessCohorts(replaced.RootElement));
     }
 
     [SkippableFact]
