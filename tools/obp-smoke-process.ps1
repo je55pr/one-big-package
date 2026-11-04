@@ -27,8 +27,8 @@ function Invoke-ObpSmokeProcess {
         -StandardOutputPath $stdout -StandardErrorPath $stderr
     $output = [IO.File]::ReadAllText($stdout)
     $errors = [IO.File]::ReadAllText($stderr)
-    Get-Content -LiteralPath $stdout -Encoding UTF8 | ForEach-Object { Write-Information $_ -InformationAction Continue }
-    Get-Content -LiteralPath $stderr -Encoding UTF8 | ForEach-Object { Write-Information $_ -InformationAction Continue }
+    if ($output) { Write-Information $output.TrimEnd() -InformationAction Continue }
+    if ($errors) { Write-Information $errors.TrimEnd() -InformationAction Continue }
     if ($code -ne 0) { return $code }
     if (-not (Test-ObpSmokeLog -ExitCode $code -Log ($output + "`n" + $errors) -CompletionMarker $CompletionMarker)) {
         Write-Information "Smoke did not complete cleanly. Native stdout/stderr: $logs" -InformationAction Continue

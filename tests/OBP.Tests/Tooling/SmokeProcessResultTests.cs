@@ -46,8 +46,9 @@ public sealed class SmokeProcessResultTests
 
     public static IEnumerable<object[]> WrapperCases()
     {
-        foreach (var (script, reason, destinations, noProfile) in new[]
-        {
+        foreach (string shell in new[] { "powershell.exe", "pwsh" })
+            foreach (var (script, reason, destinations, noProfile) in new[]
+            {
             ("rac1-crate-smoke.ps1", "rac1-crate-smoke-pass", "rac1:LEVEL0,rac1:LEVEL1", true),
             ("rac1-placed-bolt-smoke.ps1", "rac1-placed-bolt-smoke-pass", "rac1:LEVEL0,rac1:LEVEL8,rac1:LEVEL11", true),
             ("rac1-campaign-smoke.ps1", "rac1-campaign-smoke-pass", ",", true),
@@ -62,15 +63,15 @@ public sealed class SmokeProcessResultTests
             ("controller-smoke.ps1", "controller-smoke-pass", "", false),
             ("rac1-player-audio-smoke.ps1", "rac1-player-audio-smoke-pass", "rac1:LEVEL0,rac1:LEVEL0", false),
         })
-            foreach (var (fault, code) in new[] { ("clean", 0), ("incomplete", 2), ("leak", 2), ("nonzero", 17) })
-                yield return [script, reason, destinations, noProfile, fault, code];
+                foreach (var (fault, code) in new[] { ("clean", 0), ("incomplete", 2), ("leak", 2), ("nonzero", 17) })
+                    yield return [shell, script, reason, destinations, noProfile, fault, code];
     }
 
     [SkippableTheory]
     [MemberData(nameof(WrapperCases))]
-    public async Task WrappersCheckEachProcessAndPreserveArguments(string scriptName, string reason, string destinations, bool noProfile, string fault, int expected)
+    public async Task WrappersCheckEachProcessAndPreserveArguments(string shell, string scriptName, string reason, string destinations, bool noProfile, string fault, int expected)
     {
-        string shell = RequireShell("pwsh");
+        shell = RequireShell(shell);
         string directory = Path.Combine(Path.GetTempPath(), "obp smoke result " + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
         try
@@ -125,13 +126,17 @@ public sealed class SmokeProcessResultTests
     }
 
     [SkippableTheory]
-    [InlineData("clean", 0)]
-    [InlineData("incomplete", 2)]
-    [InlineData("leak", 2)]
-    [InlineData("nonzero", 17)]
-    public async Task NativeCaptureIncludesStderrAfterCompletionAndRetainsNonzeroExit(string fault, int expected)
+    [InlineData("powershell.exe", "clean", 0)]
+    [InlineData("powershell.exe", "incomplete", 2)]
+    [InlineData("powershell.exe", "leak", 2)]
+    [InlineData("powershell.exe", "nonzero", 17)]
+    [InlineData("pwsh", "clean", 0)]
+    [InlineData("pwsh", "incomplete", 2)]
+    [InlineData("pwsh", "leak", 2)]
+    [InlineData("pwsh", "nonzero", 17)]
+    public async Task NativeCaptureIncludesStderrAfterCompletionAndRetainsNonzeroExit(string shell, string fault, int expected)
     {
-        string shell = RequireShell("pwsh");
+        shell = RequireShell(shell);
         string directory = Path.Combine(Path.GetTempPath(), "obp smoke native " + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
         try
@@ -171,9 +176,19 @@ public sealed class SmokeProcessResultTests
 
     private static async Task<(int Code, string Output, string Error)> Run(string shell, string script)
     {
-        if (Path.GetFileName(shell) is not ("pwsh" or "pwsh.exe" or "powershell.exe") || !File.Exists(shell))
+        if (!File.Exists(shell))
             throw new ArgumentException("An installed PowerShell executable is required.", nameof(shell));
-        var start = new ProcessStartInfo(shell) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+        var start = Path.GetFileName(shell) switch
+        {
+            "pwsh" => new ProcessStartInfo("pwsh"),
+            "pwsh.exe" => new ProcessStartInfo("pwsh.exe"),
+            "powershell.exe" => new ProcessStartInfo("powershell.exe"),
+            _ => throw new ArgumentException("Only the supported PowerShell shells may run fixtures.", nameof(shell)),
+        };
+        start.UseShellExecute = false;
+        start.CreateNoWindow = true;
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         foreach (string argument in new[] { "-NoProfile", "-NonInteractive", "-EncodedCommand", Convert.ToBase64String(Encoding.Unicode.GetBytes(script)) })
             start.ArgumentList.Add(argument);
         using var process = Process.Start(start)!;

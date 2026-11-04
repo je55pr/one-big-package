@@ -24,15 +24,10 @@ $root = Split-Path -Parent $PSScriptRoot
 
 $godot = & (Join-Path $PSScriptRoot 'prepare-game-smoke.ps1') -Sources @($Rac1Iso) -SourceCount 1 -SkipBuild:$SkipBuild
 
-$godotArgs = @(Get-ObpWindowArguments) + @(
-  '--path', (Join-Path $root 'game'),
-  '--rendering-method', $RenderingMethod,
-  '--',
-  '--rac1-iso', $Rac1Iso,
-  '--destination', 'rac1:LEVEL0',
-  '--fixed-seed', $Seed,
-  '--rac1-combat-contract-smoke'
-)
+$fixtureArgs = @('--rac1-iso', $Rac1Iso, '--destination', 'rac1:LEVEL0',
+  '--fixed-seed', $Seed, '--rac1-combat-contract-smoke')
+$godotArgs = @(Get-ObpWindowArguments) + @('--path', (Join-Path $root 'game'),
+  '--rendering-method', $RenderingMethod, '--') + $fixtureArgs
 
 Write-Host 'R&C1 synthetic combat host-contract smoke' -ForegroundColor Cyan
 $code = Invoke-ObpSmokeProcess -FilePath $godot -ArgumentList $godotArgs `
