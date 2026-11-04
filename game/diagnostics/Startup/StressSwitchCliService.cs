@@ -40,6 +40,14 @@ public sealed class StressSwitchCliService(IStressWorldFixture world, IDiagnosti
                 continue;
             }
             await VisitAsync(destination, i, cancellationToken);
+            var visited = world.ReadRetention();
+            if (!string.Equals(visited.World.DestinationId, destination, StringComparison.OrdinalIgnoreCase) ||
+                visited.World.WorldInstanceId is null || visited.SceneRoot is null || visited.Player is null)
+            {
+                error("[stress] FAIL requested destination did not produce a live world/player: " + destination);
+                quit("stress-world-load-failed", 1);
+                return;
+            }
             var counters = world.ReadCounters();
             if (i == 0) baseMem = counters.MemoryMb;
             string row = $"#{i,2} {token,-10} L{counters.Level,-2} | mem {counters.MemoryMb,7:0.0} MB (+{counters.MemoryMb - baseMem,6:0.0}) | " +
@@ -57,7 +65,8 @@ public sealed class StressSwitchCliService(IStressWorldFixture world, IDiagnosti
     {
         var retained = world.ReadRetention();
         bool rejected = world.RejectImport(Path.Combine(Path.GetTempPath(), "obp-world-does-not-exist-" + Guid.NewGuid().ToString("N") + ".iso"));
-        if (!rejected || retained != world.ReadRetention())
+        if (retained.World.DestinationId is null || retained.World.WorldInstanceId is null ||
+            retained.SceneRoot is null || retained.Player is null || !rejected || retained != world.ReadRetention())
         {
             error("[stress] FAIL failed import destroyed the active world or campaign state");
             quit("stress-import-retention-failed", 1);
