@@ -52,6 +52,8 @@ public sealed class Rac2FusionLabPreviewActorAuditTests(ITestOutputHelper log)
         log.WriteLine($"Door 2755 legacy: joints={old.Joints.Count}, v={old.Mesh.Positions.Length / 3}, tris={old.Mesh.Indices.Length / 3}; preview: joints={updated.Joints.Count}, v={updated.Mesh.Positions.Length / 3}, tris={updated.Mesh.Indices.Length / 3}");
         log.WriteLine($"Source seq1 frames={updated.Sequences.Single(s => s.Index == 1).Frames.Count}; seq2 frames={updated.Sequences.Single(s => s.Index == 2).Frames.Count}");
         Assert.Equal(old.Joints.Count, updated.Joints.Count);
+        Assert.NotEmpty(old.Joints);
+        Assert.NotEmpty(old.Mesh.Indices);
         Assert.True(updated.Mesh.Indices.Length >= old.Mesh.Indices.Length);
     }
 

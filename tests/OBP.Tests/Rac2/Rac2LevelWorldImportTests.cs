@@ -149,8 +149,12 @@ public sealed class Rac2LevelWorldImportTests : IClassFixture<Rac2OozlaWorldImpo
         // Every tfrag mesh carries the native baked per-vertex RGBA (the level's static
         // lighting / AO) — one float4 per vertex, channels in 0..1. Oozla's authored
         // fourth byte is uniformly 0x80, preserved as 128/255 rather than forced opaque.
-        foreach (var m in world.Meshes.Where(m => m.AssetKind == "tfrag"))
+        var tfrags = world.Meshes.Where(m => m.AssetKind == "tfrag").ToArray();
+        Assert.NotEmpty(tfrags);
+        foreach (var m in tfrags)
         {
+            Assert.NotEmpty(m.Positions);
+            Assert.Equal(0, m.Positions.Length % 3);
             Assert.NotNull(m.Colors);
             Assert.Equal(m.Positions.Length / 3 * 4, m.Colors!.Length);
             for (int i = 0; i < m.Colors.Length; i += 4)
@@ -177,6 +181,9 @@ public sealed class Rac2LevelWorldImportTests : IClassFixture<Rac2OozlaWorldImpo
             Assert.Equal("moby", am.AssetKind);
             Assert.Equal(170, am.Frames.Count);
             Assert.Equal(nativePose ? 94 : 91, am.TriangleCount);
+            Assert.NotEmpty(am.Frames[0]);
+            Assert.Equal(0, am.Frames[0].Length % 3);
+            Assert.All(am.Indices, index => Assert.InRange(index, 0, am.VertexCount - 1));
             Assert.All(am.Frames, f => Assert.Equal(am.VertexCount * 3, f.Length));
             Assert.Equal(am.VertexCount * 4, am.Colors.Length);
         }
@@ -194,7 +201,9 @@ public sealed class Rac2LevelWorldImportTests : IClassFixture<Rac2OozlaWorldImpo
         Assert.All(world.Textures, t => Assert.Equal(t.Width * t.Height * 4, t.Rgba.Length));
         // Every textured render mesh resolves to a decoded texture.
         var texKeys = world.Textures.Select(t => (t.AssetKind, t.TextureId)).ToHashSet();
-        foreach (var m in world.Meshes.Where(m => m.AssetKind is "tfrag" or "tie" or "shrub" or "moby" && m.TextureId >= 0))
+        var texturedMeshes = world.Meshes.Where(m => m.AssetKind is "tfrag" or "tie" or "shrub" or "moby" && m.TextureId >= 0).ToArray();
+        Assert.NotEmpty(texturedMeshes);
+        foreach (var m in texturedMeshes)
         {
             Assert.Contains((m.AssetKind, m.TextureId), texKeys);
         }
