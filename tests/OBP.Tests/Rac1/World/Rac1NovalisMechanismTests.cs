@@ -158,7 +158,7 @@ public sealed class Rac1NovalisMechanismTests
         // tools/OBP.Rac1NovalisRouteProbe/Program.cs. Checkpoint ticks pin the
         // existing original-instruction observations, including transition/sound samples.
         var code = witness.GetProperty("code").EnumerateArray().Select(block => (
-            Name: block.GetProperty("name").GetString(), Start: block.GetProperty("start").GetInt32(),
+            Name: block.GetProperty("name").GetString()!, Start: block.GetProperty("start").GetInt32(),
             End: block.GetProperty("end").GetInt32())).ToArray();
         Assert.Equal(new[] { ("approachDoors", 0x2fed68, 0x2ff028), ("pistons", 0x2f95c0, 0x2f9810),
             ("staircaseRocks", 0x2f9080, 0x2f95c0) }, code);
