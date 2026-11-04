@@ -1,5 +1,6 @@
 using OBP.Core;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using OBP.RAC1;
 using OBP.RAC1.Level;
 
@@ -22,11 +23,42 @@ public sealed class Rac1AllLevelsTests
         var doc = JsonDocument.Parse(File.ReadAllText(path));
         try
         {
-            Assert.Equal(Enumerable.Range(0, 19), doc.RootElement.GetProperty("levels")
-                .EnumerateArray().Select(row => row.GetProperty("level").GetInt32()).Order());
+            RequireCensus(doc.RootElement);
             return doc;
         }
         catch { doc.Dispose(); throw; }
+    }
+
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("negative")]
+    [InlineData("fractional")]
+    [InlineData("overflow")]
+    public void RuntimeCensusRejectsIncompleteCountFields(string fault)
+    {
+        var census = JsonNode.Parse(File.ReadAllText(Path.Combine(RepoPaths.Root,
+            "research/generated/rac1-dynamic-moby-runtime-census.json")))!;
+        var row = census["levels"]![0]!.AsObject();
+        switch (fault)
+        {
+            case "missing": row.Remove("placements"); break;
+            case "negative": row["placements"] = -1; break;
+            case "fractional": row["placements"] = 1.5; break;
+            case "overflow": row["placements"] = (long)int.MaxValue + 1; break;
+            default: throw new ArgumentOutOfRangeException(nameof(fault));
+        }
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => RequireCensus(JsonSerializer.SerializeToElement(census)));
+    }
+
+    private static void RequireCensus(JsonElement census)
+    {
+        var levels = census.GetProperty("levels").EnumerateArray().ToArray();
+        Assert.Equal(Enumerable.Range(0, 19), levels.Select(row => row.GetProperty("level").GetInt32()).Order());
+        foreach (var row in levels)
+            foreach (string field in new[] { "placements", "linkedInstances", "animatedHandoffInstances", "noGeometryInstances",
+                "dynamicTriangles", "staticTriangles", "animatedTriangles", "animationCapableInstances" })
+                Assert.True(row.TryGetProperty(field, out var value) && value.ValueKind == JsonValueKind.Number &&
+                    value.TryGetInt32(out int count) && count >= 0, $"Census count '{field}' must be a nonnegative integer.");
     }
 
     [SkippableTheory]
