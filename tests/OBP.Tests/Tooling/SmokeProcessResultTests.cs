@@ -409,6 +409,104 @@ public sealed class SmokeProcessResultTests
         finally { Directory.Delete(directory, recursive: true); }
     }
 
+    public static IEnumerable<object[]> MovementReplayRunnerCases
+    {
+        get
+        {
+            foreach (string shell in new[] { "powershell.exe", "pwsh" })
+                foreach (string fault in new[] { "clean", "profile", "nonzero", "no-marker", "leak", "missing-report", "stale",
+                    "partial", "bad-tick", "bad-vector", "bad-identity", "foreign-state", "missing-profile", "same-output", "alias-content" })
+                    yield return [shell, fault, fault switch { "clean" or "profile" => 0, "nonzero" => 17, "same-output" or "alias-content" => 1, _ => 2 }];
+        }
+    }
+
+    [SkippableTheory]
+    [MemberData(nameof(MovementReplayRunnerCases))]
+    public async Task MovementReplayRequiresFreshCompleteFiniteEvidence(string shell, string fault, int expectedExit)
+    {
+        shell = RequireShell(shell);
+        string directory = Path.Combine(Path.GetTempPath(), "obp movement runner " + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        const string state = "Synthetic state argument only; never decoded as retail data.";
+        try
+        {
+            string script = $$$$$"""
+                $ErrorActionPreference='Stop'
+                $root={{{{{Quote(directory)}}}}}
+                $tools=Join-Path $root 'tools'
+                $engineDir=Join-Path $root '.tools/godot'
+                New-Item -ItemType Directory $tools,$engineDir | Out-Null
+                foreach($name in 'replay-movement-state.ps1','obp-smoke-process.ps1'){
+                    Copy-Item (Join-Path {{{{{Quote(Path.Combine(RepoPaths.Root, "tools"))}}}}} $name) $tools
+                }
+                Set-Content (Join-Path $tools 'godot-toolchain.json') '{"godot":{"artifacts":{"win64":{"exe":"fake.ps1"}}}}'
+                $state=Join-Path $root 'state.json'
+                $report=Join-Path $root 'report.json'
+                [IO.File]::WriteAllText($state,{{{{{Quote(state)}}}}})
+                $env:OBP_TEST_MOVEMENT_FAULT={{{{{Quote(fault)}}}}}
+                Set-Content (Join-Path $tools 'fixture-runtime.ps1') @'
+                function Invoke-FixtureMovement {
+                    param([string[]]$ArgumentList)
+                    function Option($name){$index=[Array]::IndexOf($ArgumentList,$name);if($index -lt 0){throw 'Missing fixture argument'};return $ArgumentList[$index+1]}
+                    $state=Option '--load-movement-state'
+                    $out=Option '--replay-out'
+                    if((Option '--replay-forward') -ne '2' -or -not [IO.Path]::IsPathRooted($state) -or -not [IO.Path]::IsPathRooted($out)){throw 'Movement fixture argument boundary changed'}
+                    $fault=$env:OBP_TEST_MOVEMENT_FAULT
+                    if($fault -in 'profile','missing-profile' -and $ArgumentList -notcontains '--replay-profile'){throw 'Missing requested profiling argument'}
+                    $samples=@(0..2 | ForEach-Object { @{Tick=$_;Position=@{X=$_;Y=0;Z=0};Velocity=@{X=1;Y=0;Z=0};FacingYaw=0;ControlHeading=0} })
+                    $report=@{StateFile=[IO.Path]::GetFileName($state);HostAssemblyId='00000000-0000-0000-0000-000000000001';PhysicsHz=60;Samples=$samples}
+                    switch($fault){
+                        'profile' {foreach($sample in $samples){$profile=@{};foreach($field in 'ElapsedMs','RenderFrame','ControllerMs','ContactMs','SlideMs','SmallStepMs','CrestMs','PresentationMs','CameraMs','EngineProcessMs','EnginePhysicsMs','RenderCpuMs','RenderGpuMs','Fps'){$profile[$field]=0};$sample.Profile=$profile}}
+                        'partial' {$report.Samples=@($samples[0])}
+                        'bad-tick' {$samples[2].Tick=99}
+                        'bad-vector' {$samples[1].Position.X='NaN'}
+                        'bad-identity' {$report.HostAssemblyId=''}
+                        'foreign-state' {$report.StateFile='another-state.json'}
+                    }
+                    if($fault -notin 'missing-report','stale'){$report|ConvertTo-Json -Depth 8|Set-Content -LiteralPath $out}
+                    $output=if($fault -eq 'no-marker'){''}else{'[movement-replay] PASS; frames=2, output=fixture'}
+                    $errorText=if($fault -eq 'leak'){'WARNING: 1 RID of type CanvasItem was leaked.'}else{''}
+                    return [pscustomobject]@{Code=$(if($fault -eq 'nonzero'){17}else{0});Output=$output;Error=$errorText}
+                }
+                '@
+                Set-Content (Join-Path $engineDir 'fake.ps1') @'
+                . (Join-Path $PSScriptRoot '../../tools/fixture-runtime.ps1')
+                $result=Invoke-FixtureMovement -ArgumentList $args
+                Write-Output $result.Output
+                if($result.Error){[Console]::Error.WriteLine($result.Error)}
+                $global:LASTEXITCODE=$result.Code
+                '@
+                Set-Content (Join-Path $tools 'obp-native-process.ps1') @'
+                . (Join-Path $PSScriptRoot 'fixture-runtime.ps1')
+                function Invoke-ObpNativeProcessCapture {
+                    param($FilePath,[string[]]$ArgumentList,$WorkingDirectory,$StandardOutputPath,$StandardErrorPath,$OnOutput)
+                    $result=Invoke-FixtureMovement -ArgumentList $ArgumentList
+                    [IO.File]::WriteAllText($StandardOutputPath,$result.Output)
+                    [IO.File]::WriteAllText($StandardErrorPath,$result.Error)
+                    if($OnOutput){& $OnOutput $result.Output}
+                    return $result.Code
+                }
+                '@
+                if({{{{{Quote(fault)}}}}} -eq 'stale'){
+                    . (Join-Path $tools 'fixture-runtime.ps1')
+                    $env:OBP_TEST_MOVEMENT_FAULT='clean'
+                    $null=Invoke-FixtureMovement -ArgumentList @('--load-movement-state',$state,'--replay-forward','2','--replay-out',$report)
+                    $env:OBP_TEST_MOVEMENT_FAULT='stale'
+                }
+                if({{{{{Quote(fault)}}}}} -eq 'same-output'){$report=$state}
+                if({{{{{Quote(fault)}}}}} -eq 'alias-content'){Copy-Item -LiteralPath $state -Destination $report}
+                $parameters=@{State=$state;Frames=2;Out=$report;SkipBuild=$true;Rac1Iso='synthetic.iso'}
+                if({{{{{Quote(fault)}}}}} -in 'profile','missing-profile'){$parameters.CollectTimings=$true}
+                & (Join-Path $tools 'replay-movement-state.ps1') @parameters
+                exit $LASTEXITCODE
+                """;
+            var result = await Run(shell, script);
+            Assert.True(result.Code == expectedExit, fault + ": expected " + expectedExit + ", got " + result.Code + "\n" + result.Error + result.Output);
+            Assert.Equal(state, File.ReadAllText(Path.Combine(directory, "state.json")));
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
     private static string RequireShell(string name)
     {
         Skip.If(name == "powershell.exe" && !OperatingSystem.IsWindows(), "Windows PowerShell compatibility case.");
