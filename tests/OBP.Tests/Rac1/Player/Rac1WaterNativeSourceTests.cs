@@ -102,6 +102,7 @@ public sealed class Rac1WaterNativeSourceTests
     [InlineData("entry", "duplicate")]
     [InlineData("entry", "replacement")]
     [InlineData("entry", "null-output")]
+    [InlineData("entry", "fractional-output")]
     [InlineData("periodicQuery", "missing")]
     [InlineData("periodicQuery", "duplicate")]
     [InlineData("periodicQuery", "replacement")]
@@ -120,6 +121,7 @@ public sealed class Rac1WaterNativeSourceTests
                 case "empty-range": rows[0]!["end"] = rows[0]!["start"]!.GetValue<string>(); break;
                 case "replacement": rows[0]!["input"]![0] = 999; break;
                 case "null-output": rows[^1]!["output"]![0] = null; break;
+                case "fractional-output": rows[^1]!["output"]![0] = 1.5; break;
                 default: throw new ArgumentOutOfRangeException(nameof(fault), fault, "Unknown witness fault.");
             }
         }
@@ -169,8 +171,11 @@ public sealed class Rac1WaterNativeSourceTests
                 Assert.Equal(inputs[index], rows[index].GetProperty("input").EnumerateArray().Select(value => value.GetSingle()));
                 Assert.Equal(outputColumns, rows[index].GetProperty("output").GetArrayLength());
                 Assert.All(rows[index].GetProperty("output").EnumerateArray(), value =>
+                {
                     Assert.True(value.ValueKind == JsonValueKind.Number &&
-                        value.TryGetDouble(out double number) && double.IsFinite(number)));
+                        value.TryGetDouble(out double number) && double.IsFinite(number));
+                    if (name == "entry") Assert.True(value.TryGetInt32(out _));
+                });
             }
         }
     }
