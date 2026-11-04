@@ -26,9 +26,7 @@ public sealed class Rac1CampaignStateTests
     [Fact]
     public void DestinationDiscoveryEventsMapExactRetailRange()
     {
-        for (int eventId = Rac1CampaignState.FirstDestinationDiscoveryEvent;
-             eventId <= Rac1CampaignState.LastDestinationDiscoveryEvent;
-             eventId++)
+        for (int eventId = 0x25; eventId <= 0x36; eventId++)
         {
             Assert.True(Rac1CampaignState.TryResolveDestinationDiscoveryEvent(eventId, out int destinationId));
             Assert.Equal(eventId - 0x24, destinationId);

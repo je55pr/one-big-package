@@ -11,10 +11,10 @@ namespace OBP.Tests;
 public sealed class Rac1MissionProgressionTests
 {
     [Theory]
-    [InlineData("Veldin-actor-to-Novalis")]
-    [InlineData("Infobot-active-pickup-and-admission")]
-    [InlineData("Plumber-price-gate-and-Aridia")]
-    public void ActorTalkAndAdmissionTransitions_MatchIndependentOriginalMipsExecution(string name)
+    [InlineData("Veldin-actor-to-Novalis", 14)]
+    [InlineData("Infobot-active-pickup-and-admission", 8)]
+    [InlineData("Plumber-price-gate-and-Aridia", 12)]
+    public void ActorTalkAndAdmissionTransitions_MatchIndependentOriginalMipsExecution(string name, int sampleCount)
     {
         using var doc = Witness();
         var trial = doc.RootElement.GetProperty("trials").EnumerateArray().Single(t => t.GetProperty("name").GetString() == name);
@@ -29,6 +29,8 @@ public sealed class Rac1MissionProgressionTests
         else missions.RegisterTalkActor(actor, Program(level), postOpeningIntro: cls == 834);
         var inputs = trial.GetProperty("inputs").EnumerateArray().Select(s => s.GetString()!).ToArray();
         var samples = trial.GetProperty("samples").EnumerateArray().ToArray();
+        Assert.Equal(sampleCount, inputs.Length);
+        Assert.Equal(sampleCount, samples.Length);
         int admissionEvents = 0;
         for (int index = 0; index < inputs.Length; ++index)
         {

@@ -17,6 +17,16 @@ public sealed class Rac1MissionRetailTests
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
         using var disc = new FileRandomAccessReader(iso!);
         using var witness = Rac1MissionProgressionTests.Witness();
+        Assert.Equal(2, witness.RootElement.GetProperty("overlays").GetArrayLength());
+        Assert.Equal(2, witness.RootElement.GetProperty("overlays").EnumerateArray()
+            .Select(row => row.GetProperty("level").GetInt32()).Distinct().Count());
+        Assert.Equal(12, witness.RootElement.GetProperty("code").GetArrayLength());
+        Assert.Equal(12, witness.RootElement.GetProperty("code").EnumerateArray()
+            .Select(row => (row.GetProperty("level").GetInt32(), row.GetProperty("start").GetString(), row.GetProperty("end").GetString())).Distinct().Count());
+        Assert.Equal(2, witness.RootElement.GetProperty("programs").GetArrayLength());
+        Assert.Equal(2, witness.RootElement.GetProperty("programs").EnumerateArray()
+            .Select(row => row.GetProperty("level").GetInt32()).Distinct().Count());
+        Assert.Equal(8, witness.RootElement.GetProperty("infobots").GetArrayLength());
         var levels = Rac1DiscIndex.Read(disc).Levels;
         var overlays = new Dictionary<int, Rac1ExecutableOverlay>();
         foreach (var row in witness.RootElement.GetProperty("overlays").EnumerateArray())
