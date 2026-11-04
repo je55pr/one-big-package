@@ -11,7 +11,7 @@ public sealed class DebugOverlaySpecOwnershipTests
         Assert.True(start >= 0 && end > start);
         string glue = root[start..end];
         Assert.Contains("Presentation.ApplyOverlaySpec(spec)", glue, StringComparison.Ordinal);
-        string presentation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotApplicationPresentation.cs"));
+        string presentation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Application/GodotApplicationPresentation.cs"));
         Assert.Contains("_overlay?.ApplySpec(spec, message => GD.PrintErr(message))", presentation, StringComparison.Ordinal);
         Assert.DoesNotContain("TryIsolateKind", glue, StringComparison.Ordinal);
         Assert.DoesNotContain("TryParse<DebugOverlay.Layer>", glue, StringComparison.Ordinal);

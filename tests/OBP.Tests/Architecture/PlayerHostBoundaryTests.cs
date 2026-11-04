@@ -28,7 +28,7 @@ public sealed class PlayerHostBoundaryTests
     [Fact]
     public void PlayerHostLedgesDelegateRegrabAndJumpPressTimingInOrder()
     {
-        string ledges = File.ReadAllText(Path.Combine(Scripts, "PlayerHost.Rac1Ledges.cs"));
+        string ledges = File.ReadAllText(Path.Combine(Scripts, "Player/PlayerHost.Rac1Ledges.cs"));
         int advance = ledges.IndexOf("_rac1Ledge.AdvanceInput(jumpPressed)", StringComparison.Ordinal);
         int eligibility = ledges.IndexOf("_rac1Ledge.CanProbeForGrab", StringComparison.Ordinal);
         int step = ledges.IndexOf("_rac1Ledge.Step(", StringComparison.Ordinal);

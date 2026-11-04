@@ -9,9 +9,9 @@ public sealed class Rac1HandPresentationOwnershipArchitectureTests
     [Fact]
     public void HandVisibilityAndAttachmentMutationBelongToTheExistingEquipmentBinder()
     {
-        string entry = Script("PlayerAvatarPresentationHost.cs");
+        string entry = Script("Player/PlayerAvatarPresentationHost.cs");
         string root = CompositionSources.Application;
-        string binder = Script("PlayerEquipmentPresentationBinder.cs");
+        string binder = Script("Player/PlayerEquipmentPresentationBinder.cs");
 
         Assert.DoesNotContain("private void HoldSelectedRac1HandItem(", entry, StringComparison.Ordinal);
         Assert.DoesNotContain("private void RefreshRac1HeldItem(", entry, StringComparison.Ordinal);
@@ -36,7 +36,7 @@ public sealed class Rac1HandPresentationOwnershipArchitectureTests
         Assert.Contains("_equipmentPresentation.RefreshRac1HeldItem(previous, Rac1HandPresentation, _avatarPresentation)", root);
         Assert.Contains("_equipmentPresentation.RefreshRac1HandVisibility(Rac1HandPresentation, _avatarPresentation)", root);
         Assert.Contains("PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(", binder);
-        Assert.Contains("bindings.Equipment.ApplyAvatarEquipmentPose(", Script("PlayerAvatarPresentationHost.cs"));
+        Assert.Contains("bindings.Equipment.ApplyAvatarEquipmentPose(", Script("Player/PlayerAvatarPresentationHost.cs"));
         Assert.DoesNotContain("PlayerEquipmentPresentationBinder.IsRac1HandEquipmentVisible(", entry);
     }
 
@@ -44,7 +44,7 @@ public sealed class Rac1HandPresentationOwnershipArchitectureTests
     public void WorldFlagsAreBorrowedWithoutMovingInventoriesOrNativeWorldOwnership()
     {
         string root = CompositionSources.Application;
-        string binder = Script("PlayerEquipmentPresentationBinder.cs");
+        string binder = Script("Player/PlayerEquipmentPresentationBinder.cs");
 
         Assert.Contains("private Rac1HandPresentationContext Rac1HandPresentation => new(", root);
         Assert.Contains("_rac1HeldItem, _rac1Weapons, PlayerServices.Fusion.Session", root);

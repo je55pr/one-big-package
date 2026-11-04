@@ -69,11 +69,11 @@ public sealed class LinkedHostCompilationBoundaryTests
     {
         var project = new XDocument(new XElement("Project",
             new XElement("ItemGroup", new XElement("Compile",
-                new XAttribute("Include", "./../../game/scripts/CommandLineArgs.cs"),
+                new XAttribute("Include", "./../../game/scripts/Application/CommandLineArgs.cs"),
                 new XAttribute("Link", "Game/CommandLineArgs.cs")))));
         var link = Assert.Single(Links(project));
         string source = (string)link.Attribute("Include")!;
-        Assert.NotEqual("../../game/scripts/CommandLineArgs.cs", source);
+        Assert.NotEqual("../../game/scripts/Application/CommandLineArgs.cs", source);
     }
 
     [Fact]

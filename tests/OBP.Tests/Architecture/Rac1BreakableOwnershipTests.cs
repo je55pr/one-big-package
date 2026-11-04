@@ -15,8 +15,8 @@ public sealed class Rac1BreakableOwnershipTests
     {
         Assert.False(File.Exists(Path.Combine(Scripts, "OBPGame.Rac1Explosives.cs")));
         Assert.False(File.Exists(Path.Combine(Scripts, "OBPGame.Rac1NovalisBreakables.cs")));
-        string host = Script("Rac1BreakableHost.cs");
-        string module = Script("Rac1WorldModule.cs");
+        string host = Script("Rac1/World/Rac1BreakableHost.cs");
+        string module = Script("Rac1/World/Rac1WorldModule.cs");
         Assert.DoesNotContain("partial class OBPGame", host, StringComparison.Ordinal);
         Assert.Contains("Rac1ExplosiveCrateAdapter _explosives", host, StringComparison.Ordinal);
         Assert.Contains("Rac1NovalisBreakableAdapter _novalis", host, StringComparison.Ordinal);
@@ -32,8 +32,8 @@ public sealed class Rac1BreakableOwnershipTests
     [Fact]
     public void SourceNativeAndContactAdaptersRemainSpecificAndRootDoesNotOwnState()
     {
-        string explosive = Script("Rac1ExplosiveCrateAdapter.cs");
-        string novalis = Script("Rac1NovalisBreakableAdapter.cs");
+        string explosive = Script("Rac1/World/Rac1ExplosiveCrateAdapter.cs");
+        string novalis = Script("Rac1/World/Rac1NovalisBreakableAdapter.cs");
         string root = CompositionSources.Application;
         Assert.Contains("source.SourceGame != ObpSourceGame.Rac1", explosive, StringComparison.Ordinal);
         Assert.Contains("new(context.MobyRuntime, ports.ChooseFrames)", explosive, StringComparison.Ordinal);
@@ -55,10 +55,10 @@ public sealed class Rac1BreakableOwnershipTests
     [Fact]
     public void RetirementRestoresBorrowedNodesAndReleasesContactBodies()
     {
-        string explosive = Script("Rac1ExplosiveCrateAdapter.cs");
-        string novalis = Script("Rac1NovalisBreakableAdapter.cs");
-        string loot = Script("Rac1LootPresentation.Pickups.cs");
-        string module = Script("Rac1WorldModule.cs");
+        string explosive = Script("Rac1/World/Rac1ExplosiveCrateAdapter.cs");
+        string novalis = Script("Rac1/World/Rac1NovalisBreakableAdapter.cs");
+        string loot = Script("Rac1/World/Rac1LootPresentation.Pickups.cs");
+        string module = Script("Rac1/World/Rac1WorldModule.cs");
         Assert.Contains("_originalStates.Add(source.InstanceIndex, (node.State, node.Root.Visible))", explosive, StringComparison.Ordinal);
         Assert.Contains("_originalStates.Add(source.InstanceIndex, (node.State, node.Root.Visible))", novalis, StringComparison.Ordinal);
         Assert.Contains("node.ApplyState(original.State);", explosive, StringComparison.Ordinal);
@@ -75,16 +75,16 @@ public sealed class Rac1BreakableOwnershipTests
     [Fact]
     public void RewardPresentationAndCrateFixtureUseBoundedPorts()
     {
-        string explosive = Script("Rac1ExplosiveCrateAdapter.cs");
-        string novalis = Script("Rac1NovalisBreakableAdapter.cs");
-        string loot = Script("Rac1LootPresentation.cs");
-        string scenario = File.ReadAllText(Path.Combine(Diagnostics, "Rac1CrateScenario.cs"));
-        string fixtures = File.ReadAllText(Path.Combine(Diagnostics, "GodotRac1LootDiagnosticFixture.cs"));
+        string explosive = Script("Rac1/World/Rac1ExplosiveCrateAdapter.cs");
+        string novalis = Script("Rac1/World/Rac1NovalisBreakableAdapter.cs");
+        string loot = Script("Rac1/World/Rac1LootPresentation.cs");
+        string scenario = File.ReadAllText(Path.Combine(Diagnostics, "Rac1/Rac1CrateScenario.cs"));
+        string fixtures = File.ReadAllText(Path.Combine(Diagnostics, "Rac1/Fixtures/GodotRac1LootDiagnosticFixture.cs"));
         Assert.DoesNotContain("loot.CrateBodies", explosive, StringComparison.Ordinal);
         Assert.DoesNotContain("loot.CrateBodies", novalis, StringComparison.Ordinal);
         Assert.Contains("PresentRac1ExplosiveDetonation", loot, StringComparison.Ordinal);
         Assert.Contains("TryGetRac1CrateContact", loot, StringComparison.Ordinal);
-        Assert.Contains("TouchExplosiveForDiagnostics", Script("Rac1BreakableHost.cs"), StringComparison.Ordinal);
+        Assert.Contains("TouchExplosiveForDiagnostics", Script("Rac1/World/Rac1BreakableHost.cs"), StringComparison.Ordinal);
         Assert.Contains("GodotRac1BreakableDiagnosticFixture", fixtures, StringComparison.Ordinal);
         Assert.Contains("ports.Breakables", scenario, StringComparison.Ordinal);
         Assert.Contains("Rac1DiagnosticActorScope.RequireCurrent(actor, worlds.ReadWorld())", fixtures, StringComparison.Ordinal);

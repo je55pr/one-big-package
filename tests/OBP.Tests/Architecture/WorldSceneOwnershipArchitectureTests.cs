@@ -24,7 +24,7 @@ public sealed class WorldSceneOwnershipArchitectureTests
     [Fact]
     public void DeferredEntryHasAnOwnedCompletionAndShutdownAwaitsIt()
     {
-        string destinations = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/ApplicationNavigationCoordinator.cs"));
+        string destinations = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Application/ApplicationNavigationCoordinator.cs"));
         Assert.DoesNotContain("_ = EnterWorldAfterSharedPreparationAsync", destinations, StringComparison.Ordinal);
         Assert.Contains("_ports.PrepareLater(", destinations, StringComparison.Ordinal);
         var deferred = NavigationMethod(destinations, "EnterAfterSharedPreparationAsync");
@@ -32,7 +32,7 @@ public sealed class WorldSceneOwnershipArchitectureTests
         Assert.True(HasGenerationComparison(deferred, SyntaxKind.NotEqualsExpression),
             "Deferred preparation must reject a stale navigation generation.");
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
-        string shutdown = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotApplicationShutdown.cs"));
+        string shutdown = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Application/GodotApplicationShutdown.cs"));
         Assert.Contains("GodotApplicationShutdown.PrepareAsync(", root, StringComparison.Ordinal);
         Assert.Contains("await scenes.PendingPreparation;", shutdown, StringComparison.Ordinal);
         Assert.Contains("_worldScenes?.Dispose();", root, StringComparison.Ordinal);
@@ -42,7 +42,7 @@ public sealed class WorldSceneOwnershipArchitectureTests
     public void FailedDestinationOrLabEntryKeepsBrowserCallbacksAliveForRetry()
     {
         string scripts = Path.Combine(RepoPaths.Root, "game", "scripts");
-        string source = File.ReadAllText(Path.Combine(scripts, "ApplicationNavigationCoordinator.cs"));
+        string source = File.ReadAllText(Path.Combine(scripts, "Application/ApplicationNavigationCoordinator.cs"));
         foreach (string name in new[] { "Choose", "EnterLab", "OpenFromBootstrap" })
         {
             var method = NavigationMethod(source, name);

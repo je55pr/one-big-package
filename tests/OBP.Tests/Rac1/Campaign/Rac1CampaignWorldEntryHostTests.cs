@@ -118,8 +118,8 @@ public sealed class Rac1CampaignWorldEntryHostTests
     [Fact]
     public void RootOnlyWiresTheSourceCampaignEntryBoundary()
     {
-        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotWorldResources.cs"));
-        string owner = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Rac1CampaignHost.cs"));
+        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/World/GodotWorldResources.cs"));
+        string owner = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Rac1/Campaign/Rac1CampaignHost.cs"));
 
         Assert.DoesNotContain("BeginSourceWorldEntry(", root, StringComparison.Ordinal);
         Assert.DoesNotContain("CommitSourceWorldEntry(", root, StringComparison.Ordinal);

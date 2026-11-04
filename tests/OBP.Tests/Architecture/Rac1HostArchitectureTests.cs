@@ -9,17 +9,17 @@ public sealed class Rac1HostArchitectureTests
             RepoPaths.Root,
             "game",
             "scripts",
-            "PlayerHost.cs"));
+            "Player/PlayerHost.cs"));
         string developmentControls = File.ReadAllText(Path.Combine(
             RepoPaths.Root,
             "game",
             "scripts",
-            "PlayerDevelopmentControls.cs"));
+            "Player/PlayerDevelopmentControls.cs"));
         string gameplay = File.ReadAllText(Path.Combine(
             RepoPaths.Root,
             "game",
             "scripts",
-            "Rac1PlayerGameplayBinding.cs"));
+            "Rac1/Player/Rac1PlayerGameplayBinding.cs"));
 
         Assert.DoesNotContain("Rac1RespawnRequested", player, StringComparison.Ordinal);
         Assert.DoesNotContain("Rac1RespawnRequested", gameplay, StringComparison.Ordinal);
@@ -49,7 +49,7 @@ public sealed class Rac1HostArchitectureTests
             RepoPaths.Root,
             "game",
             "diagnostics",
-            "Rac1VeldinScenario.cs"));
+            "Rac1/Rac1VeldinScenario.cs"));
 
         string[] forbidden =
         [
@@ -75,7 +75,7 @@ public sealed class Rac1HostArchitectureTests
         foreach (string shortcut in forbidden)
             Assert.DoesNotContain(shortcut, smoke, StringComparison.Ordinal);
 
-        string input = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "Rac1EncounterInput.cs"));
+        string input = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "Rac1/Rac1EncounterInput.cs"));
         Assert.Contains("context.Driver.SetAction(action, true)", input, StringComparison.Ordinal);
         Assert.Contains("MovementDiagnosticDriver.Traversal : MovementDiagnosticDriver.Action", input, StringComparison.Ordinal);
         Assert.Contains("Rac1EncounterInput.TapPrimaryAsync(", smoke, StringComparison.Ordinal);
@@ -96,12 +96,12 @@ public sealed class Rac1HostArchitectureTests
             RepoPaths.Root,
             "game",
             "scripts",
-            "PlayerHost.cs"));
+            "Player/PlayerHost.cs"));
         string developmentControls = File.ReadAllText(Path.Combine(
             RepoPaths.Root,
             "game",
             "scripts",
-            "PlayerDevelopmentControls.cs"));
+            "Player/PlayerDevelopmentControls.cs"));
 
         foreach (string devKey in new[] { "Key.Tab", "Key.F8", "Key.F9", "Key.F", "Key.R" })
             Assert.DoesNotContain(devKey, player, StringComparison.Ordinal);
@@ -120,7 +120,7 @@ public sealed class Rac1HostArchitectureTests
             RepoPaths.Root,
             "game",
             "scripts",
-            "Rac1GameplayHudPresenter.cs"));
+            "Rac1/UI/Rac1GameplayHudPresenter.cs"));
 
         Assert.DoesNotContain(
             "R recovered environmental respawn",
@@ -139,7 +139,7 @@ public sealed class Rac1HostArchitectureTests
             RepoPaths.Root,
             "game",
             "scripts",
-            "Rac1WeaponPlayerInputHost.cs"));
+            "Rac1/Weapons/Rac1WeaponPlayerInputHost.cs"));
 
         Assert.DoesNotContain(
             "Rac1Class749Hostile.TerminalNativeStateFd",
@@ -154,12 +154,12 @@ public sealed class Rac1HostArchitectureTests
             combat,
             StringComparison.Ordinal);
         string damage = File.ReadAllText(Path.Combine(
-            RepoPaths.Root, "game", "scripts", "Rac1WeaponDamageHost.cs"));
+            RepoPaths.Root, "game", "scripts", "Rac1/Weapons/Rac1WeaponDamageHost.cs"));
         Assert.DoesNotContain("Rac1Class749Hostile.TerminalNativeStateFd", damage, StringComparison.Ordinal);
         Assert.DoesNotContain("Rac1Class749Hostile.TerminalNativeStateFe", damage, StringComparison.Ordinal);
         Assert.DoesNotContain("CompleteRecoveredDamageReaction", damage, StringComparison.Ordinal);
         string wrenchDamage = File.ReadAllText(Path.Combine(
-            RepoPaths.Root, "game", "scripts", "Rac1WrenchDamageHost.cs"));
+            RepoPaths.Root, "game", "scripts", "Rac1/Weapons/Rac1WrenchDamageHost.cs"));
         Assert.DoesNotContain("Rac1Class749Hostile.TerminalNativeStateFd", wrenchDamage, StringComparison.Ordinal);
         Assert.DoesNotContain("Rac1Class749Hostile.TerminalNativeStateFe", wrenchDamage, StringComparison.Ordinal);
         Assert.DoesNotContain("CompleteRecoveredDamageReaction", wrenchDamage, StringComparison.Ordinal);
@@ -173,14 +173,14 @@ public sealed class Rac1HostArchitectureTests
             RepoPaths.Root,
             "game",
             "scripts",
-            "Rac1EnemyHost.Queries.cs"));
+            "Rac1/Enemies/Rac1EnemyHost.Queries.cs"));
 
         Assert.DoesNotContain(".Root.Visible", hostiles, StringComparison.Ordinal);
         Assert.Contains(
             "TryOwnedRuntime(node, out var runtime) && runtime!.IsActive",
             hostiles,
             StringComparison.Ordinal);
-        string enemies = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "Rac1EnemyHost.cs"));
+        string enemies = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "Rac1/Enemies/Rac1EnemyHost.cs"));
         Assert.DoesNotContain(".Root.Visible", enemies, StringComparison.Ordinal);
     }
 
@@ -188,7 +188,7 @@ public sealed class Rac1HostArchitectureTests
     public void PlayerHostResponsibilitiesRemainSplit()
     {
         string scripts = Path.Combine(RepoPaths.Root, "game", "scripts");
-        string core = File.ReadAllText(Path.Combine(scripts, "PlayerHost.cs"));
+        string core = File.ReadAllText(Path.Combine(scripts, "Player/PlayerHost.cs"));
 
         // Enforce ownership rather than a file-length threshold. The targeted
         // PlayerHostBoundaryTests guard independently reviews source-rule sprawl.
@@ -198,19 +198,19 @@ public sealed class Rac1HostArchitectureTests
 
         Assert.Contains(
             "EnsureRac1CameraInitialized(",
-            File.ReadAllText(Path.Combine(scripts, "PlayerHost.Camera.cs")),
+            File.ReadAllText(Path.Combine(scripts, "Player/PlayerHost.Camera.cs")),
             StringComparison.Ordinal);
         Assert.Contains(
             "StepRetailDerivedMovement(",
-            File.ReadAllText(Path.Combine(scripts, "PlayerHost.Rac1Movement.cs")),
+            File.ReadAllText(Path.Combine(scripts, "Player/PlayerHost.Rac1Movement.cs")),
             StringComparison.Ordinal);
         Assert.Contains(
             "UpdateAnimationState(",
-            File.ReadAllText(Path.Combine(scripts, "PlayerHost.Animation.cs")),
+            File.ReadAllText(Path.Combine(scripts, "Player/PlayerHost.Animation.cs")),
             StringComparison.Ordinal);
         Assert.Contains(
             "BuildInputDiagnostics(",
-            File.ReadAllText(Path.Combine(scripts, "PlayerHost.Diagnostics.cs")),
+            File.ReadAllText(Path.Combine(scripts, "Player/PlayerHost.Diagnostics.cs")),
             StringComparison.Ordinal);
     }
 }

@@ -27,10 +27,10 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
         Assert.Equal("Rac1PyrocitorFlameHost",
             Assert.Single(host.GetMembers("Flames").OfType<IPropertySymbol>()).Type.Name);
 
-        string weapons = Script("Rac1WeaponHost.cs");
-        string module = Script("Rac1WorldModule.cs");
+        string weapons = Script("Rac1/Weapons/Rac1WeaponHost.cs");
+        string module = Script("Rac1/World/Rac1WorldModule.cs");
         string composition = CompositionSources.Application;
-        string flame = Script("Rac1PyrocitorFlameHost.cs");
+        string flame = Script("Rac1/Weapons/Rac1PyrocitorFlameHost.cs");
 
         Assert.Contains("Flames = new(Contacts, contacts.Flames)", weapons, StringComparison.Ordinal);
         Assert.Contains("Flames.Reset()", weapons, StringComparison.Ordinal);
@@ -41,14 +41,14 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
         Assert.Contains("() => _equipmentPresentation.Explosions.Particles,", composition, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", flame, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1ParticleSession(", flame, StringComparison.Ordinal);
-        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1PyrocitorFlameHost.cs.uid")));
+        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1/Weapons/Rac1PyrocitorFlameHost.cs.uid")));
     }
 
     [Fact]
     public void EmissionRetainsNativeReachRayAndOneInFourTrackedSlotSelection()
     {
-        string flame = Script("Rac1PyrocitorFlameHost.cs");
-        string frame = Script("Rac1WeaponEffectsHost.cs");
+        string flame = Script("Rac1/Weapons/Rac1PyrocitorFlameHost.cs");
+        string frame = Script("Rac1/Weapons/Rac1WeaponEffectsHost.cs");
 
         Assert.Contains("if (_disposed || !emitting || ports.EnsureParticles() is not { } particles) return", flame, StringComparison.Ordinal);
         Assert.Contains("Vector3 nozzle = ports.Muzzle(Rac1WeaponId.Pyrocitor)", flame, StringComparison.Ordinal);
@@ -63,14 +63,14 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
         Assert.Contains("if (_flames.Count == 15) _flames.RemoveAt(0)", flame, StringComparison.Ordinal);
         Assert.Contains("_flames.Add(new(created[2]))", flame, StringComparison.Ordinal);
         Assert.Contains("world.Weapons.StepWorld(ports.PyroEmitting())", frame, StringComparison.Ordinal);
-        Assert.Contains("Flames.Emit(pyroEmitting)", Script("Rac1WeaponHost.cs"), StringComparison.Ordinal);
+        Assert.Contains("Flames.Emit(pyroEmitting)", Script("Rac1/Weapons/Rac1WeaponHost.cs"), StringComparison.Ordinal);
         Assert.DoesNotContain("particles.Pyrocitor(", frame, StringComparison.Ordinal);
     }
 
     [Fact]
     public void ContactGateAndRepeatCooldownPreserveExistingAdmissionSequence()
     {
-        string flame = Script("Rac1PyrocitorFlameHost.cs");
+        string flame = Script("Rac1/Weapons/Rac1PyrocitorFlameHost.cs");
 
         string[] ordered =
         [
@@ -103,9 +103,9 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
     [Fact]
     public void ResetPreservesPreviewCleanupAndWorldRetirementBoundaries()
     {
-        string reset = Script("Rac1WeaponUsePresentationHost.cs");
-        string frame = Script("Rac1WeaponEffectsHost.cs");
-        string flame = Script("Rac1PyrocitorFlameHost.cs");
+        string reset = Script("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs");
+        string frame = Script("Rac1/Weapons/Rac1WeaponEffectsHost.cs");
+        string flame = Script("Rac1/Weapons/Rac1PyrocitorFlameHost.cs");
         string composition = CompositionSources.Application;
 
         string[] ordered =
@@ -127,7 +127,7 @@ public sealed class Rac1PyrocitorFlameWorldOwnershipTests
         }
 
         Assert.Contains("world.Weapons.StepWorld(ports.PyroEmitting())", frame, StringComparison.Ordinal);
-        string owner = Script("Rac1WeaponHost.cs");
+        string owner = Script("Rac1/Weapons/Rac1WeaponHost.cs");
         int emit = owner.IndexOf("Flames.Emit(pyroEmitting)", StringComparison.Ordinal);
         int motes = owner.IndexOf("Projectiles.StepMotes()", StringComparison.Ordinal);
         int contacts = owner.IndexOf("Flames.StepContacts()", StringComparison.Ordinal);

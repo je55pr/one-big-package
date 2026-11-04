@@ -169,7 +169,7 @@ public sealed class Rac1PlayerAudioPresenterTests
     {
         foreach (string name in new[] { "Audio", "Rac1PlayerAudio" })
             Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game", "scripts", $"OBPGame.{name}.cs")));
-        string fixture = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "GodotPlayerAudioFixture.cs"));
+        string fixture = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "Player/GodotPlayerAudioFixture.cs"));
         Assert.DoesNotContain("GetChildren()", fixture);
         Assert.DoesNotContain("AudioStreamPlayer", fixture);
     }

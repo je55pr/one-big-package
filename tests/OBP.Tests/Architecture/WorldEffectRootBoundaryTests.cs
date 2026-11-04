@@ -11,7 +11,7 @@ public sealed class WorldEffectRootBoundaryTests
     {
         string scripts = Path.Combine(RepoPaths.Root, "game", "scripts");
         string entry = File.ReadAllText(Path.Combine(scripts, "OBPGame.cs"));
-        string resources = File.ReadAllText(Path.Combine(scripts, "GodotWorldResources.cs"));
+        string resources = File.ReadAllText(Path.Combine(scripts, "World/GodotWorldResources.cs"));
 
         Assert.Contains("Effects: new(", entry, StringComparison.Ordinal);
         Assert.Contains("BindEffects(bindings.Effects)", resources, StringComparison.Ordinal);
@@ -47,7 +47,7 @@ public sealed class WorldEffectRootBoundaryTests
     public void EffectsSmokeStartsLazilyFromItsDiagnosticOwnerOnlyOnFirstExplicitWorld()
     {
         string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
-        string launcher = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "GodotEffectsSmoke.cs"));
+        string launcher = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "CaptureReplay/GodotEffectsSmoke.cs"));
 
         Assert.Contains("GodotEffectsSmoke.StartIfRequested(_args, switches, () => new(", entry, StringComparison.Ordinal);
         Assert.DoesNotContain("new EffectsExperimentScenario(", entry, StringComparison.Ordinal);

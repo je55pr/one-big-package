@@ -13,7 +13,7 @@ OBP already has the right gameplay/presentation seam (`HudSnapshot` / `Rac1HudPr
 - **Direct retail data (confirmed here):** Six global disc resource ranges were decoded from the user's authorized NTSC-U ISO using the retail index at LBA 1500. All ranges are in-bounds. Chunk 0 contains a coherent native animation/frame/page-index header including 56 non-sentinel animation entries.
 - **Public decompilation lead (source, not yet independently instruction-matched by this investigation):** `lombyte-project/Lombyte`, inspected head `1e40bcb`; paths listed below. Original code structure and native addresses are useful hypotheses pending direct binary signature validation.
 - **Visual comparison (reference only):** Retail gameplay/menu screenshots and documented PS2 controls corroborate a compact vertical pause menu, non-pausing eight-direction Quick Select, illustrated icons and frame-based highlights. Exact on-screen coordinates, colours, and timing still need runtime screenshot comparison.
-- **OBP source baseline (confirmed):** `game/scripts/PlayerHud.cs`, `WeaponQuickSelectUi.cs`, `PauseMenuUi.cs`, `UiTheme.cs`, `Rac1PlanetTravelUi.cs`, `OBPGame.QuickSelect.cs`, and `docs/HUD_FOUNDATION.md`.
+- **OBP source baseline (confirmed):** `game/scripts/Player/PlayerHud.cs`, `WeaponQuickSelectUi.cs`, `PauseMenuUi.cs`, `UiTheme.cs`, `Rac1PlanetTravelUi.cs`, `OBPGame.QuickSelect.cs`, and `docs/HUD_FOUNDATION.md`.
 
 ## Direct disc witness: native HUD resource archive
 

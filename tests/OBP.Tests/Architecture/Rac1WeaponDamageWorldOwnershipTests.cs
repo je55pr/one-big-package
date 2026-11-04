@@ -18,11 +18,11 @@ public sealed class Rac1WeaponDamageWorldOwnershipTests
         foreach (var member in new[] { "FindArsenalTarget", "ApplyArsenalBlast", "ApplyRac1AdditionalDamage" })
             Assert.Empty(root.GetMembers(member));
 
-        string module = Script("Rac1WorldModule.cs");
-        string contact = Script("Rac1WeaponContactHost.cs");
-        string damage = Script("Rac1WeaponDamageHost.cs");
+        string module = Script("Rac1/World/Rac1WorldModule.cs");
+        string contact = Script("Rac1/Weapons/Rac1WeaponContactHost.cs");
+        string damage = Script("Rac1/Weapons/Rac1WeaponDamageHost.cs");
         string application = CompositionSources.Application;
-        string flames = Script("Rac1PyrocitorFlameHost.cs");
+        string flames = Script("Rac1/Weapons/Rac1PyrocitorFlameHost.cs");
 
         Assert.Contains("WeaponDamage = new(Context, Enemies, Breakables, WrenchDamage, Weapons.Contacts)", module, StringComparison.Ordinal);
         Assert.Contains("internal Rac1WeaponDamageHost WeaponDamage { get; }", module, StringComparison.Ordinal);
@@ -34,13 +34,13 @@ public sealed class Rac1WeaponDamageWorldOwnershipTests
         Assert.Contains("Rac1World.WeaponDamage.Apply(node, damage)", application, StringComparison.Ordinal);
         Assert.Contains("ports.ApplyDamage(victim, Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Pyrocitor", flames, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", damage, StringComparison.Ordinal);
-        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1WeaponDamageHost.cs.uid")));
+        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1/Weapons/Rac1WeaponDamageHost.cs.uid")));
     }
 
     [Fact]
     public void ArsenalTargetSearchPreservesEnemyOnlyCandidatesAndExactFilterSemantics()
     {
-        string contact = Script("Rac1WeaponContactHost.cs");
+        string contact = Script("Rac1/Weapons/Rac1WeaponContactHost.cs");
         string application = CompositionSources.Application;
         Assert.Contains("Func<IEnumerable<RuntimeWorldScene.DynamicObjectNode>> ArsenalTargets", contact, StringComparison.Ordinal);
         Assert.Contains("Func<int, bool> IsMorphed", contact, StringComparison.Ordinal);
@@ -61,7 +61,7 @@ public sealed class Rac1WeaponDamageWorldOwnershipTests
     [Fact]
     public void AdditionalDamagePreservesNativeAdmissionDispatchAndPublishOrder()
     {
-        string host = Script("Rac1WeaponDamageHost.cs");
+        string host = Script("Rac1/Weapons/Rac1WeaponDamageHost.cs");
         Assert.Contains("enemies.Frogs.ApplyRac1QueenWeaponDamage(target, damage)", host, StringComparison.Ordinal);
         Assert.Contains("if (!context.MobyRuntime.CanDispatchDamage(damage)) return false", host, StringComparison.Ordinal);
         Assert.Contains("Rac1BoltCrate.IsCrateClass(target.Source.NativeClassId)", host, StringComparison.Ordinal);
@@ -79,7 +79,7 @@ public sealed class Rac1WeaponDamageWorldOwnershipTests
     [Fact]
     public void BlastSelectionPreservesGeometryBoundsOcclusionAndSourceDamageDescriptor()
     {
-        string host = Script("Rac1WeaponDamageHost.cs");
+        string host = Script("Rac1/Weapons/Rac1WeaponDamageHost.cs");
         Assert.Contains("contacts.Geometry.ToArray()", host, StringComparison.Ordinal);
         Assert.Contains("position.Clamp(bounds.Position, bounds.End)", host, StringComparison.Ordinal);
         Assert.Contains("!enemies.IsRac1GameplayActive(node) || position.DistanceTo(closest) > radius", host, StringComparison.Ordinal);

@@ -38,21 +38,21 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
         var binder = compilation.GetTypeByMetadataName("OBP.Game.PlayerEquipmentPresentationBinder")!;
         Assert.Equal("Rac1EquipmentViewPresentation",
             Assert.Single(binder.GetMembers("NativeViews").OfType<IPropertySymbol>()).Type.Name);
-        string composition = Script("PlayerEquipmentPresentationBinder.cs");
-        string views = Script("Rac1EquipmentViewPresentation.cs");
+        string composition = Script("Player/PlayerEquipmentPresentationBinder.cs");
+        string views = Script("Rac1/Weapons/Rac1EquipmentViewPresentation.cs");
         Assert.Contains("internal Rac1EquipmentViewPresentation NativeViews { get; } = new()", composition, StringComparison.Ordinal);
         Assert.Contains("NativeViews.RetireWorld()", composition, StringComparison.Ordinal);
         Assert.Contains("NativeViews.InvalidateSource()", composition, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", views, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1WeaponInventory(", views, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1AdditionalWeaponSession(", views, StringComparison.Ordinal);
-        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1EquipmentViewPresentation.cs.uid")));
+        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1/Weapons/Rac1EquipmentViewPresentation.cs.uid")));
     }
 
     [Fact]
     public void ClearingViewsRetiresAvatarChildrenAndTheirStagedAttachments()
     {
-        string views = Script("Rac1EquipmentViewPresentation.cs");
+        string views = Script("Rac1/Weapons/Rac1EquipmentViewPresentation.cs");
         int start = views.IndexOf("internal void ClearViews()", StringComparison.Ordinal);
         int end = views.IndexOf("internal void RetireWorld()", StringComparison.Ordinal);
         Assert.True(start >= 0 && end > start);
@@ -69,7 +69,7 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
     [Fact]
     public void ModelsAndStagedEquipmentPreserveSourceCacheAndWorldAttachmentOrder()
     {
-        string views = Script("Rac1EquipmentViewPresentation.cs");
+        string views = Script("Rac1/Weapons/Rac1EquipmentViewPresentation.cs");
         string attach = views[views.IndexOf("internal void Attach(", StringComparison.Ordinal)..views.IndexOf("internal void PlaySelection(", StringComparison.Ordinal)];
 
         AssertIncreasing(attach,
@@ -93,7 +93,7 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
         Assert.Contains("_assets = null", views, StringComparison.Ordinal);
         Assert.Contains("_sourcePath = null", views, StringComparison.Ordinal);
         Assert.Contains("_materials = null", views, StringComparison.Ordinal);
-        string root = Script("Rac1WeaponUsePresentationHost.cs");
+        string root = Script("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs");
         Assert.Contains("Equipment.NativeViews.Attach(State.SourcePath(), State.CurrentWorld()!, avatarView, ports.Avatar.Avatar)", root, StringComparison.Ordinal);
         Assert.Contains("Sources.Setup.Library.Get(ObpSourceGame.Rac1)!.Path", CompositionSources.Application, StringComparison.Ordinal);
     }
@@ -101,7 +101,7 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
     [Fact]
     public void SourcePosePlaybacksAndNativeSoundRoutingRetainHandSamplingClock()
     {
-        string views = Script("Rac1EquipmentViewPresentation.cs");
+        string views = Script("Rac1/Weapons/Rac1EquipmentViewPresentation.cs");
         Assert.Contains("view.Play(0, false, ++_poseGeneration, 1)", views, StringComparison.Ordinal);
         Assert.Contains("view.Play(emitting ? 3 : 5, false, ++_poseGeneration, emitting ? 4 : 1)", views, StringComparison.Ordinal);
         Assert.Contains("view.Play(Rac1ArsenalRules.HandFireSequence(shot.Weapon), false, shot.Generation)", views, StringComparison.Ordinal);
@@ -125,7 +125,7 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
             "staged.Visible = inventory.GetAmmo((int)profile.Item) > 0");
         Assert.Contains("native?.MineRearmTicks == 0", step, StringComparison.Ordinal);
 
-        string root = Script("Rac1WeaponUsePresentationHost.cs");
+        string root = Script("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs");
         Assert.Contains("State.Player()!, State.Fusion().PlayNativeSound", root, StringComparison.Ordinal);
         Assert.Contains("Equipment.Assets(Environment.Ordinary(), world.Loot.PickupAssets)", root, StringComparison.Ordinal);
     }
@@ -133,7 +133,7 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
     [Fact]
     public void FirstShotAfterHiddenHandRefreshesCurrentSocketBeforeFiring()
     {
-        string weapons = Script("Rac1WeaponUsePresentationHost.cs");
+        string weapons = Script("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs");
         int start = weapons.IndexOf("if (frame.Shot is { } shot)", StringComparison.Ordinal);
         int end = weapons.IndexOf("use.CompleteFrame(frame, weapons)", StringComparison.Ordinal);
         string fire = weapons[start..end];
@@ -149,7 +149,7 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
     [Fact]
     public void EquipmentMuzzleKeepsAvatarSocketRayAndNativeFallbackWithNoWorldOwnership()
     {
-        string views = Script("Rac1EquipmentViewPresentation.cs");
+        string views = Script("Rac1/Weapons/Rac1EquipmentViewPresentation.cs");
         string muzzle = views[views.IndexOf("internal Vector3 Muzzle(", StringComparison.Ordinal)..views.IndexOf("internal Rac1EquipmentView CreateWorldView(", StringComparison.Ordinal)];
 
         AssertIncreasing(muzzle,
@@ -163,7 +163,7 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
             "return player.GlobalPosition + Vector3.Up * .9f + forward * .7f");
         Assert.Contains("new Rac1EquipmentView(_assets!.Models[nativeClass], _materials!)", views, StringComparison.Ordinal);
         Assert.Contains("root.AddChild(view); return view", views, StringComparison.Ordinal);
-        string root = Script("Rac1WeaponUsePresentationHost.cs");
+        string root = Script("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs");
         Assert.Contains("equipment.NativeViews.Muzzle(weapon, socket, avatar, player!, EquipmentForward(player))", root, StringComparison.Ordinal);
         Assert.Contains("Equipment.NativeViews.CreateWorldView(nativeClass, State.SceneRoot())", root, StringComparison.Ordinal);
         Assert.DoesNotContain("PhysicsRayQueryParameters3D.Create(start, muzzle)", root, StringComparison.Ordinal);
@@ -172,7 +172,7 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
     [Fact]
     public void RootKeepsWorldDispatchOrderAndAvatarViewRetirementAtExistingBoundary()
     {
-        string weapons = Script("Rac1WeaponUsePresentationHost.cs");
+        string weapons = Script("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs");
         string step = weapons[weapons.IndexOf("internal void StepAdditional()", StringComparison.Ordinal)..weapons.IndexOf("internal void StepViews(", StringComparison.Ordinal)];
         AssertIncreasing(step,
             "var frame = use.BeginFrame(",
@@ -189,10 +189,10 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
             "use.CompleteFrame(frame, weapons)",
             "StepAudio()");
 
-        string combat = Script("Rac1WeaponPlayerInputHost.cs");
+        string combat = Script("Rac1/Weapons/Rac1WeaponPlayerInputHost.cs");
         Assert.Contains("views.PlaySelection(weapon)", combat, StringComparison.Ordinal);
         Assert.Contains("weapon => _equipmentPresentation.NativeViews.PlaySelection(weapon)", CompositionSources.Application, StringComparison.Ordinal);
-        string entry = Script("PlayerAvatarPresentationHost.cs");
+        string entry = Script("Player/PlayerAvatarPresentationHost.cs");
         int cleanup = entry.IndexOf("internal void ClearWorldVisual(", StringComparison.Ordinal);
         int subscription = entry.IndexOf("internal void Subscribe(", cleanup, StringComparison.Ordinal);
         Assert.True(cleanup >= 0 && subscription > cleanup);
@@ -200,7 +200,7 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
             "Retire()",
             "equipment.NativeViews.ClearViews()",
             "equipment.ClearBindings()");
-        string binder = Script("PlayerEquipmentPresentationBinder.cs");
+        string binder = Script("Player/PlayerEquipmentPresentationBinder.cs");
         Assert.Contains("NativeViews.RefreshAttachment(state.Inventory.Equipped, controller)", binder, StringComparison.Ordinal);
         Assert.Contains("NativeViews.RefreshVisibility(item => IsRac1HandEquipmentVisible(item, state))", binder, StringComparison.Ordinal);
         Assert.Contains("_equipmentPresentation.NativeViews.Assets", CompositionSources.Application, StringComparison.Ordinal);

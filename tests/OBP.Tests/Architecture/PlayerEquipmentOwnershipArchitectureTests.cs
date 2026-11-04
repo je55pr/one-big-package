@@ -31,10 +31,10 @@ public sealed class PlayerEquipmentOwnershipArchitectureTests
             Assert.Equal("_persistentPlayer.Equipment." + action, call.Expression.ToString());
         }
         Assert.DoesNotContain(root.DescendantNodes().OfType<FieldDeclarationSyntax>(), field => field.Declaration.Type.ToString() == "PlayerEquipmentFacade");
-        string owner = Read("PlayerSessionHost.cs");
+        string owner = Read("Player/PlayerSessionHost.cs");
         Assert.Contains("private PlayerEquipmentFacade? _equipment", owner, StringComparison.Ordinal);
         Assert.Contains("_equipment?.Dispose()", owner, StringComparison.Ordinal);
-        Assert.Contains("persistent.RetireEquipment()", Read("GodotApplicationShutdown.cs"), StringComparison.Ordinal);
+        Assert.Contains("persistent.RetireEquipment()", Read("Application/GodotApplicationShutdown.cs"), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public sealed class PlayerEquipmentOwnershipArchitectureTests
         Assert.Contains("GodotApplicationShutdown.Exit(ReleaseAudioForExit", forwarding, StringComparison.Ordinal);
         Assert.Contains("() => PlayerServices.LifeIfCreated, () => PlayerServices.FusionIfCreated", forwarding, StringComparison.Ordinal);
         Assert.Contains("ApplicationLifecycle.ReportRootExit(Name)", forwarding, StringComparison.Ordinal);
-        var shutdown = CSharpSyntaxTree.ParseText(Read("GodotApplicationShutdown.cs")).GetRoot();
+        var shutdown = CSharpSyntaxTree.ParseText(Read("Application/GodotApplicationShutdown.cs")).GetRoot();
         var helper = Assert.Single(shutdown.DescendantNodes().OfType<MethodDeclarationSyntax>(), method => method.Identifier.ValueText == "Exit");
         var cleanup = Assert.Single(helper.Body!.Statements.OfType<TryStatementSyntax>());
         Assert.Contains("releaseAudio()", cleanup.Block.ToString(), StringComparison.Ordinal);
@@ -65,7 +65,7 @@ public sealed class PlayerEquipmentOwnershipArchitectureTests
     [Fact]
     public void FacadeUsesExistingNativeContractsAndCopiedSceneFactsWithoutPrivilegedRootAccess()
     {
-        string facade = Read("PlayerEquipmentFacade.cs");
+        string facade = Read("Player/PlayerEquipmentFacade.cs");
         Assert.DoesNotContain("OBPGame", facade, StringComparison.Ordinal);
         Assert.DoesNotContain("using Godot", facade, StringComparison.Ordinal);
         Assert.DoesNotContain("WorldContentIdentity", facade, StringComparison.Ordinal);
@@ -75,14 +75,14 @@ public sealed class PlayerEquipmentOwnershipArchitectureTests
         Assert.Contains("native.Assignments.Assign(slot", facade, StringComparison.Ordinal);
         Assert.Contains("native.Assignments.Enable(entry.Definition", facade, StringComparison.Ordinal);
         Assert.Contains("native.Held.HoldWrench()", facade, StringComparison.Ordinal);
-        string capture = Read("CaptureReplayCoordinator.cs");
+        string capture = Read("CaptureReplay/CaptureReplayCoordinator.cs");
         Assert.Contains("actions.Equip(command.Value)", capture, StringComparison.Ordinal);
         Assert.Contains("actions.QuickSlot(command.Slot", capture, StringComparison.Ordinal);
         string composition = CompositionSources.Application;
         Assert.Contains("item => SelectPlayerEquipment(item).Accepted", composition, StringComparison.Ordinal);
         Assert.Contains("(slot, item) => AssignPlayerQuickSelect(slot, item).Accepted", composition, StringComparison.Ordinal);
         Assert.Contains("Record: command => Capture.Replay.RecordCommand(command)", composition, StringComparison.Ordinal);
-        string modal = Read("UiModalCoordinator.cs");
+        string modal = Read("UI/UiModalCoordinator.cs");
         Assert.DoesNotContain("PlayerSessionNativeState", modal, StringComparison.Ordinal);
         Assert.DoesNotContain("PlayerEquipmentPresentationBinder", modal, StringComparison.Ordinal);
     }

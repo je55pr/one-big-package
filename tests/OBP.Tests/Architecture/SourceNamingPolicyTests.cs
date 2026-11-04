@@ -59,7 +59,7 @@ public sealed class SourceNamingPolicyTests
     [InlineData("src/OBP.RAC2/Gameplay/Rac2Session.cs", "namespace OBP.RAC2.Gameplay; public class Rac2Session { public record State(int Tick); }")]
     [InlineData("src/OBP.Runtime/RuntimeWorld.cs", "namespace OBP.Runtime; public record RuntimeWorld(int Tick);")]
     [InlineData("src/OBP.PS2/VifPacket.cs", "namespace OBP.PS2; public class VifPacket {}")]
-    [InlineData("game/scripts/PlayerHost.cs", "namespace OBP.Game; public class PlayerHost {}")]
+    [InlineData("game/scripts/Player/PlayerHost.cs", "namespace OBP.Game; public class PlayerHost {}")]
     public void CanonicalSourceNestedRecordsAndNeutralRetailVocabularyRemainValid(string path, string source) => Assert.Empty(SourceNamingAudit.Scan(path, source));
 
     [Fact]

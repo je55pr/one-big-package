@@ -242,7 +242,7 @@ public sealed class DiagnosticRegistryTests
     [Fact]
     public void TheActualInteractiveMissionLoopUsesTheCancellableWaitBoundary()
     {
-        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/Rac1MissionPlayScenario.cs"));
+        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/Rac1/Rac1MissionPlayScenario.cs"));
         Assert.Contains("while (true)", source, StringComparison.Ordinal);
         Assert.Contains("await ProcessFrameAsync()", source, StringComparison.Ordinal);
         Assert.DoesNotContain("await ToSignal", source, StringComparison.Ordinal);

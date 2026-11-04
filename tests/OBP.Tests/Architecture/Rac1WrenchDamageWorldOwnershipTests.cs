@@ -21,10 +21,10 @@ public sealed class Rac1WrenchDamageWorldOwnershipTests
         })
             Assert.Empty(root.GetMembers(name));
 
-        string module = Script("Rac1WorldModule.cs");
+        string module = Script("Rac1/World/Rac1WorldModule.cs");
         string rootFactory = CompositionSources.Application;
-        string host = Script("Rac1WrenchDamageHost.cs");
-        string additionalDamage = Script("Rac1WeaponDamageHost.cs");
+        string host = Script("Rac1/Weapons/Rac1WrenchDamageHost.cs");
+        string additionalDamage = Script("Rac1/Weapons/Rac1WeaponDamageHost.cs");
 
         Assert.Contains("WrenchDamage = new(Context, Breakables, Enemies, Loot, wrenchDamage)", module, StringComparison.Ordinal);
         Assert.Contains("internal Rac1WrenchDamageHost WrenchDamage { get; }", module, StringComparison.Ordinal);
@@ -36,14 +36,14 @@ public sealed class Rac1WrenchDamageWorldOwnershipTests
         Assert.Contains("owner.WrenchDamage.CompleteCrateDamage(node, admission)", rootFactory, StringComparison.Ordinal);
         Assert.Contains("wrenchDamage.CompleteCrateDamage(target,", additionalDamage, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", host, StringComparison.Ordinal);
-        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1WrenchDamageHost.cs.uid")));
+        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1/Weapons/Rac1WrenchDamageHost.cs.uid")));
     }
 
     [Fact]
     public void PlayerLifetimeWrenchAndRandomRemainBorrowed()
     {
-        string host = Script("Rac1WrenchDamageHost.cs");
-        string player = Script("PlayerSessionHost.cs");
+        string host = Script("Rac1/Weapons/Rac1WrenchDamageHost.cs");
+        string player = Script("Player/PlayerSessionHost.cs");
 
         Assert.Contains("Func<Rac1WrenchCombatController> Wrench", host, StringComparison.Ordinal);
         Assert.Contains("Func<int, int> SelectCrateReward", host, StringComparison.Ordinal);
@@ -59,7 +59,7 @@ public sealed class Rac1WrenchDamageWorldOwnershipTests
     [Fact]
     public void NativeCrateAndHostileDispatchRetainEventOrdering()
     {
-        string host = Script("Rac1WrenchDamageHost.cs");
+        string host = Script("Rac1/Weapons/Rac1WrenchDamageHost.cs");
         Assert.Contains("_breakables.TryTriggerExplosiveDamage(target, hit)", host, StringComparison.Ordinal);
         Assert.Contains("_context.DamageTransport.Publish(hit)", host, StringComparison.Ordinal);
         Assert.Contains("_context.MobyRuntime.CanDispatchDamage(damageEvent)", host, StringComparison.Ordinal);
@@ -83,8 +83,8 @@ public sealed class Rac1WrenchDamageWorldOwnershipTests
     [Fact]
     public void RetiredWorldRejectsLateContactsAndRewards()
     {
-        string host = Script("Rac1WrenchDamageHost.cs");
-        string module = Script("Rac1WorldModule.cs");
+        string host = Script("Rac1/Weapons/Rac1WrenchDamageHost.cs");
+        string module = Script("Rac1/World/Rac1WorldModule.cs");
         Assert.Contains("if (_disposed) return false;", host, StringComparison.Ordinal);
         Assert.Contains("if (_disposed) return;", host, StringComparison.Ordinal);
         Assert.Contains("public void Dispose() => _disposed = true;", host, StringComparison.Ordinal);

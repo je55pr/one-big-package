@@ -10,8 +10,8 @@ public sealed class WorldCaptureCameraArchitectureTests
     public void NativeWorldAndAnimatedMobyCameraFramingBelongToPresentationAdapter()
     {
         string root = CompositionSources.Application;
-        string entry = Script("GodotWorldResources.cs");
-        string camera = Script("GodotWorldCaptureCamera.cs");
+        string entry = Script("World/GodotWorldResources.cs");
+        string camera = Script("World/GodotWorldCaptureCamera.cs");
 
         Assert.DoesNotContain("private void FrameShowcaseCamera(", root, StringComparison.Ordinal);
         Assert.DoesNotContain("private void FrameAnimatedMobies(", root, StringComparison.Ordinal);
@@ -34,7 +34,7 @@ public sealed class WorldCaptureCameraArchitectureTests
     [Fact]
     public void AnimFocusSpawnUsesValidatedFramingAndReportsFailure()
     {
-        string spawn = Script("GodotPlayerSpawnPlacement.cs");
+        string spawn = Script("Player/GodotPlayerSpawnPlacement.cs");
 
         Assert.Contains("AnimatedMeshFraming.MeasureFirstInstance(world.AnimatedMeshes)", spawn);
         Assert.Contains("anim-focus spawn not applied", spawn);

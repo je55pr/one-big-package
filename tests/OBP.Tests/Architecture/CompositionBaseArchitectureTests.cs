@@ -20,9 +20,9 @@ public sealed class CompositionBaseArchitectureTests
 
     private static readonly string[] CompositionFiles =
     [
-        "game/scripts/OBPGame.cs", "game/scripts/ApplicationComponents.cs", "game/scripts/CompositionBase.cs",
-        "game/diagnostics/ApplicationDiagnostics.cs", "game/scripts/CaptureComposition.cs",
-        "game/scripts/Rac1WorldComposition.cs", "game/scripts/Rac2WorldComposition.cs", "game/scripts/PlayerServicesComposition.cs",
+        "game/scripts/OBPGame.cs", "game/scripts/Application/ApplicationComponents.cs", "game/scripts/Application/CompositionBase.cs",
+        "game/diagnostics/Framework/ApplicationDiagnostics.cs", "game/scripts/CaptureReplay/CaptureComposition.cs",
+        "game/scripts/Rac1/World/Rac1WorldComposition.cs", "game/scripts/Rac2/Rac2WorldComposition.cs", "game/scripts/Player/PlayerServicesComposition.cs",
     ];
 
     private static IEnumerable<(string Path, SyntaxNode Root)> GameSources() =>
@@ -55,7 +55,7 @@ public sealed class CompositionBaseArchitectureTests
     [Fact]
     public void TheSharedSurfaceOnlyShrinks()
     {
-        var path = Path.Combine(RepoPaths.Root, "game/scripts/CompositionBase.cs");
+        var path = Path.Combine(RepoPaths.Root, "game/scripts/Application/CompositionBase.cs");
         var type = CSharpSyntaxTree.ParseText(File.ReadAllText(path)).GetRoot().DescendantNodes()
             .OfType<ClassDeclarationSyntax>().Single(candidate => candidate.Identifier.ValueText == "CompositionBase");
         int members = type.Members.Count(member => member.Modifiers.Any(modifier =>

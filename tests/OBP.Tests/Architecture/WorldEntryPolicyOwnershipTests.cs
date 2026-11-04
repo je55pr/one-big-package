@@ -6,9 +6,9 @@ public sealed class WorldEntryPolicyOwnershipTests
     public void EntryRootBorrowsWorldPreparationPolicyInsteadOfOwningIt()
     {
         string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
-        string policy = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "WorldEntryPreparationPolicy.cs"));
-        string lifetime = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/WorldSceneLifetime.cs"));
-        string resources = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotWorldResources.cs"));
+        string policy = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "World/WorldEntryPreparationPolicy.cs"));
+        string lifetime = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/World/WorldSceneLifetime.cs"));
+        string resources = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/World/GodotWorldResources.cs"));
         string planning = File.ReadAllText(Path.Combine(RepoPaths.Root, "src", "OBP.Fusion", "WorldEntryContracts.cs"));
 
         Assert.Contains("WorldSourceFileStamp.Capture(sourcePath)", lifetime);
@@ -62,7 +62,7 @@ public sealed class WorldEntryPolicyOwnershipTests
     {
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
         string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
-        string navigation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "ApplicationNavigationCoordinator.cs"));
+        string navigation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "Application/ApplicationNavigationCoordinator.cs"));
         string lifecycle = File.ReadAllText(Path.Combine(RepoPaths.Root, "src", "OBP.Godot", "ApplicationLifecycle.cs"));
 
         Assert.Contains("_navigation.EnterPreparedWorld(destinationId,", entry, StringComparison.Ordinal);
@@ -95,7 +95,7 @@ public sealed class WorldEntryPolicyOwnershipTests
     public void AuthoredDuplicateIsHiddenByAvatarPresentationOwner()
     {
         string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
-        string avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "PlayerAvatarPresentationHost.cs"));
+        string avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "Player/PlayerAvatarPresentationHost.cs"));
 
         Assert.Contains("_avatarPresentation.AttachWorldVisual(player, new(", entry);
         Assert.Contains("HideAuthoredWorldRatchetPresentation(bindings.Destination(), bindings.Scene())", avatar);
