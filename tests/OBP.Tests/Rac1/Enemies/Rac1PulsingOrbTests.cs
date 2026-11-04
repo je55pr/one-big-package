@@ -54,7 +54,9 @@ public sealed class Rac1PulsingOrbTests
             {
                 Assert.NotNull(source.PVar);
                 Assert.Equal(16, source.PVar.Length);
-                Assert.True(session.Register(level.LevelId, Source(source.Index, source.PVar)));
+                var original = Source(source.Index, source.PVar);
+                Assert.Equal<byte>(source.PVar, Assert.Single(original.NativePayloads!, payload => payload.Format == "rac1-pvar").Data);
+                Assert.True(session.Register(level.LevelId, original));
                 total++;
             }
         }
