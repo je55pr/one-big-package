@@ -7,6 +7,7 @@ public sealed class BugReporterReplayEvidenceTests
 {
     [Theory]
     [InlineData("complete")]
+    [InlineData("reordered")]
     [InlineData("duplicate-replay")]
     [InlineData("foreign-report")]
     [InlineData("missing-marker")]
@@ -28,6 +29,7 @@ public sealed class BugReporterReplayEvidenceTests
         switch (fault)
         {
             case "complete": break;
+            case "reordered": results = [Result(second), Result(first)]; break;
             case "duplicate-replay": results[1] = Result(first); break;
             case "foreign-report": results[1] = Result(foreign); break;
             case "missing-marker": results[1] = JsonSerializer.SerializeToElement(new { Result = "matched", BuildChanged = false }); break;
@@ -38,7 +40,7 @@ public sealed class BugReporterReplayEvidenceTests
             case "diverged": results[1] = Result(second, "diverged"); break;
             default: throw new ArgumentOutOfRangeException(nameof(fault));
         }
-        Assert.Equal(fault == "complete", BugReporterScenario.MatchesSavedReportReplays(expected, results));
+        Assert.Equal(fault is "complete" or "reordered", BugReporterScenario.MatchesSavedReportReplays(expected, results));
     }
 
 
@@ -67,6 +69,13 @@ public sealed class BugReporterReplayEvidenceTests
 
             File.WriteAllText(secondPath, Matched(second));
             Assert.True(BugReporterScenario.ReplayFilesMatchSavedReports(
+                [first, second], [firstPath, secondPath]));
+
+            File.WriteAllText(secondPath, "{ malformed");
+            Assert.False(BugReporterScenario.ReplayFilesMatchSavedReports(
+                [first, second], [firstPath, secondPath]));
+            File.Delete(secondPath);
+            Assert.False(BugReporterScenario.ReplayFilesMatchSavedReports(
                 [first, second], [firstPath, secondPath]));
         }
         finally
