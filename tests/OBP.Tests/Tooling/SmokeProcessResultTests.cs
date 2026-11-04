@@ -171,6 +171,8 @@ public sealed class SmokeProcessResultTests
 
     private static async Task<(int Code, string Output, string Error)> Run(string shell, string script)
     {
+        if (Path.GetFileName(shell) is not ("pwsh" or "pwsh.exe" or "powershell.exe") || !File.Exists(shell))
+            throw new ArgumentException("An installed PowerShell executable is required.", nameof(shell));
         var start = new ProcessStartInfo(shell) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         foreach (string argument in new[] { "-NoProfile", "-NonInteractive", "-EncodedCommand", Convert.ToBase64String(Encoding.Unicode.GetBytes(script)) })
             start.ArgumentList.Add(argument);
