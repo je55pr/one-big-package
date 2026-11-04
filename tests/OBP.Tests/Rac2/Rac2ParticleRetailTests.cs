@@ -142,6 +142,8 @@ public sealed class Rac2ParticleRetailTests
     {
         string input = FormattableString.Invariant($"{seed} {frames} {(repeat ? 1 : 0)} {distance}");
         var rows = fixture.Execute(program, instance, pvars, "emit", input).Select(row => row.Split(' ')).ToArray();
+        RequireProtocolCohorts(rows, frames);
+        Assert.Contains(rows, row => row[0] == "R");
         foreach (var row in rows.Where(r => r[0] == "D")) Assert.Equal(fixture.Assets.Definitions.Texture(int.Parse(row[1]), 0), int.Parse(row[2]));
         foreach (var row in rows.Where(r => r[0] == "T"))
         {
@@ -180,6 +182,33 @@ public sealed class Rac2ParticleRetailTests
             if (tick < frames) { session.Step(); if (repeat) session.Emit(owner); }
         }
     }
+    private static void RequireProtocolCohorts(string[][] rows, int frames)
+    {
+        Assert.Equal(Enumerable.Range(0, 111), rows.Where(row => row[0] == "D").Select(row => int.Parse(row[1], CultureInfo.InvariantCulture)).Order());
+        Assert.Equal(Enumerable.Range(0, 109), rows.Where(row => row[0] == "T").Select(row => int.Parse(row[1], CultureInfo.InvariantCulture)).Order());
+        Assert.Equal(Enumerable.Range(0, frames + 1), rows.Where(row => row[0] == "F").Select(row => int.Parse(row[1], CultureInfo.InvariantCulture)).Order());
+    }
+
+    [Theory]
+    [InlineData("D", false)]
+    [InlineData("D", true)]
+    [InlineData("T", false)]
+    [InlineData("T", true)]
+    [InlineData("F", false)]
+    [InlineData("F", true)]
+    public void SyntheticProtocolCohortsRejectMissingOrDuplicatedIds(string kind, bool duplicate)
+    {
+        // Protocol metadata only; these rows do not contain native records,
+        // sprite descriptors or fabricated parity evidence.
+        var rows = Enumerable.Range(0, 111).Select(id => new[] { "D", id.ToString(CultureInfo.InvariantCulture), "0" })
+            .Concat(Enumerable.Range(0, 109).Select(id => new[] { "T", id.ToString(CultureInfo.InvariantCulture), "0", "0" }))
+            .Concat(Enumerable.Range(0, 2).Select(id => new[] { "F", id.ToString(CultureInfo.InvariantCulture), "0", "0" })).ToList();
+        RequireProtocolCohorts(rows.ToArray(), 1);
+        if (duplicate) rows.Add(rows.First(row => row[0] == kind && row[1] == "0").ToArray());
+        else Assert.True(rows.Remove(rows.First(row => row[0] == kind && row[1] == "1")));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => RequireProtocolCohorts(rows.ToArray(), 1));
+    }
+
     private static int FirstDifference(byte[] a, byte[] b) => Enumerable.Range(0, a.Length).FirstOrDefault(i => a[i] != b[i], -1);
     private static byte[] Words(IEnumerable<string> words)
     {
@@ -209,6 +238,7 @@ public sealed class Rac2ParticleRetailTests
             var data = Rac2LevelWad.RequireLump(wad, header, 0); Overlay = Rac2LevelOverlay.Open(data);
             Assert.Equal("b46e44c26195efd160b1bc62910cf22e1b1fe3eb46944f5926a9f2b7879e45b6", Hash(Overlay.Raw));
             Instances = Rac2Instances.Read(Rac2LevelWad.RequireLump(wad, header, 2)).MobyInstances.Where(m => m.OClass == 4887).ToArray();
+            Assert.Equal(new[] { 262, 263, 264 }, Instances.Select(instance => instance.Index));
             var core = Rac2LevelCore.Open(data); Assets = Rac2ParticleAssets.Read(core, Rac2ParticleTests.Source);
             var executable = fs.OpenFile("/SCUS_972.68")!;
             Assert.Equal("36d5814d8d95328d5839612ccdf7a2e7ecac0b6f868d3ad4bb2e98411f734b4a", Hash(executable.Read(0, checked((int)executable.Length))));
