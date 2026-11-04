@@ -31,8 +31,12 @@ public sealed class Rac3ShockCannonNativeOracleTests
         {
             using var native = Execute(null, $"{rings} {color} {(blend ? 1 : 0)} {phase.ToString(CultureInfo.InvariantCulture)}\n");
             var managed = Rac3ShockCannonBeam.EllipsoidStrips(Matrix4x4.Identity, rings, color, phase, blend);
+            Assert.Equal(Math.Abs(rings), managed.Length);
             Assert.Equal(managed.Length, native.RootElement.GetArrayLength());
             for (int strip = 0; strip < managed.Length; strip++)
+            {
+                Assert.Equal(22, managed[strip].Length);
+                Assert.Equal(managed[strip].Length, native.RootElement[strip].GetArrayLength());
                 for (int point = 0; point < managed[strip].Length; point++)
                 {
                     var actual = managed[strip][point]; var original = native.RootElement[strip][point];
@@ -43,6 +47,7 @@ public sealed class Rac3ShockCannonNativeOracleTests
                     Assert.InRange(Math.Abs(actual.Uv.X - original[4].GetDouble()), 0, .000002);
                     Assert.InRange(Math.Abs(actual.Uv.Y - original[5].GetDouble()), 0, .000002);
                 }
+            }
         }
     }
 
@@ -61,6 +66,7 @@ public sealed class Rac3ShockCannonNativeOracleTests
         for (int i = 1; i < 79; i++) frame = session.Advance(new(true));
         var layers = Rac3ShockCannonBeam.Build(frame, Rac3ShockCannonBeam.Basis.FromNativeAim(aim, new(2, 3, 4)),
             new Rac3ShockCannonBeam.Scroll().Advance());
+        Assert.Equal(4, layers.Count);
         Assert.Equal(layers.Count, native.RootElement.GetArrayLength());
         for (int index = 0; index < layers.Count; index++)
         {
@@ -69,10 +75,13 @@ public sealed class Rac3ShockCannonNativeOracleTests
             Assert.Equal(original.GetProperty("color").GetUInt32(), layer.NativeRgba);
             Assert.Equal(original.GetProperty("rings").GetInt32(), layer.RingCount);
             float[] m = original.GetProperty("matrix").EnumerateArray().Select(v => v.GetSingle()).ToArray();
+            Assert.Equal(16, m.Length);
             var matrix = new Matrix4x4(m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7],
                 m[8], m[9], m[10], m[11], m[12], m[13], m[14], m[15]);
             var expected = Rac3ShockCannonBeam.EllipsoidStrips(matrix, layer.RingCount, layer.NativeRgba,
                 original.GetProperty("phase").GetSingle()).SelectMany(s => s).ToArray();
+            Assert.NotEmpty(expected);
+            Assert.Equal(expected.Length * 3, layer.Mesh.Positions.Length);
             for (int point = 0; point < expected.Length; point++)
             {
                 var p = expected[point].Position;
