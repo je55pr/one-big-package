@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using OBP.IO;
 using OBP.RAC1.Level;
 using OBP.RAC1.Progression;
@@ -10,6 +11,48 @@ namespace OBP.Tests;
 
 public sealed class Rac1MissionRetailTests
 {
+    [Fact]
+    public void WitnessContainsCompleteDistinctObservationRosters()
+    {
+        using var witness = Rac1MissionProgressionTests.Witness();
+        RequireRosters(witness.RootElement);
+    }
+
+    [Theory]
+    [InlineData("code")]
+    [InlineData("infobots")]
+    public void WitnessRejectsRepeatedNumericObservationIdentities(string cohort)
+    {
+        using var witness = Rac1MissionProgressionTests.Witness();
+        var root = JsonNode.Parse(witness.RootElement.GetRawText())!;
+        var rows = root[cohort]!.AsArray();
+        rows[1] = rows[0]!.DeepClone();
+        if (cohort == "code")
+            foreach (string address in new[] { "start", "end" })
+                rows[1]![address] = rows[1]![address]!.GetValue<string>().ToUpperInvariant();
+        using var repeated = JsonDocument.Parse(root.ToJsonString());
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => RequireRosters(repeated.RootElement));
+    }
+
+    private static void RequireRosters(JsonElement witness)
+    {
+        Assert.Equal(2, witness.GetProperty("overlays").GetArrayLength());
+        Assert.Equal(2, witness.GetProperty("overlays").EnumerateArray()
+            .Select(row => row.GetProperty("level").GetInt32()).Distinct().Count());
+        Assert.Equal(12, witness.GetProperty("code").GetArrayLength());
+        Assert.Equal(12, witness.GetProperty("code").EnumerateArray()
+            .Select(row => (row.GetProperty("level").GetInt32(), Address(row, "start"), Address(row, "end"))).Distinct().Count());
+        Assert.Equal(2, witness.GetProperty("programs").GetArrayLength());
+        Assert.Equal(2, witness.GetProperty("programs").EnumerateArray()
+            .Select(row => row.GetProperty("level").GetInt32()).Distinct().Count());
+        Assert.Equal(8, witness.GetProperty("infobots").GetArrayLength());
+        Assert.Equal(8, witness.GetProperty("infobots").EnumerateArray()
+            .Select(row => (row.GetProperty("level").GetInt32(), row.GetProperty("index").GetInt32())).Distinct().Count());
+    }
+
+    private static int Address(JsonElement row, string name) =>
+        int.Parse(row.GetProperty(name).GetString()![2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+
     [SkippableFact]
     public void MissionWitness_MatchesOriginalCodeAuthoredActorsAndCompiledTalkPrograms()
     {
@@ -17,16 +60,7 @@ public sealed class Rac1MissionRetailTests
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
         using var disc = new FileRandomAccessReader(iso!);
         using var witness = Rac1MissionProgressionTests.Witness();
-        Assert.Equal(2, witness.RootElement.GetProperty("overlays").GetArrayLength());
-        Assert.Equal(2, witness.RootElement.GetProperty("overlays").EnumerateArray()
-            .Select(row => row.GetProperty("level").GetInt32()).Distinct().Count());
-        Assert.Equal(12, witness.RootElement.GetProperty("code").GetArrayLength());
-        Assert.Equal(12, witness.RootElement.GetProperty("code").EnumerateArray()
-            .Select(row => (row.GetProperty("level").GetInt32(), row.GetProperty("start").GetString(), row.GetProperty("end").GetString())).Distinct().Count());
-        Assert.Equal(2, witness.RootElement.GetProperty("programs").GetArrayLength());
-        Assert.Equal(2, witness.RootElement.GetProperty("programs").EnumerateArray()
-            .Select(row => row.GetProperty("level").GetInt32()).Distinct().Count());
-        Assert.Equal(8, witness.RootElement.GetProperty("infobots").GetArrayLength());
+        RequireRosters(witness.RootElement);
         var levels = Rac1DiscIndex.Read(disc).Levels;
         var overlays = new Dictionary<int, Rac1ExecutableOverlay>();
         foreach (var row in witness.RootElement.GetProperty("overlays").EnumerateArray())
@@ -38,8 +72,7 @@ public sealed class Rac1MissionRetailTests
         }
         foreach (var row in witness.RootElement.GetProperty("code").EnumerateArray())
         {
-            int Address(string name) => int.Parse(row.GetProperty(name).GetString()![2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-            byte[] hash = SHA256.HashData(overlays[row.GetProperty("level").GetInt32()].Read(Address("start"), Address("end") - Address("start")));
+            byte[] hash = SHA256.HashData(overlays[row.GetProperty("level").GetInt32()].Read(Address(row, "start"), Address(row, "end") - Address(row, "start")));
             Assert.Equal(row.GetProperty("sha256").GetString(), Convert.ToHexString(hash).ToLowerInvariant());
         }
         foreach (var row in witness.RootElement.GetProperty("programs").EnumerateArray())
