@@ -59,7 +59,7 @@ public sealed class Rac1EnemyHostArchitectureTests
         Assert.DoesNotContain(neighbors.GetMembers(), member => member.Name.Contains("Amoeboid", StringComparison.Ordinal));
         Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1Amoeboids.cs")));
 
-        var hostTree = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1EnemyHost.cs");
+        var hostTree = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1/Enemies/Rac1EnemyHost.cs");
         var methods = hostTree.GetRoot().DescendantNodes()
             .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.MemberAccessExpressionSyntax>()
             .Where(access => access.Expression is Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax id &&

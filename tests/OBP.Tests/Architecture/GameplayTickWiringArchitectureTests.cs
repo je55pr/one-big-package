@@ -26,7 +26,7 @@ public sealed class GameplayTickWiringArchitectureTests
     [Fact]
     public void WorldActivationRegistersOnceAndRetirementStopsCallbacksBeforeTeardown()
     {
-        string entry = Between(Script("GodotWorldResources.cs"), "internal void Activate(", "internal void BindGameplayTicks(");
+        string entry = Between(Script("World/GodotWorldResources.cs"), "internal void Activate(", "internal void BindGameplayTicks(");
         string root = CompositionSources.Application;
         string retire = Between(root, "private void RetireWorldBindings", "private void ApplyOverlaySpec");
         Assert.Contains("WorldGameplayTickBindings.Activate(entry", entry);
@@ -36,16 +36,16 @@ public sealed class GameplayTickWiringArchitectureTests
         Assert.Contains("RetireGameplayTicks()", retire);
         Assert.True(retire.IndexOf("RetireGameplayTicks()", StringComparison.Ordinal)
             < retire.IndexOf("PlayerServices.Actors.Reset()", StringComparison.Ordinal));
-        Assert.Contains("GameplayTicks?.Dispose()", Script("GodotWorldResources.cs"));
-        Assert.Contains("_lifetime.Cancel()", Script("WorldSceneLifetime.cs"));
+        Assert.Contains("GameplayTicks?.Dispose()", Script("World/GodotWorldResources.cs"));
+        Assert.Contains("_lifetime.Cancel()", Script("World/WorldSceneLifetime.cs"));
     }
 
     [Fact]
     public void OnlySourceModuleRegistersItsNativeWorldTickAndWorldInput()
     {
-        string one = Script("Rac1WorldModule.cs");
-        string two = Script("Rac2WorldModule.cs");
-        string binder = Script("WorldGameplayTickBindings.cs");
+        string one = Script("Rac1/World/Rac1WorldModule.cs");
+        string two = Script("Rac2/Rac2WorldModule.cs");
+        string binder = Script("World/WorldGameplayTickBindings.cs");
         string rac1Registrations = Between(one, "internal void RegisterTicks(", "internal void PhysicsStep(");
         int effects = rac1Registrations.IndexOf("\"rac1-dead-bomb-effects\"", StringComparison.Ordinal);
         int sourceGate = rac1Registrations.IndexOf("if (_world.Game != ObpSourceGame.Rac1) return", StringComparison.Ordinal);

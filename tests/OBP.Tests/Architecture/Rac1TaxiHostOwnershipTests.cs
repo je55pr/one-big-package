@@ -18,15 +18,15 @@ public sealed class Rac1TaxiHostOwnershipTests
     [Fact]
     public void WorldLeaseOwnsTaxiMountResetTickAndRetirement()
     {
-        var module = Parse("Rac1WorldModule.cs");
+        var module = Parse("Rac1/World/Rac1WorldModule.cs");
         var taxi = Assert.Single(module.DescendantNodes().OfType<PropertyDeclarationSyntax>(),
             property => property.Identifier.ValueText == "Taxis");
         Assert.Equal("Rac1MetropolisTaxiHost", taxi.Type.ToString());
-        Assert.Contains("Taxis = new(taxis)", Source("Rac1WorldModule.cs"), StringComparison.Ordinal);
-        Assert.Contains("Taxis.Configure(world, result)", Method("Rac1WorldModule.cs", "ConfigureActors").ToString(), StringComparison.Ordinal);
-        Assert.Contains("Taxis.Tick(delta)", Method("Rac1WorldModule.cs", "Tick").ToString(), StringComparison.Ordinal);
-        Assert.Contains("Taxis.Reset()", Method("Rac1WorldModule.cs", "ResetBindings").ToString(), StringComparison.Ordinal);
-        var disposal = Method("Rac1WorldModule.cs", "Dispose").ToString();
+        Assert.Contains("Taxis = new(taxis)", Source("Rac1/World/Rac1WorldModule.cs"), StringComparison.Ordinal);
+        Assert.Contains("Taxis.Configure(world, result)", Method("Rac1/World/Rac1WorldModule.cs", "ConfigureActors").ToString(), StringComparison.Ordinal);
+        Assert.Contains("Taxis.Tick(delta)", Method("Rac1/World/Rac1WorldModule.cs", "Tick").ToString(), StringComparison.Ordinal);
+        Assert.Contains("Taxis.Reset()", Method("Rac1/World/Rac1WorldModule.cs", "ResetBindings").ToString(), StringComparison.Ordinal);
+        var disposal = Method("Rac1/World/Rac1WorldModule.cs", "Dispose").ToString();
         Assert.Contains("Taxis.AbortRide()", disposal, StringComparison.Ordinal);
         Assert.Contains("Taxis.Dispose()", disposal, StringComparison.Ordinal);
         Assert.True(disposal.IndexOf("Taxis.AbortRide()", StringComparison.Ordinal) <
@@ -43,21 +43,21 @@ public sealed class Rac1TaxiHostOwnershipTests
         Assert.DoesNotContain("_rac1TaxiNodes", root, StringComparison.Ordinal);
         Assert.DoesNotContain("_rac1TaxiCollisionBodies", root, StringComparison.Ordinal);
         Assert.Contains("new Rac1TaxiHostPorts(", root, StringComparison.Ordinal);
-        var host = Parse("Rac1MetropolisTaxiHost.cs");
+        var host = Parse("Rac1/World/Rac1MetropolisTaxiHost.cs");
         Assert.DoesNotContain(host.DescendantNodes().OfType<IdentifierNameSyntax>(),
             identifier => identifier.Identifier.ValueText == "PlayerHost");
         Assert.Contains(host.DescendantNodes().OfType<FieldDeclarationSyntax>(),
             field => field.Declaration.Type.ToString().Contains("IRac1TaxiPassengerController", StringComparison.Ordinal));
-        Assert.Contains("Rac1HostedTaxiCab", Source("Rac1MetropolisTaxiHost.cs"), StringComparison.Ordinal);
+        Assert.Contains("Rac1HostedTaxiCab", Source("Rac1/World/Rac1MetropolisTaxiHost.cs"), StringComparison.Ordinal);
     }
 
     [Fact]
     public void SnapshotSourceGuardsLiveCollisionHullsAndRetiredCabDiagnostics()
     {
-        var cab = Source("Rac1HostedTaxiCab.cs");
-        var host = Source("Rac1MetropolisTaxiHost.cs");
+        var cab = Source("Rac1/World/Rac1HostedTaxiCab.cs");
+        var host = Source("Rac1/World/Rac1MetropolisTaxiHost.cs");
         var diagnostics = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics",
-            "GodotRac1TaxiDiagnosticFixture.cs"));
+            "Rac1/Fixtures/GodotRac1TaxiDiagnosticFixture.cs"));
 
         Assert.Contains("GodotObject.IsInstanceValid(Hull) && !Hull.IsQueuedForDeletion()", cab, StringComparison.Ordinal);
         Assert.Contains("get => HullValid ? Hull.CollisionLayer : _lastCollisionLayer", cab, StringComparison.Ordinal);
@@ -73,12 +73,12 @@ public sealed class Rac1TaxiHostOwnershipTests
     public void DiagnosticSourceUsesImmutableCabSnapshotsInsteadOfHostCollections()
     {
         var diagnostic = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics",
-            "GodotRac1TaxiDiagnosticFixture.cs"));
+            "Rac1/Fixtures/GodotRac1TaxiDiagnosticFixture.cs"));
         Assert.Contains("Host.ReadSnapshot()", diagnostic, StringComparison.Ordinal);
         Assert.Contains("Host.NativeSession", diagnostic, StringComparison.Ordinal);
         Assert.DoesNotContain("Dictionary<int, StaticBody3D>", diagnostic, StringComparison.Ordinal);
         Assert.DoesNotContain("Dictionary<int, RuntimeWorldScene.DynamicObjectNode>", diagnostic, StringComparison.Ordinal);
-        var host = Source("Rac1MetropolisTaxiHost.cs");
+        var host = Source("Rac1/World/Rac1MetropolisTaxiHost.cs");
         Assert.Contains("ImmutableArray<Rac1TaxiCabSnapshot>", host, StringComparison.Ordinal);
         Assert.Contains("ImmutableArray<StaticBody3D> CaptureHulls()", host, StringComparison.Ordinal);
     }

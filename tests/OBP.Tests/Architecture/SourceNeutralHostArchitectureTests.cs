@@ -10,7 +10,7 @@ public sealed class SourceNeutralHostArchitectureTests
     public void NativeWaterContactsCanPlayAudioButCannotBindItsSelectedSource()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var tree = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1WorldModule.cs");
+        var tree = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1/World/Rac1WorldModule.cs");
         var method = tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
             .Single(method => method.Identifier.ValueText == "BindSourcePlayerContacts");
         var moduleModel = compilation.GetSemanticModel(tree);
@@ -25,7 +25,7 @@ public sealed class SourceNeutralHostArchitectureTests
         Assert.Contains(subscriptions, binding =>
             binding.Event is IEventSymbol { Name: "Rac1WaterSoundRequested", ContainingType.Name: "PlayerHost" } &&
             binding.Callback is IPropertySymbol { Name: "WaterSound", ContainingType.Name: "Rac1WorldContactPorts" });
-        var composition = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1WorldComposition.cs");
+        var composition = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1/World/Rac1WorldComposition.cs");
         var factory = composition.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
             .Single(method => method.Identifier.ValueText == "CreateRac1WorldModule");
         var model = compilation.GetSemanticModel(composition);
@@ -52,7 +52,7 @@ public sealed class SourceNeutralHostArchitectureTests
     public void InjectingDestinationDependentAvatarSelectionIntoTheRealHostFails()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1WorldComposition.cs");
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1/World/Rac1WorldComposition.cs");
         const string mistake = """
             private void ChooseAvatarFromPlanet(OBP.Core.ObpDestination next) {
                 var origin = next;
@@ -69,7 +69,7 @@ public sealed class SourceNeutralHostArchitectureTests
     public void AnApprovedWaterAdapterCannotStartSelectingThePlayerAvatar()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1NovalisWaterMechanism.cs");
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1/World/Rac1NovalisWaterMechanism.cs");
         string source = original.GetText().ToString().Replace(
             "_water = Rac1NovalisWaterSurfaces.FromWorld(world);",
             "var wrongProvider = OBP.Game.PlayerAvatarPresentationHost.Provider(OBP.Core.ObpSourceGame.Rac1);\n" +
@@ -86,7 +86,7 @@ public sealed class SourceNeutralHostArchitectureTests
     public void GadgetToggleCannotRegainRootOrWorldOriginSelection()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var tree = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1MetalDetectorHost.cs");
+        var tree = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1/Weapons/Rac1MetalDetectorHost.cs");
         var method = tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
             .Single(method => method.Identifier.ValueText == "Toggle");
         Assert.Contains("ports.Ordinary()", method.ToString(), StringComparison.Ordinal);
@@ -102,7 +102,7 @@ public sealed class SourceNeutralHostArchitectureTests
     public void CheckpointSourceAdmissionCannotAcquirePlayerSelection()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1LifecycleWorldHost.cs");
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1/Campaign/Rac1LifecycleWorldHost.cs");
         var method = original.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>().Single(method => method.Identifier.Text == "ResolveEnvironmentalRestart");
         Assert.Empty(method.DescendantNodes().OfType<AssignmentExpressionSyntax>());
         Assert.All(method.DescendantNodes().OfType<InvocationExpressionSyntax>(), call =>
@@ -120,7 +120,7 @@ public sealed class SourceNeutralHostArchitectureTests
     public void WorldEntryAdapterCannotConditionallySpawnThePlayerByOrigin()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/GodotWorldResources.cs");
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/World/GodotWorldResources.cs");
         var invocation = original.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>()
             .Single(call => call.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "SpawnPlayer" });
         var statement = Assert.IsType<ExpressionStatementSyntax>(invocation.Parent);
@@ -136,8 +136,8 @@ public sealed class SourceNeutralHostArchitectureTests
     }
 
     [Theory]
-    [InlineData("game/scripts/Rac1MetalDetectorHost.cs", "if (ports.Ordinary())")]
-    [InlineData("game/scripts/Rac1NovalisWaterMechanism.cs", "_water = Rac1NovalisWaterSurfaces.FromWorld(world);")]
+    [InlineData("game/scripts/Rac1/Weapons/Rac1MetalDetectorHost.cs", "if (ports.Ordinary())")]
+    [InlineData("game/scripts/Rac1/World/Rac1NovalisWaterMechanism.cs", "_water = Rac1NovalisWaterSurfaces.FromWorld(world);")]
     public void FrozenBaselinesIgnoreCommentsAndCheckoutLineEndings(string path, string anchor)
     {
         var compilation = HostOwnershipAudit.Host.Value;
@@ -157,9 +157,9 @@ public sealed class SourceNeutralHostArchitectureTests
         Assert.DoesNotContain(usages, usage => usage.LegacyReads > 0);
         foreach (var tree in HostOwnershipAudit.Host.Value.SyntaxTrees.Where(tree => tree.FilePath.StartsWith("game/scripts/", StringComparison.Ordinal)))
             Assert.DoesNotContain("UseRac1Gameplay", tree.GetText().ToString(), StringComparison.Ordinal);
-        var avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotApplicationPresentation.cs"));
+        var avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Application/GodotApplicationPresentation.cs"));
         Assert.DoesNotContain("Get(destination.Game)", avatar, StringComparison.Ordinal);
-        var lab = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/ApplicationNavigationCoordinator.cs"));
+        var lab = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Application/ApplicationNavigationCoordinator.cs"));
         Assert.DoesNotContain("rac1:LEVEL0", lab, StringComparison.Ordinal);
         Assert.DoesNotContain("_activeDestination =", lab, StringComparison.Ordinal);
         Assert.Contains("EnterWorld(definition.Id", lab, StringComparison.Ordinal);
@@ -176,7 +176,7 @@ public sealed class SourceNeutralHostArchitectureTests
     [Fact]
     public void ActorAssetProvenanceAdapterCannotSelectPlayerEquipment()
     {
-        var (compilation, tree) = InsertAdapterStatement("game/scripts/ActorSceneFactory.cs", "Create",
+        var (compilation, tree) = InsertAdapterStatement("game/scripts/Actors/ActorSceneFactory.cs", "Create",
             "((OBP.Game.OBPGame)parent.GetTree().Root.GetChild(0)).SelectPlayerEquipment(\"rac1/item/12\");");
         var call = tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>()
             .Single(invocation => invocation.Expression.ToString().EndsWith(".SelectPlayerEquipment", StringComparison.Ordinal));
@@ -189,8 +189,8 @@ public sealed class SourceNeutralHostArchitectureTests
     }
 
     [Theory]
-    [InlineData("game/scripts/Rac1EnemyHost.cs", "TickNativeActors")]
-    [InlineData("game/scripts/Rac1EnemyHost.Queries.cs", "TryGetRac1Hostile")]
+    [InlineData("game/scripts/Rac1/Enemies/Rac1EnemyHost.cs", "TickNativeActors")]
+    [InlineData("game/scripts/Rac1/Enemies/Rac1EnemyHost.Queries.cs", "TryGetRac1Hostile")]
     public void EnemyHostAdaptersCannotAcquirePlayerProviderSelection(string path, string method)
     {
         var (compilation, tree) = InsertAdapterStatement(path, method,
@@ -208,7 +208,7 @@ public sealed class SourceNeutralHostArchitectureTests
     [Fact]
     public void PreparedWorldPolicyCannotSelectThePlayerAvatarByWorldOrigin()
     {
-        var (compilation, tree) = InsertAdapterStatement("game/scripts/WorldEntryPreparationPolicy.cs", "WorldOptions", """
+        var (compilation, tree) = InsertAdapterStatement("game/scripts/World/WorldEntryPreparationPolicy.cs", "WorldOptions", """
             if (world.Game == ObpSourceGame.Rac1)
                 PlayerAvatarPresentationHost.Provider(OBP.Core.ObpSourceGame.Rac1);
             """);
@@ -230,7 +230,7 @@ public sealed class SourceNeutralHostArchitectureTests
     [Fact]
     public void LegitimateWorldAdapterUpdatesRequireAReviewedFingerprint()
     {
-        var (compilation, _) = InsertAdapterStatement("game/scripts/Rac1NovalisWaterMechanism.cs", "Configure",
+        var (compilation, _) = InsertAdapterStatement("game/scripts/Rac1/World/Rac1NovalisWaterMechanism.cs", "Configure",
             "Godot.GD.Print(\"Novalis source-water diagnostic\");");
         var usages = HostOwnershipAudit.Scan(compilation);
         var adapter = usages.Single(usage => usage.Key.EndsWith("::Rac1NovalisWaterMechanism.Configure(RuntimeWorld,RuntimeWorldScene.Result)", StringComparison.Ordinal));

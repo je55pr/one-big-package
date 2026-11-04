@@ -6,4 +6,4 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-    root.add_child(load("res://diagnostics/BugReportMenuSmoke.cs").new())
+    root.add_child(load("res://diagnostics/CaptureReplay/BugReportMenuSmoke.cs").new())

@@ -13,10 +13,10 @@ public sealed class WorldHudOwnershipTests
     public void RootOnlySuppliesDebugFactsAndDoesNotFormatNativeWorldHudText()
     {
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
-        string hud = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/WorldHud.cs"));
+        string hud = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/World/WorldHud.cs"));
 
         Assert.Contains("Presentation.UpdateWorldHud(", root, StringComparison.Ordinal);
-        string presentation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotApplicationPresentation.cs"));
+        string presentation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Application/GodotApplicationPresentation.cs"));
         Assert.Contains("_worldHud = new WorldHud", presentation, StringComparison.Ordinal);
         Assert.Contains("hud.Render(new WorldHudFrame(", presentation, StringComparison.Ordinal);
         Assert.Contains("resources?.Rac1Gameplay?.Hud.Line()", presentation, StringComparison.Ordinal);
@@ -39,7 +39,7 @@ public sealed class WorldHudOwnershipTests
     [Fact]
     public void NewDebugPresenterCannotOwnAnIndependentGameplayOrPlayerSession()
     {
-        string hud = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/WorldHud.cs"));
+        string hud = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/World/WorldHud.cs"));
         Assert.DoesNotContain("new PlayerHost(", hud, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1CampaignRuntimeSession(", hud, StringComparison.Ordinal);
         Assert.DoesNotContain("WorldSceneLifetime<", hud, StringComparison.Ordinal);
@@ -86,8 +86,8 @@ public sealed class WorldHudOwnershipTests
     [Fact]
     public void WorldHudHidesAndClearsTextForUnavailableFrames()
     {
-        string hud = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/WorldHud.cs"));
-        string presentation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotApplicationPresentation.cs"));
+        string hud = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/World/WorldHud.cs"));
+        string presentation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Application/GodotApplicationPresentation.cs"));
         Assert.Contains("if (entry?.Plan.Prepared.World is not { } world || entry?.Resources.Scene is not { } scene)\n        {\n            hud.Render(null, false);", presentation.Replace("\r\n", "\n"), StringComparison.Ordinal);
         int start = hud.IndexOf("internal void Render(WorldHudFrame? frame, bool enabled)", StringComparison.Ordinal);
         int end = hud.IndexOf("internal static string Format(WorldHudFrame frame)", start, StringComparison.Ordinal);

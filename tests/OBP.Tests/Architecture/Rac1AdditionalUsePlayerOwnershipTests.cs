@@ -40,8 +40,8 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
         var player = compilation.GetTypeByMetadataName("OBP.Game.PlayerSessionHost")!;
         Assert.Equal("Rac1AdditionalUseHost",
             Assert.Single(player.GetMembers("Rac1Use").OfType<IPropertySymbol>()).Type.Name);
-        string host = Script("Rac1AdditionalUseHost.cs");
-        string playerHost = Script("PlayerSessionHost.cs");
+        string host = Script("Rac1/Weapons/Rac1AdditionalUseHost.cs");
+        string playerHost = Script("Player/PlayerSessionHost.cs");
 
         Assert.Contains("internal Rac1AdditionalUseHost Rac1Use { get; } = new()", playerHost, StringComparison.Ordinal);
         Assert.Contains("internal Rac1AdditionalWeaponSession? Session { get; private set; }", host, StringComparison.Ordinal);
@@ -52,13 +52,13 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
         Assert.DoesNotContain("Rac1World.", host, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1WeaponInventory(", host, StringComparison.Ordinal);
         Assert.DoesNotContain("WeaponGenerations", host, StringComparison.Ordinal);
-        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1AdditionalUseHost.cs.uid")));
+        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1/Weapons/Rac1AdditionalUseHost.cs.uid")));
     }
 
     [Fact]
     public void PlayerAdmissionAndUseClocksRunBeforeNativeStepAndPyroTransition()
     {
-        string host = Script("Rac1AdditionalUseHost.cs");
+        string host = Script("Rac1/Weapons/Rac1AdditionalUseHost.cs");
         int begin = host.IndexOf("internal Rac1AdditionalUseFrame BeginFrame(", StringComparison.Ordinal);
         int end = host.IndexOf("internal void RecordShot(", StringComparison.Ordinal);
         Assert.True(begin >= 0 && end > begin);
@@ -89,7 +89,7 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
     [Fact]
     public void WorldPresentationFollowsSameShotAndAudioDispatchOrder()
     {
-        string root = Script("Rac1WeaponUsePresentationHost.cs");
+        string root = Script("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs");
         int start = root.IndexOf("internal void StepAdditional()", StringComparison.Ordinal);
         int end = root.IndexOf("internal void StepViews(", StringComparison.Ordinal);
         Assert.True(start >= 0 && end > start);
@@ -118,7 +118,7 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
         Assert.DoesNotContain("new Rac1WeaponInventory(", step, StringComparison.Ordinal);
         Assert.Contains("Session.Rac1Use.UseTicks", root, StringComparison.Ordinal);
         Assert.Contains("Session.Rac1Use.Session", root, StringComparison.Ordinal);
-        string views = Script("Rac1EquipmentViewPresentation.cs");
+        string views = Script("Rac1/Weapons/Rac1EquipmentViewPresentation.cs");
         Assert.Contains("view.Play(useTicks > 0 ? 4 : 1)", views, StringComparison.Ordinal);
         Assert.Contains("if (native?.Vacuuming == true) view.Play(3)", views, StringComparison.Ordinal);
     }
@@ -126,11 +126,11 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
     [Fact]
     public void ReplaySelectionPreviewAndDiagnosticsBorrowTheSamePlayerState()
     {
-        string host = Script("Rac1AdditionalUseHost.cs");
+        string host = Script("Rac1/Weapons/Rac1AdditionalUseHost.cs");
         string root = CompositionSources.Application;
-        string combat = Script("Rac1WeaponPlayerInputHost.cs");
-        string weapons = Script("Rac1WeaponUsePresentationHost.cs");
-        string worldEntry = Script("PlayerAvatarPresentationHost.cs");
+        string combat = Script("Rac1/Weapons/Rac1WeaponPlayerInputHost.cs");
+        string weapons = Script("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs");
+        string worldEntry = Script("Player/PlayerAvatarPresentationHost.cs");
 
         Assert.Contains("session.Rac1Use.RequestFire()", combat, StringComparison.Ordinal);
         Assert.Contains("Rac1WeaponUsePresentationHost.ForeignSelectionChanged(", root, StringComparison.Ordinal);
@@ -141,10 +141,10 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
         Assert.Contains("_persistentPlayer.Rac1Use.PyroEmitting", root, StringComparison.Ordinal);
         Assert.Contains("bindings.Use.UseTicks, bindings.Use.UseAge", worldEntry, StringComparison.Ordinal);
         Assert.Contains("bindings.Equipment.ApplyAvatarEquipmentPose(", worldEntry, StringComparison.Ordinal);
-        var equipment = Script("PlayerEquipmentPresentationBinder.cs");
+        var equipment = Script("Player/PlayerEquipmentPresentationBinder.cs");
         Assert.Contains("bool holdGun = useTicks > 0", equipment, StringComparison.Ordinal);
         Assert.Contains("walloper ? walloperAge / 60d : useAge / 60d", equipment, StringComparison.Ordinal);
-        Assert.Contains("ports.PyroEmitting()", Script("Rac1WeaponEffectsHost.cs"), StringComparison.Ordinal);
+        Assert.Contains("ports.PyroEmitting()", Script("Rac1/Weapons/Rac1WeaponEffectsHost.cs"), StringComparison.Ordinal);
 
         AssertIncreasing(weapons,
             "world.Weapons.Arsenal.Reset()",
@@ -154,7 +154,7 @@ public sealed class Rac1AdditionalUsePlayerOwnershipTests
             "Session.Rac1Use.ResetSession(State.Weapons())",
             "world.Weapons.Projectiles.ResetFlashes()",
             "Session.Rac1Use.ResetInputState()");
-        Assert.Contains("return Rac1Use.BoundInventory != currentInventory()", Script("PlayerSessionHost.cs"), StringComparison.Ordinal);
+        Assert.Contains("return Rac1Use.BoundInventory != currentInventory()", Script("Player/PlayerSessionHost.cs"), StringComparison.Ordinal);
         Assert.Contains("Session.Rac1Use.BindInventory(State.Weapons())", weapons, StringComparison.Ordinal);
         Assert.Contains("internal void ResetInputState()", host, StringComparison.Ordinal);
         Assert.Contains("UseTicks = UseAge = 0", host, StringComparison.Ordinal);

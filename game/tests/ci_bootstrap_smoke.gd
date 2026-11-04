@@ -31,7 +31,7 @@ func _run_smoke() -> void:
     root.add_child(game)
     # The standalone scenario owns the same six-frame settling/assertion through
     # copied scene facts and the bounded diagnostic clock contract.
-    var probe: Node = load("res://diagnostics/SourceFreeStartupProbe.cs").new()
+    var probe: Node = load("res://diagnostics/Startup/SourceFreeStartupProbe.cs").new()
     root.add_child(probe)
     # Connect the await before Start can synchronously reject an invalid launch.
     probe.call_deferred("Start", game)
@@ -45,7 +45,7 @@ func _run_smoke() -> void:
     game.queue_free()
     for frame in range(3):
         await process_frame
-    root.add_child(load("res://diagnostics/BugReportMenuSmoke.cs").new())
+    root.add_child(load("res://diagnostics/CaptureReplay/BugReportMenuSmoke.cs").new())
 
 
 func _verify_clean_godot_import() -> bool:

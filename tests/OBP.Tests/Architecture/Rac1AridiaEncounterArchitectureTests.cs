@@ -39,13 +39,13 @@ public sealed class Rac1AridiaEncounterArchitectureTests
     public void RegistrationTickDamageAndRetirementUseOwnedHostInsteadOfNeighborStateCallbacks()
     {
         var scripts = Path.Combine(RepoPaths.Root, "game", "scripts");
-        string host = File.ReadAllText(Path.Combine(scripts, "Rac1EnemyHost.cs"));
-        string aridia = File.ReadAllText(Path.Combine(scripts, "Rac1AridiaEncounter.cs"));
-        string scripted = File.ReadAllText(Path.Combine(scripts, "Rac1AridiaEncounter.Scripted.cs"));
-        string native = File.ReadAllText(Path.Combine(scripts, "Rac1AridiaEncounter.Native.cs"));
-        string contacts = File.ReadAllText(Path.Combine(scripts, "Rac1AridiaEncounter.Contacts.cs"));
-        string tick = File.ReadAllText(Path.Combine(scripts, "Rac1AridiaEncounter.Tick.cs"));
-        string ports = File.ReadAllText(Path.Combine(scripts, "Rac1EnemyPorts.cs"));
+        string host = File.ReadAllText(Path.Combine(scripts, "Rac1/Enemies/Rac1EnemyHost.cs"));
+        string aridia = File.ReadAllText(Path.Combine(scripts, "Rac1/Enemies/Rac1AridiaEncounter.cs"));
+        string scripted = File.ReadAllText(Path.Combine(scripts, "Rac1/Enemies/Rac1AridiaEncounter.Scripted.cs"));
+        string native = File.ReadAllText(Path.Combine(scripts, "Rac1/Enemies/Rac1AridiaEncounter.Native.cs"));
+        string contacts = File.ReadAllText(Path.Combine(scripts, "Rac1/Enemies/Rac1AridiaEncounter.Contacts.cs"));
+        string tick = File.ReadAllText(Path.Combine(scripts, "Rac1/Enemies/Rac1AridiaEncounter.Tick.cs"));
+        string ports = File.ReadAllText(Path.Combine(scripts, "Rac1/Enemies/Rac1EnemyPorts.cs"));
         Assert.Contains("Aridia.Configure(world, result", host, StringComparison.Ordinal);
         Assert.Contains("Aridia.Tick(enemy)", host, StringComparison.Ordinal);
         Assert.Contains("Aridia.ApplyDamage(node, damage)", host, StringComparison.Ordinal);

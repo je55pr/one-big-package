@@ -93,7 +93,7 @@ public sealed class Rac1WeaponPreviewPlayerOwnershipTests
     [Fact]
     public void PlayerPreviewPolicyRunsBeforeWorldLeaseResetAndSyncInRoot()
     {
-        string player = Script("PlayerSessionHost.cs");
+        string player = Script("Player/PlayerSessionHost.cs");
         string preview = player[player.IndexOf("internal bool UpdateRac1WeaponPreview(", StringComparison.Ordinal)..player.IndexOf("internal Rac1WrenchCombatController Wrench", StringComparison.Ordinal)];
         AssertIncreasing(preview,
             "Native?.SetEquipmentPreview(!disable)",
@@ -109,7 +109,7 @@ public sealed class Rac1WeaponPreviewPlayerOwnershipTests
         Assert.DoesNotContain("Godot", preview, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", preview, StringComparison.Ordinal);
 
-        string root = Script("Rac1WeaponUsePresentationHost.cs");
+        string root = Script("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs");
         string orchestrate = root[root.IndexOf("internal void SetPreview(", StringComparison.Ordinal)..root.IndexOf("internal void AttachViews(", StringComparison.Ordinal)];
         AssertIncreasing(orchestrate,
             "if (fusion.TestActive)",
@@ -136,7 +136,7 @@ public sealed class Rac1WeaponPreviewPlayerOwnershipTests
         })
             Assert.Empty(root.GetMembers(name));
 
-        string weapons = Script("Rac1WeaponUsePresentationHost.cs");
+        string weapons = Script("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs");
         string composition = CompositionSources.Application;
         Assert.Contains("Equipment.WeaponAudio.Reset()", weapons, StringComparison.Ordinal);
         Assert.Contains("_equipmentPresentation.WeaponAudio.Reset()", composition, StringComparison.Ordinal);

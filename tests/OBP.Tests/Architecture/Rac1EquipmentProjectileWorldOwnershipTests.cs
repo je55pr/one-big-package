@@ -30,9 +30,9 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
             Assert.Single(host.GetMembers("Projectiles").OfType<IPropertySymbol>()).Type.Name);
 
         string composition = CompositionSources.Application;
-        string world = Script("Rac1WorldModule.cs");
-        string weapons = Script("Rac1WeaponHost.cs");
-        string projectile = Script("Rac1EquipmentProjectileHost.cs");
+        string world = Script("Rac1/World/Rac1WorldModule.cs");
+        string weapons = Script("Rac1/Weapons/Rac1WeaponHost.cs");
+        string projectile = Script("Rac1/Weapons/Rac1EquipmentProjectileHost.cs");
 
         Assert.Contains("Projectiles = new(Contacts, contacts.Projectiles)", weapons, StringComparison.Ordinal);
         Assert.Contains("Projectiles.Reset()", weapons, StringComparison.Ordinal);
@@ -42,15 +42,15 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
         Assert.Contains("internal IReadOnlyList<Rac1HostedEquipmentShot> Shots", projectile, StringComparison.Ordinal);
         Assert.Contains("internal IReadOnlyList<Rac1HostedDoomAgent> DoomAgents", projectile, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", projectile, StringComparison.Ordinal);
-        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1EquipmentProjectileHost.cs.uid")));
+        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1/Weapons/Rac1EquipmentProjectileHost.cs.uid")));
     }
 
     [Fact]
     public void EquipmentFrameUpdatesPreserveOriginalOrderAndPyrocitorAuthority()
     {
-        string frame = Script("Rac1WeaponHost.cs");
-        string root = Script("Rac1WeaponEffectsHost.cs");
-        string projectile = Script("Rac1EquipmentProjectileHost.cs");
+        string frame = Script("Rac1/Weapons/Rac1WeaponHost.cs");
+        string root = Script("Rac1/Weapons/Rac1WeaponEffectsHost.cs");
+        string projectile = Script("Rac1/Weapons/Rac1EquipmentProjectileHost.cs");
         Assert.Contains("world.Weapons.StepWorld(ports.PyroEmitting())", root, StringComparison.Ordinal);
         string[] ordered =
         [
@@ -72,7 +72,7 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
             previous = next;
         }
 
-        string flames = Script("Rac1PyrocitorFlameHost.cs");
+        string flames = Script("Rac1/Weapons/Rac1PyrocitorFlameHost.cs");
         Assert.Contains("_flames.Add(new(created[2]))", flames, StringComparison.Ordinal);
         Assert.Contains("if ((ports.WorldTick() & 3) == 0 && created.Count > 2)", flames, StringComparison.Ordinal);
         Assert.Contains("flame.Victims.Add(key)", flames, StringComparison.Ordinal);
@@ -84,8 +84,8 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
     [Fact]
     public void NativeCarrierMineAndDoomLifetimesRetainRecoveredSourceRules()
     {
-        string host = Script("Rac1EquipmentProjectileHost.cs");
-        string weapons = Script("Rac1WeaponUsePresentationHost.cs");
+        string host = Script("Rac1/Weapons/Rac1EquipmentProjectileHost.cs");
+        string weapons = Script("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs");
 
         Assert.Contains("motion.Step(shot.AimPoint, 1.5f * MathF.PI)", host, StringComparison.Ordinal);
         Assert.Contains("Rac1WeaponProfiles.BlasterCarrierTicks", host, StringComparison.Ordinal);
@@ -111,8 +111,8 @@ public sealed class Rac1EquipmentProjectileWorldOwnershipTests
     [Fact]
     public void SceneResetAndDiagnosticsUseSameOwnedLifetime()
     {
-        string root = Script("Rac1WeaponUsePresentationHost.cs");
-        string host = Script("Rac1EquipmentProjectileHost.cs");
+        string root = Script("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs");
+        string host = Script("Rac1/Weapons/Rac1EquipmentProjectileHost.cs");
         string composition = CompositionSources.Application;
 
         int arsenal = root.IndexOf("world.Weapons.Arsenal.Reset()", StringComparison.Ordinal);

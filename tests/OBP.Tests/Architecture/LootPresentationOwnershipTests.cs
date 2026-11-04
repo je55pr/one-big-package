@@ -16,8 +16,8 @@ public class LootPresentationOwnershipTests
         })
             Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game", "scripts", retired)), retired);
 
-        string module = Script("Rac1WorldModule.cs");
-        string loot = Script("Rac1LootPresentation.cs");
+        string module = Script("Rac1/World/Rac1WorldModule.cs");
+        string loot = Script("Rac1/World/Rac1LootPresentation.cs");
         Assert.Contains("Loot = new(scene, Context, Presentation, loot);", module, StringComparison.Ordinal);
         Assert.Contains("Loot.Dispose();", module, StringComparison.Ordinal);
         Assert.Contains("ResetRac1PickupPresentation();", loot, StringComparison.Ordinal);
@@ -28,10 +28,10 @@ public class LootPresentationOwnershipTests
     [Fact]
     public void RetailRewardIdentityAndLifecycleRemainSourceSpecific()
     {
-        string rac1 = Script("Rac1LootPresentation.PlacedBolts.cs");
-        string rac2 = Script("Rac2CrateBoltPresentation.cs");
-        string rac2Module = Script("Rac2WorldModule.cs");
-        string context = Script("Rac1WorldContext.cs");
+        string rac1 = Script("Rac1/World/Rac1LootPresentation.PlacedBolts.cs");
+        string rac2 = Script("Rac2/Rac2CrateBoltPresentation.cs");
+        string rac2Module = Script("Rac2/Rac2WorldModule.cs");
+        string context = Script("Rac1/World/Rac1WorldContext.cs");
 
         Assert.Contains("_context.PlacedBolts.TryCollect", rac1, StringComparison.Ordinal);
         Assert.Contains("_context.BoltCrates.CollectPickup", rac1, StringComparison.Ordinal);

@@ -34,7 +34,7 @@ public sealed class HostOperationOwnershipArchitectureTests
         var delegated = Assert.Single(proof.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>(), call => Name(call.Expression) == "movementStateCheck");
         Assert.True(Owned(delegated), "The retained movement cancellation proof must await the bound critical operation.");
         Assert.True(CriticalOperations.SetEquals(seen), "The guard must encounter every retained critical operation.");
-        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotApplicationShutdown.cs"));
+        string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Application/GodotApplicationShutdown.cs"));
         int stop = root.IndexOf("await hostStopped;", StringComparison.Ordinal);
         Assert.True(stop > 0);
         Assert.True(root.IndexOf("releaseAudio();", stop, StringComparison.Ordinal) > stop);

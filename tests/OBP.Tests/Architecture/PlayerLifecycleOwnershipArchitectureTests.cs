@@ -20,38 +20,38 @@ public sealed class PlayerLifecycleOwnershipArchitectureTests
         Assert.DoesNotContain(root.GetMembers().OfType<IFieldSymbol>(), field => field.Type.Name == "GodotPlayerLifecycleHost");
         var owners = HostOwnershipAudit.Host.Value.GetTypeByMetadataName("OBP.Game.PlayerServicesComposition")!;
         Assert.Single(owners.GetMembers().OfType<IFieldSymbol>(), field => field.Type.Name == "GodotPlayerLifecycleHost");
-        foreach (string file in new[] { "PlayerLifecycleBridge.cs", "GodotPlayerLifecycleHost.cs" })
+        foreach (string file in new[] { "Player/PlayerLifecycleBridge.cs", "Player/GodotPlayerLifecycleHost.cs" })
             Assert.DoesNotContain("OBPGame", Read(file), StringComparison.Ordinal);
-        Assert.DoesNotContain("using Godot", Read("PlayerLifecycleBridge.cs"), StringComparison.Ordinal);
+        Assert.DoesNotContain("using Godot", Read("Player/PlayerLifecycleBridge.cs"), StringComparison.Ordinal);
     }
 
     [Fact]
     public void SceneResourcesOwnTheLeaseAndTheOwnerChecksCapturedCallbacks()
     {
-        string resources = Read("GodotWorldResources.cs");
+        string resources = Read("World/GodotWorldResources.cs");
         Assert.Contains("public IDisposable? PlayerLife", resources, StringComparison.Ordinal);
         Assert.Contains("PlayerLife?.Dispose()", resources, StringComparison.Ordinal);
-        string entry = Read("GodotWorldResources.cs");
+        string entry = Read("World/GodotWorldResources.cs");
         Assert.Contains("PlayerLife = bindings.PlayerLife.BindWorld", entry, StringComparison.Ordinal);
-        var host = CSharpSyntaxTree.ParseText(Read("GodotPlayerLifecycleHost.cs")).GetRoot();
+        var host = CSharpSyntaxTree.ParseText(Read("Player/GodotPlayerLifecycleHost.cs")).GetRoot();
         var bind = Assert.Single(host.DescendantNodes().OfType<MethodDeclarationSyntax>(), method => method.Identifier.ValueText == "BindPlayer");
         Assert.Contains("ReferenceEquals(_world, world)", bind.ToString(), StringComparison.Ordinal);
         Assert.Contains("ReferenceEquals(_player, player)", bind.ToString(), StringComparison.Ordinal);
         var retry = Assert.Single(host.DescendantNodes().OfType<MethodDeclarationSyntax>(), method => method.Identifier.ValueText == "ShowRetry");
         Assert.Contains("ReferenceEquals(_world, world)", retry.ToString(), StringComparison.Ordinal);
-        Assert.Contains("player.PlayerServicesPhysicsUpdated -= _tick", Read("GodotPlayerLifecycleHost.cs"), StringComparison.Ordinal);
+        Assert.Contains("player.PlayerServicesPhysicsUpdated -= _tick", Read("Player/GodotPlayerLifecycleHost.cs"), StringComparison.Ordinal);
     }
 
     [Fact]
     public void OrdinaryRespawnDelegatesWorldEntryWithoutAcquiringNativeParityRestartPolicy()
     {
-        string bridge = Read("PlayerLifecycleBridge.cs");
+        string bridge = Read("Player/PlayerLifecycleBridge.cs");
         foreach (string native in new[] { "ApplyRecoveredRac1Restart", "ResolveEnvironmentalRestart", "Rac1VeldinEnvironmentalDeathFacts", "WorldContentIdentity", "ObpDestination" })
             Assert.DoesNotContain(native, bridge, StringComparison.Ordinal);
         Assert.Contains("ports.EnterWorld()", bridge, StringComparison.Ordinal);
         Assert.Contains("session.Restore(before)", bridge, StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1Lifecycle.cs")));
-        Assert.Contains("ResolveEnvironmentalRestart", Read("Rac1LifecycleWorldHost.cs"), StringComparison.Ordinal);
-        Assert.Contains("checkpoint.ResolveEnvironmentalRestart()", Read("Rac1LifecycleWorldHost.cs"), StringComparison.Ordinal);
+        Assert.Contains("ResolveEnvironmentalRestart", Read("Rac1/Campaign/Rac1LifecycleWorldHost.cs"), StringComparison.Ordinal);
+        Assert.Contains("checkpoint.ResolveEnvironmentalRestart()", Read("Rac1/Campaign/Rac1LifecycleWorldHost.cs"), StringComparison.Ordinal);
     }
 }

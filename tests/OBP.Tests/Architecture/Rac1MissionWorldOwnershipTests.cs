@@ -28,22 +28,22 @@ public sealed class Rac1MissionWorldOwnershipTests
         var module = HostOwnershipAudit.Host.Value.GetTypeByMetadataName("OBP.Game.Rac1WorldModule")!;
         Assert.Equal("Rac1MissionWorldHost",
             Assert.Single(module.GetMembers("Missions").OfType<IPropertySymbol>()).Type.Name);
-        Assert.Contains("Missions = new(world, scene, Context, missionPorts)", Script("Rac1WorldModule.cs"),
+        Assert.Contains("Missions = new(world, scene, Context, missionPorts)", Script("Rac1/World/Rac1WorldModule.cs"),
             StringComparison.Ordinal);
-        Assert.Contains("Missions.Reset()", Method("Rac1WorldModule.cs", "ResetBindings"), StringComparison.Ordinal);
-        Assert.Contains("Missions.Dispose()", Method("Rac1WorldModule.cs", "Dispose"), StringComparison.Ordinal);
-        Assert.Contains("Missions.Configure()", Method("Rac1WorldModule.cs", "ConfigureActors"), StringComparison.Ordinal);
-        Assert.Contains("Missions.Tick(delta)", Method("Rac1WorldModule.cs", "Tick"), StringComparison.Ordinal);
+        Assert.Contains("Missions.Reset()", Method("Rac1/World/Rac1WorldModule.cs", "ResetBindings"), StringComparison.Ordinal);
+        Assert.Contains("Missions.Dispose()", Method("Rac1/World/Rac1WorldModule.cs", "Dispose"), StringComparison.Ordinal);
+        Assert.Contains("Missions.Configure()", Method("Rac1/World/Rac1WorldModule.cs", "ConfigureActors"), StringComparison.Ordinal);
+        Assert.Contains("Missions.Tick(delta)", Method("Rac1/World/Rac1WorldModule.cs", "Tick"), StringComparison.Ordinal);
     }
 
     [Fact]
     public void MissionSceneAndTravelCallbacksRejectRetiredWorldBeforeTouchingCampaignOrUi()
     {
-        string host = Script("Rac1MissionWorldHost.cs");
-        string reset = Method("Rac1MissionWorldHost.cs", "Reset");
-        string tick = Method("Rac1MissionWorldHost.cs", "Tick");
-        string present = Method("Rac1MissionWorldHost.cs", "PresentScene");
-        string travel = Method("Rac1MissionWorldHost.cs", "ApplyLevelExit");
+        string host = Script("Rac1/Campaign/Rac1MissionWorldHost.cs");
+        string reset = Method("Rac1/Campaign/Rac1MissionWorldHost.cs", "Reset");
+        string tick = Method("Rac1/Campaign/Rac1MissionWorldHost.cs", "Tick");
+        string present = Method("Rac1/Campaign/Rac1MissionWorldHost.cs", "PresentScene");
+        string travel = Method("Rac1/Campaign/Rac1MissionWorldHost.cs", "ApplyLevelExit");
         Assert.Contains("++_generation", reset, StringComparison.Ordinal);
         Assert.Contains("currentScene.Completed -= CompleteScene", reset, StringComparison.Ordinal);
         Assert.Contains("if (_ownsPause) ports.Pause(false)", reset, StringComparison.Ordinal);
@@ -70,8 +70,8 @@ public sealed class Rac1MissionWorldOwnershipTests
     {
         // Structural host regression. The native mission session's level-exit
         // admission is covered separately by portable progression tests.
-        string tick = Method("Rac1MissionWorldHost.cs", "Tick");
-        string dispatch = Method("Rac1MissionWorldHost.cs", "ApplyLevelExit");
+        string tick = Method("Rac1/Campaign/Rac1MissionWorldHost.cs", "Tick");
+        string dispatch = Method("Rac1/Campaign/Rac1MissionWorldHost.cs", "ApplyLevelExit");
         Assert.Contains("|| _exitQueued", tick, StringComparison.Ordinal);
         Assert.Contains("bool started = false", dispatch, StringComparison.Ordinal);
         Assert.Contains(
@@ -87,8 +87,8 @@ public sealed class Rac1MissionWorldOwnershipTests
     [Fact]
     public void MissionAdmissionAndStepStillUseOriginalNativeCampaignAndWorldClock()
     {
-        string configure = Method("Rac1MissionWorldHost.cs", "Configure");
-        string tick = Method("Rac1MissionWorldHost.cs", "Tick");
+        string configure = Method("Rac1/Campaign/Rac1MissionWorldHost.cs", "Configure");
+        string tick = Method("Rac1/Campaign/Rac1MissionWorldHost.cs", "Tick");
         Assert.Contains("world.LevelId != campaign.Session.Campaign.CurrentLevel", configure,
             StringComparison.Ordinal);
         Assert.Contains("new(world.LevelId, campaign.Session.Campaign, ports.Wallet(), Rac1ClipVolumes.Read(gameplay))",

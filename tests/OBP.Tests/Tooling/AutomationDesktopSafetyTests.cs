@@ -96,7 +96,7 @@ public sealed class AutomationDesktopSafetyTests
     {
         var compilation = HostOwnershipAudit.Host.Value;
         foreach (var tree in compilation.SyntaxTrees.Where(tree => tree.FilePath.StartsWith("game/", StringComparison.Ordinal) &&
-            tree.FilePath != "game/scripts/ApplicationPointer.cs"))
+            tree.FilePath != "game/scripts/UI/ApplicationPointer.cs"))
         {
             var model = compilation.GetSemanticModel(tree);
             foreach (var assignment in tree.GetRoot().DescendantNodes().OfType<AssignmentExpressionSyntax>())

@@ -9,7 +9,7 @@ public sealed class SmokeSceneFixtureOwnershipTests
     public void RootDelegatesSyntheticSceneGeometryAndHudFixtureToDedicatedOwner()
     {
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
-        string fixture = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/GodotSmokeSceneFixture.cs"));
+        string fixture = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/Startup/GodotSmokeSceneFixture.cs"));
         int start = root.IndexOf("private void BuildScene(string scene)", StringComparison.Ordinal);
         int end = root.IndexOf("private bool Rac1PlanetMapOpen", start, StringComparison.Ordinal);
         Assert.True(start >= 0 && end > start);
@@ -45,8 +45,8 @@ public sealed class SmokeSceneFixtureOwnershipTests
     public void BootstrapEnvironmentAndCleanupAreOwnedByTheSameFixture()
     {
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
-        string worldEntry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotWorldResources.cs"));
-        string fixture = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/GodotSmokeSceneFixture.cs"));
+        string worldEntry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/World/GodotWorldResources.cs"));
+        string fixture = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/Startup/GodotSmokeSceneFixture.cs"));
 
         Assert.DoesNotContain("private void EnsurePlainEnvironment()", root, StringComparison.Ordinal);
         Assert.DoesNotContain("private void ClearBootstrapSceneArtifacts()", root, StringComparison.Ordinal);
@@ -86,7 +86,7 @@ public sealed class SmokeSceneFixtureOwnershipTests
     [Fact]
     public void SmokeHudStatePreservesTheOriginalDeterministicFixture()
     {
-        string pureFixture = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/SmokeHudFixtureState.cs"));
+        string pureFixture = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/Framework/SmokeHudFixtureState.cs"));
         Assert.DoesNotContain("using Godot;", pureFixture, StringComparison.Ordinal);
         Assert.DoesNotContain("Node3D", pureFixture, StringComparison.Ordinal);
         var syntax = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(pureFixture).GetRoot();

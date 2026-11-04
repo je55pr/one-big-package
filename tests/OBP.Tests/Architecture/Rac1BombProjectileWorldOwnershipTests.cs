@@ -23,10 +23,10 @@ public sealed class Rac1BombProjectileWorldOwnershipTests
         })
             Assert.Empty(root.GetMembers(member));
 
-        string module = Script("Rac1WorldModule.cs");
-        string host = Script("Rac1BombProjectileHost.cs");
+        string module = Script("Rac1/World/Rac1WorldModule.cs");
+        string host = Script("Rac1/Weapons/Rac1BombProjectileHost.cs");
         Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1Projectiles.cs")));
-        string entry = Script("PlayerAvatarPresentationHost.cs");
+        string entry = Script("Player/PlayerAvatarPresentationHost.cs");
         string application = CompositionSources.Application;
 
         Assert.Contains("Bombs = new(Context, Presentation, Weapons, Enemies, Breakables, bomb)", module, StringComparison.Ordinal);
@@ -42,13 +42,13 @@ public sealed class Rac1BombProjectileWorldOwnershipTests
         Assert.Contains("internal int ImpactCount", host, StringComparison.Ordinal);
         Assert.Contains("private bool _disposed;", host, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", host, StringComparison.Ordinal);
-        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1BombProjectileHost.cs.uid")));
+        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1/Weapons/Rac1BombProjectileHost.cs.uid")));
     }
 
     [Fact]
     public void NativeLaunchAndFlightPreserveFourStagesAndSweepPriority()
     {
-        string host = Script("Rac1BombProjectileHost.cs");
+        string host = Script("Rac1/Weapons/Rac1BombProjectileHost.cs");
         Assert.Contains("Rac1BombProjectileSession.LaunchOrigin(body, yaw)", host, StringComparison.Ordinal);
         Assert.Contains("Rac1BombProjectileSession.LaunchVelocity(origin, target, yaw)", host, StringComparison.Ordinal);
         Assert.Contains("new(ports.NextAngle(), ports.NextAngle(), ports.NextAngle())", host, StringComparison.Ordinal);
@@ -68,7 +68,7 @@ public sealed class Rac1BombProjectileWorldOwnershipTests
     [Fact]
     public void NativeDamageAndHostEffectsRemainBehindExistingAuthorities()
     {
-        string host = Script("Rac1BombProjectileHost.cs");
+        string host = Script("Rac1/Weapons/Rac1BombProjectileHost.cs");
         string root = CompositionSources.Application;
         Assert.Contains("_breakables.ResolveNovalisBombBreakables(origin, motion.BlastRadius)", host, StringComparison.Ordinal);
         Assert.Contains("_context.BombGlove!.ResolveExplosionVolume(id, facts)", host, StringComparison.Ordinal);
@@ -88,7 +88,7 @@ public sealed class Rac1BombProjectileWorldOwnershipTests
     [Fact]
     public void ClearingProjectilesRetiresTheirNativeIdsAndTheirPresentation()
     {
-        string host = Script("Rac1BombProjectileHost.cs");
+        string host = Script("Rac1/Weapons/Rac1BombProjectileHost.cs");
         Assert.Contains("foreach (var (id, projectile) in _presentation.Projectiles.ToArray())", host, StringComparison.Ordinal);
         Assert.Contains("_context.BombGlove?.CompleteProjectile(id)", host, StringComparison.Ordinal);
         Assert.Contains("projectile.Node.QueueFree()", host, StringComparison.Ordinal);

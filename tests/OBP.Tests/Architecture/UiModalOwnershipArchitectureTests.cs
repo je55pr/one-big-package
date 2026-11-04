@@ -33,7 +33,7 @@ public sealed class UiModalOwnershipArchitectureTests
                      "_lastQuickSelectTap", "_previousSelectedWeapon", "_debugOutputEnabled" })
             Assert.DoesNotContain(retired, rootFields);
 
-        string owner = Read("UiModalCoordinator.cs");
+        string owner = Read("UI/UiModalCoordinator.cs");
         var ownerRoot = CSharpSyntaxTree.ParseText(owner).GetRoot();
         var ownerFields = ownerRoot.DescendantNodes().OfType<FieldDeclarationSyntax>()
             .SelectMany(field => field.Declaration.Variables.Select(variable => variable.Identifier.ValueText))
@@ -52,7 +52,7 @@ public sealed class UiModalOwnershipArchitectureTests
     [Fact]
     public void ModalBackPriorityAndWorldRetirementShareOneOwner()
     {
-        string owner = Read("UiModalCoordinator.cs");
+        string owner = Read("UI/UiModalCoordinator.cs");
         string root = Read("OBPGame.cs");
         string back = Method(owner, "HandleBack").ToFullString();
         int wheel = back.IndexOf("if (QuickSelectOpen)", StringComparison.Ordinal);
@@ -60,7 +60,7 @@ public sealed class UiModalOwnershipArchitectureTests
         int pause = back.IndexOf("if (PauseOpen)", StringComparison.Ordinal);
         Assert.True(wheel >= 0 && wheel < settings && settings < pause);
         Assert.Contains("_navigation.HandleBack(Modals)", Method(root, "TryHandleInteractiveBack").ToFullString(), StringComparison.Ordinal);
-        Assert.Contains("modals.HandleBack()", Method(Read("ApplicationNavigationCoordinator.cs"), "HandleBack").ToFullString(), StringComparison.Ordinal);
+        Assert.Contains("modals.HandleBack()", Method(Read("Application/ApplicationNavigationCoordinator.cs"), "HandleBack").ToFullString(), StringComparison.Ordinal);
 
         string retirement = Method(owner, "RetireAll").ToFullString();
         Assert.Contains("CloseQuickSelect(retiring: true)", retirement, StringComparison.Ordinal);
@@ -69,13 +69,13 @@ public sealed class UiModalOwnershipArchitectureTests
         Assert.Contains("TearDownInteractiveOverlays()", Method(root, "RetireWorldBindings").ToFullString(), StringComparison.Ordinal);
         Assert.Contains("_modals?.RetireAll()", Method(root, "ReleaseAudioForExit").ToFullString(), StringComparison.Ordinal);
         Assert.Contains("GodotApplicationShutdown.PrepareAsync(", Method(root, "PrepareForQuitAsync").ToFullString(), StringComparison.Ordinal);
-        Assert.Contains("modals?.RetireAll()", Method(Read("GodotApplicationShutdown.cs"), "PrepareAsync").ToFullString(), StringComparison.Ordinal);
+        Assert.Contains("modals?.RetireAll()", Method(Read("Application/GodotApplicationShutdown.cs"), "PrepareAsync").ToFullString(), StringComparison.Ordinal);
     }
 
     [Fact]
     public void PauseLeaseAndQuickSelectOwnershipRemainDistinct()
     {
-        string owner = Read("UiModalCoordinator.cs");
+        string owner = Read("UI/UiModalCoordinator.cs");
         string pause = Method(owner, "OpenPause").ToFullString();
         string release = Method(owner, "ReleasePauseLease").ToFullString();
         string wheel = Method(owner, "OpenQuickSelect").ToFullString();
@@ -112,9 +112,9 @@ public sealed class UiModalOwnershipArchitectureTests
     [Fact]
     public void ModalEquipmentChangesUseTypedPortsAndKeepDistinctRetailAndUniversalPresenters()
     {
-        string ports = Read("UiModalPorts.cs");
-        string owner = Read("UiModalCoordinator.cs");
-        string composition = Read("PauseMenuUi.cs");
+        string ports = Read("UI/UiModalPorts.cs");
+        string owner = Read("UI/UiModalCoordinator.cs");
+        string composition = Read("UI/PauseMenuUi.cs");
         Assert.Contains("PauseMenuUi.Create(new(", Read("OBPGame.cs"), StringComparison.Ordinal);
         Assert.Contains("record ModalEquipmentPorts(", ports, StringComparison.Ordinal);
         Assert.Contains("equipment.SelectWeapon(weapon)", owner, StringComparison.Ordinal);

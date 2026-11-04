@@ -10,12 +10,12 @@ public sealed class WorldSmokeArchitectureTests
     public void DestinationLoaderDelegatesSmokeSelectionToDiagnosticHarness()
     {
         string scripts = Path.Combine(RepoPaths.Root, "game", "scripts");
-        string loader = File.ReadAllText(Path.Combine(scripts, "ApplicationNavigationCoordinator.cs"));
+        string loader = File.ReadAllText(Path.Combine(scripts, "Application/ApplicationNavigationCoordinator.cs"));
         string entry = File.ReadAllText(Path.Combine(scripts, "OBPGame.cs"));
         string harness = File.ReadAllText(Path.Combine(
-            RepoPaths.Root, "game", "diagnostics", "WorldSmokeHarness.cs"));
+            RepoPaths.Root, "game", "diagnostics", "Framework/WorldSmokeHarness.cs"));
         string dispatch = File.ReadAllText(Path.Combine(
-            RepoPaths.Root, "game", "diagnostics", "GodotWorldSmokeDispatch.cs"));
+            RepoPaths.Root, "game", "diagnostics", "Fixtures/GodotWorldSmokeDispatch.cs"));
 
         Assert.Contains("_ports.EnterWorld(destination.DestinationId", loader, StringComparison.Ordinal);
         Assert.Contains("GodotWorldSmokeDispatch.Start(new(", entry, StringComparison.Ordinal);
@@ -46,7 +46,7 @@ public sealed class WorldSmokeArchitectureTests
     public void GodotDispatchUsesCommittedWorldAndLiveSourceBuildSnapshots()
     {
         string entry = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
-        string dispatch = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "GodotWorldSmokeDispatch.cs"));
+        string dispatch = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "Fixtures/GodotWorldSmokeDispatch.cs"));
 
         Assert.Contains("WorldSmokeHarness.Create(", dispatch, StringComparison.Ordinal);
         Assert.Contains("WorldSmokeHarness.Bind(ports.Factories)", dispatch, StringComparison.Ordinal);
@@ -58,7 +58,7 @@ public sealed class WorldSmokeArchitectureTests
 
         // The prior world must be committed before any scenario observes it.
         // Hash verification remains after smoke dispatch, before profile save.
-        string navigation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/ApplicationNavigationCoordinator.cs"));
+        string navigation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Application/ApplicationNavigationCoordinator.cs"));
         int commit = navigation.IndexOf("if (!prepareAndCommit()) return false;", StringComparison.Ordinal);
         int completed = navigation.IndexOf("completed();", commit, StringComparison.Ordinal);
         // The start of the completion callback passed to EnterPreparedWorld: dispatch must follow it,
@@ -74,7 +74,7 @@ public sealed class WorldSmokeArchitectureTests
     [Fact]
     public void WorldSmokeBindingsPreserveCreatorSpecificSlots()
     {
-        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "WorldSmokeHarness.cs"));
+        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "Framework/WorldSmokeHarness.cs"));
         string bind = source.Split("internal static Entrypoints Bind(Factories factories) => new(", StringSplitOptions.None)[1]
             .Split("private sealed record Entry(", StringSplitOptions.None)[0];
         // Slot order matches Entrypoints. Detect swaps between creators on the same harness;
@@ -117,28 +117,28 @@ public sealed class WorldSmokeArchitectureTests
         string root = Path.Combine(RepoPaths.Root, "game");
         foreach (string name in new[]
         {
-            "Rac1CombatContractScenario.cs",
-            "Rac1VeldinScenario.cs",
-            "MovementScenario.cs",
-            "Rac1CampaignScenario.cs",
-            "Rac1MissionPlayScenario.cs",
-            "Rac1CrateScenario.cs",
-            "Rac1PlacedBoltScenario.cs",
-            "Rac1NovalisRouteScenario.cs",
-            "Rac1NovalisMusicScenario.cs",
-            "Rac1MetropolisTaxiScenario.cs",
-            "Rac1EnvironmentalDeathRegression.cs",
-            "StartupVisibilityScenario.cs",
-            "Rac1WrenchScenario.cs",
-            "Rac1BombGloveScenario.cs",
-            "Rac1WeaponsScenario.cs",
-            "Rac1ArsenalScenario.cs",
-            "FusionWeaponsScenario.cs",
-            "MovementStateScenario.cs",
-            "PlaytestRecordingScenario.cs",
-            "ReconciliationCaptureScenario.cs",
-            "BugReporterScenario.cs",
-            "TrilogyGameplayScenario.cs",
+            "Rac1/Rac1CombatContractScenario.cs",
+            "Rac1/Rac1VeldinScenario.cs",
+            "Movement/MovementScenario.cs",
+            "Rac1/Rac1CampaignScenario.cs",
+            "Rac1/Rac1MissionPlayScenario.cs",
+            "Rac1/Rac1CrateScenario.cs",
+            "Rac1/Rac1PlacedBoltScenario.cs",
+            "Rac1/Rac1NovalisRouteScenario.cs",
+            "Rac1/Rac1NovalisMusicScenario.cs",
+            "Rac1/Rac1MetropolisTaxiScenario.cs",
+            "Rac1/Rac1EnvironmentalDeathRegression.cs",
+            "Startup/StartupVisibilityScenario.cs",
+            "Rac1/Rac1WrenchScenario.cs",
+            "Rac1/Rac1BombGloveScenario.cs",
+            "Rac1/Rac1WeaponsScenario.cs",
+            "Rac1/Rac1ArsenalScenario.cs",
+            "Framework/FusionWeaponsScenario.cs",
+            "Movement/MovementStateScenario.cs",
+            "CaptureReplay/PlaytestRecordingScenario.cs",
+            "CaptureReplay/ReconciliationCaptureScenario.cs",
+            "CaptureReplay/BugReporterScenario.cs",
+            "Player/TrilogyGameplayScenario.cs",
         })
         {
             Assert.True(File.Exists(Path.Combine(root, "diagnostics", name)), name);
@@ -146,9 +146,9 @@ public sealed class WorldSmokeArchitectureTests
         }
 
         string play = File.ReadAllText(Path.Combine(
-            root, "diagnostics", "Rac1VeldinScenario.cs"));
+            root, "diagnostics", "Rac1/Rac1VeldinScenario.cs"));
         string contract = File.ReadAllText(Path.Combine(
-            root, "diagnostics", "Rac1CombatContractScenario.cs"));
+            root, "diagnostics", "Rac1/Rac1CombatContractScenario.cs"));
         Assert.Contains("new Rac1EnvironmentalDeathRegression(", play, StringComparison.Ordinal);
         Assert.Contains("Rac1SmokeDriveToward(", play, StringComparison.Ordinal);
         Assert.Contains("synthetic", contract, StringComparison.Ordinal);

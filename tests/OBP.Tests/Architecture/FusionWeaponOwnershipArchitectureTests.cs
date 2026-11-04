@@ -23,25 +23,25 @@ public sealed class FusionWeaponOwnershipArchitectureTests
         var fields = owners.GetMembers().OfType<IFieldSymbol>().Where(field => field.Name.StartsWith("_fusion", StringComparison.Ordinal)).ToArray();
         var owner = Assert.Single(fields);
         Assert.Equal("FusionWeaponHost", owner.Type.Name);
-        foreach (string file in new[] { "FusionWeaponHost.cs", "FusionWeaponSourceHost.cs", "FusionWeaponPresentationHost.cs", "FusionWeaponWorldActions.cs" })
+        foreach (string file in new[] { "Fusion/FusionWeaponHost.cs", "Fusion/FusionWeaponSourceHost.cs", "Fusion/FusionWeaponPresentationHost.cs", "Fusion/FusionWeaponWorldActions.cs" })
             Assert.DoesNotContain("OBPGame", Read(file), StringComparison.Ordinal);
     }
 
     [Fact]
     public void SceneRetirementCannotDisposeSourcesOrResetAReplacementWorld()
     {
-        var retire = Method("FusionWeaponHost.cs", "Retire");
+        var retire = Method("Fusion/FusionWeaponHost.cs", "Retire");
         Assert.Contains("ReferenceEquals(_world, world)", retire.ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain("Sources", retire.ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain("_modelPose", retire.ToString(), StringComparison.Ordinal);
         Assert.Contains("if (!_persistentSession) Session = null", retire.ToString(), StringComparison.Ordinal);
-        var sourceReset = Method("FusionWeaponHost.cs", "ResetSources");
+        var sourceReset = Method("Fusion/FusionWeaponHost.cs", "ResetSources");
         Assert.Contains("ClearTransients()", sourceReset.ToString(), StringComparison.Ordinal);
         Assert.Contains("Sources.Reset()", sourceReset.ToString(), StringComparison.Ordinal);
-        string resources = Read("GodotWorldResources.cs");
+        string resources = Read("World/GodotWorldResources.cs");
         Assert.Contains("public IDisposable? FusionWeapons", resources, StringComparison.Ordinal);
         Assert.Contains("FusionWeapons?.Dispose()", resources, StringComparison.Ordinal);
-        string entry = Method("GodotWorldResources.cs", "Activate").ToString();
+        string entry = Method("World/GodotWorldResources.cs", "Activate").ToString();
         int reset = entry.IndexOf("Rac1Gameplay.Configure()", StringComparison.Ordinal);
         int bind = entry.IndexOf("FusionWeapons = bindings.EquipmentWorld(Scene.Root)", StringComparison.Ordinal);
         int spawn = entry.IndexOf("bindings.SpawnPlayer(world)", StringComparison.Ordinal);
@@ -52,33 +52,33 @@ public sealed class FusionWeaponOwnershipArchitectureTests
     [Fact]
     public void ForeignAvatarsReceiveViewsAndNativeTransientsClearWithoutSourceAssets()
     {
-        string attach = Method("PlayerAvatarPresentationHost.cs", "AttachWorldVisual").ToString();
+        string attach = Method("Player/PlayerAvatarPresentationHost.cs", "AttachWorldVisual").ToString();
         Assert.Contains("bindings.Weapons().AttachViews(view)", attach, StringComparison.Ordinal);
         int nativeViews = attach.IndexOf("UsePresentation.AttachViews(view)", StringComparison.Ordinal);
         Assert.True(nativeViews >= 0, "R&C1 view attachment is missing.");
         Assert.True(attach.IndexOf("bindings.Weapons().AttachViews(view)", StringComparison.Ordinal) > nativeViews);
-        Assert.DoesNotContain("FusionWeapons.AttachViews", Method("Rac1WeaponUsePresentationHost.cs", "AttachViews").ToString(),
+        Assert.DoesNotContain("FusionWeapons.AttachViews", Method("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs", "AttachViews").ToString(),
             StringComparison.Ordinal);
-        string clear = Method("FusionWeaponHost.cs", "ClearTransients").ToString();
+        string clear = Method("Fusion/FusionWeaponHost.cs", "ClearTransients").ToString();
         Assert.Contains("player.ClearNativeTransients(freeImmediately)", clear, StringComparison.Ordinal);
         Assert.DoesNotContain("Sources.Assets", clear, StringComparison.Ordinal);
-        Assert.Contains("ReleaseViews(freeImmediately: true)", Method("FusionWeaponHost.cs", "TickPreparation").ToString(),
+        Assert.Contains("ReleaseViews(freeImmediately: true)", Method("Fusion/FusionWeaponHost.cs", "TickPreparation").ToString(),
             StringComparison.Ordinal);
-        Assert.Contains("Rac1Gameplay = null", Method("GodotWorldResources.cs", "RetireGameplayBeforePlayer").ToString(),
+        Assert.Contains("Rac1Gameplay = null", Method("World/GodotWorldResources.cs", "RetireGameplayBeforePlayer").ToString(),
             StringComparison.Ordinal);
     }
 
     [Fact]
     public void OrdinarySessionBindingPrecedesAnyExplicitFixtureAndDeathClearsOnce()
     {
-        string configure = Method("FusionWeaponHost.cs", "Configure").ToString();
+        string configure = Method("Fusion/FusionWeaponHost.cs", "Configure").ToString();
         int bind = configure.IndexOf("BindPersistent(persistent); return;", StringComparison.Ordinal);
         int isolate = configure.IndexOf("player.IsolateCampaign", StringComparison.Ordinal);
         Assert.InRange(bind, 0, isolate - 1);
-        var death = Method("FusionWeaponHost.cs", "ClearOnDeath");
+        var death = Method("Fusion/FusionWeaponHost.cs", "ClearOnDeath");
         Assert.Contains("if (_deathCleared) return", death.ToString(), StringComparison.Ordinal);
         Assert.Contains("ClearTransients()", death.ToString(), StringComparison.Ordinal);
-        var clear = Method("FusionWeaponPresentationHost.cs", "Clear");
+        var clear = Method("Fusion/FusionWeaponPresentationHost.cs", "Clear");
         foreach (string action in new[] { "StopAudio(freeImmediately)", "_projectiles.Clear()", "_effects.Clear()", "HideBeam()" })
             Assert.Contains(action, clear.ToString(), StringComparison.Ordinal);
     }

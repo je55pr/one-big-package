@@ -11,16 +11,16 @@ internal static class CompositionSources
     private static readonly string[] Files =
     [
         "game/scripts/OBPGame.cs",
-        "game/diagnostics/ApplicationDiagnostics.cs",
-        "game/scripts/Rac1WorldComposition.cs",
-        "game/scripts/Rac2WorldComposition.cs",
-        "game/scripts/CompositionBase.cs",
-        "game/scripts/CaptureComposition.cs",
-        "game/scripts/PlayerServicesComposition.cs",
+        "game/diagnostics/Framework/ApplicationDiagnostics.cs",
+        "game/scripts/Rac1/World/Rac1WorldComposition.cs",
+        "game/scripts/Rac2/Rac2WorldComposition.cs",
+        "game/scripts/Application/CompositionBase.cs",
+        "game/scripts/CaptureReplay/CaptureComposition.cs",
+        "game/scripts/Player/PlayerServicesComposition.cs",
     ];
 
     private static readonly Lazy<string> Union = new(() => string.Join("\n", Files.Select(Read)));
-    private static readonly Lazy<string> DiagnosticText = new(() => Read("game/diagnostics/ApplicationDiagnostics.cs"));
+    private static readonly Lazy<string> DiagnosticText = new(() => Read("game/diagnostics/Framework/ApplicationDiagnostics.cs"));
 
     public static string Application => Union.Value;
 

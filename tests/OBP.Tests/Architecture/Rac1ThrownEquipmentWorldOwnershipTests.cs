@@ -83,15 +83,15 @@ public sealed class Rac1ThrownEquipmentWorldOwnershipTests
         var root = compilation.GetTypeByMetadataName("OBP.Game.OBPGame")!;
         Assert.Empty(root.GetMembers("_rac1BombThrowGeneration"));
         Assert.Empty(root.GetMembers("_rac1BombThrowActive"));
-        var world = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Rac1WeaponHost.cs"));
+        var world = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Rac1/Weapons/Rac1WeaponHost.cs"));
         Assert.Contains("ThrownAnimation = new()", world, StringComparison.Ordinal);
         Assert.Contains("ThrownAnimation.Reset()", world, StringComparison.Ordinal);
         Assert.Contains("ThrownAnimation.Dispose()", world, StringComparison.Ordinal);
-        var projectiles = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Rac1BombProjectileHost.cs"));
-        var playerFrame = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerAvatarPresentationHost.cs"));
+        var projectiles = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Rac1/Weapons/Rac1BombProjectileHost.cs"));
+        var playerFrame = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Player/PlayerAvatarPresentationHost.cs"));
         Assert.Contains("_weapons.ThrownAnimation.Begin()", projectiles, StringComparison.Ordinal);
         Assert.Contains("Weapons.ThrownAnimation.Select(input", playerFrame, StringComparison.Ordinal);
         Assert.DoesNotContain("_rac1BombThrowGeneration", projectiles, StringComparison.Ordinal);
-        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1ThrownEquipmentAnimationHost.cs.uid")));
+        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1/Weapons/Rac1ThrownEquipmentAnimationHost.cs.uid")));
     }
 }

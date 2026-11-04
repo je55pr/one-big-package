@@ -11,7 +11,7 @@ public sealed class FusionSelectionWorldLeaseTests
     [Fact]
     public void PreviewMenuRejectsFusionBeforeResolvingAnyWorldLease()
     {
-        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "Rac1WeaponUsePresentationHost.cs"));
+        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "Rac1/Weapons/Rac1WeaponUsePresentationHost.cs"));
         var syntax = CSharpSyntaxTree.ParseText(source).GetRoot();
         var request = Assert.Single(syntax.DescendantNodes().OfType<MethodDeclarationSyntax>(),
             m => m.Identifier.ValueText == "RequestPreview");
@@ -29,7 +29,7 @@ public sealed class FusionSelectionWorldLeaseTests
         string root = CompositionSources.Application;
         Assert.Equal(4, root.Split("Rac1WeaponUsePresentationHost.RequestPreview(", StringSplitOptions.None).Length - 1);
         Assert.DoesNotContain("Rac1World.UsePresentation.SetPreview", root, StringComparison.Ordinal);
-        string menu = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PauseMenuUi.cs"));
+        string menu = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/UI/PauseMenuUi.cs"));
         Assert.Equal(2, menu.Split("bindings.RequestPreview(", StringSplitOptions.None).Length - 1);
     }
 
@@ -57,7 +57,7 @@ public sealed class FusionSelectionWorldLeaseTests
     [Fact]
     public void SelectionCancellationDoesNotDereferenceAnUnboundRac1World()
     {
-        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "PlayerServicesComposition.cs"));
+        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "Player/PlayerServicesComposition.cs"));
         var syntax = CSharpSyntaxTree.ParseText(source).GetRoot();
         var argument = Assert.Single(syntax.DescendantNodes().OfType<ArgumentSyntax>(),
             argument => argument.NameColon?.Name.Identifier.ValueText == "SelectionChanged");
@@ -67,7 +67,7 @@ public sealed class FusionSelectionWorldLeaseTests
         Assert.Equal(2, body.Statements.Count);
         Assert.Contains("Rac1WeaponUsePresentationHost.ForeignSelectionChanged(", body.ToString(), StringComparison.Ordinal);
         Assert.Contains("_worldScenes?.Current?.Resources.Rac1Gameplay", body.ToString(), StringComparison.Ordinal);
-        string owner = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Rac1WeaponUsePresentationHost.cs"));
+        string owner = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Rac1/Weapons/Rac1WeaponUsePresentationHost.cs"));
         var handler = CSharpSyntaxTree.ParseText(owner).GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
             .Single(method => method.Identifier.ValueText == "ForeignSelectionChanged");
         var cleanup = Assert.IsType<BlockSyntax>(handler.Body);

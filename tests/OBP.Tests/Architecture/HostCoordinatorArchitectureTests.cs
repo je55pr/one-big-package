@@ -8,7 +8,7 @@ public class HostCoordinatorArchitectureTests
     [Fact]
     public void ActorCompositionDefersWorldContextUntilALeaseExists()
     {
-        var source = CSharpSyntaxTree.ParseText(File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerServicesComposition.cs")));
+        var source = CSharpSyntaxTree.ParseText(File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Player/PlayerServicesComposition.cs")));
         var factory = source.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
             .Single(method => method.Identifier.ValueText == "CreateActorHost");
         var reads = factory.DescendantNodes().OfType<IdentifierNameSyntax>()
@@ -21,7 +21,7 @@ public class HostCoordinatorArchitectureTests
     public void Rac1GameplayCoordinatorStaysSplitByHostResponsibility()
     {
         string scripts = Path.Combine(RepoPaths.Root, "game", "scripts");
-        string corePath = Path.Combine(scripts, "Rac1WorldModule.cs");
+        string corePath = Path.Combine(scripts, "Rac1/World/Rac1WorldModule.cs");
         string core = File.ReadAllText(corePath);
 
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac1Gameplay.cs")));
@@ -34,30 +34,30 @@ public class HostCoordinatorArchitectureTests
         Assert.DoesNotContain("private void TickRac1Pickups(", core, StringComparison.Ordinal);
 
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac1Combat.cs")));
-        Assert.DoesNotContain("Action<double> Swing", File.ReadAllText(Path.Combine(scripts, "Rac1WorldPorts.cs")), StringComparison.Ordinal);
-        Assert.DoesNotContain("_ticks.Swing(delta)", File.ReadAllText(Path.Combine(scripts, "Rac1WorldModule.cs")), StringComparison.Ordinal);
+        Assert.DoesNotContain("Action<double> Swing", File.ReadAllText(Path.Combine(scripts, "Rac1/World/Rac1WorldPorts.cs")), StringComparison.Ordinal);
+        Assert.DoesNotContain("_ticks.Swing(delta)", File.ReadAllText(Path.Combine(scripts, "Rac1/World/Rac1WorldModule.cs")), StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac1Projectiles.cs")));
         Assert.Contains("bindings.Gameplay()?.Bombs.StepPhysics()",
-            File.ReadAllText(Path.Combine(scripts, "PlayerAvatarPresentationHost.cs")), StringComparison.Ordinal);
+            File.ReadAllText(Path.Combine(scripts, "Player/PlayerAvatarPresentationHost.cs")), StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac1Enemies.cs")));
         Assert.Contains("internal void TickRac1Hostiles(",
-            File.ReadAllText(Path.Combine(scripts, "Rac1EnemyHost.cs")), StringComparison.Ordinal);
+            File.ReadAllText(Path.Combine(scripts, "Rac1/Enemies/Rac1EnemyHost.cs")), StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac1Pickups.cs")));
         Assert.Contains("internal void TickRac1Pickups(",
-            File.ReadAllText(Path.Combine(scripts, "Rac1LootPresentation.Pickups.cs")), StringComparison.Ordinal);
+            File.ReadAllText(Path.Combine(scripts, "Rac1/World/Rac1LootPresentation.Pickups.cs")), StringComparison.Ordinal);
     }
 
     [Fact]
     public void Rac2GameplayAndAranosAreLeaseOwnedAndDebugFixturesStayExternal()
     {
         string scripts = Path.Combine(RepoPaths.Root, "game", "scripts");
-        string corePath = Path.Combine(scripts, "Rac2WorldModule.cs");
+        string corePath = Path.Combine(scripts, "Rac2/Rac2WorldModule.cs");
         string core = File.ReadAllText(corePath);
-        string aranos = File.ReadAllText(Path.Combine(scripts, "Rac2AranosOpeningSessionAdapter.cs"));
-        string resources = File.ReadAllText(Path.Combine(scripts, "GodotWorldResources.cs"));
-        string actors = File.ReadAllText(Path.Combine(scripts, "ActorNativeAdapters.cs"));
+        string aranos = File.ReadAllText(Path.Combine(scripts, "Rac2/Rac2AranosOpeningSessionAdapter.cs"));
+        string resources = File.ReadAllText(Path.Combine(scripts, "World/GodotWorldResources.cs"));
+        string actors = File.ReadAllText(Path.Combine(scripts, "Actors/ActorNativeAdapters.cs"));
         string app = File.ReadAllText(Path.Combine(scripts, "OBPGame.cs"));
-        string worldEntry = File.ReadAllText(Path.Combine(scripts, "GodotWorldResources.cs"));
+        string worldEntry = File.ReadAllText(Path.Combine(scripts, "World/GodotWorldResources.cs"));
 
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac2Gameplay.cs")));
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac2AranosOpeningHost.cs")));
@@ -85,7 +85,7 @@ public class HostCoordinatorArchitectureTests
         Assert.DoesNotContain("TickRac2Gameplay(", app, StringComparison.Ordinal);
         Assert.DoesNotContain("_rac2Class2827Hostiles", app, StringComparison.Ordinal);
 
-        string probe = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/Rac2CrateDiagnosticProbe.cs"));
+        string probe = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/Rac2/Rac2CrateDiagnosticProbe.cs"));
         Assert.Contains("Rac2CrateDebugSnapshot? Capture(", probe, StringComparison.Ordinal);
         Assert.DoesNotContain("partial class OBPGame", probe, StringComparison.Ordinal);
         Assert.DoesNotContain("Rac2FreshBoltSession", probe, StringComparison.Ordinal);

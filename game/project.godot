@@ -14,8 +14,8 @@ config/windows_native_icon="res://assets/branding/obp-icon.ico"
 
 [autoload]
 
-WindowPlacement="*res://scripts/WindowPlacement.cs"
-UiBootstrap="*res://scripts/UiBootstrap.cs"
+WindowPlacement="*res://scripts/Application/WindowPlacement.cs"
+UiBootstrap="*res://scripts/Application/UiBootstrap.cs"
 
 [display]
 

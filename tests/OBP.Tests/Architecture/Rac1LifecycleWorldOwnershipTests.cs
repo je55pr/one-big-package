@@ -25,9 +25,9 @@ public sealed class Rac1LifecycleWorldOwnershipTests
         Assert.Equal("Rac1LifecycleWorldHost",
             Assert.Single(module.GetMembers("Lifecycle").OfType<IPropertySymbol>()).Type.Name);
         Assert.Contains("Lifecycle = new(world, Context, Presentation, lifecyclePorts)",
-            Script("Rac1WorldModule.cs"), StringComparison.Ordinal);
-        Assert.Contains("Lifecycle.Reset()", Method("Rac1WorldModule.cs", "ResetBindings"), StringComparison.Ordinal);
-        Assert.Contains("Lifecycle.Dispose()", Method("Rac1WorldModule.cs", "Dispose"), StringComparison.Ordinal);
+            Script("Rac1/World/Rac1WorldModule.cs"), StringComparison.Ordinal);
+        Assert.Contains("Lifecycle.Reset()", Method("Rac1/World/Rac1WorldModule.cs", "ResetBindings"), StringComparison.Ordinal);
+        Assert.Contains("Lifecycle.Dispose()", Method("Rac1/World/Rac1WorldModule.cs", "Dispose"), StringComparison.Ordinal);
         Assert.Contains("Lifecycle.TryCompleteEnvironmentalRestart(automatic)",
             CompositionSources.Application, StringComparison.Ordinal);
         Assert.Contains("Lifecycle.TickEnvironmentalDeath()", CompositionSources.Application, StringComparison.Ordinal);
@@ -36,7 +36,7 @@ public sealed class Rac1LifecycleWorldOwnershipTests
     [Fact]
     public void RestartRequiresParityAndCurrentWorldBeforeMutatingNativeHealth()
     {
-        string restart = Method("Rac1LifecycleWorldHost.cs", "TryCompleteEnvironmentalRestart");
+        string restart = Method("Rac1/Campaign/Rac1LifecycleWorldHost.cs", "TryCompleteEnvironmentalRestart");
         int guard = restart.IndexOf("_disposed || !ports.WorldStillCurrent() || ports.Ordinary()", StringComparison.Ordinal);
         int mutation = restart.IndexOf("ports.Health().Respawn()", StringComparison.Ordinal);
         Assert.True(guard >= 0 && mutation > guard);
@@ -44,7 +44,7 @@ public sealed class Rac1LifecycleWorldOwnershipTests
         Assert.Contains("ports.ResetHeldItem()", restart, StringComparison.Ordinal);
         Assert.Contains("player.ApplyRecoveredRac1Restart(restart.Placement)", restart, StringComparison.Ordinal);
 
-        string admission = Method("Rac1LifecycleWorldHost.cs", "ResolveEnvironmentalRestart");
+        string admission = Method("Rac1/Campaign/Rac1LifecycleWorldHost.cs", "ResolveEnvironmentalRestart");
         Assert.Contains("world.Game != ObpSourceGame.Rac1", admission, StringComparison.Ordinal);
         Assert.Contains("checkpoint.NativeLevelId != world.LevelId", admission, StringComparison.Ordinal);
         Assert.Contains("death.HasRecoveredEnvironmentalRespawn", admission, StringComparison.Ordinal);
@@ -54,7 +54,7 @@ public sealed class Rac1LifecycleWorldOwnershipTests
     [Fact]
     public void EnvironmentalDeathAndContactPreserveOriginalSourceInputsAndThresholdRay()
     {
-        string death = Method("Rac1LifecycleWorldHost.cs", "TickEnvironmentalDeath");
+        string death = Method("Rac1/Campaign/Rac1LifecycleWorldHost.cs", "TickEnvironmentalDeath");
         Assert.Contains("world.LevelId != 0", death, StringComparison.Ordinal);
         Assert.Contains("world.Environment is not { } environment", death, StringComparison.Ordinal);
         Assert.Contains("NativeVerticalPosition: player.GlobalPosition.Y", death, StringComparison.Ordinal);
@@ -63,7 +63,7 @@ public sealed class Rac1LifecycleWorldOwnershipTests
             StringComparison.Ordinal);
         Assert.Contains("context.LastEnvironmentalDeathBoundary = dead", death, StringComparison.Ordinal);
 
-        string ray = Method("Rac1LifecycleWorldHost.cs", "MeasureContactSeparation");
+        string ray = Method("Rac1/Campaign/Rac1LifecycleWorldHost.cs", "MeasureContactSeparation");
         Assert.Contains("Vector3.Up * 0.1f", ray, StringComparison.Ordinal);
         Assert.Contains("Vector3.Down * 1024f", ray, StringComparison.Ordinal);
         Assert.Contains("player.GetRid()", ray, StringComparison.Ordinal);
@@ -73,14 +73,14 @@ public sealed class Rac1LifecycleWorldOwnershipTests
     [Fact]
     public void RetiredRetryButtonCannotNavigateAfterWorldSwap()
     {
-        string retry = Method("Rac1LifecycleWorldHost.cs", "ShowCombatRetry");
+        string retry = Method("Rac1/Campaign/Rac1LifecycleWorldHost.cs", "ShowCombatRetry");
         Assert.Contains("ports.ActiveDestination() is not { } destination", retry, StringComparison.Ordinal);
         int guard = retry.LastIndexOf("if (_disposed || !ports.WorldStillCurrent()) return;", StringComparison.Ordinal);
         int navigation = retry.IndexOf("ports.Navigate(destination)", StringComparison.Ordinal);
         Assert.True(guard >= 0 && navigation > guard);
         Assert.Contains("ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible", retry,
             StringComparison.Ordinal);
-        Assert.Contains("ports.ResetPlayerRetry()", Method("Rac1LifecycleWorldHost.cs", "Reset"),
+        Assert.Contains("ports.ResetPlayerRetry()", Method("Rac1/Campaign/Rac1LifecycleWorldHost.cs", "Reset"),
             StringComparison.Ordinal);
     }
 }

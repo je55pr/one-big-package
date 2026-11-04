@@ -6,7 +6,7 @@ public sealed class AvatarWorldEntryOwnershipTests
     [Fact]
     public void AvatarPhysicsKeepsTheNativeUsePoseContactAudioAndClockOrder()
     {
-        string owner = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerAvatarPresentationHost.cs"));
+        string owner = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Player/PlayerAvatarPresentationHost.cs"));
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
         Assert.DoesNotContain("private void StepPlayerAvatarPhysics", root, StringComparison.Ordinal);
         Assert.Contains("Weapons: () => PlayerServices.Fusion, CombatInput: () => PlayerServices.CombatInput", root, StringComparison.Ordinal);
@@ -28,7 +28,7 @@ public sealed class AvatarWorldEntryOwnershipTests
     [Fact]
     public void VisualReplacementAndRetirementKeepSubscriptionsAndEquipmentInOneLifetime()
     {
-        string owner = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerAvatarPresentationHost.cs"));
+        string owner = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Player/PlayerAvatarPresentationHost.cs"));
         Ordered(Method(owner, "AttachWorldVisual"), "session.Capture().Configuration.Avatar",
             "selected.SourceGame == ObpSourceGame.Synthetic", "return;", "ClearWorldVisual(",
             "CreateWorldVisual(", "UsePresentation.AttachViews(view)", "bindings.Weapons().AttachViews(view)",
@@ -62,8 +62,8 @@ public sealed class AvatarWorldEntryOwnershipTests
     public void WorldEntryKeepsPlayerSelectionWhileSourceOwnerVerifiesAndAvatarOwnerStages()
     {
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
-        string sources = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/SourceSetupCoordinator.cs"));
-        string avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerAvatarPresentationHost.cs"));
+        string sources = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Sources/SourceSetupCoordinator.cs"));
+        string avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Player/PlayerAvatarPresentationHost.cs"));
 
         int start = root.IndexOf("private void PrepareSelectedPlayerAssets()", StringComparison.Ordinal);
         int end = root.IndexOf("private void AttachPlayerAvatarVisual(", start, StringComparison.Ordinal);
@@ -125,8 +125,8 @@ public sealed class AvatarWorldEntryOwnershipTests
     public void EquipmentPoseSelectionBelongsToTheExistingBinderInsteadOfTheWorldRoot()
     {
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
-        string binder = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerEquipmentPresentationBinder.cs"));
-        string avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/PlayerAvatarPresentationHost.cs"));
+        string binder = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Player/PlayerEquipmentPresentationBinder.cs"));
+        string avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Player/PlayerAvatarPresentationHost.cs"));
 
         int start = avatar.IndexOf("private void StepPlayerAvatarPhysics(", StringComparison.Ordinal);
         int end = avatar.IndexOf("private void ResetPlayerAvatarPhysics(", start, StringComparison.Ordinal);

@@ -13,8 +13,8 @@ public sealed class PlayerSpawnPlacementOwnershipTests
     public void RootOnlyBindsTheSelectedPlayerAfterASeparatePlacementDecision()
     {
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
-        string presentation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotApplicationPresentation.cs"));
-        string placement = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotPlayerSpawnPlacement.cs"));
+        string presentation = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Application/GodotApplicationPresentation.cs"));
+        string placement = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Player/GodotPlayerSpawnPlacement.cs"));
 
         Assert.Contains("Presentation.SpawnPlayer(world, _worldPlayerEntry", root, StringComparison.Ordinal);
         Assert.Contains("GodotPlayerSpawnPlacement.Resolve(world, start", presentation, StringComparison.Ordinal);
@@ -35,7 +35,7 @@ public sealed class PlayerSpawnPlacementOwnershipTests
     [Fact]
     public void OriginalPriorityAndCaptureFallbackArePreservedByPlacementOwner()
     {
-        string placement = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/GodotPlayerSpawnPlacement.cs"));
+        string placement = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/Player/GodotPlayerSpawnPlacement.cs"));
         int native = placement.IndexOf("if (nativeStartUsable && preferredStart", StringComparison.Ordinal);
         int animation = placement.IndexOf("if (animFocus)", StringComparison.Ordinal);
         int crate = placement.IndexOf("if (crateFocus() is", StringComparison.Ordinal);

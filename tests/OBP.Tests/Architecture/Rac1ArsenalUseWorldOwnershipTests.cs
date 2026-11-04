@@ -25,9 +25,9 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
         Assert.Empty(root.GetMembers("ResetRac1Arsenal"));
         Assert.Empty(root.GetMembers("StepRac1ArsenalWorld"));
 
-        string host = Script("Rac1ArsenalUseHost.cs");
-        string parent = Script("Rac1WeaponHost.cs");
-        string module = Script("Rac1WorldModule.cs");
+        string host = Script("Rac1/Weapons/Rac1ArsenalUseHost.cs");
+        string parent = Script("Rac1/Weapons/Rac1WeaponHost.cs");
+        string module = Script("Rac1/World/Rac1WorldModule.cs");
         Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.Rac1Arsenal.cs")));
 
         Assert.Contains("Arsenal = new(this, arsenal.Use)", parent, StringComparison.Ordinal);
@@ -35,16 +35,16 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
         Assert.Contains("Arsenal.ClearHeld()", parent, StringComparison.Ordinal);
         Assert.Contains("Arsenal.Dispose()", parent, StringComparison.Ordinal);
         Assert.Contains("new(weaponTargets, contactPhysics, suckCannon, projectiles, flames)", module, StringComparison.Ordinal);
-        Assert.Contains("world.Weapons.Arsenal.Reset()", Script("Rac1WeaponUsePresentationHost.cs"), StringComparison.Ordinal);
+        Assert.Contains("world.Weapons.Arsenal.Reset()", Script("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs"), StringComparison.Ordinal);
         Assert.Contains("Arsenal.Tick()", parent, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame", host, StringComparison.Ordinal);
-        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1ArsenalUseHost.cs.uid")));
+        Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "game/scripts/Rac1/Weapons/Rac1ArsenalUseHost.cs.uid")));
     }
 
     [Fact]
     public void FamilyTicksAndResetFollowExistingFrameOrder()
     {
-        string host = Script("Rac1ArsenalUseHost.cs");
+        string host = Script("Rac1/Weapons/Rac1ArsenalUseHost.cs");
         int tickStart = host.IndexOf("internal void Tick()", StringComparison.Ordinal);
         int tickEnd = host.IndexOf("private void TickBeams()", StringComparison.Ordinal);
         Assert.True(tickStart >= 0 && tickEnd > tickStart);
@@ -92,9 +92,9 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
     [Fact]
     public void BeamAndUseAdmissionRetainNativeGatesAndBorrowedPlayerInputs()
     {
-        string host = Script("Rac1ArsenalUseHost.cs");
+        string host = Script("Rac1/Weapons/Rac1ArsenalUseHost.cs");
         string root = CompositionSources.Application;
-        string weapons = Script("Rac1WeaponUsePresentationHost.cs");
+        string weapons = Script("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs");
 
         Assert.Contains("Func<Rac1WeaponId> Equipped", host, StringComparison.Ordinal);
         Assert.Contains("Func<int> TeslaAmmo", host, StringComparison.Ordinal);
@@ -113,8 +113,8 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
         Assert.Contains("Rac1WeaponId.DecoyGlove => weapons.Deployables.CanFireDecoy", host, StringComparison.Ordinal);
         Assert.Contains("new Rac1ArsenalUsePorts(", root, StringComparison.Ordinal);
         Assert.Contains("world.Weapons.Arsenal.SetHeld, world.Weapons.Arsenal.AdmitUse)", weapons, StringComparison.Ordinal);
-        Assert.Contains("setArsenalHeld(held)", Script("Rac1AdditionalUseHost.cs"), StringComparison.Ordinal);
-        Assert.Contains("session.Step(held, admitArsenalUse())", Script("Rac1AdditionalUseHost.cs"), StringComparison.Ordinal);
+        Assert.Contains("setArsenalHeld(held)", Script("Rac1/Weapons/Rac1AdditionalUseHost.cs"), StringComparison.Ordinal);
+        Assert.Contains("session.Step(held, admitArsenalUse())", Script("Rac1/Weapons/Rac1AdditionalUseHost.cs"), StringComparison.Ordinal);
         Assert.Contains("world.Weapons.Arsenal.Fire(shot.Weapon)", weapons, StringComparison.Ordinal);
         Assert.DoesNotContain("new Rac1WeaponInventory(", host, StringComparison.Ordinal);
         Assert.DoesNotContain("Rac1AdditionalWeaponSession _", host, StringComparison.Ordinal);
@@ -123,10 +123,10 @@ public sealed class Rac1ArsenalUseWorldOwnershipTests
     [Fact]
     public void HeldPresentationAndDisposalCannotRetainWorldState()
     {
-        string host = Script("Rac1ArsenalUseHost.cs");
-        string parent = Script("Rac1WeaponHost.cs");
+        string host = Script("Rac1/Weapons/Rac1ArsenalUseHost.cs");
+        string parent = Script("Rac1/Weapons/Rac1WeaponHost.cs");
         string root = CompositionSources.Application;
-        string weapons = Script("Rac1WeaponUsePresentationHost.cs");
+        string weapons = Script("Rac1/Weapons/Rac1WeaponUsePresentationHost.cs");
 
         Assert.Contains("internal bool Held => !_disposed && _held", host, StringComparison.Ordinal);
         Assert.Contains("if (!_disposed) _held = held", host, StringComparison.Ordinal);
