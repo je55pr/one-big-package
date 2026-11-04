@@ -10,25 +10,26 @@ namespace OBP.Tests;
 public sealed class EffectsExperimentScenarioTests
 {
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    public async Task SyntheticObservationsRequireAdvancingTrilogyClocks(bool frozen, bool foreignSource)
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    public async Task SyntheticObservationsRequireAdvancingTrilogyClocks(bool frozen, bool foreignSource, bool oneLagging)
     {
         string directory = Path.Combine(Path.GetTempPath(), "obp-effects-clock-" + Guid.NewGuid().ToString("N"));
         string report = Path.Combine(directory, "report.json");
         try
         {
             // Synthetic port observations only; no renderer, retail assets or native parity is claimed.
-            var fixture = new Fixture(frozen, foreignSource);
+            var fixture = new Fixture(frozen, foreignSource, oneLagging);
             var definition = new DiagnosticScenarioDefinition("synthetic-effects-clock", DiagnosticSourceAccess.AssetFree,
                 DiagnosticSetup.AssetFreeFixture, [], TimeSpan.FromSeconds(10), 10000);
             var scenario = new EffectsExperimentScenario(definition, fixture, fixture, fixture, report, _ => { });
             using var run = new DiagnosticRunContext(fixture, CancellationToken.None, 10000);
-            if (frozen || foreignSource)
+            if (frozen || foreignSource || oneLagging)
             {
                 await Assert.ThrowsAsync<InvalidOperationException>(() => scenario.RunAsync(run));
-                Assert.Equal(frozen ? 120 : 20, fixture.PhysicsWaits);
+                Assert.Equal(frozen || oneLagging ? 120 : 20, fixture.PhysicsWaits);
                 Assert.Equal(0, fixture.Captures);
                 Assert.False(File.Exists(report));
             }
@@ -45,7 +46,7 @@ public sealed class EffectsExperimentScenarioTests
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true); }
     }
 
-    private sealed class Fixture(bool frozen, bool foreignSource) : IDiagnosticEffectsFixture, IDiagnosticFrameClock,
+    private sealed class Fixture(bool frozen, bool foreignSource, bool oneLagging) : IDiagnosticEffectsFixture, IDiagnosticFrameClock,
         IDiagnosticNavigationActions, IDiagnosticSourceAttachmentFixture
     {
         private bool _active, _detached;
@@ -63,7 +64,7 @@ public sealed class EffectsExperimentScenarioTests
             .Select(index => new EffectObservation(new("synthetic", 0, 0, index),
                 new(new(foreignSource && index % 3 == 0 ? ObpSourceGame.Synthetic : Games[index % 3],
                     "synthetic", "fixture", "effect", index.ToString()), "synthetic"),
-                new RuntimeEffectState(_tick, 1, true, 1, 1, 1)))
+                new RuntimeEffectState(oneLagging ? Math.Min(_tick, index == 0 ? 19 : 20) : _tick, 1, true, 1, 1, 1)))
             .Where(observation => !_detached || observation.Recipe.Source.Game != ObpSourceGame.Rac2)];
         public string ProtectedState() => "synthetic protected player state";
         public void Start() { _active = true; _tick = 0; }
