@@ -28,6 +28,8 @@ public sealed record RootBuild(string Name, string[] Symbols, CSharpCompilation 
 public static class RootBoundaryAudit
 {
     public const string RootName = "OBP.Game.OBPGame";
+    /// <summary>Disposition of a reviewed composition member that intentionally stays on the Godot root.</summary>
+    public const string PermanentDisposition = "permanent";
     public const string BaselineCommit = "eea806399f864f30949d665701d39d510549a7ac";
     public const string FrozenOriginHash = "9c46d5abaab02c0be6eb64e9ba1ec6497d92309b3cad9dececc245ed2cdd8f91";
     private static readonly ConditionalWeakTable<CSharpCompilation, RootMember[]> MemberCache = new();
@@ -231,7 +233,7 @@ public static class RootBoundaryAudit
             if (!files.Contains(member.Path)) errors.Add("OBP002 New root partial/scope: " + member.Path);
             if (legacy.Contains(member.Key)) continue;
             if (!allowed.TryGetValue(member.Key, out var exception)) errors.Add("OBP002 New privileged root member: " + member.Key);
-            else if (!IssueId(exception.Owner) || string.IsNullOrWhiteSpace(exception.Rationale) || !IssueId(exception.ExpiresWith) || exception.Hash != member.Hash)
+            else if (!IssueId(exception.Owner) || string.IsNullOrWhiteSpace(exception.Rationale) || !(IssueId(exception.ExpiresWith) || exception.ExpiresWith == PermanentDisposition) || exception.Hash != member.Hash)
                 errors.Add("OBP002 Composition exception changed or lacks owner/rationale/expiry: " + member.Key);
         }
         foreach (var exception in policy.Composition.Where(item => members.All(member => member.Key != item.Key)))
