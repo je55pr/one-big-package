@@ -12,6 +12,7 @@ param(
     [switch]$SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'obp-effects-result.ps1')
 $root = Split-Path -Parent $PSScriptRoot
 if (!$Godot) {
     $manifest = Get-Content (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | ConvertFrom-Json
@@ -34,6 +35,13 @@ if (!$SkipBuild) {
     if ($LASTEXITCODE -ne 0) { throw 'Game build failed.' }
 }
 function Invoke-EffectsRun([string]$RunName, [string[]]$ExtraArguments) {
+    # Only remove this mode's known reports/images so stale output cannot certify a new process.
+    $fresh = if ($RunName -eq 'render') { @('report.json', 'fusion-lab.png', 'rac1-LEVEL0.png', 'rac2-LEVEL1.png', 'rac3-TABLE1.png', 'obp-fusion-lab.png') }
+        elseif ($RunName -eq 'replay') { @('replay.json') } else { @() }
+    foreach ($name in $fresh) {
+        $path = Join-Path $output $name
+        if (Test-Path -LiteralPath $path -PathType Leaf) { Remove-Item -LiteralPath $path }
+    }
     Write-Host "Running effects $RunName acceptance..."
     $start = [Diagnostics.ProcessStartInfo]::new()
     $start.FileName = [IO.Path]::GetFullPath($Godot)
@@ -74,6 +82,8 @@ function Invoke-EffectsRun([string]$RunName, [string[]]$ExtraArguments) {
     if (Select-String -LiteralPath $errPath -Pattern 'SHADER ERROR|SCRIPT ERROR|ERROR:|Unhandled exception' -Quiet) {
         Get-Content -LiteralPath $errPath -Tail 25; throw "Effects $RunName emitted engine errors."
     }
+    Assert-ObpEffectsResult -Mode $RunName -Directory $output -StopFrame $RecordingStopFrame `
+        -Log (([IO.File]::ReadAllText($outPath)) + "`n" + ([IO.File]::ReadAllText($errPath)))
 }
 if ($Mode -in @('all', 'render')) { Invoke-EffectsRun 'render' @('--acceptance-out', (Join-Path $output 'report.json')) }
 if ($Mode -in @('all', 'record')) { Invoke-EffectsRun 'record' @('--destination', 'obp:fusion-lab', '--record-playtest', (Join-Path $output 'effects.jsonl.gz'), '--playtest-report', (Join-Path $output 'record.json')) }
