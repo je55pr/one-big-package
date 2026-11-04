@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using OBP.RAC1.Player;
 
 namespace OBP.Tests;
@@ -33,6 +34,7 @@ public sealed class Rac1WaterNativeSourceTests
         var read = Rac1AirborneNativeSourceTests.ReadOverlay(1);
         using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(RepoPaths.Root,
             "research/generated/rac1-water-native-witness.json")));
+        RequireWitnessCohorts(doc.RootElement);
         foreach (var stage in doc.RootElement.GetProperty("code").EnumerateArray())
         {
             int start = int.Parse(stage.GetProperty("start").GetString()![2..], NumberStyles.HexNumber);
@@ -62,6 +64,7 @@ public sealed class Rac1WaterNativeSourceTests
     {
         using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(RepoPaths.Root,
             "research/generated/rac1-water-native-witness.json")));
+        RequireWitnessCohorts(doc.RootElement);
         foreach (var witness in doc.RootElement.GetProperty("entry").EnumerateArray().Take(4))
         {
             float[] f = witness.GetProperty("input").EnumerateArray().Select(n => n.GetSingle()).ToArray();
@@ -77,6 +80,7 @@ public sealed class Rac1WaterNativeSourceTests
     {
         using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(RepoPaths.Root,
             "research/generated/rac1-water-native-witness.json")));
+        RequireWitnessCohorts(doc.RootElement);
         foreach (var witness in doc.RootElement.GetProperty("periodicQuery").EnumerateArray())
         {
             float feet = witness.GetProperty("input")[6].GetSingle();
@@ -85,6 +89,82 @@ public sealed class Rac1WaterNativeSourceTests
             Assert.InRange(output[2].GetSingle() - feet, 3.99999f, 4.00001f);
             Assert.InRange(output[3].GetSingle() - feet, 1.29999f, 1.30001f);
             Assert.Equal(1f, output[4].GetSingle());
+        }
+    }
+
+    [Theory]
+    [InlineData("complete", "")]
+    [InlineData("code", "missing")]
+    [InlineData("code", "duplicate")]
+    [InlineData("code", "replacement")]
+    [InlineData("code", "empty-range")]
+    [InlineData("entry", "missing")]
+    [InlineData("entry", "duplicate")]
+    [InlineData("entry", "replacement")]
+    [InlineData("periodicQuery", "missing")]
+    [InlineData("periodicQuery", "duplicate")]
+    [InlineData("periodicQuery", "replacement")]
+    public void WaterWitnessRequiresThePreservedCodeAndInputCohorts(string cohort, string fault)
+    {
+        var witness = JsonNode.Parse(File.ReadAllText(Path.Combine(RepoPaths.Root, "research/generated/rac1-water-native-witness.json")))!;
+        if (cohort != "complete")
+        {
+            var rows = witness[cohort]!.AsArray();
+            switch (fault)
+            {
+                case "missing": rows.RemoveAt(0); break;
+                case "duplicate": rows[1] = rows[0]!.DeepClone(); break;
+                case "replacement" when cohort == "code": rows[0]!["stage"] = "replacement"; break;
+                case "empty-range": rows[0]!["end"] = rows[0]!["start"]!.GetValue<string>(); break;
+                case "replacement": rows[0]!["input"]![0] = 999; break;
+            }
+        }
+        void Check() => RequireWitnessCohorts(JsonSerializer.SerializeToElement(witness));
+        if (cohort == "complete") Check();
+        else Assert.ThrowsAny<Xunit.Sdk.XunitException>(Check);
+    }
+
+    private static void RequireWitnessCohorts(JsonElement witness)
+    {
+        // Independent stage ranges and input plans in tools/rac1-water-native-trace.py.
+        (string Stage, int Start, int End)[] expected =
+        [
+            ("underwaterMotion", 0x2378bc, 0x23880c), ("surfaceMotion", 0x238a24, 0x238d20),
+            ("oxygen", 0x2406b0, 0x2408e8), ("waterEntry", 0x2408e8, 0x240c78),
+            ("entryQueryEndpoints", 0x232cc0, 0x232dc0), ("waterline", 0x240c78, 0x240ed8),
+            ("inputDispatch", 0x2435b8, 0x243c08), ("exitImpulse", 0x17c3e0, 0x17c440),
+            ("strokeCurve", 0x17c440, 0x17c4b8),
+        ];
+        var actual = witness.GetProperty("code").EnumerateArray().Select(stage => (
+            Stage: stage.GetProperty("stage").GetString()!,
+            Start: int.Parse(stage.GetProperty("start").GetString()![2..], NumberStyles.HexNumber),
+            End: int.Parse(stage.GetProperty("end").GetString()![2..], NumberStyles.HexNumber))).ToArray();
+        Assert.Equal(expected.OrderBy(stage => stage.Stage, StringComparer.Ordinal),
+            actual.OrderBy(stage => stage.Stage, StringComparer.Ordinal));
+        RequireInputs("entry", 2,
+        [
+            [4, 7, 1, 0, 10000, 0, 55.65f, 56, 4, -.1f, -.1f, 0],
+            [4, 7, 0, 0, 10000, 0, 55.65f, 56, 4, -.1f, -.1f, 0],
+            [2, 0, 1, 0, 10000, 0, 55.65f, 56, .1875f, -.1f, -.1f, 0],
+            [4, 7, 1, 0, 10000, 0, 56.12f, 56, 4, -.1f, -.1f, 0],
+            [17, 51, 1, 0, 5000, 0, 55.7f, 56, 4, .04f, .04f, -.9f],
+            [17, 51, 1, 1, 5000, 0, 55.7f, 56, 4, .04f, .04f, -.9f],
+        ]);
+        RequireInputs("periodicQuery", 5,
+        [
+            [4, 0x1c, 0, 0, 10000, 0, 82.07f, 82.25f, 3.75f, 0, 0, 0],
+            [4, 7, 0, 0, 10000, 0, 80.8f, 82.25f, 3.75f, 0, 0, 0],
+        ]);
+
+        void RequireInputs(string name, int outputColumns, float[][] inputs)
+        {
+            var rows = witness.GetProperty(name).EnumerateArray().ToArray();
+            Assert.Equal(inputs.Length, rows.Length);
+            for (int index = 0; index < rows.Length; index++)
+            {
+                Assert.Equal(inputs[index], rows[index].GetProperty("input").EnumerateArray().Select(value => value.GetSingle()));
+                Assert.Equal(outputColumns, rows[index].GetProperty("output").GetArrayLength());
+            }
         }
     }
 }
