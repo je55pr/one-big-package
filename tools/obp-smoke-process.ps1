@@ -29,12 +29,11 @@ function Invoke-ObpSmokeProcess {
     New-Item -ItemType Directory -Path $logs -Force | Out-Null
     $stdout = Join-Path $logs 'stdout.log'
     $stderr = Join-Path $logs 'stderr.log'
+    Write-ObpSmokeOutput "Smoke native stdout/stderr: $logs"
     $code = Invoke-ObpNativeProcessCapture -FilePath $FilePath -ArgumentList $ArgumentList -WorkingDirectory $WorkingDirectory `
-        -StandardOutputPath $stdout -StandardErrorPath $stderr
+        -StandardOutputPath $stdout -StandardErrorPath $stderr -OnOutput { param($line) Write-ObpSmokeOutput $line }
     $output = [IO.File]::ReadAllText($stdout)
     $errors = [IO.File]::ReadAllText($stderr)
-    Write-ObpSmokeOutput $output
-    Write-ObpSmokeOutput $errors
     if ($code -ne 0) { return $code }
     if (-not (Test-ObpSmokeLog -ExitCode $code -Log ($output + "`n" + $errors) -CompletionMarker $CompletionMarker)) {
         Write-ObpSmokeOutput "Smoke did not complete cleanly. Native stdout/stderr: $logs"
