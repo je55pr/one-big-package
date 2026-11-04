@@ -8,31 +8,44 @@ namespace OBP.Tests;
 /// <summary>All-level retail survival and structural invariants for the native R&C1 world path.</summary>
 public sealed class Rac1AllLevelsTests
 {
-    public static IEnumerable<object[]> NativeLevels
+    public static IEnumerable<object[]> NativeLevels => Enumerable.Range(0, 19).Select(level => new object[] { level });
+
+    [Fact]
+    public void RuntimeCensusRetainsEveryNativeLevel()
     {
-        get
+        using var census = ReadCensus();
+    }
+
+    private static JsonDocument ReadCensus()
+    {
+        string path = Path.Combine(RepoPaths.Root, "research", "generated", "rac1-dynamic-moby-runtime-census.json");
+        var doc = JsonDocument.Parse(File.ReadAllText(path));
+        try
         {
-            string path = Path.Combine(RepoPaths.Root, "research", "generated", "rac1-dynamic-moby-runtime-census.json");
-            using var doc = JsonDocument.Parse(File.ReadAllText(path));
-            foreach (var row in doc.RootElement.GetProperty("levels").EnumerateArray())
-            {
-                yield return [row.GetProperty("level").GetInt32(), row.GetProperty("placements").GetInt32(),
-                    row.GetProperty("linkedInstances").GetInt32(), row.GetProperty("animatedHandoffInstances").GetInt32(),
-                    row.GetProperty("noGeometryInstances").GetInt32(), row.GetProperty("dynamicTriangles").GetInt32(),
-                    row.GetProperty("staticTriangles").GetInt32(), row.GetProperty("animatedTriangles").GetInt32(),
-                    row.GetProperty("animationCapableInstances").GetInt32()];
-            }
+            Assert.Equal(Enumerable.Range(0, 19), doc.RootElement.GetProperty("levels")
+                .EnumerateArray().Select(row => row.GetProperty("level").GetInt32()).Order());
+            return doc;
         }
+        catch { doc.Dispose(); throw; }
     }
 
     [SkippableTheory]
     [MemberData(nameof(NativeLevels))]
-    public void NativeWorldBuildsWithFiniteLinkedGeometry(
-        int levelId, int placements, int linkedInstances, int animatedHandoffs, int noGeometryInstances,
-        int dynamicTriangles, int staticTriangles, int animatedTriangles, int animationCapableInstances)
+    public void NativeWorldBuildsWithFiniteLinkedGeometry(int levelId)
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var census = ReadCensus();
+        var row = census.RootElement.GetProperty("levels").EnumerateArray()
+            .Single(row => row.GetProperty("level").GetInt32() == levelId);
+        int placements = row.GetProperty("placements").GetInt32();
+        int linkedInstances = row.GetProperty("linkedInstances").GetInt32();
+        int animatedHandoffs = row.GetProperty("animatedHandoffInstances").GetInt32();
+        int noGeometryInstances = row.GetProperty("noGeometryInstances").GetInt32();
+        int dynamicTriangles = row.GetProperty("dynamicTriangles").GetInt32();
+        int staticTriangles = row.GetProperty("staticTriangles").GetInt32();
+        int animatedTriangles = row.GetProperty("animatedTriangles").GetInt32();
+        int animationCapableInstances = row.GetProperty("animationCapableInstances").GetInt32();
         using var reader = Rac1VerifiedDisc.Open(iso!);
         var world = Rac1WorldImport.Build(reader, levelId);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == levelId);
@@ -113,6 +126,8 @@ public sealed class Rac1AllLevelsTests
                 Assert.Equal("moby", mesh.AssetKind);
                 Assert.Equal(0, mesh.Positions.Length % 3);
                 Assert.Equal(0, mesh.Indices.Length % 3);
+                Assert.All(mesh.Positions, value => Assert.True(double.IsFinite(value)));
+                Assert.All(mesh.Uvs, value => Assert.True(float.IsFinite(value)));
                 Assert.All(mesh.Indices, index => Assert.InRange(index, 0, mesh.Positions.Length / 3 - 1));
                 if (mesh.TextureId >= 0) Assert.Contains((mesh.AssetKind, mesh.TextureId), textureKeys);
             });
@@ -122,6 +137,7 @@ public sealed class Rac1AllLevelsTests
                 Assert.NotEmpty(animations.Clips);
                 Assert.All(animations.Clips, clip =>
                 {
+                    Assert.True(clip.FrameCount > 0);
                     Assert.Equal(clip.FrameCount, clip.FrameDurationsSeconds.Count);
                     Assert.NotEmpty(clip.Surfaces);
                     Assert.All(clip.FrameDurationsSeconds, duration => Assert.True(duration > 0 && double.IsFinite(duration)));
