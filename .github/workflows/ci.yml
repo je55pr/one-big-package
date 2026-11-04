@@ -102,8 +102,8 @@ jobs:
           mkdir -p .build
           .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \
             --headless --path game --script res://tests/ambient_uv_scroll_smoke.gd | tee .build/ambient-unset.log
-          rg -F '[ambient-uv-scroll-smoke] SKIP: no retail UYA source configured' .build/ambient-unset.log
-          rg -F '[ambient-uv-scroll-smoke] PASS:' .build/ambient-unset.log
+          grep -F '[ambient-uv-scroll-smoke] SKIP: no retail UYA source configured' .build/ambient-unset.log
+          grep -F '[ambient-uv-scroll-smoke] PASS:' .build/ambient-unset.log
       - name: Reject a configured missing ambient source
         env:
           OBP_UYA_ISO: ${{ runner.temp }}/obp-ambient-missing-source.iso
@@ -115,8 +115,8 @@ jobs:
           set -e
           cat .build/ambient-invalid.log
           test "$result" -eq 1
-          rg -F '[ambient-uv-scroll-smoke] FAIL:' .build/ambient-invalid.log
-          rg -F 'FileNotFoundException' .build/ambient-invalid.log
+          grep -F '[ambient-uv-scroll-smoke] FAIL:' .build/ambient-invalid.log
+          grep -F 'FileNotFoundException' .build/ambient-invalid.log
       - name: Smoke-test transparent foliage sorting and opaque trunk depth
         run: |
           .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \

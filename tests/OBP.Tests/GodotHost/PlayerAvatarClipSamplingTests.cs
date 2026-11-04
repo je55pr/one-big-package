@@ -78,6 +78,7 @@ public sealed class PlayerAvatarClipSamplingTests
     {
         string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrWhiteSpace(path), "OBP_RAC1_ISO not set");
+        using (Rac1VerifiedDisc.Open(path!)) { }
         var avatar = Rac1PlayerAvatarProvider.Instance.Load(path!, "ratchet");
         var controller = Assert.IsType<Rac1PlayerAnimationPresentationController>(
             Rac1PlayerAvatarProvider.Instance.CreateAnimationController(avatar));
@@ -110,7 +111,8 @@ public sealed class PlayerAvatarClipSamplingTests
         independent.Apply(asset.Clips[51], new PlayerSkeletalSample(1, 2, .25f), .2f);
         var expected = independent.Skin();
         Assert.NotEmpty(expected);
-        Assert.Equal(expected.Length, middle.SampledPose!.LocalPositions.Length);
+        Assert.NotNull(middle.SampledPose);
+        Assert.Equal(expected.Length, middle.SampledPose.LocalPositions.Length);
         Assert.All(expected.Zip(middle.SampledPose.LocalPositions),
             pair => Assert.InRange(Math.Abs(pair.First - pair.Second), 0, .00001));
     }
