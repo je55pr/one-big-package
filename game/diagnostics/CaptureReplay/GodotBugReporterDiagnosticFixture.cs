@@ -35,12 +35,12 @@ internal sealed class GodotBugReporterDiagnosticFixture(Node owner, Func<IBugRep
                 if (step.Events.Any(item => item.Kind == PlaytestInputKind.Key && item.Code is (int)Key.W or (int)Key.Q)) excluded = false;
         }
         var files = snapshot.ReplayResults;
-        bool matched = files.Length == 2;
-        foreach (string file in files)
+        var results = files.Select(file =>
         {
             using var result = JsonDocument.Parse(File.ReadAllText(file));
-            matched &= result.RootElement.GetProperty("Result").GetString() == "matched" && !result.RootElement.GetProperty("BuildChanged").GetBoolean();
-        }
+            return result.RootElement.Clone();
+        }).ToArray();
+        bool matched = BugReporterScenario.MatchesSavedReportReplays(snapshot.Reports.Select(report => report.Id).ToArray(), results);
         return new([.. snapshot.Reports.Select(report => new BugReporterReportDiagnostic(report.Id.ToString("N"), report.Description))],
             snapshot.Recordings, snapshot.Exports, excluded, matched);
     }
