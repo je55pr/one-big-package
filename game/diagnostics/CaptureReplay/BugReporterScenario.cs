@@ -100,7 +100,7 @@ public sealed class BugReporterScenario(CaptureDiagnosticContext context, ICaptu
     }
 
     // File-backed replay metadata verification, kept independent of the Godot UI.
-    internal static bool ReplayFilesMatchSavedReports(Guid[] expectedReportIds, string[] files)
+    internal static bool ReplayFilesMatchSavedReports(Guid[] expectedReportIds, IEnumerable<string> files)
     {
         try
         {
