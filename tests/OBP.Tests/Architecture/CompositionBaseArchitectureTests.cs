@@ -15,14 +15,14 @@ public sealed class CompositionBaseArchitectureTests
 
     private static readonly string[] AllowedDerived =
     [
-        "ApplicationDiagnostics", "CaptureComposition", "Rac1WorldComposition", "Rac2WorldComposition",
+        "ApplicationDiagnostics", "CaptureComposition", "PlayerServicesComposition", "Rac1WorldComposition", "Rac2WorldComposition",
     ];
 
     private static readonly string[] CompositionFiles =
     [
         "game/scripts/OBPGame.cs", "game/scripts/ApplicationComponents.cs", "game/scripts/CompositionBase.cs",
         "game/diagnostics/ApplicationDiagnostics.cs", "game/scripts/CaptureComposition.cs",
-        "game/scripts/Rac1WorldComposition.cs", "game/scripts/Rac2WorldComposition.cs",
+        "game/scripts/Rac1WorldComposition.cs", "game/scripts/Rac2WorldComposition.cs", "game/scripts/PlayerServicesComposition.cs",
     ];
 
     private static IEnumerable<(string Path, SyntaxNode Root)> GameSources() =>

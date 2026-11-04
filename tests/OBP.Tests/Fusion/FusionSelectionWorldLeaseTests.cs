@@ -55,7 +55,7 @@ public sealed class FusionSelectionWorldLeaseTests
     [Fact]
     public void SelectionCancellationDoesNotDereferenceAnUnboundRac1World()
     {
-        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs"));
+        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "PlayerServicesComposition.cs"));
         var syntax = CSharpSyntaxTree.ParseText(source).GetRoot();
         var argument = Assert.Single(syntax.DescendantNodes().OfType<ArgumentSyntax>(),
             argument => argument.NameColon?.Name.Identifier.ValueText == "SelectionChanged");

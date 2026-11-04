@@ -45,7 +45,7 @@ public sealed class PlayerEquipmentOwnershipArchitectureTests
         Assert.Null(exit.Body);
         string forwarding = exit.ExpressionBody!.ToString();
         Assert.Contains("GodotApplicationShutdown.Exit(ReleaseAudioForExit", forwarding, StringComparison.Ordinal);
-        Assert.Contains("() => _playerLife, () => _fusionWeapons", forwarding, StringComparison.Ordinal);
+        Assert.Contains("() => PlayerServices.LifeIfCreated, () => PlayerServices.FusionIfCreated", forwarding, StringComparison.Ordinal);
         Assert.Contains("ApplicationLifecycle.ReportRootExit(Name)", forwarding, StringComparison.Ordinal);
         var shutdown = CSharpSyntaxTree.ParseText(Read("GodotApplicationShutdown.cs")).GetRoot();
         var helper = Assert.Single(shutdown.DescendantNodes().OfType<MethodDeclarationSyntax>(), method => method.Identifier.ValueText == "Exit");

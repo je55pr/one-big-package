@@ -23,7 +23,7 @@ public sealed class PlayerSpawnPlacementOwnershipTests
         Assert.Contains("Rac1CurrentYaw = -placement.Yaw", presentation, StringComparison.Ordinal);
         Assert.Contains("Position = placement.Position", presentation, StringComparison.Ordinal);
         Assert.Contains("player.RotateY(placement.Yaw)", presentation, StringComparison.Ordinal);
-        Assert.Contains("PlayerLife.BindPlayer(player)", root, StringComparison.Ordinal);
+        Assert.Contains("PlayerServices.Life.BindPlayer(player)", root, StringComparison.Ordinal);
 
         Assert.DoesNotContain("nativeStartUsable", root, StringComparison.Ordinal);
         Assert.DoesNotContain("MobySequence showcase", root, StringComparison.Ordinal);

@@ -17,7 +17,9 @@ public sealed class PlayerLifecycleOwnershipArchitectureTests
         var root = HostOwnershipAudit.Host.Value.GetTypeByMetadataName("OBP.Game.OBPGame")!;
         foreach (string name in new[] { "_playerDamageActors", "_playerDamageWorld", "_playerDamageLease", "_playerServiceTick" })
             Assert.Empty(root.GetMembers(name));
-        Assert.Single(root.GetMembers().OfType<IFieldSymbol>(), field => field.Type.Name == "GodotPlayerLifecycleHost");
+        Assert.DoesNotContain(root.GetMembers().OfType<IFieldSymbol>(), field => field.Type.Name == "GodotPlayerLifecycleHost");
+        var owners = HostOwnershipAudit.Host.Value.GetTypeByMetadataName("OBP.Game.PlayerServicesComposition")!;
+        Assert.Single(owners.GetMembers().OfType<IFieldSymbol>(), field => field.Type.Name == "GodotPlayerLifecycleHost");
         foreach (string file in new[] { "PlayerLifecycleBridge.cs", "GodotPlayerLifecycleHost.cs" })
             Assert.DoesNotContain("OBPGame", Read(file), StringComparison.Ordinal);
         Assert.DoesNotContain("using Godot", Read("PlayerLifecycleBridge.cs"), StringComparison.Ordinal);

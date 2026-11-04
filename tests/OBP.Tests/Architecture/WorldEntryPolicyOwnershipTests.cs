@@ -19,7 +19,7 @@ public sealed class WorldEntryPolicyOwnershipTests
         Assert.Contains("SnapReach: WorldEntryPreparationPolicy.SourceEntrySnapReach", entry);
         Assert.Contains("WorldEntryPreparationPolicy.WorldOptions(world, args)", resources);
         Assert.Contains("WorldEntryPreparationPolicy.WorldOptions(world, _args)", entry);
-        Assert.Contains("WorldEntryPreparationPolicy.SourceFileStamp", entry);
+        Assert.Contains("WorldEntryPreparationPolicy.SourceFileStamp", CompositionSources.Application);
         // The activation admission must stay bound to the ordinary-source check, not just be called.
         Assert.Contains("AdmitActivation: () => Sources.RequireOrdinary(\"world activation\")", entry, StringComparison.Ordinal);
         Assert.DoesNotContain("private WorldHost.Options WorldOptions(", entry, StringComparison.Ordinal);

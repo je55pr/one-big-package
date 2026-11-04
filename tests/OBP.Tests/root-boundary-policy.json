@@ -2575,32 +2575,11 @@
       "Hash": "4e03234fc56cc7ed5e994b2ed4d304dc51f9ef644d7fb44d754034be579ee614"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_actorHost:ActorWorldHost ?:private",
-      "Owner": "#359",
-      "Rationale": "Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings.",
-      "ExpiresWith": "#376",
-      "Hash": "0cd73b449bff4bef3d04cc2756cbd3de77693d8f5e45e48d37a50e682cce5d6d"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateActorHost():ActorWorldHost:private",
-      "Owner": "#359",
-      "Rationale": "Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings. #354 routes accepted cross-source wrench feedback to the player audio presenter. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Reads source availability or equipment order through the persistent PlayerEquipmentFacade. #353 delegates the same health facts/actions to the scene-bound lifecycle owner. #361 routes the same observations and commands through the scene-owned Rac1EnemyHost and source-family adapters; native formulas, tick order and player-global ownership remain unchanged. #374 binds the original R&C3 actor bridge to a lease-owned module instead of global runtime fields; existing native damage and player-global selection remain unchanged. #373 preserves this exact lease-scoped R&C2 owner binding, validated by the focused R&C2 world ownership and original actor regressions. #367/#368 now obtains R&C1 target geometry and occlusion through world-scoped Rac1WeaponContactHost with per-physics-frame caches, while preserving the original host contact/ray and damage semantics; native player/equipment authority and replay IDs remain unchanged. #367/#368 defers the world-owned contact/target delegates until their owning R&C1 lease exists; host construction must not resolve Rac1World eagerly. The new ContactCallbacksDoNotResolveTheWorldDuringHostConstruction guard covers each factory. #367/#368 moves the Suck Cannon capture/cargo presentations into the Rac1WeaponHost world lease. Actor retirement, arsenal diagnostic snapshots and bookmark restoration now resolve typed world-owned cargo adapters lazily; native inventory, saved identities, damage and pickup authority are unchanged. #367/#368: R&C1 arsenal targeting now uses the lease-owned Rac1WeaponContactHost with its original enemy-only provider, Morphed exclusion, cone and occlusion. Additional-weapon Moby/crate/enemy damage routing and geometry-selected arsenal blasts now use Rac1WeaponDamageHost. Existing actor, Fusion and native gameplay authorities are borrowed through lazy world-owned callbacks. No player-global or root feature state was added.",
-      "ExpiresWith": "#376",
-      "Hash": "04c2e4d2d62ea00483f3298f08bab4fe976cfb39768ac7be906bfe807e209bd0"
-    },
-    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ResetPlacedActor(:string):EquipmentChangeResult:public",
       "Owner": "#359",
       "Rationale": "Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings.",
       "ExpiresWith": "#376",
-      "Hash": "a2ef8d8a1bd79895104dd3894ea3bf2c4b276bfbe56d6e3195098f79a5dc0b96"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::property:ActorHost:ActorWorldHost:get/:private",
-      "Owner": "#359",
-      "Rationale": "Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings.",
-      "ExpiresWith": "#376",
-      "Hash": "e95ea4a594cf343565a5d15ec5bf6b4a3daa2bc7500a3f7e95616567e50dc4cb"
+      "Hash": "b89b2916db30567e6488a13551b9ce171df9dc698fd873e532046b249a2da1f1"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::field:_avatarPresentation:PlayerAvatarPresentationHost:private,readonly",
@@ -2645,13 +2624,6 @@
       "Hash": "ab68bc067058ca5e5116f9b53f530f5e7badc39bff31a8cc3570143279cfbe51"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_profileCoordinator:ProfileCoordinator ?:private",
-      "Owner": "#349",
-      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
-      "ExpiresWith": "#376",
-      "Hash": "cf5a2ad510edc1602616dd06eafbf3aa317ff4e0819cb64780b891729d0b8a36"
-    },
-    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::field:_sourceSetup:SourceSetupController ?:private",
       "Owner": "#346",
       "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. Source state, admission and repair live outside the root; final world-entry composition removes this bridge.",
@@ -2670,21 +2642,21 @@
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
       "ExpiresWith": "#376",
-      "Hash": "f003598de7523e5d2ba04261b803e432b9deab6f8589dabfe8c608fd4711134f"
+      "Hash": "54c09fa65eead98b917f81926b14e3549425d31a7597a9dee18cfd6cc30544ca"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CaptureProfileSources():IReadOnlyList < ProfileSource >:private",
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
       "ExpiresWith": "#376",
-      "Hash": "a86ce667a982c2b5a6fc22b7d47f353da57aaaeb5ca7d8358f8876f7ff7b7af8"
+      "Hash": "1bec448d000216661cacd20c6e1d27ab3e1819e526faadb674676079e8fbd0a6"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CaptureSharedProfile():ObpProfile:private",
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
       "ExpiresWith": "#376",
-      "Hash": "2dc1a471afda573f5d0ea6f3100ed12868129daea00a11e973955aed4f74ac42"
+      "Hash": "113a0645124aa81adb0582bd9d6704ab6d694f6219fd8d8f608bdc474b5e6644"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CheckControllerWeaponInputAsync():Task:internal",
@@ -2719,28 +2691,28 @@
       "Owner": "#348",
       "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #371 routes Metropolis taxi world ownership, passenger and hull presentation through the lease-owned taxi host; native session rules and diagnostic compatibility remain separately observed. #367/#368 final player input extraction: native input, selection and equipment cycle now use the persistent PlayerSessionHost.Rac1WeaponPlayerInputHost with typed deferred world/source/UI ports; only the source-neutral composition borrow remains in OBPGame. The original root combat partial, no-op swing forwarding and random reward wrapper are retired. Native hand, damage and campaign authorities stay unchanged. #367/#368 final root cleanup: transient R&C1 effects and equipment-use forwarding now live in world-scoped hosts borrowing their original player, source, presentation and damage authorities. No duplicate native inventory, ammunition, persistent root state or runtime authority is introduced. The audited root weapon/weapon-world partials are retired. #372 routes source-authored mission scenes/actors, prompt and deferred level exits through a disposable world lease. Native campaign and player-owned wallet remain separately selected by existing typed ports.",
       "ExpiresWith": "#376",
-      "Hash": "12c59bb0cca0df7b6b4ce36bace66a4da6e758feefca7fe442b5709986942027"
+      "Hash": "c3b61ba024b9b70dbd21e6c348f1f8407787dae0000e521df8c725146c90135f"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePauseMenuPresentation():PauseMenuUi:private",
       "Owner": "#348",
       "Rationale": "Final #376 typed composition/delegation to the owning player, world, navigation, diagnostic, menu or persistence component. No native rules, resource ownership or diagnostic assertions belong in this bound root member. Its exact fingerprint remains reviewed.",
       "ExpiresWith": "#376",
-      "Hash": "a85bce7f97c1d4b89e581999cbb0b8c17b96f9f5005f007697bf3f82764f4071"
+      "Hash": "b6ebc835686c4915a0afd0feeaf578d74f7dbd2a6e2efb9360d8578fb0713a22"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateSourceSetup():SourceSetupController:private",
       "Owner": "#346",
       "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. #376 delegates idempotent plain bootstrap backdrop construction to GodotSmokeSceneFixture; source setup only chooses when to request it. Source state, admission and repair live outside the root; final world-entry composition removes this bridge. #354 binds the owned native player audio presenter and its copied observations. #356 binds the same observations/actions to the capture/replay owner; recording, validation, metadata and optional verification state no longer live in the root. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer. #367/#368: preview arsenal inventory snapshot, gadget acquisition, source weapon grants, and rebind admission moved into persistent PlayerSessionHost, preserving native SetEquipmentPreview then the current inventory identity before grants. World reset, UI/report/synchronization and detector refresh remain root orchestration in original order. ResetRac1WeaponAudio and RecordRac1WeaponSound forwarding methods were retired; call sites now borrow the already owned PlayerEquipmentPresentationBinder.WeaponAudio.Reset/Record with unchanged tick/trace inputs. The one-call source-detector forwarding method was inlined. No new world state, independent ammo authority or privileged root exception.",
       "ExpiresWith": "#376",
-      "Hash": "1724cbb85a6c54f47909bc3551c3f2f5f7aefcb02e21a4dbdb380ad8b7026cde"
+      "Hash": "c57ae0709c7b63815f91252d812a0fea1ea2bc6998651e521bdf7826659405d7"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:EnsurePlayerSession():void:private",
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Integration with #356 retains the capture/replay coordinator and reads the same source-qualified facts through the lease/persistent owners; no player policy is added. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
       "ExpiresWith": "#376",
-      "Hash": "527d1fe0ffcd8e20ca56c6b3729e86e19fee3f46a96a56c89e64d64dd8897dd2"
+      "Hash": "b9c96f3702fdbee8653480a7dac573f783349d5a6d8110d60af94699328c280b"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:EnterFusionLab():bool:private",
@@ -2761,7 +2733,7 @@
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
       "ExpiresWith": "#376",
-      "Hash": "25880c427e054e842e27276889872105bf5507e7b8b9780eeb3a1ba8f815d84c"
+      "Hash": "ed1077c72c9632073a22b2036bcee8053cccb9a24fec1ece89fbdec02e94c0de"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:OnDestinationChosen(:ObpDestination):bool:private",
@@ -2796,7 +2768,7 @@
       "Owner": "#351",
       "Rationale": "Final #376 typed composition/delegation to the owning player, world, navigation, diagnostic, menu or persistence component. No native rules, resource ownership or diagnostic assertions belong in this bound root member. Its exact fingerprint remains reviewed.",
       "ExpiresWith": "#376",
-      "Hash": "0f77244bd680da17bd0481e18ae308aaa3bc294b7d6ece383ab74f0d8a35c576"
+      "Hash": "94489e5a8526a346b2257f5b3b2bc3b541c6f8360a11a92666311e3105147d6b"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RefreshPlayerSourceAvailability():void:private",
@@ -2838,7 +2810,7 @@
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
       "ExpiresWith": "#376",
-      "Hash": "bb5c81944352846751d114d6c48f0937493620019cad585e614327d0c1dd3e34"
+      "Hash": "e57846222299c0e18c9d24272658d161a009c4cf269eb324416c296ec698f129"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetDebugOutputEnabled(:bool):void:private",
@@ -2901,7 +2873,7 @@
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
       "ExpiresWith": "#376",
-      "Hash": "a15f70d412dd17c6084b1dccae7f33ce35ce10ec228497c6e43af42f635fce82"
+      "Hash": "de2b3a72466051f5f33bfcdab0161d2d69d87802a3b9133842f339eb12207813"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:TravelRac1CampaignTo(:int):Rac1PlanetTravelStartResult:public",
@@ -2957,7 +2929,7 @@
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
       "ExpiresWith": "#376",
-      "Hash": "0b236e2bfcc667b9a4fb16942f4a5f930ea2e311b7f9dba5e9331e20c69138e7"
+      "Hash": "21535c3a5c8461f495e911f94e108d66793d2f93a6a7216658856de99cc84678"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:TryReturnSelectorToMenu():bool:public",
@@ -3013,7 +2985,7 @@
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
       "ExpiresWith": "#376",
-      "Hash": "97fd57c5b50381371b657ca64ec3df9b12626b614289329db5c10be8f9102692"
+      "Hash": "905b02feb592576046c42e48dac8e2e4bd73b0acc64afc792f953ff3806f40f7"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:_lastQuickSelectTap:ulong:set/:private",
@@ -3069,21 +3041,21 @@
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
       "ExpiresWith": "#376",
-      "Hash": "f6493899141fad233cbfbaab4b3075508dc91b1520a6d2fc11adf0d06d539d05"
+      "Hash": "16fb24220de178e5d85a7812c3c6ca0220b6046a9ddec596e28e061ad1961138"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:_profileStatus:string ?:get/:private",
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
       "ExpiresWith": "#376",
-      "Hash": "8d5b926460e0d969a7737502267ed8da4cf236e640469f59f9eca8b2e2914bbe"
+      "Hash": "072d25476acbc749fd941375499100414b83108cf5834ec27ebebcaab91bbfc3"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:_profileWriteBlocked:bool:get/:private",
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
       "ExpiresWith": "#376",
-      "Hash": "23990d27895f46f21f5f83afb69190a418ac61b58eb739bf0e90f08e64e61609"
+      "Hash": "45ec2598a25e62e942afc6851dc3066ea082b530747967e6df59d3294198296b"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:_quickSelect:WeaponQuickSelectUi ?:get/:private",
@@ -3111,7 +3083,7 @@
       "Owner": "#348",
       "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
       "ExpiresWith": "#376",
-      "Hash": "cdb657ca2a6862d474fa8a9cc56edc171334d7dc258dde263c1624893f94fc2b"
+      "Hash": "2e7b58b47d0d0566be99fdda599f288a62488fb9864cf7b9a83e3e4f86eeebb4"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:Modals:UiModalCoordinator:get/:private",
@@ -3146,21 +3118,14 @@
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
       "ExpiresWith": "#376",
-      "Hash": "b09c6a70121489c4ab0f5cffa2fd859c055bb017d498120c1ce2488c1cce8168"
+      "Hash": "325389388c28527162f7ac1c5d5b01c0405a213494e1dd29d4b4af8880785c29"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:ProfileRecoveryRequired:bool:get/:internal",
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
       "ExpiresWith": "#376",
-      "Hash": "f2a220f993e02321b9f6e9c8455b5b78427d3d55614abfe1296c615615d769ee"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Profiles:ProfileCoordinator:get/:private",
-      "Owner": "#349",
-      "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376. #360 redirects the same facts/actions through the persistent player, separate source campaign or lease-owned R&C1 context; no gameplay policy is added. Integration with #356 retains the capture/replay coordinator and reads the same source-qualified facts through the lease/persistent owners; no player policy is added. #372 binds campaign saves to the existing persistent source owner and authored checkpoint volumes to the current world lease, without new native policy or global mutable state. #372 review: unify native campaign restore ownership and share a typed constant for the explicit campaign-travel durability boundary; no save policy or format change.",
-      "ExpiresWith": "#376",
-      "Hash": "60cee919a3e2307e427f9bb00a5d26fc0112bbea8df7459ed225d5a4e25d4a00"
+      "Hash": "f8296375fe86dca4c279dcabdaa97c7deeb21147f14b133a197b6c9d2bdcdbcc"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:QuickSelectOpen:bool:get/:private",
@@ -3181,7 +3146,7 @@
       "Owner": "#349",
       "Rationale": "Temporary player/profile composition and owner-backed compatibility projections (including writable stamp/destination projections); PlayerSessionHost owns persistent player/native/entry state, ProfileCoordinator owns recovery/autosave, avatar/HUD staging remains world-bound. Retire root bridge with #376.",
       "ExpiresWith": "#376",
-      "Hash": "be929802c0505a6bb59550bbcc24b30ec6ccec629aa41b7f698a39ceb6dac015"
+      "Hash": "8b1e0f33ff38a0c8f6b7da761c70ee251c1f4e0c6ab0d34fafe348e949dfe28d"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:Sources:SourceSetupController:get/:private",
@@ -3195,7 +3160,7 @@
       "Owner": "#350",
       "Rationale": "Final #376 typed composition/delegation to the owning player, world, navigation, diagnostic, menu or persistence component. No native rules, resource ownership or diagnostic assertions belong in this bound root member. Its exact fingerprint remains reviewed.",
       "ExpiresWith": "#376",
-      "Hash": "f80a7af5cad0e4dc7ea913f2aa2a8b017e49a3f60b6501f9f73b27b06f9ebaf8"
+      "Hash": "d80157bce95e68768e2a3103a3aa5a1008e2e9fff9b54545ec5daf9310d30a1d"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ClearPlayerAvatarView():void:private",
@@ -3279,7 +3244,7 @@
       "Owner": "#360",
       "Rationale": "Temporary composition binding to the lease-owned R&C1 module or existing persistent player owner. No collection or native gameplay policy lives in the root; Rac1WorldContextTests and world/player lifecycle reconciliation cover isolation. #353 delegates the same health facts/actions to the scene-bound lifecycle owner.",
       "ExpiresWith": "#376",
-      "Hash": "6f1e7e8fc083b92b2b0bd90cd655ec52b56e4a759fbe26464330cc88888f1771"
+      "Hash": "09f4d5bb675ac2ca8c2e80cfb8e04a2c1308eda1a5071a37d700472ddd4f8c01"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:Rac1World:Rac1WorldModule:get/:private",
@@ -3287,13 +3252,6 @@
       "Rationale": "Temporary composition binding to the lease-owned R&C1 module or existing persistent player owner. No collection or native gameplay policy lives in the root; Rac1WorldContextTests and world/player lifecycle reconciliation cover isolation.",
       "ExpiresWith": "#376",
       "Hash": "6c0ed947863e9b2c07565a36e594729a08ce37c48628506d061427276a2ca674"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Rac1CombatInput:IRac1WeaponPlayerInput:get/:private",
-      "Owner": "#367",
-      "Rationale": "Temporary root composition of the persistent player-owned R&C1 weapon input coordinator. Delegates only borrowed current-player inventory, source host, view and world-lease facts; no new root mutable state. The new weapon path is handled by the coordinator and existing source-native sessions. Retire this factory port with thin-root owner cleanup.",
-      "ExpiresWith": "#376",
-      "Hash": "c772d62f3989b5df430b50d3e11b990f6e1ce6ba2add0953c4cf93b111595a2a"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:_rac1BoltWallet:Rac1BoltWallet:get/,set/:private",
@@ -3321,7 +3279,7 @@
       "Owner": "#360",
       "Rationale": "Temporary composition binding to the lease-owned R&C1 module or existing persistent player owner. No collection or native gameplay policy lives in the root; Rac1WorldContextTests and world/player lifecycle reconciliation cover isolation. #352 routes the same equipment observations/actions through FusionWeaponHost and its scene-owned renderer.",
       "ExpiresWith": "#376",
-      "Hash": "94d823a221dec543d121d3f113bb09041d198c8d45b43ce4aed49081669e9b06"
+      "Hash": "3ad9b2eb8f933f076e95eab8661ad15079ceca5e9a1ad3716f446262638a396d"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::field:_rac1Campaign:Rac1CampaignHost:private,readonly",
@@ -3331,53 +3289,11 @@
       "Hash": "253711cd3e4b18772309d3eb09683f6acc34622e684ede3c69f1a9386cf50b63"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_fusionWeapons:FusionWeaponHost ?:private",
-      "Owner": "#352",
-      "Rationale": "Single lazy application equipment owner reference; all source assets, fixture snapshots and world renderer state live in its owners.",
-      "ExpiresWith": "#376",
-      "Hash": "8345bc429a8d76cb6c3c548accd969f57d7e749352d4972b57b6949bb83b7069"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateFusionWeaponHost():FusionWeaponHost:private",
-      "Owner": "#352",
-      "Rationale": "Final #376 typed composition/delegation to the owning player, world, navigation, diagnostic, menu or persistence component. No native rules, resource ownership or diagnostic assertions belong in this bound root member. Its exact fingerprint remains reviewed.",
-      "ExpiresWith": "#376",
-      "Hash": "4be27c43aebb7e30b36f99c61cf0a4dbe07870cc1faa05925ebbe5778286800f"
-    },
-    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ToNumerics(:Vector3):System . Numerics . Vector3:private,static",
       "Owner": "#352",
       "Rationale": "Retained coordinate copy used by capture and actor composition after retiring the weapon partial; no source formula or state.",
       "ExpiresWith": "#376",
       "Hash": "dab5e0a2f7792ce225ec2d500879ec87d4a6f312646ed7253a015df612d8e3b8"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::property:FusionWeapons:FusionWeaponHost:get/:private",
-      "Owner": "#352",
-      "Rationale": "Lazy owner access only; no native gameplay state or world-origin selection.",
-      "ExpiresWith": "#376",
-      "Hash": "30efe1e6108f6472251452109d95fb49dee3d81d4fa9067460c7c8a0fb20f54d"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_playerLife:GodotPlayerLifecycleHost ?:private",
-      "Owner": "#353",
-      "Rationale": "Single player lifecycle composition reference; service clock, damage registrations, subscriptions and ordinary retry view belong to the owner.",
-      "ExpiresWith": "#376",
-      "Hash": "351b4c33ed3451f042d7d5c137afcc9ccaee55f6bafa3e46c1d2d88f9d441e4c"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlayerLifecycle():GodotPlayerLifecycleHost:private",
-      "Owner": "#353",
-      "Rationale": "Composes existing persistent health/session services, authored hazard facts, source actor liveness, typed presentation events, HUD and existing world-entry actions; native parity restart stays with its source campaign adapters. #373 preserves this exact lease-scoped R&C2 owner binding, validated by the focused R&C2 world ownership and original actor regressions. #367/#368: player-session-owned Rac1AdditionalUseHost now holds R&C1 additional-weapon request admission, native Rac1AdditionalWeaponSession instance, preview inventory binding, equipment use tick/age, Pyrocitor held flag and shot diagnostics. Root continues to render/distribute world effects through existing owners after its player-use result. Native ammo/cadence remain in the single borrowed weapon inventory and native source session; no new RNG or independent world authority. Original selection, preview resets, native step, shot presentation, persistence and audio ordering retained; write-only generations ledger eliminated. #367/#368: the original root wrench wrapper file is removed; world-host OnPhysicsUpdated is borrowed by deferred callback, while the wrench lease's ResetOrFallback preserves late player/audio teardown when no world exists. No new root wrench state and the existing player/native disposal order are unchanged. #372: source-world retry panel and Veldin environmental contact now reside in the disposable R&C1 lease. The selected player health, campaign checkpoint and game navigation are still borrowed separately via narrow typed bindings.",
-      "ExpiresWith": "#376",
-      "Hash": "9ecc05a68815a2d993c3057b35fe1c3301629755a03ba5d482c5bb70df6ba11c"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::property:PlayerLife:GodotPlayerLifecycleHost:get/:private",
-      "Owner": "#353",
-      "Rationale": "Lazy lifecycle-owner access only; no health state or destination-dependent player selection.",
-      "ExpiresWith": "#376",
-      "Hash": "42868dcd177ab57e1666359ece12f1d4dccaa88d37b4caf3a2b85720e3ed8065"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:LoadMovementStateFromBootstrap():void:public",
@@ -3475,7 +3391,7 @@
       "Owner": "#376",
       "Rationale": "Temporary read-only root composition of borrowed inventory, fusion selection and world-scoped wrench/animation flags. Existing PlayerEquipmentPresentationBinder owns hand and wrench visibility plus attachment refresh. There is no new player/world authority. Retire with final root collapse.",
       "ExpiresWith": "#376",
-      "Hash": "2779ebca856465d86e8a97622591f2aa9d76e4c73b212193b838893a14130de7"
+      "Hash": "d0ac245de1b73c06e7a9ba4a9cae7cc0ac3cad6144a236549b2313d72436d58f"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::field:_presentation:GodotApplicationPresentation ?:private",
@@ -3496,14 +3412,14 @@
       "Owner": "#376",
       "Rationale": "Final audited application composition: GodotApplicationPresentation owns scene/view/player nodes; WorldSceneLifetime and GodotWorldResources own world preparation, activation and retirement; navigation owns retained summary metadata; shutdown owns drain/audio policy. This member only binds or projects those existing owners and cannot acquire feature state.",
       "ExpiresWith": "#376",
-      "Hash": "179cb5acc50b6725188e7edf2ca04a4cacb619e42cfa5cfe0a783a5aa7aedc13"
+      "Hash": "c5452bde1df2bf84f8ddf5bafed4a57004e115e0e01fd3220fa4532732a0fa31"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:EnterWorld(:string,:Func < RuntimeWorld >,:ObpDestination ?,:string ?,:FusionLabDefinition ?):bool:private",
       "Owner": "#376",
       "Rationale": "Final audited application composition: GodotApplicationPresentation owns scene/view/player nodes; WorldSceneLifetime and GodotWorldResources own world preparation, activation and retirement; navigation owns retained summary metadata; shutdown owns drain/audio policy. This member only binds or projects those existing owners and cannot acquire feature state.",
       "ExpiresWith": "#376",
-      "Hash": "de9812ea084fe79ace32770caaa8739aa6a036903626613eb81ac9984273e447"
+      "Hash": "a9a47100416def3feb26ec7d947d5f971cde1307a67fa3063463e845804042ad"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:PrepareForQuitAsync():Task:private",
@@ -3664,7 +3580,7 @@
       "Owner": "#376",
       "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition). The module binds owned components to narrow source-world ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
       "ExpiresWith": "#376",
-      "Hash": "e8ba313425b20b4c4dafae83b938e06f13ff676979afb3a00b53b4308aba59e9"
+      "Hash": "03e44f00449ca3c0b15bcbc5948a5dfc5c1049d6340dd309d9a2e182ed41442b"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::property:Rac1Composition:Rac1WorldComposition:get/:private",
@@ -3693,6 +3609,20 @@
       "Rationale": "Composition-only lazy accessor for a composition module (ApplicationComponents, Rac1WorldComposition, Rac2WorldComposition, CaptureComposition). The module binds owned components to narrow ports; native formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
       "ExpiresWith": "#376",
       "Hash": "b5712bc75f509b6499169184b4f505ed051d6a0222e654e783317f0c07513898"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_playerServices:PlayerServicesComposition ?:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (PlayerServicesComposition, CaptureComposition, Rac1WorldComposition, Rac2WorldComposition, ApplicationDiagnostics). The module binds owned components to narrow ports; formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "8116033cf910a26899fa3d818e16aae26b089a33350c3d86e39f87cd665ffaac"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:PlayerServices:PlayerServicesComposition:get/:private",
+      "Owner": "#376",
+      "Rationale": "Composition-only lazy accessor for a composition module (PlayerServicesComposition, CaptureComposition, Rac1WorldComposition, Rac2WorldComposition, ApplicationDiagnostics). The module binds owned components to narrow ports; formulas, ticks and damage dispatch live in their owning modules and the root stores no gameplay state.",
+      "ExpiresWith": "#376",
+      "Hash": "0c5cc43c08da6172b55ba26495fa2039ef9a87cc80585e69ef0dbeeafed6ee49"
     }
   ],
   "RetiredMembers": [
