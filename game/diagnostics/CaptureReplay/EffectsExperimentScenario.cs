@@ -89,8 +89,9 @@ internal sealed class EffectsExperimentScenario(DiagnosticScenarioDefinition def
             await run.WaitAsync(DiagnosticFramePhase.Physics);
         await run.WaitAsync(DiagnosticFramePhase.PostDraw);
         var states = effects.Read();
-        Require(states.Length == 6 && states.All(e => e.State.ParticleCount > 0), "The six native generators are not active together.");
-        Require(states.Select(e => e.Recipe.Source.Game).Distinct().Count() == 3, "The room did not preserve three source identities.");
+        Require(states.Length == 6 && states.All(e => e.State.NativeTick >= 20 && e.State.ParticleCount > 0), "The six native generators did not reach twenty active ticks together.");
+        Require(states.Select(e => e.Recipe.Source.Game).ToHashSet().SetEquals(new[] { ObpSourceGame.Rac1, ObpSourceGame.Rac2, ObpSourceGame.Rac3 }),
+            "The room did not preserve all three trilogy source identities.");
     }
     private static void Require(bool value, string detail) { if (!value) throw new InvalidOperationException(detail); }
 }
