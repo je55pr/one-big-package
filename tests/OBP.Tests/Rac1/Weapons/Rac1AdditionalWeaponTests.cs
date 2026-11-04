@@ -1,5 +1,8 @@
 using System.Buffers.Binary;
+using OBP.IO;
+using OBP.RAC1.Animation;
 using OBP.RAC1.Gameplay;
+using OBP.RAC1.Level;
 using OBP.RAC1.Player;
 using OBP.RAC1.Presentation;
 
@@ -179,15 +182,31 @@ public sealed class Rac1AdditionalWeaponTests
         string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrWhiteSpace(path), "OBP_RAC1_ISO not set");
         var assets = Rac1EquipmentAssets.Load(path!);
+        using var reader = new FileRandomAccessReader(path!);
+        var core = Rac1LevelCore.Open(reader, Rac1DiscIndex.Read(reader).Levels.Single(level => level.LevelId == 0));
+        var local = Rac1StaticClasses.Read(core);
         var counts = new[] { (176, 1317, 1472), (168, 923, 962), (229, 840, 780), (190, 989, 826), (849, 1593, 1755),
             (74, 660, 644), (186, 1225, 1392), (230, 106, 144) };
         foreach (var (id, vertices, faces) in counts)
         {
             var model = assets.Models[id];
             Assert.Equal(vertices, model.VertexCount); Assert.Equal(faces, model.TriangleCount);
+            var native = id is 74 or 186 or 230 ? local.Mobies[id].Sequences
+                : Rac1MobyAnimation.ReadSequences(Rac1GlobalMoby.Read(core, id).Payload);
+            var sequences = native.Where(slot => slot.Value is not null).ToDictionary(slot => slot.Index, slot => slot.Value!);
+            Assert.NotEmpty(sequences);
+            Assert.Equal(sequences.Keys.Order(), model.Clips.Keys.Order());
             Assert.All(model.Clips.Values, clip =>
             {
-                Assert.All(clip.Frames, frame => Assert.All(frame, value => Assert.True(double.IsFinite(value))));
+                Assert.NotEmpty(clip.Frames);
+                Assert.Equal(sequences[clip.Sequence].Frames.Count, clip.Frames.Length);
+                Assert.All(clip.Frames, frame =>
+                {
+                    Assert.Equal(vertices * 3, frame.Length);
+                    Assert.All(frame, value => Assert.True(double.IsFinite(value)));
+                });
+                Assert.Equal(clip.Frames.Length, clip.Durations.Length);
+                Assert.Equal(clip.Frames.Length, clip.Positions.Length);
                 Assert.All(clip.Durations, duration => Assert.True(duration > 0));
                 Assert.Equal(clip.Frames.Length, clip.Origins.Length);
             });
@@ -195,7 +214,14 @@ public sealed class Rac1AdditionalWeaponTests
         Assert.Equal(7, assets.Models[849].Clips.Count);
         Assert.Equal(8, assets.Models[186].Clips.Count);
         Assert.Equal(6, assets.Models[176].Clips.Count);
-        Assert.All(assets.ParticleTextures.Values, texture => Assert.Equal(texture.Width * texture.Height * 4, texture.Rgba.Length));
+        // Current admitted equipment effect pool types; this is OBP's supported
+        // subset, not a claim that the retail bank contains only these pools.
+        Assert.Equal(new[] { 2, 4, 8, 11, 12, 15, 16, 24, 25, 27, 34 }, assets.ParticleTextures.Keys.Order());
+        Assert.All(assets.ParticleTextures.Values, texture =>
+        {
+            Assert.True(texture.Width > 0 && texture.Height > 0);
+            Assert.Equal(texture.Width * texture.Height * 4, texture.Rgba.Length);
+        });
         Assert.Equal(180, Rac1WeaponProfiles.Get(Rac1WeaponId.Walloper).ModelClass);
         Assert.Equal(849, Rac1WeaponProfiles.Get(Rac1WeaponId.SuckCannon).ModelClass);
     }
