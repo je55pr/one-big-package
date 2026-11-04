@@ -43,6 +43,7 @@ public sealed class Rac1AridiaEnemyTests
         var placements = Rac1Instances.Parse(gameplay).MobyInstances;
         var groups = Rac1AridiaEnemies.ReadAuthoredGroupRoster(gameplay);
         Assert.NotEmpty(groups);
+        Assert.NotEmpty(groups.Values.SelectMany(members => members));
         Assert.All(groups.Values.SelectMany(members => members), member =>
             Assert.InRange(member, 0, placements.Count - 1));
         int Reward(Rac1Instances.MobyInstance moby) =>
@@ -50,6 +51,9 @@ public sealed class Rac1AridiaEnemyTests
         var sharks = placements.Where(moby => moby.OClass == Rac1AridiaEnemies.Sandshark).ToArray();
         var bots = placements.Where(moby => moby.OClass == Rac1AridiaEnemies.Constructorbot).ToArray();
         var nests = placements.Where(moby => moby.OClass == Rac1AridiaEnemies.Nest).ToArray();
+        Assert.Equal(115, sharks.Length);
+        Assert.Equal(15, bots.Length);
+        Assert.Equal(7, nests.Length);
         Assert.Equal([0, 1, 13], sharks.Select(Reward).Distinct().Order());
         // The six state-29 sharks include the three directly on Ratchet's
         // start coordinate (#443-445). All six link to Sandmouse #756.
@@ -125,7 +129,10 @@ public sealed class Rac1AridiaEnemyTests
             source.NativeClassId == Rac1AridiaClass604Session.NativeClassId && source.Meshes.Count > 0);
         Assert.Contains(world.DynamicObjects!, source => source.InstanceIndex == 756 &&
             source.NativeClassId == Rac1AridiaEnemies.Sandmouse && source.Meshes.Count > 0);
-        foreach (var source in world.DynamicObjects!.Where(source =>
+        var imported = world.DynamicObjects!.Where(source => Rac1AridiaEnemies.IsEnemyClass(source.NativeClassId)).ToArray();
+        Assert.Equal(sharks.Concat(bots).Concat(nests).Select(moby => (moby.OClass, moby.Index)).Order(),
+            imported.Select(source => (source.NativeClassId, source.InstanceIndex)).Order());
+        foreach (var source in imported.Where(source =>
             source.NativeClassId is Rac1AridiaEnemies.Sandshark or Rac1AridiaEnemies.Constructorbot))
             Assert.Equal(Reward(placements[source.InstanceIndex]), Rac1EnemyMotion.RewardCentre(source));
     }
