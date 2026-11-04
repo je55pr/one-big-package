@@ -41,4 +41,36 @@ public sealed class BugReporterReplayEvidenceTests
         Assert.Equal(fault == "complete", BugReporterScenario.MatchesSavedReportReplays(expected, results));
     }
 
-}
+
+    [Fact]
+    public void ReplayFileReaderRejectsTwoFilesForTheSameReport()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "obp-bug-report-replay-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var first = Guid.Parse("00000000-0000-0000-0000-000000000001");
+            var second = Guid.Parse("00000000-0000-0000-0000-000000000002");
+            string firstPath = Path.Combine(directory, "first.json");
+            string secondPath = Path.Combine(directory, "second.json");
+
+            static string Matched(Guid id) => JsonSerializer.Serialize(new
+            {
+                Result = "matched",
+                BuildChanged = false,
+                ReportMarker = new { Id = id },
+            });
+            File.WriteAllText(firstPath, Matched(first));
+            File.WriteAllText(secondPath, Matched(first));
+            Assert.False(BugReporterScenario.ReplayFilesMatchSavedReports(
+                [first, second], [firstPath, secondPath]));
+
+            File.WriteAllText(secondPath, Matched(second));
+            Assert.True(BugReporterScenario.ReplayFilesMatchSavedReports(
+                [first, second], [firstPath, secondPath]));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }}

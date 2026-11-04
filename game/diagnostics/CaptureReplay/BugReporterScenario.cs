@@ -99,6 +99,16 @@ public sealed class BugReporterScenario(CaptureDiagnosticContext context, ICaptu
         Log("[bug-report-smoke] two fresh-process same-build replays through saved report markers PASS");
     }
 
+    // File-backed replay metadata verification, kept independent of the Godot UI.
+    internal static bool ReplayFilesMatchSavedReports(Guid[] expectedReportIds, string[] files)
+    {
+        var results = files.Select(file =>
+        {
+            using var result = JsonDocument.Parse(File.ReadAllText(file));
+            return result.RootElement.Clone();
+        }).ToArray();
+        return MatchesSavedReportReplays(expectedReportIds, results);
+    }
     internal static bool MatchesSavedReportReplays(Guid[] expectedReportIds, JsonElement[] results)
     {
         if (expectedReportIds.Length != 2 || expectedReportIds.Distinct().Count() != 2 ||
