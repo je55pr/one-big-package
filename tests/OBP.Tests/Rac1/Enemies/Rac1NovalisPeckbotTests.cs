@@ -74,6 +74,8 @@ public sealed class Rac1NovalisPeckbotTests
             : new Rac1GameplayDamageEvent(Rac1GameplayEntityRef.PlayerWrench, target, 1,
                 Rac1WrenchAttackProfile.NativeDamageFlags,
                 owner: Rac1GameplayDamageOwner.FromEntity(Rac1GameplayEntityRef.Player));
+        var unsupported = new Rac1GameplayDamageEvent(damage.Source, damage.Target, damage.NativeDamage, owner: damage.Owner);
+        Assert.False(runtime.CanDispatchDamage(unsupported));
         Assert.True(runtime.CanDispatchDamage(damage));
         var hit = runtime.DispatchDamage<Rac1NovalisPeckbotSession.DamageResult>(damage);
         Assert.True(hit.Lethal);
