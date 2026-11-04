@@ -196,10 +196,12 @@ public sealed class Rac1AdditionalWeaponTests
             var sequences = native.Where(slot => slot.Value is not null).ToDictionary(slot => slot.Index, slot => slot.Value!);
             Assert.NotEmpty(sequences);
             Assert.Equal(sequences.Keys.Order(), model.Clips.Keys.Order());
-            Assert.All(model.Clips.Values, clip =>
+            Assert.All(model.Clips, entry =>
             {
+                var (sequence, clip) = entry;
+                Assert.Equal(sequence, clip.Sequence);
                 Assert.NotEmpty(clip.Frames);
-                Assert.Equal(sequences[clip.Sequence].Frames.Count, clip.Frames.Length);
+                Assert.Equal(sequences[sequence].Frames.Count, clip.Frames.Length);
                 Assert.All(clip.Frames, frame =>
                 {
                     Assert.Equal(vertices * 3, frame.Length);
