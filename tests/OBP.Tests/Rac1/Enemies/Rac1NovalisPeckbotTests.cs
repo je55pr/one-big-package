@@ -57,8 +57,10 @@ public sealed class Rac1NovalisPeckbotTests
         Assert.Equal(1, session.Step(586, new(Vector3.Zero, new(80, 0, 0))).NativeState);
     }
 
-    [Fact]
-    public void DamageAcceptsWrenchAndBombOnlyThenTerminatesAfterDeath()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DamageAcceptsWrenchAndBombOnlyThenTerminatesAfterDeath(bool bomb)
     {
         var runtime = new Rac1MobyRuntimeSession();
         var session = new Rac1NovalisPeckbotSession(runtime);
@@ -67,15 +69,18 @@ public sealed class Rac1NovalisPeckbotTests
         Assert.Equal(0xe, probe.NativeState);
         Assert.True(probe.InitialLoiter);
         var target = Rac1GameplayEntityRef.Moby(new(577, 579));
-        var wrench = new Rac1GameplayDamageEvent(Rac1GameplayEntityRef.PlayerWrench, target, 1,
-            Rac1WrenchAttackProfile.NativeDamageFlags,
-            owner: Rac1GameplayDamageOwner.FromEntity(Rac1GameplayEntityRef.Player));
-        Assert.True(runtime.CanDispatchDamage(wrench));
-        var hit = runtime.DispatchDamage<Rac1NovalisPeckbotSession.DamageResult>(wrench);
+        var damage = bomb
+            ? Rac1DamageRuntime.FromBombGlove(new(1, 577, 579, Rac1BombGlove.NativeDamage, Rac1BombGlove.NativeDamageFlags))
+            : new Rac1GameplayDamageEvent(Rac1GameplayEntityRef.PlayerWrench, target, 1,
+                Rac1WrenchAttackProfile.NativeDamageFlags,
+                owner: Rac1GameplayDamageOwner.FromEntity(Rac1GameplayEntityRef.Player));
+        Assert.True(runtime.CanDispatchDamage(damage));
+        var hit = runtime.DispatchDamage<Rac1NovalisPeckbotSession.DamageResult>(damage);
         Assert.True(hit.Lethal);
+        Assert.Equal(bomb ? -1f : 0f, hit.Probe.Health);
         Assert.Equal(0x63, hit.Probe.NativeState);
         Assert.Equal(7, hit.Probe.Sequence);
-        Assert.False(runtime.CanDispatchDamage(wrench));
+        Assert.False(runtime.CanDispatchDamage(damage));
         Assert.False(session.Step(579, new(Vector3.Zero, Vector3.One)).Terminal);
         Assert.True(session.Step(579, new(Vector3.Zero, Vector3.One, AnimationWrapped: true)).Terminal);
         Assert.False(probe.Instance.IsActive);
