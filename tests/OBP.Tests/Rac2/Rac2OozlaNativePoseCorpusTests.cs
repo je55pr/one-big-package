@@ -57,6 +57,8 @@ public sealed class Rac2OozlaNativePoseCorpusTests(ITestOutputHelper output)
                     {
                         if (!frame.ExtraChannelsResolved) continue; // Unsupported source frame.
                         var points = Ps2MobyNativePose.Pose(source, cls.Mesh, frame);
+                        Assert.Equal(cls.Mesh.Positions.Length, points.Length);
+                        Assert.All(points, point => Assert.True(double.IsFinite(point)));
                         poses++;
                         if (seq.BoundingSphere is not { } sphere || sphere.Radius <= 0) continue;
                         double k = cls.Mesh.Scale / 1024.0;
