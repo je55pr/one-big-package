@@ -29,22 +29,30 @@ public sealed class Rac1AllLevelsTests
         catch { doc.Dispose(); throw; }
     }
 
+    private static readonly string[] CensusCountFields =
+    [
+        "placements", "linkedInstances", "animatedHandoffInstances", "noGeometryInstances",
+        "dynamicTriangles", "staticTriangles", "animatedTriangles", "animationCapableInstances",
+    ];
+
+    public static IEnumerable<object[]> CensusCountFaults =>
+        from field in CensusCountFields
+        from fault in new[] { "missing", "negative", "fractional", "overflow" }
+        select new object[] { field, fault };
+
     [Theory]
-    [InlineData("missing")]
-    [InlineData("negative")]
-    [InlineData("fractional")]
-    [InlineData("overflow")]
-    public void RuntimeCensusRejectsIncompleteCountFields(string fault)
+    [MemberData(nameof(CensusCountFaults))]
+    public void RuntimeCensusRejectsIncompleteCountFields(string field, string fault)
     {
         var census = JsonNode.Parse(File.ReadAllText(Path.Combine(RepoPaths.Root,
             "research/generated/rac1-dynamic-moby-runtime-census.json")))!;
         var row = census["levels"]![0]!.AsObject();
         switch (fault)
         {
-            case "missing": row.Remove("placements"); break;
-            case "negative": row["placements"] = -1; break;
-            case "fractional": row["placements"] = 1.5; break;
-            case "overflow": row["placements"] = (long)int.MaxValue + 1; break;
+            case "missing": row.Remove(field); break;
+            case "negative": row[field] = -1; break;
+            case "fractional": row[field] = 1.5; break;
+            case "overflow": row[field] = (long)int.MaxValue + 1; break;
             default: throw new ArgumentOutOfRangeException(nameof(fault));
         }
         Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => RequireCensus(JsonSerializer.SerializeToElement(census)));
@@ -55,8 +63,7 @@ public sealed class Rac1AllLevelsTests
         var levels = census.GetProperty("levels").EnumerateArray().ToArray();
         Assert.Equal(Enumerable.Range(0, 19), levels.Select(row => row.GetProperty("level").GetInt32()).Order());
         foreach (var row in levels)
-            foreach (string field in new[] { "placements", "linkedInstances", "animatedHandoffInstances", "noGeometryInstances",
-                "dynamicTriangles", "staticTriangles", "animatedTriangles", "animationCapableInstances" })
+            foreach (string field in CensusCountFields)
                 Assert.True(row.TryGetProperty(field, out var value) && value.ValueKind == JsonValueKind.Number &&
                     value.TryGetInt32(out int count) && count >= 0, $"Census count '{field}' must be a nonnegative integer.");
     }
