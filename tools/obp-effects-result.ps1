@@ -43,7 +43,7 @@ function Read-ObpEffectsTape([string]$Path, [int]$StopFrame) {
 function Assert-ObpEffectsResult([string]$Mode, [string]$Directory, [string]$Log, [int]$StopFrame) {
     $failure = '(?im)ERROR\s*:|SCRIPT ERROR|SHADER ERROR|Unhandled exception|\[[^\]\r\n]+\]\s+FAIL\b|' +
         '^\s*(?:System\.)?[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*Exception(?:\s*:|\s*$)|\[playtest\]\s+(?:DIVERGED|[^\r\n]*failed)|' +
-        'ObjectDB instances (?:were )?leaked|resources still in use at exit|Leaked instance:|quit preparation failed'
+        'ObjectDB instances (?:were )?leaked|resources still in use at exit|Leaked instance:|RIDs? of type [^\r\n]* (?:was|were) leaked|quit preparation failed'
     if ([regex]::IsMatch($Log, $failure)) { throw "Effects $Mode emitted a failure or leaked resources." }
     if ($Mode -eq 'render') {
         if (!$Log.Contains('[effects-smoke] PASS:')) { throw 'Effects render did not complete.' }

@@ -12,7 +12,7 @@ public sealed class EffectsResultTests
         foreach (string shell in new[] { "powershell", "pwsh" })
             foreach (string mode in new[] { "render", "record", "replay" })
             {
-                foreach (string fault in new[] { "clean", "incomplete", "missing", "late-error", "leak", "managed-exception", "tagged-failure" })
+                foreach (string fault in new[] { "clean", "incomplete", "missing", "late-error", "leak", "managed-exception", "tagged-failure", "rid-leak", "rids-leak" })
                     yield return [shell, mode, fault];
                 foreach (string fault in mode == "render" ? new[] { "empty-captures", "missing-image", "missing-family", "invalid-image", "truncated-image", "wrong-dimensions" }
                     : new[] { "short-tape", "missing-end", "missing-commands", "wrong-count" })
@@ -86,6 +86,8 @@ public sealed class EffectsResultTests
             if (fault == "leak") log += "\nWARNING: 2 ObjectDB instances were leaked at exit.";
             if (fault == "managed-exception") log += "\nSystem.InvalidOperationException: injected";
             if (fault == "tagged-failure") log += "\n[effects-smoke] FAIL: injected";
+            if (fault == "rid-leak") log += "\nWARNING: 1 RID of type CanvasItem was leaked.";
+            if (fault == "rids-leak") log += "\nWARNING: 2 RIDs of type CanvasItem were leaked.";
             string script = $"""
                 $ErrorActionPreference = 'Stop'
                 . {Quote(Path.Combine(RepoPaths.Root, "tools/obp-effects-result.ps1"))}
@@ -100,7 +102,7 @@ public sealed class EffectsResultTests
 
     private static string ExpectedFailure(string mode, string fault) => fault switch
     {
-        "late-error" or "leak" or "managed-exception" or "tagged-failure" => "emitted a failure or leaked resources",
+        "late-error" or "leak" or "managed-exception" or "tagged-failure" or "rid-leak" or "rids-leak" => "emitted a failure or leaked resources",
         "incomplete" => $"Effects {(mode == "record" ? "recording" : mode)} did not complete",
         "missing" when mode == "record" => "Effects recording is missing or empty",
         "missing" => "Cannot find path",
