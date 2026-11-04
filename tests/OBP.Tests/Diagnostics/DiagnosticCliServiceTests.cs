@@ -134,6 +134,17 @@ public sealed class DiagnosticCliServiceTests
     }
 
     [Fact]
+    public async Task StressRejectsUnchangedWorldOnSameDestinationReload()
+    {
+        var world = new StressWorld { NavigationFault = "unchanged-same-destination" };
+        var exits = new List<(string, int)>();
+        await new StressSwitchCliService(world, new Clock(), (reason, code) => exits.Add((reason, code)), _ => { }, _ => { })
+            .RunStressSwitchAsync("rac1:LEVEL0,rac1:LEVEL0", default);
+        Assert.Equal(("stress-world-load-failed", 1), Assert.Single(exits));
+        Assert.Equal(["open:rac1:LEVEL0", "open:rac1:LEVEL0"], world.Events);
+    }
+
+    [Fact]
     public async Task CanceledStressSwitchDrainsItsWaitAndDoesNotEnterTheNextWorld()
     {
         var world = new StressWorld(); var exits = new List<(string, int)>(); var clock = new Clock { Suspend = true };
@@ -213,10 +224,16 @@ public sealed class DiagnosticCliServiceTests
         public void OpenDestination(string destinationId)
         {
             Events.Add("open:" + destinationId);
-            if (NavigationFault == "wrong-destination") return;
+            if (NavigationFault == "wrong-destination" ||
+                NavigationFault == "unchanged-same-destination" && _retained.World.DestinationId == destinationId)
+                return;
             _retained = _retained with
             {
-                World = _retained.World with { DestinationId = destinationId },
+                World = _retained.World with
+                {
+                    DestinationId = destinationId,
+                    Generation = _retained.World.Generation + 1,
+                },
                 SceneRoot = NavigationFault == "missing-scene" ? null : 10,
                 Player = NavigationFault == "missing-player" ? null : 11,
             };

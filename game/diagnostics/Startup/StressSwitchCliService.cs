@@ -39,10 +39,13 @@ public sealed class StressSwitchCliService(IStressWorldFixture world, IDiagnosti
                 error($"[stress] unknown planet '{token}' — skipped");
                 continue;
             }
+            var before = world.ReadRetention();
             await VisitAsync(destination, i, cancellationToken);
             var visited = world.ReadRetention();
+            bool sameDestination = string.Equals(before.World.DestinationId, destination, StringComparison.OrdinalIgnoreCase);
             if (!string.Equals(visited.World.DestinationId, destination, StringComparison.OrdinalIgnoreCase) ||
-                visited.World.WorldInstanceId is null || visited.SceneRoot is null || visited.Player is null)
+                visited.World.WorldInstanceId is null || visited.SceneRoot is null || visited.Player is null ||
+                sameDestination && visited.World.Generation <= before.World.Generation)
             {
                 error("[stress] FAIL requested destination did not produce a live world/player: " + destination);
                 quit("stress-world-load-failed", 1);
