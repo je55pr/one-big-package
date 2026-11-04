@@ -129,8 +129,14 @@ public sealed partial class PauseMenuUi : CanvasLayer
         menu.RefillPreviewRequested += () => { bindings.Close(); if (bindings.Preview()) bindings.RequestPreview(false); };
         menu.RefillAllAmmoRequested += () =>
         {
-            bindings.Inventory().RefillAllAmmo();
-            bindings.Fusion().Session?.RefillForeignAmmo();
+            bool campaign = !bindings.Preview() && !bindings.Fusion().TestActive;
+            if (bindings.Resources()?.Rac1Gameplay is { } world)
+                world.UsePresentation.RefillAllAmmo(persist: campaign);
+            else
+            {
+                bindings.Inventory().RefillAllAmmo();
+                bindings.Fusion().Session?.RefillForeignAmmo();
+            }
             bindings.Close();
         };
         menu.PackPreviewRequested += () => { bindings.Player()?.CycleRac1DevelopmentPack(); bindings.Close(); };
@@ -257,7 +263,7 @@ public sealed partial class PauseMenuUi : CanvasLayer
         column.AddChild(debugOutput);
         _focusOrder.Add(debugOutput);
         var refillAll = MakeButton("REFILL ALL AMMO");
-        refillAll.TooltipText = "OBP tool: refill every owned weapon to its capacity (campaign or preview inventory).";
+        refillAll.TooltipText = "OBP developer tool: refill every owned weapon to capacity. In the campaign inventory the refill is saved with the campaign.";
         refillAll.Pressed += () => RefillAllAmmoRequested?.Invoke();
         column.AddChild(refillAll);
         _focusOrder.Add(refillAll);
