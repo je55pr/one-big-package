@@ -90,7 +90,7 @@ jobs:
           XDG_CONFIG_HOME: ${{ runner.temp }}/obp-godot-config
           XDG_CACHE_HOME: ${{ runner.temp }}/obp-godot-cache
         run: |
-          bash tools/run-godot-smoke.sh '[godot-ci-smoke] PASS:' .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \
+          bash tools/run-godot-smoke.sh $'[godot-ci-smoke] PASS:\n[bug-menu-smoke] PASS:' .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \
             --headless --path game --script res://tests/ci_bootstrap_smoke.gd \
             -- --test-scene picker
       - name: Smoke-test bootstrap environment reuse and deferred retirement
@@ -111,18 +111,8 @@ jobs:
         env:
           OBP_UYA_ISO: ${{ runner.temp }}/obp-ambient-missing-source.iso
         run: |
-          set +e
-          .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \
-            --headless --path game --script res://tests/ambient_uv_scroll_smoke.gd > .build/ambient-invalid.log 2>&1
-          result=$?
-          set -e
-          cat .build/ambient-invalid.log
-          test "$result" -eq 1
-          grep -F '[ambient-uv-scroll-smoke] FAIL:' .build/ambient-invalid.log
-          grep -F 'FileNotFoundException' .build/ambient-invalid.log
-          if grep -Eiq 'ObjectDB instances (were )?leaked|resources still in use at exit|Leaked instance:' .build/ambient-invalid.log; then
-            exit 1
-          fi
+          bash tools/run-godot-smoke.sh --missing-ambient-source .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \
+            --headless --path game --script res://tests/ambient_uv_scroll_smoke.gd
       - name: Smoke-test transparent foliage sorting and opaque trunk depth
         run: |
           bash tools/run-godot-smoke.sh '[foliage-sorting-smoke] PASS:' .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \
