@@ -13,7 +13,33 @@ public sealed class Rac1RatchetEquipmentRig
     public PlayerSkeletalAsset Asset { get; }
     public IReadOnlyList<int> LayerJoints { get; }
     /// <summary>Retail procedural joint table; absent for rigs built without the original overlay.</summary>
-    public Rac1HeroEaseTable? HeroEases { get; init; }
+    public Rac1HeroEaseTable? HeroEases { get; private set; }
+
+    /// <summary>Why the procedural joint layer is unavailable, or null when it is admitted.</summary>
+    public string? HeroEaseStatus { get; private set; } = "Procedural joint layer unavailable: no ease table was admitted.";
+
+    /// <summary>
+    /// Admit the retail ease table once, after the rig exists, so every attachment it names is resolved
+    /// against the skeleton here instead of failing on each update. A rejected table leaves the avatar
+    /// without the procedural layer and records the reason in <see cref="HeroEaseStatus"/>.
+    /// </summary>
+    public void AdmitHeroEases(Rac1HeroEaseTable table)
+    {
+        foreach (var record in table.Body)
+            if (!Asset.Skeleton.Attachments.ContainsKey(record.AttachmentId))
+            {
+                RejectHeroEases($"ease attachment {record.AttachmentId} is absent from the skeleton");
+                return;
+            }
+        HeroEases = table;
+        HeroEaseStatus = null;
+    }
+
+    public void RejectHeroEases(string reason)
+    {
+        HeroEases = null;
+        HeroEaseStatus = $"Procedural joint layer unavailable: {reason}.";
+    }
 
     private readonly IReadOnlyList<IReadOnlyDictionary<int, PlayerSkeletalClip>>? _holdClips;
     private readonly float[] _holdWeights = new float[Rac1RatchetArmHold.SlotCount];
@@ -38,6 +64,9 @@ public sealed class Rac1RatchetEquipmentRig
 
     /// <summary>True when the original arm hold classes were admitted for this rig.</summary>
     public bool HasArmHold => _holdClips is not null;
+
+    /// <summary>Why the held-gun arm hold is unavailable, or null when it is admitted.</summary>
+    public string? ArmHoldStatus { get; init; }
 
     internal IReadOnlyList<IReadOnlyDictionary<int, PlayerSkeletalClip>>? ArmHoldClips => _holdClips;
 
@@ -83,7 +112,9 @@ public sealed class Rac1RatchetEquipmentRig
         Vector3.Lerp(from.Translation!.Value, to.Translation!.Value, amount));
 
     // Layer the arm hold over a freshly reset body pose; returns the arm joints it owns this update.
-    private List<int> ApplyArmHold(int sequence, PlayerSkeletalSample sample)
+    // Only the pass that produces the presented pose records the arm channels the next body transition
+    // starts from; the ease pass re-derives the same pose to measure its delta and must not overwrite it.
+    private List<int> ApplyArmHold(int sequence, PlayerSkeletalSample sample, bool record)
     {
         var changed = new List<int>();
         if (_holdClips is null) return changed;
@@ -103,7 +134,7 @@ public sealed class Rac1RatchetEquipmentRig
             var resolved = _holdBlending && _holdSource.TryGetValue(joint, out var source)
                 ? BlendChannels(source, target, _holdFraction) : target;
             if (_holdBlending) _sampler.SetLocal(joint, resolved);
-            _holdPending[joint] = resolved;
+            if (record) _holdPending[joint] = resolved;
         }
         changed.AddRange(_armJoints);
         return changed;
@@ -122,7 +153,7 @@ public sealed class Rac1RatchetEquipmentRig
         if (body is not null) _sampler.LoadPose(body);
         else if (Asset.Clips.TryGetValue(basis.Sequence, out var clip)) _sampler.Reset(clip, Sample(target));
         else return null;
-        var changed = ApplyArmHold(target.Sequence, Sample(target));
+        var changed = ApplyArmHold(target.Sequence, Sample(target), record: true);
         return changed.Count == 0 ? null : _sampler.Skin(baseline, changed);
     }
 
@@ -194,7 +225,7 @@ public sealed class Rac1RatchetEquipmentRig
         float amount, bool fullBody, double[] baseline, float? fullBodyBlend = null)
     {
         _sampler.Reset(Asset.Clips[basis.Sequence], Sample(basis));
-        ApplyArmHold(basis.Sequence, Sample(basis));
+        ApplyArmHold(basis.Sequence, Sample(basis), record: true);
         if (fullBodyBlend is { } blend)
         {
             blend = Math.Clamp(blend, 0, 1);
@@ -248,7 +279,7 @@ public sealed class Rac1RatchetEquipmentRig
         if (body is not null) _sampler.LoadPose(body); else _sampler.Reset(clip!, Sample(target));
         // The arm hold is part of the pose the eases act on, so the hands and weapon sockets
         // rotate with the shoulders around the same final joints.
-        changed.AddRange(ApplyArmHold(target.Sequence, Sample(target)));
+        changed.AddRange(ApplyArmHold(target.Sequence, Sample(target), record: false));
         var before = _sampler.Skin(null, changed.Distinct().ToArray());
         var worldBefore = _sampler.JointMatrices.ToArray();
         for (int i = 0; i < offsets.Count; i++) _sampler.ComposeLocalRotation(changed[i], offsets[i].Rotation);

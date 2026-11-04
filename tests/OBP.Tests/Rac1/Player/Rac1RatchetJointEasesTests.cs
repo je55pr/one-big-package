@@ -66,7 +66,7 @@ public sealed class Rac1RatchetJointEasesTests
     public void OrdinaryRunTurnLeansTheSpineNeckAndCountersWithTheTail()
     {
         var eases = new Rac1RatchetJointEases(Table());
-        eases.Step(new(Rac1EasePose.Run, YawError: 1.0f, FlatSpeed: 0.095f, Sequence: 4));
+        eases.Step(new(Rac1EasePose.Run, YawError: 1.0f, Sequence: 4));
         // weight = clamp(1.0 * .5, +-.8), then weight * |weight| * 1.25.
         float weight = 0.5f * 0.5f * 1.25f;
         Assert.Equal(weight, eases.Target(Rac1RatchetJointEases.LowerSpine, 2), 6);
@@ -84,22 +84,10 @@ public sealed class Rac1RatchetJointEasesTests
     public void LargeRunTurnsSaturateTheNativeWeight()
     {
         var eases = new Rac1RatchetJointEases(Table());
-        eases.Step(new(Rac1EasePose.Run, YawError: 3.0f, FlatSpeed: 0.095f, Sequence: 4));
+        eases.Step(new(Rac1EasePose.Run, YawError: 3.0f, Sequence: 4));
         Assert.Equal(0.8f * 0.8f * 1.25f, eases.Target(Rac1RatchetJointEases.Neck, 2), 6);
-        eases.Step(new(Rac1EasePose.Run, YawError: -3.0f, FlatSpeed: 0.095f, Sequence: 4));
+        eases.Step(new(Rac1EasePose.Run, YawError: -3.0f, Sequence: 4));
         Assert.Equal(-0.8f * 0.8f * 1.25f, eases.Target(Rac1RatchetJointEases.Neck, 2), 6);
-    }
-
-    [Fact]
-    public void RunStepOneScalesTheRootRollByPlanarSpeed()
-    {
-        var eases = new Rac1RatchetJointEases(Table());
-        eases.Step(new(Rac1EasePose.Run, 1.0f, 0.095f / 2, 4, RunStepOne: true));
-        Assert.Equal(-1.0f * 0.14f * 0.5f, eases.Target(Rac1RatchetJointEases.Root, 0), 4);
-        eases.Step(new(Rac1EasePose.Run, 2.0f, 5f, 4, RunStepOne: true));
-        // yaw error clamps to 1.4 and the speed scale clamps to 1.
-        Assert.Equal(-1.4f * 0.14f, eases.Target(Rac1RatchetJointEases.Root, 0), 5);
-        Assert.Equal(1.4f * 0.65f, eases.Target(Rac1RatchetJointEases.Neck, 2), 5);
     }
 
     [Fact]
@@ -183,6 +171,8 @@ public sealed class Rac1RatchetJointEasesTests
         for (int seed = 1; seed <= 40; seed++)
         {
             var eases = new Rac1RatchetJointEases(Table(), seed);
+            // Moving first, so the idle state is entered rather than already current.
+            eases.Step(new(Rac1EasePose.Run, Sequence: 4));
             int firstLook = -1;
             for (int tick = 1; tick <= 400 && firstLook < 0; tick++)
             {
@@ -195,12 +185,29 @@ public sealed class Rac1RatchetJointEasesTests
     }
 
     [Fact]
+    public void ALevelStartHeroKeepsTheLongerInitialDelayBeforeFirstLooking()
+    {
+        for (int seed = 1; seed <= 40; seed++)
+        {
+            var eases = new Rac1RatchetJointEases(Table(), seed);
+            int firstLook = -1;
+            for (int tick = 1; tick <= 400 && firstLook < 0; tick++)
+            {
+                eases.Step(new(Rac1EasePose.Idle, Sequence: 0));
+                if (eases.Target(Rac1RatchetJointEases.Neck, 2) != 0) firstLook = tick;
+            }
+            // The initializer rolls 180..300 and Reset keeps it through the first idle update.
+            Assert.InRange(firstLook, 180, 300);
+        }
+    }
+
+    [Fact]
     public void IdleEntryClearsTheStoredLookAndTailTargets()
     {
         var eases = new Rac1RatchetJointEases(Table());
         for (int i = 0; i < 400; i++) eases.Step(new(Rac1EasePose.Idle, Sequence: 0));
         Assert.NotEqual(0f, eases.Target(Rac1RatchetJointEases.Neck, 2));
-        eases.Step(new(Rac1EasePose.Run, 0, 0.095f, 4));
+        eases.Step(new(Rac1EasePose.Run, 0, 4));
         // Coming back to idle starts with a neutral head again, not the old look.
         eases.Step(new(Rac1EasePose.Idle, Sequence: 0));
         Assert.Equal(0f, eases.Target(Rac1RatchetJointEases.Neck, 2));
@@ -245,7 +252,7 @@ public sealed class Rac1RatchetJointEasesTests
     {
         var eases = new Rac1RatchetJointEases(Table());
         for (int i = 0; i < 120; i++)
-            Assert.NotEmpty(eases.Step(new(Rac1EasePose.Run, 1.2f, 0.095f, 4)));
+            Assert.NotEmpty(eases.Step(new(Rac1EasePose.Run, 1.2f, 4)));
         Assert.True(MathF.Abs(eases.Angle(Rac1RatchetJointEases.Neck, 2)) > 0.05f);
 
         IReadOnlyList<Rac1RatchetJointEases.Offset> last = [];
@@ -260,7 +267,7 @@ public sealed class Rac1RatchetJointEasesTests
     public void OffsetsCarryTheTableAttachmentIdsAndUnitRotations()
     {
         var eases = new Rac1RatchetJointEases(Table());
-        var offsets = eases.Step(new(Rac1EasePose.Run, 1.0f, 0.095f, 4));
+        var offsets = eases.Step(new(Rac1EasePose.Run, 1.0f, 4));
         Assert.NotEmpty(offsets);
         foreach (var offset in offsets)
         {

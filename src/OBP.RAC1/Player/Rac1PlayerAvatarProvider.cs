@@ -111,8 +111,9 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
         var leftArm = Animation.Rac1MobyAttachment.ReadAnimationLayerJoints(payload, 13);
         var layerJoints = rightArm.Concat(leftArm).ToArray();
         // Moby classes 1 and 2 are the two arm hold animation sets (joint lists 12 and 13).
-        var armHold = new Rac1RatchetArmHoldSource([rightArm, leftArm],
-            [staticClasses.Mobies[1].Sequences, staticClasses.Mobies[2].Sequences]);
+        Rac1RatchetArmHoldSource? armHold = staticClasses.Mobies.TryGetValue(1, out var rightClass) &&
+            staticClasses.Mobies.TryGetValue(2, out var leftClass)
+            ? new([rightArm, leftArm], [rightClass.Sequences, leftClass.Sequences]) : null;
         // 0x20e4c8 selects the source arm lists through table0x15f6a0.
         var upper = new bool[native.Skeleton.Count];
         foreach (int joint in layerJoints) upper[joint] = true;
@@ -121,9 +122,28 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
             for (int influence = 0; influence < 3; influence++)
                 if (upper[native.Mesh.VertexJoints[vertex * 3 + influence]])
                     mask[vertex] += native.Mesh.VertexWeights[vertex * 3 + influence];
-        // The procedural joint (hero ease) table lives in the same canonical level overlay.
-        var eases = Rac1HeroEaseTable.Read(Rac1ExecutableOverlay.Read(reader, level));
-        var rig = new Rac1RatchetEquipmentRig(native, layerJoints, armHold) { HeroEases = eases };
+        // The arm hold is an optional layer too: absent or mismatched arm classes leave Ratchet loading
+        // without it, with the reason in ArmHoldStatus, instead of failing the whole avatar.
+        Rac1RatchetEquipmentRig rig;
+        try
+        {
+            rig = new Rac1RatchetEquipmentRig(native, layerJoints, armHold)
+            {
+                ArmHoldStatus = armHold is null ? "Held-gun arm hold unavailable: arm classes 1 and 2 are absent." : null,
+            };
+        }
+        catch (InvalidDataException ex)
+        {
+            rig = new Rac1RatchetEquipmentRig(native, layerJoints)
+            {
+                ArmHoldStatus = $"Held-gun arm hold unavailable: {ex.Message.TrimEnd('.')}.",
+            };
+        }
+        // The procedural joint (hero ease) table lives in the same canonical level overlay. It is an
+        // optional layer: a table that does not match leaves Ratchet loading without it, with the reason
+        // available as the rig's HeroEaseStatus, instead of failing the whole avatar.
+        try { rig.AdmitHeroEases(Rac1HeroEaseTable.Read(Rac1ExecutableOverlay.Read(reader, level))); }
+        catch (InvalidDataException ex) { rig.RejectHeroEases(ex.Message.TrimEnd('.')); }
         avatar = avatar with { Skeleton = new(rig.Asset.Skeleton.Joints.Select(j => j.Parent).ToArray()), Skeletal = rig.Asset };
         _equipmentMasks.Add(avatar, mask);
         _equipmentRigs.Add(avatar, rig);

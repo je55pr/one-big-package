@@ -83,7 +83,7 @@ internal sealed class Rac1EquipmentViewPresentation
     internal void PlaySelection(Rac1WeaponId weapon)
     {
         if (_views.TryGetValue(weapon, out var view))
-            view.Play(0, false, ++_poseGeneration, 1);
+            view.Build(++_poseGeneration);
     }
 
     /// <summary>
@@ -92,7 +92,7 @@ internal sealed class Rac1EquipmentViewPresentation
     /// </summary>
     internal bool UnderConstruction(Rac1WeaponId weapon) =>
         Rac1ArsenalRules.HasArmSlotAnimations(weapon) && _views.TryGetValue(weapon, out var view) &&
-        GodotObject.IsInstanceValid(view) && view.Visible && view.Sequence == 0;
+        GodotObject.IsInstanceValid(view) && view.Visible && view.Constructing;
 
     internal void PlayPyrocitor(bool emitting)
     {
@@ -138,7 +138,7 @@ internal sealed class Rac1EquipmentViewPresentation
             if (!isVisible) continue;
             // Sequence 0 is the weapon's construction when drawn; it returns to ready by itself,
             // so the held-state selectors below must not cut it off on the first update.
-            bool constructing = view.Sequence == 0;
+            bool constructing = view.Constructing;
             if (profile.Item == Rac1WeaponId.Blaster && !constructing)
                 view.Play(useTicks > 0 ? 4 : 1);
             if (profile.Item is Rac1WeaponId.Taunter or Rac1WeaponId.MorphORay or Rac1WeaponId.TeslaClaw && !constructing)

@@ -325,7 +325,7 @@ internal sealed class PlayerAvatarPresentationHost
         }
         // The held gun's arm layers (0x20dd20): one arm for one-handed guns, both for the big ones.
         controller.StepArmHold(slots);
-        controller.StepJointEases(input.YawError, input.ScalarAtSelection, carries, wall);
+        controller.StepJointEases(input.YawError, carries, wall);
     }
 
     private void ResetPlayerAvatarPhysics(WorldBindings bindings)

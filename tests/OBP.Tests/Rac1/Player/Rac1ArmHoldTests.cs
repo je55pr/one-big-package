@@ -37,7 +37,7 @@ public sealed class Rac1ArmHoldTests
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
         var rig = Controller(iso!).EquipmentRig!;
-        Assert.True(rig.HasArmHold);
+        Assert.True(rig.HasArmHold, rig.ArmHoldStatus);
         var slots = rig.ArmHoldClips!;
         Assert.Equal(2, slots.Count);
         for (int slot = 0; slot < 2; slot++)

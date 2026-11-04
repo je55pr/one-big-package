@@ -62,6 +62,8 @@ internal static class Rac1RatchetArmHold
                     foreach (ulong word in frame.Thing2)
                     {
                         int k = (int)(word >> 48);
+                        // Retail data includes translation records whose joint id lies outside the 20-joint
+                        // bank (for example id 52 in sequence 0); they are not bank joints and are skipped.
                         if (k < channels.Length)
                             channels[k] = channels[k] with
                             {
