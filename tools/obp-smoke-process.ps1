@@ -12,6 +12,12 @@ function Test-ObpSmokeLog {
     return $ExitCode -eq 0 -and $Log.Contains($CompletionMarker) -and -not [regex]::IsMatch($Log, $failure)
 }
 
+function Write-ObpSmokeOutput {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification = 'Windows PowerShell 5.1 transcripts omit Write-Information. Native logs and failure paths must remain visible without adding success-stream objects.')]
+    param([string]$Message)
+    if ($Message) { Write-Host $Message.TrimEnd() }
+}
+
 function Invoke-ObpSmokeProcess {
     param(
         [Parameter(Mandatory = $true)][string]$FilePath,
@@ -27,11 +33,11 @@ function Invoke-ObpSmokeProcess {
         -StandardOutputPath $stdout -StandardErrorPath $stderr
     $output = [IO.File]::ReadAllText($stdout)
     $errors = [IO.File]::ReadAllText($stderr)
-    if ($output) { Write-Information $output.TrimEnd() -InformationAction Continue }
-    if ($errors) { Write-Information $errors.TrimEnd() -InformationAction Continue }
+    Write-ObpSmokeOutput $output
+    Write-ObpSmokeOutput $errors
     if ($code -ne 0) { return $code }
     if (-not (Test-ObpSmokeLog -ExitCode $code -Log ($output + "`n" + $errors) -CompletionMarker $CompletionMarker)) {
-        Write-Information "Smoke did not complete cleanly. Native stdout/stderr: $logs" -InformationAction Continue
+        Write-ObpSmokeOutput "Smoke did not complete cleanly. Native stdout/stderr: $logs"
         return 2
     }
     return 0

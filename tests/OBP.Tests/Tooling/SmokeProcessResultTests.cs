@@ -150,14 +150,20 @@ public sealed class SmokeProcessResultTests
                 exit {{(fault == "nonzero" ? "17" : "0")}}
                 """);
             const string message = "argument with spaces & apostrophe ' and quote \"";
+            string transcript = Path.Combine(directory, "transcript.log");
             var result = await Run(shell, $"""
                 $ErrorActionPreference = 'Stop'
                 . {Quote(Path.Combine(RepoPaths.Root, "tools/obp-smoke-process.ps1"))}
+                Start-Transcript -LiteralPath {Quote(transcript)} | Out-Null
                 $code = Invoke-ObpSmokeProcess -FilePath {Quote(shell)} -ArgumentList @('-NoProfile','-NonInteractive','-File',{Quote(child)},'-Message',{Quote(message)}) -CompletionMarker {Quote(Marker)}
+                Stop-Transcript | Out-Null
                 exit $code
                 """);
             Assert.True(result.Code == expected, result.Error + result.Output);
             Assert.Contains(message, result.Output);
+            string recorded = File.ReadAllText(transcript);
+            Assert.Contains(message, recorded);
+            if (fault is "incomplete" or "leak") Assert.Contains("Smoke did not complete cleanly. Native stdout/stderr:", recorded);
         }
         finally { Directory.Delete(directory, recursive: true); }
     }
@@ -176,22 +182,13 @@ public sealed class SmokeProcessResultTests
 
     private static async Task<(int Code, string Output, string Error)> Run(string shell, string script)
     {
-        if (!File.Exists(shell))
+        if (Path.GetFileName(shell) is not ("pwsh" or "pwsh.exe" or "powershell.exe") || !File.Exists(shell))
             throw new ArgumentException("An installed PowerShell executable is required.", nameof(shell));
-        var start = Path.GetFileName(shell) switch
-        {
-            "pwsh" => new ProcessStartInfo("pwsh"),
-            "pwsh.exe" => new ProcessStartInfo("pwsh.exe"),
-            "powershell.exe" => new ProcessStartInfo("powershell.exe"),
-            _ => throw new ArgumentException("Only the supported PowerShell shells may run fixtures.", nameof(shell)),
-        };
-        start.UseShellExecute = false;
-        start.CreateNoWindow = true;
-        start.RedirectStandardOutput = true;
-        start.RedirectStandardError = true;
+        var start = new ProcessStartInfo(shell) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         foreach (string argument in new[] { "-NoProfile", "-NonInteractive", "-EncodedCommand", Convert.ToBase64String(Encoding.Unicode.GetBytes(script)) })
             start.ArgumentList.Add(argument);
-        using var process = Process.Start(start)!;
+        using var process = new Process { StartInfo = start };
+        if (!process.Start()) throw new InvalidOperationException("Could not start the PowerShell fixture.");
         var output = process.StandardOutput.ReadToEndAsync();
         var error = process.StandardError.ReadToEndAsync();
         try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(30)); }
