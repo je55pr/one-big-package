@@ -73,4 +73,5 @@ public sealed class BugReporterReplayEvidenceTests
         {
             Directory.Delete(directory, recursive: true);
         }
-    }}
+    }
+}
