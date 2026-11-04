@@ -24,6 +24,7 @@ public sealed class SmokeProcessResultTests
                 "2026-10-29 12:35:20 ERROR: callback failed", "E 0:00:04:123: engine error",
                 "WARNING: 2 ObjectDB instances were leaked at exit (run with --verbose for details).",
                 "WARNING: 1 resources still in use at exit.", "Leaked instance: RefCounted:123",
+                "WARNING: 1 RID of type \"CanvasItem\" was leaked.", "WARNING: 2 RIDs of type \"CanvasItem\" were leaked.",
                 "[crate-smoke] FAIL: late failure", "[lifecycle] quit preparation failed: injected",
             })
                 yield return [shell, problem, 0, Marker + "\n" + problem, false];
@@ -66,6 +67,9 @@ public sealed class SmokeProcessResultTests
         })
                 foreach (var (fault, code) in new[] { ("clean", 0), ("incomplete", 2), ("leak", 2), ("nonzero", 17) })
                     yield return [shell, script, reason, destinations, noProfile, stateMode, fault, code];
+        foreach (string shell in new[] { "powershell.exe", "pwsh" })
+            foreach (string fault in new[] { "negative-rid", "negative-rids", "negative-shader", "negative-unhandled" })
+                yield return [shell, "rac1-player-audio-smoke.ps1", "rac1-player-audio-smoke-pass", "rac1:LEVEL0,rac1:LEVEL0", false, false, fault, 1];
     }
 
     [SkippableTheory]
@@ -100,7 +104,14 @@ public sealed class SmokeProcessResultTests
                     Add-Content -LiteralPath {{Quote(calls)}} -Value (ConvertTo-Json -InputObject $ArgumentList -Compress)
                     if ($ArgumentList -contains '--test-scene') {
                         [IO.File]::WriteAllText($StandardOutputPath, "The audio fixture's player is unavailable. reason=rac1-player-audio-smoke-fail exitCode=1")
-                        [IO.File]::WriteAllText($StandardErrorPath, '')
+                        $errorText = switch ({{Quote(fault)}}) {
+                            'negative-rid' { 'WARNING: 1 RID of type "CanvasItem" was leaked.' }
+                            'negative-rids' { 'WARNING: 2 RIDs of type "CanvasItem" were leaked.' }
+                            'negative-shader' { 'SHADER ERROR: invalid shader' }
+                            'negative-unhandled' { 'Unhandled exception. System.InvalidOperationException: injected' }
+                            default { '' }
+                        }
+                        [IO.File]::WriteAllText($StandardErrorPath, $errorText)
                         return 1
                     }
                     $text = if ({{Quote(fault)}} -eq 'incomplete') { '[fixture] started' } else { {{Quote(completion)}} }
@@ -115,9 +126,11 @@ public sealed class SmokeProcessResultTests
             string stateOption = stateMode ? $" -State {Quote(state)}" : "";
             var result = await Run(shell, $"& {Quote(Path.Combine(tools, scriptName))} -Rac1Iso {Quote(source)} -SkipBuild{sources}{stateOption}\nexit $LASTEXITCODE");
             Assert.True(result.Code == expected, result.Error + result.Output);
+            if (fault.StartsWith("negative-", StringComparison.Ordinal))
+                Assert.Contains("Static-camera audio availability regression failed", result.Error + result.Output);
             var arguments = File.ReadAllLines(calls).Select(line => JsonSerializer.Deserialize<string[]>(line)!).ToArray();
             string[] route = destinations.Split(',');
-            Assert.Equal(expected == 0 ? route.Length : 1, arguments.Length);
+            Assert.Equal(expected == 0 || fault.StartsWith("negative-", StringComparison.Ordinal) ? route.Length : 1, arguments.Length);
             for (int index = 0; index < arguments.Length; index++)
             {
                 var actual = arguments[index];

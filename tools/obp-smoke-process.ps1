@@ -8,7 +8,7 @@ function Test-ObpSmokeLog {
         '(?:ERROR\s*:|SCRIPT ERROR\s*:|SHADER ERROR\s*:|Unhandled\s+exception\b|FATAL(?:\s+ERROR)?\b|' +
         'E\s+\d+:\d{2}:\d{2}(?::\d+|\.\d+)?(?:\s*:|\s+)|' +
         '(?:System\.)?[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*Exception(?:\s*:|\s*$)|\[[^\]\r\n]+\]\s+FAIL\b)' +
-        '|ObjectDB instances (?:were )?leaked|resources still in use at exit|^Leaked instance:|quit preparation failed'
+        '|ObjectDB instances (?:were )?leaked|resources still in use at exit|^Leaked instance:|RIDs? of type [^\r\n]* (?:was|were) leaked|quit preparation failed'
     return $ExitCode -eq 0 -and $Log.Contains($CompletionMarker) -and -not [regex]::IsMatch($Log, $failure)
 }
 
