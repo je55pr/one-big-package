@@ -68,14 +68,21 @@ public sealed class Rac1TaxiNativeShuttleTrafficTests
     {
         var slow = NewTraffic(0);
         var fast = NewTraffic(0);
+        var native = NewTraffic(0);
         Assert.True(slow.TryStartUnoccupiedReposition(Source));
         Assert.True(fast.TryStartUnoccupiedReposition(Source));
+        Assert.True(native.TryStartUnoccupiedReposition(Source));
         for (int i = 0; i < 30; i++)
             slow.Advance(1d / 30);
         for (int i = 0; i < 120; i++)
             fast.Advance(1d / 120);
-        Assert.InRange(slow.Position.DistanceSquared(fast.Position), 0, 1e-10);
-        Assert.Equal(slow.NativeState, fast.NativeState);
+        for (int i = 0; i < 60; i++)
+            native.Advance(1d / 60);
+        Assert.NotEqual(Far, native.Position);
+        Assert.InRange(native.Position.DistanceSquared(slow.Position), 0, 1e-10);
+        Assert.InRange(native.Position.DistanceSquared(fast.Position), 0, 1e-10);
+        Assert.Equal(native.NativeState, slow.NativeState);
+        Assert.Equal(native.NativeState, fast.NativeState);
     }
 
     [Fact]

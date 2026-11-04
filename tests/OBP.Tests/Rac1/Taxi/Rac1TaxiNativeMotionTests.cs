@@ -55,14 +55,26 @@ public sealed class Rac1TaxiNativeMotionTests
                 halfRate.Advance(1d / 30);
             doubleRate.Advance(1d / 120);
             doubleRate.Advance(1d / 120);
+            if (i % 2 == 1)
+            {
+                Compare(halfRate);
+                Compare(doubleRate);
+            }
         }
 
-        Assert.Equal(native.Arrived, halfRate.Arrived);
-        Assert.Equal(native.Arrived, doubleRate.Arrived);
-        Assert.Equal(native.WaypointIndex, halfRate.WaypointIndex);
-        Assert.Equal(native.WaypointIndex, doubleRate.WaypointIndex);
-        Assert.Equal(native.Position.X, halfRate.Position.X, 7);
-        Assert.Equal(native.Position.X, doubleRate.Position.X, 7);
+        Assert.True(native.Arrived);
+        Assert.Equal(P(25), native.Position);
+
+        void Compare(Rac1TaxiNativeMotion other)
+        {
+            Assert.Equal(native.Arrived, other.Arrived);
+            Assert.Equal(native.WaypointIndex, other.WaypointIndex);
+            Assert.Equal(native.Progress, other.Progress, 10);
+            Assert.Equal(native.SpeedPerFrame, other.SpeedPerFrame, 10);
+            Assert.Equal(native.Position.X, other.Position.X, 7);
+            Assert.Equal(native.Position.Y, other.Position.Y, 7);
+            Assert.Equal(native.Position.Z, other.Position.Z, 7);
+        }
     }
 
     [Fact]
