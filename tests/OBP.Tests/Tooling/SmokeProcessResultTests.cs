@@ -68,7 +68,7 @@ public sealed class SmokeProcessResultTests
                 foreach (var (fault, code) in new[] { ("clean", 0), ("incomplete", 2), ("leak", 2), ("nonzero", 17) })
                     yield return [shell, script, reason, destinations, noProfile, stateMode, fault, code];
         foreach (string shell in new[] { "powershell.exe", "pwsh" })
-            foreach (string fault in new[] { "negative-rid", "negative-rids", "negative-shader", "negative-unhandled" })
+            foreach (string fault in new[] { "negative-rid", "negative-rids", "negative-shader", "negative-unhandled", "negative-engine", "negative-managed" })
                 yield return [shell, "rac1-player-audio-smoke.ps1", "rac1-player-audio-smoke-pass", "rac1:LEVEL0,rac1:LEVEL0", false, false, fault, 1];
     }
 
@@ -103,12 +103,14 @@ public sealed class SmokeProcessResultTests
                     }
                     Add-Content -LiteralPath {{Quote(calls)}} -Value (ConvertTo-Json -InputObject $ArgumentList -Compress)
                     if ($ArgumentList -contains '--test-scene') {
-                        [IO.File]::WriteAllText($StandardOutputPath, "The audio fixture's player is unavailable. reason=rac1-player-audio-smoke-fail exitCode=1")
+                        [IO.File]::WriteAllText($StandardOutputPath, "[diagnostic] rac1-player-audio-smoke/v1: OBP.Game.Diagnostics.DiagnosticUnavailableException: The audio fixture's player is unavailable.`n[lifecycle] quit-request reason=rac1-player-audio-smoke-fail exitCode=1")
                         $errorText = switch ({{Quote(fault)}}) {
                             'negative-rid' { 'WARNING: 1 RID of type "CanvasItem" was leaked.' }
                             'negative-rids' { 'WARNING: 2 RIDs of type "CanvasItem" were leaked.' }
                             'negative-shader' { 'SHADER ERROR: invalid shader' }
                             'negative-unhandled' { 'Unhandled exception. System.InvalidOperationException: injected' }
+                            'negative-engine' { 'E 0:00:04:123: engine error' }
+                            'negative-managed' { 'System.ArgumentException: invalid sample' }
                             default { '' }
                         }
                         [IO.File]::WriteAllText($StandardErrorPath, $errorText)
