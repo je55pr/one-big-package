@@ -138,10 +138,28 @@ public sealed class Rac2ParticleRetailTests
         Assert.Equal(2, rng.SamplesConsumed - before); Assert.Equal(2048, session.Count);
     }
 
-    private static void Compare(string program, Fixture fixture, Rac2Instances.MobyInstance instance, byte[] pvars, uint seed, int frames, bool repeat, float distance)
+    [SkippableTheory]
+    [InlineData("D", false)]
+    [InlineData("D", true)]
+    [InlineData("T", false)]
+    [InlineData("T", true)]
+    public void OriginalInstructionComparisonRejectsMissingOrDuplicatedDefinitionAndTextureRows(string kind, bool duplicate)
+    {
+        string program = Oracle(); using var fixture = new Fixture();
+        var instance = fixture.Instances[0];
+        Compare(program, fixture, instance, instance.PVarData!, 1234, 1, false, 100);
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => Compare(program, fixture, instance,
+            instance.PVarData!, 1234, 1, false, 100, rows => duplicate
+                ? rows.Append(rows.First(row => row[0] == kind && row[1] == "0").ToArray()).ToArray()
+                : rows.Where(row => row[0] != kind || row[1] != "0").ToArray()));
+    }
+
+    private static void Compare(string program, Fixture fixture, Rac2Instances.MobyInstance instance, byte[] pvars, uint seed, int frames, bool repeat, float distance,
+        Func<string[][], string[][]>? observe = null)
     {
         string input = FormattableString.Invariant($"{seed} {frames} {(repeat ? 1 : 0)} {distance}");
         var rows = fixture.Execute(program, instance, pvars, "emit", input).Select(row => row.Split(' ')).ToArray();
+        if (observe is not null) rows = observe(rows);
         RequireProtocolCohorts(rows, frames);
         Assert.Contains(rows, row => row[0] == "R");
         foreach (var row in rows.Where(r => r[0] == "D")) Assert.Equal(fixture.Assets.Definitions.Texture(int.Parse(row[1]), 0), int.Parse(row[2]));
