@@ -108,9 +108,14 @@ public sealed class Rac1WrenchAttachmentTests
         foreach (var profile in OBP.RAC1.Gameplay.Rac1WrenchAttackProfile.Profiles)
         {
             var clip = Rac1WrenchAsset.DecodeAnimation(wrench, profile.WrenchSequence);
+            Assert.NotEmpty(clip.Frames);
             Assert.Equal(wrench.Sequences[profile.WrenchSequence].Value!.Frames.Count, clip.Frames.Count);
             Assert.Equal(clip.Frames.Count, clip.TipFrames.Count);
-            Assert.All(clip.Frames, frame => Assert.All(frame, value => Assert.True(double.IsFinite(value))));
+            Assert.All(clip.Frames, frame =>
+            {
+                Assert.Equal(wrench.VertexCount * 3, frame.Length);
+                Assert.All(frame, value => Assert.True(double.IsFinite(value)));
+            });
             if (clip.Frames.Count > 1)
                 Assert.Contains(clip.Frames, frame => !frame.SequenceEqual(clip.Frames[0]));
         }
