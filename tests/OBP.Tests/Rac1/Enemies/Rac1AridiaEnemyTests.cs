@@ -37,7 +37,7 @@ public sealed class Rac1AridiaEnemyTests
     {
         string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrWhiteSpace(path), "OBP_RAC1_ISO not set");
-        using var reader = new FileRandomAccessReader(path!);
+        using var reader = Rac1VerifiedDisc.Open(path!);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(item => item.LevelId == Rac1AridiaEnemies.LevelId);
         byte[] gameplay = Rac1LevelSettings.ReadGameplay(reader, level);
         var placements = Rac1Instances.Parse(gameplay).MobyInstances;
@@ -46,6 +46,11 @@ public sealed class Rac1AridiaEnemyTests
         Assert.NotEmpty(groups.Values.SelectMany(members => members));
         Assert.All(groups.Values.SelectMany(members => members), member =>
             Assert.InRange(member, 0, placements.Count - 1));
+        // Independently read the loader's byte group field from every placement;
+        // 0xff is its ungrouped sentinel. Check the entire decoded membership.
+        Assert.Equal(placements.Where(moby => moby.RawRecord[0x48] != 0xff)
+                .Select(moby => (Group: (int)moby.RawRecord[0x48], Member: moby.Index)).Order(),
+            groups.SelectMany(group => group.Value.Select(member => (Group: group.Key, Member: member))).Order());
         int Reward(Rac1Instances.MobyInstance moby) =>
             BinaryPrimitives.ReadInt32LittleEndian(moby.RawRecord.AsSpan(0x10));
         var sharks = placements.Where(moby => moby.OClass == Rac1AridiaEnemies.Sandshark).ToArray();
