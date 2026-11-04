@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using OBP.IO;
 using OBP.RAC1;
 using OBP.RAC1.Animation;
@@ -14,11 +15,49 @@ namespace OBP.Tests;
 
 public sealed class Rac1VeldinEnemyRetailTests
 {
+    private static string WitnessPath => Path.Combine(RepoPaths.Root, "research", "generated", "rac1-veldin-enemies.json");
+
+    private static void RequireWitnessCohorts(JsonElement report)
+    {
+        var blocks = report.GetProperty("blocks").EnumerateObject().ToArray();
+        Assert.Equal(22, blocks.Length);
+        Assert.Equal(22, blocks.Select(block => (Convert.ToInt32(block.Value.GetProperty("start").GetString(), 16),
+            Convert.ToInt32(block.Value.GetProperty("end").GetString(), 16))).Distinct().Count());
+        var signatures = report.GetProperty("signatures").EnumerateArray().ToArray();
+        Assert.Equal(38, signatures.Length);
+        Assert.Equal(38, signatures.Select(row => Convert.ToInt32(row.GetProperty("address").GetString(), 16)).Distinct().Count());
+    }
+
+    [Theory]
+    [InlineData("blocks", false)]
+    [InlineData("blocks", true)]
+    [InlineData("signatures", false)]
+    [InlineData("signatures", true)]
+    public void WitnessRequiresCompleteDistinctObservationCohorts(string cohort, bool duplicate)
+    {
+        using var witness = JsonDocument.Parse(File.ReadAllText(WitnessPath));
+        RequireWitnessCohorts(witness.RootElement);
+        var root = JsonNode.Parse(witness.RootElement.GetRawText())!;
+        if (cohort == "blocks")
+        {
+            if (duplicate) root[cohort]!["class749Damage"] = root[cohort]!["class749Update"]!.DeepClone();
+            else root[cohort] = new JsonObject();
+        }
+        else
+        {
+            if (duplicate) root[cohort]![1] = root[cohort]![0]!.DeepClone();
+            else root[cohort] = new JsonArray();
+        }
+        using var incomplete = JsonDocument.Parse(root.ToJsonString());
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => RequireWitnessCohorts(incomplete.RootElement));
+    }
+
     [SkippableFact]
     public void ExecutableSelectorsSteeringHealthAndOutgoingDamageBridgeMatchAuthority()
     {
         var read = Rac1AirborneNativeSourceTests.ReadOverlay();
         using var report = JsonDocument.Parse(File.ReadAllText(Path.Combine(RepoPaths.Root, "research", "generated", "rac1-veldin-enemies.json")));
+        RequireWitnessCohorts(report.RootElement);
         foreach (var block in report.RootElement.GetProperty("blocks").EnumerateObject())
         {
             int start = Convert.ToInt32(block.Value.GetProperty("start").GetString(), 16), end = Convert.ToInt32(block.Value.GetProperty("end").GetString(), 16);
@@ -103,14 +142,35 @@ public sealed class Rac1VeldinEnemyRetailTests
             var cls = classes.Mobies[id];
             var assets = Rac1MobyAnimationAssets.Bake(cls, source.Meshes, core.Assets.AsSpan(cls.AssetOffset, cls.AssetLength));
             Assert.Equal(id == 749 ? 8 : 13, assets.Clips.Count);
+            Assert.NotEmpty(source.Meshes);
+            Assert.Equal(cls.Sequences.Where(slot => slot.Value is not null).Select(slot => slot.Index).Order(), assets.Clips.Keys.Order());
+            Assert.Equal(assets.Clips.Keys.Order(), assets.Clips.Values.Select(clip => clip.Sequence).Order());
+            Assert.Equal(assets.Clips.Values.Select(clip => clip.Id).Order(), assets.Presentation.Clips.Select(clip => clip.Id).Order());
             foreach (var clip in assets.Presentation.Clips)
+            {
+                var native = Assert.Single(assets.Clips.Values, candidate => candidate.Id == clip.Id);
+                int frames = cls.Sequences.Single(slot => slot.Index == native.Sequence).Value!.Frames.Count;
+                Assert.True(frames > 0);
+                Assert.Equal(Enumerable.Range(0, source.Meshes.Count), clip.Surfaces.Select(surface => surface.SurfaceIndex).Order());
+                Assert.Equal(frames, clip.FrameDurationsSeconds.Count);
                 foreach (var surface in clip.Surfaces)
+                {
+                    Assert.Equal(frames, surface.LocalFrames.Count);
                     foreach (var frame in surface.LocalFrames)
                     {
                         Assert.Equal(source.Meshes[surface.SurfaceIndex].Positions.Length, frame.Length);
                         Assert.All(frame, value => Assert.True(double.IsFinite(value) && Math.Abs(value) < 10));
                     }
-            Assert.All(assets.Clips.Values, clip => Assert.All(clip.ContactSocket, socket => Assert.True(float.IsFinite(socket.X) && socket.Length() < 10)));
+                }
+            }
+            Assert.All(assets.Clips.Values, clip =>
+            {
+                int frames = cls.Sequences.Single(slot => slot.Index == clip.Sequence).Value!.Frames.Count;
+                Assert.Equal(frames, clip.Rates.Length);
+                Assert.Equal(frames, clip.Positions.Length);
+                Assert.Equal(frames, clip.ContactSocket.Length);
+                Assert.All(clip.ContactSocket, socket => Assert.True(float.IsFinite(socket.X) && socket.Length() < 10));
+            });
             if (id != 749) continue;
             Assert.Equal(7, Rac1EnemyMotion.RewardCentre(source));
             var clock = new Rac1MobySequenceClock(assets, 5);

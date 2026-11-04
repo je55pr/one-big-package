@@ -128,7 +128,9 @@ public sealed class Rac1FrogWaveTriggerTests
                 BinaryPrimitives.ReadInt32LittleEndian(source.PVar.AsSpan(4)));
             waves.Register(runtime, zones, new(source.Position.X, source.Position.Y, source.Position.Z));
             Assert.Equal(source.Index, runtime.InstanceIndex);
-            Assert.All(waves.Members(source.Index), index =>
+            var members = waves.Members(source.Index);
+            Assert.Equal(groups[waves.Group(source.Index)], members);
+            Assert.All(members, index =>
                 Assert.Contains(index, frogIds));
         }
         Assert.Equal(new[] { 6, 7, 9, 10, 20, 21 },
