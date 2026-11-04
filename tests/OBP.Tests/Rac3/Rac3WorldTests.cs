@@ -13,6 +13,18 @@ namespace OBP.Tests;
 public sealed class Rac3WorldTests
 {
     [Fact]
+    public void CommittedCensusCoversEveryCatalogueTableExactlyOnce()
+    {
+        string path = Path.Combine(RepoPaths.Root, "research", "generated", "rac3-ntscu-original.production-import-census.json");
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        var rows = document.RootElement.GetProperty("rows");
+        Assert.Equal(51, rows.GetArrayLength());
+        Assert.Equal(
+            Rac3DestinationCatalogue.Instance.Destinations.Select(destination => Rac3WorldProvider.Instance.ResolveTableIndex(destination)!.Value).Order(),
+            rows.EnumerateArray().Select(row => row.GetProperty("tableIndex").GetInt32()).Order());
+    }
+
+    [Fact]
     public void CataloguePreservesSparseRetailTableIdentity()
     {
         var c = Rac3DestinationCatalogue.Instance;

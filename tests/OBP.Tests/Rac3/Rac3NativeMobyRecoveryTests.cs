@@ -154,6 +154,23 @@ public sealed class Rac3NativeMobyRecoveryTests
         var animated = Assert.IsAssignableFrom<IReadOnlyList<OBP.Runtime.RuntimeAnimatedMesh>>(world.AnimatedMeshes);
         Assert.Equal(45, animated.Count);
         Assert.Equal(37_922, animated.Sum(m => m.TriangleCount));
+        foreach (var (oClass, sequenceId, frames, instances, surfaces) in new[]
+        {
+            (6800, 2, 9, new[] { 665, 666, 667, 668 }, 2),
+            (6577, 2, 11, new[] { 513, 514, 515 }, 1),
+            (6317, 4, 25, new[] { 477, 478, 479 }, 2),
+            (6886, 15, 8, Enumerable.Range(672, 28).ToArray(), 1),
+        })
+            foreach (int instanceId in instances)
+            {
+                var meshes = animated.Where(m => m.Name.StartsWith($"uya-preview-moby{oClass}_i{instanceId}_", StringComparison.Ordinal)).ToArray();
+                Assert.Equal(surfaces, meshes.Length);
+                Assert.All(meshes, mesh =>
+                {
+                    Assert.Contains($"_s{sequenceId}_", mesh.Name, StringComparison.Ordinal);
+                    Assert.Equal(frames, mesh.Frames.Count);
+                });
+            }
         Assert.All(animated, m =>
         {
             Assert.NotEmpty(m.Frames);

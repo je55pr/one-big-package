@@ -69,8 +69,11 @@ public sealed partial class Rac3ShockCannonRetailTests
         var recoveryPcm = Assert.Single(recovery.Voices).Clip.InterleavedPcm16;
         Assert.NotEmpty(recoveryPcm);
         Assert.All(recoveryPcm, sample => Assert.Equal(0, sample));
-        var recoverySamples = source.SoundBank!.DecodeTone(Assert.Single(source.SoundBank.Sounds[2].Tones)).Samples;
-        Assert.NotEmpty(recoverySamples);
+        var recoveryDefinition = source.SoundDefinitions[2];
+        var recoveryTone = source.SoundBank!.DecodeTone(Assert.Single(source.SoundBank.Sounds[recoveryDefinition.SoundIndex].Tones));
+        Assert.Equal(11, recoveryTone.Info.FrameCount);
+        var recoverySamples = recoveryTone.Samples;
+        Assert.Equal(11 * Ps2SpuAdpcm.SamplesPerFrame, recoverySamples.Length);
         Assert.All(recoverySamples, sample => Assert.Equal(0, sample));
         var charge = Rac3ShockCannonAssets.Audio(source, 3, 0);
         Assert.Equal(new[] { false, true, true }, charge.Voices.Select(v => v.Loop));
@@ -90,6 +93,10 @@ public sealed partial class Rac3ShockCannonRetailTests
         {
             Assert.NotEmpty(shot.Voices[i].Clip.InterleavedPcm16);
             Assert.Equal(shot.Voices[i].Clip.InterleavedPcm16, repeated.Voices[i].Clip.InterleavedPcm16);
+            Assert.Equal(shot.Voices[i].StartSeconds, repeated.Voices[i].StartSeconds);
+            Assert.Equal(shot.Voices[i].Loop, repeated.Voices[i].Loop);
+            Assert.Equal(shot.Voices[i].Clip.LoopStartFrame, repeated.Voices[i].Clip.LoopStartFrame);
+            Assert.Equal(shot.Voices[i].Clip.LoopEndFrame, repeated.Voices[i].Clip.LoopEndFrame);
         }
         Assert.All(shot.Voices, v => Assert.False(v.Loop));
         var empty = Rac3ShockCannonAssets.Audio(source, 1, 0);

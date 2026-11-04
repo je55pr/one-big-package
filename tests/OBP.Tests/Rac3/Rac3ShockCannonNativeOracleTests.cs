@@ -82,6 +82,8 @@ public sealed class Rac3ShockCannonNativeOracleTests
                 original.GetProperty("phase").GetSingle()).SelectMany(s => s).ToArray();
             Assert.NotEmpty(expected);
             Assert.Equal(expected.Length * 3, layer.Mesh.Positions.Length);
+            Assert.Equal(expected.Length / 22 * 60, layer.Mesh.Indices.Length);
+            Assert.All(layer.Mesh.Indices, vertex => Assert.InRange(vertex, 0, expected.Length - 1));
             for (int point = 0; point < expected.Length; point++)
             {
                 var p = expected[point].Position;

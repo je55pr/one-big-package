@@ -165,7 +165,7 @@ public sealed class Rac3ParticleRetailTests
         RequireProtocolCohorts(rows.ToArray(), 1);
         int index = rows.FindIndex(row => row[0] == kind && row[1] == "1");
         Assert.True(index >= 0);
-        if (duplicate) rows[index] = rows.First(row => row[0] == kind && row[1] == "0").ToArray();
+        if (duplicate) rows.Add(rows.First(row => row[0] == kind && row[1] == "0").ToArray());
         else rows.RemoveAt(index);
         Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => RequireProtocolCohorts(rows.ToArray(), 1));
     }
