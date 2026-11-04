@@ -127,6 +127,12 @@ public sealed partial class PauseMenuUi : CanvasLayer
         menu.LoadMovementStateRequested += bindings.LoadMovement;
         menu.WeaponPreviewRequested += () => { bindings.Close(); bindings.RequestPreview(bindings.Preview()); };
         menu.RefillPreviewRequested += () => { bindings.Close(); if (bindings.Preview()) bindings.RequestPreview(false); };
+        menu.RefillAllAmmoRequested += () =>
+        {
+            bindings.Inventory().RefillAllAmmo();
+            bindings.Fusion().Session?.RefillForeignAmmo();
+            bindings.Close();
+        };
         menu.PackPreviewRequested += () => { bindings.Player()?.CycleRac1DevelopmentPack(); bindings.Close(); };
         menu.SwingshotPreviewRequested += () => { bindings.Player()?.ToggleRac1DevelopmentSwingshot(); bindings.Close(); };
         menu.WorldsRequested += bindings.Worlds;
@@ -142,6 +148,7 @@ public sealed partial class PauseMenuUi : CanvasLayer
     public event Action? LoadMovementStateRequested;
     public event Action? WeaponPreviewRequested;
     public event Action? RefillPreviewRequested;
+    public event Action? RefillAllAmmoRequested;
     public event Action? PackPreviewRequested;
     public event Action? SwingshotPreviewRequested;
     public event Action? FusionTestRequested;
@@ -249,6 +256,11 @@ public sealed partial class PauseMenuUi : CanvasLayer
         debugOutput.Toggled += enabled => DebugOutputChanged?.Invoke(enabled);
         column.AddChild(debugOutput);
         _focusOrder.Add(debugOutput);
+        var refillAll = MakeButton("REFILL ALL AMMO");
+        refillAll.TooltipText = "OBP tool: refill every owned weapon to its capacity (campaign or preview inventory).";
+        refillAll.Pressed += () => RefillAllAmmoRequested?.Invoke();
+        column.AddChild(refillAll);
+        _focusOrder.Add(refillAll);
         if (MovementStatesAvailable)
         {
             var weapons = MakeButton("TOGGLE WEAPON PREVIEW");
