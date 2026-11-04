@@ -87,7 +87,7 @@ public sealed class MovementReproStateTests
     {
         var inventory = Rac1WeaponInventory.CreateOpeningVeldinWitness();
         inventory.AcquireNativeItem((int)Rac1WeaponId.SuckCannon);
-        inventory.TryEquip(Rac1WeaponId.SuckCannon);
+        Assert.True(inventory.TryEquip(Rac1WeaponId.SuckCannon));
         var key = new Rac1MobyRuntimeKey(749, 143);
         var world = new MovementReproWorld([new(key, 0xfe, true)], inventory.CapturePersistentState(),
             inventory.CurrentItemId, 0, [key], WeaponPreview: true);
@@ -98,6 +98,7 @@ public sealed class MovementReproStateTests
             MovementReproStateFile.Save(path, saved);
             var restored = MovementReproStateFile.Load(path);
             Assert.True(restored.World!.WeaponPreview);
+            Assert.Equal((int)Rac1WeaponId.SuckCannon, restored.World.CurrentItemId);
             Assert.Equal(key, Assert.Single(restored.World.CapturedMobies!));
             Assert.Equal(0, restored.World.Inventory.Ammo[9]);
         }

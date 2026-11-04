@@ -124,8 +124,9 @@ public sealed class ObpProfileTests
     public void EveryQualifiedWorldRestoresTheSamePlayer(string destination)
     {
         var profile = Profile() with { Destination = destination };
-        Assert.Equal(destination, ObpProfile.Decode(profile.Encode()).Destination);
-        Assert.Equal(FusionWeaponSession.Lancer, profile.Player.Loadout.SelectedWeapon);
+        var restored = ObpProfile.Decode(profile.Encode());
+        Assert.Equal(destination, restored.Destination);
+        Assert.Equal(FusionWeaponSession.Lancer, restored.Player.Loadout.SelectedWeapon);
         Assert.False(ObpProfile.IsDestination("../../profile.json"));
     }
 

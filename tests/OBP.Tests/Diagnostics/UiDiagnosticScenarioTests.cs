@@ -122,6 +122,7 @@ public sealed class UiDiagnosticScenarioTests
         Assert.Equal(new DiagnosticExit("trilogy-setup-required", 2), scenario.Exit);
         Assert.Equal(new[] { "Weapons", "Gadgets", "Appearance", "Quick Select", "Settings" }, menus.Sections);
         Assert.Equal(1, repair.Detachments); Assert.False(menus.PauseOpen);
+        Assert.NotEmpty(clock.Phases);
         Assert.All(clock.Phases, phase => Assert.Equal(DiagnosticFramePhase.Process, phase));
     }
 

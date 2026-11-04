@@ -96,15 +96,14 @@ public sealed class FusionWeaponTests
         foreach (var key in keys) Assert.Equal(key, JsonSerializer.Deserialize<SourceWeaponKey>(JsonSerializer.Serialize(key)));
         Assert.Throws<ArgumentException>(() => default(SourceWeaponKey).Validate());
         Assert.Throws<ArgumentException>(() => new SourceWeaponKey((ObpSourceGame)(-1), 30).Validate());
-        var campaign = Rac1WeaponInventory.CreateOpeningLoadout();
-        string before = JsonSerializer.Serialize(campaign.CapturePersistentState());
         var fusion = new FusionWeaponSession(42);
         Assert.True(fusion.Select(FusionWeaponSession.Lancer));
         for (int i = 0; i < 90; i++) Step(fusion, Held);
         Assert.InRange(fusion.LancerSession.Ammo, 1, 39);
         Assert.Equal(20, fusion.CannonSession.Ammo);
+        int nativeAmmo = fusion.Rac1Inventory.FirstRangedAmmo;
         Assert.True(fusion.Rac1Inventory.TryConsumeAmmo(10, 1));
-        Assert.Equal(before, JsonSerializer.Serialize(campaign.CapturePersistentState()));
+        Assert.Equal(nativeAmmo - 1, fusion.Rac1Inventory.FirstRangedAmmo);
         Assert.Equal(new[] { 10 }, Enumerable.Range(0, 37).Where(id => fusion.Rac1Inventory.Items[id] != 0));
         Assert.False(fusion.Select(new(ObpSourceGame.Rac1, 30)));
         Assert.False(fusion.Select(new(ObpSourceGame.Rac3, 30)));
