@@ -27,22 +27,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'obp-window.ps1')
+. (Join-Path $PSScriptRoot 'obp-smoke-process.ps1')
 
-if (-not $Rac1Iso -or -not (Test-Path -LiteralPath $Rac1Iso -PathType Leaf)) {
-  Write-Error 'A supported R&C1 ISO is required. Pass -Rac1Iso or set OBP_RAC1_ISO.'
-  exit 2
-}
-
-$manifest = Get-Content (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | ConvertFrom-Json
-$godot = Join-Path $root ".tools/godot/$($manifest.godot.artifacts.win64.exe)"
-if (-not (Test-Path -LiteralPath $godot -PathType Leaf)) {
-  & (Join-Path $PSScriptRoot 'bootstrap-godot.ps1') -Platform win64 | Out-Null
-}
-
-if (-not $SkipBuild) {
-  & (Join-Path $PSScriptRoot 'build.ps1') -Game
-  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-}
+$godot = & (Join-Path $PSScriptRoot 'prepare-game-smoke.ps1') -Sources @($Rac1Iso) -SourceCount 1 -SkipBuild:$SkipBuild
 
 $godotArgs = @(Get-ObpWindowArguments) + @(
   '--path', (Join-Path $root 'game'),
@@ -55,11 +42,6 @@ $godotArgs = @(Get-ObpWindowArguments) + @(
 )
 
 Write-Host 'R&C1 Veldin ordinary-play smoke' -ForegroundColor Cyan
-& $godot @godotArgs
-$code = $LASTEXITCODE
-if ($code -ne 0) {
-  Write-Error "R&C1 Veldin ordinary-play smoke failed (exit $code)."
-  exit $code
-}
-
-Write-Host 'R&C1 Veldin ordinary-play smoke passed' -ForegroundColor Green
+$code = Invoke-ObpSmokeProcess -FilePath $godot -ArgumentList $godotArgs `
+  -CompletionMarker '[lifecycle] quit-request reason=rac1-veldin-play-smoke-pass exitCode=0' -WorkingDirectory $root
+exit $code
