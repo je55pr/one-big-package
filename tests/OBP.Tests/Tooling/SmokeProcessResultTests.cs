@@ -264,6 +264,14 @@ public sealed class SmokeProcessResultTests
     [InlineData("pwsh", "test-diagnostic-cli.ps1", "leak", false)]
     [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "error", false)]
     [InlineData("pwsh", "test-diagnostic-cli.ps1", "error", false)]
+    [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "negative-rid-out", false)]
+    [InlineData("pwsh", "test-diagnostic-cli.ps1", "negative-rid-out", false)]
+    [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "negative-rids-err", false)]
+    [InlineData("pwsh", "test-diagnostic-cli.ps1", "negative-rids-err", false)]
+    [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "negative-shader-err", false)]
+    [InlineData("pwsh", "test-diagnostic-cli.ps1", "negative-shader-err", false)]
+    [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "negative-unhandled-out", false)]
+    [InlineData("pwsh", "test-diagnostic-cli.ps1", "negative-unhandled-out", false)]
     [InlineData("powershell.exe", "fusion-weapons-smoke.ps1", "clean", true)]
     [InlineData("pwsh", "fusion-weapons-smoke.ps1", "clean", true)]
     [InlineData("powershell.exe", "fusion-weapons-smoke.ps1", "leak", false)]
@@ -322,6 +330,15 @@ public sealed class SmokeProcessResultTests
                     elseif ($ArgumentList -contains '--fusion-smoke') { $marker='[fusion-smoke] PASS:' }
                     [IO.File]::WriteAllText($StandardOutputPath,$marker)
                     $errorText=switch($env:OBP_TEST_RUNNER_FAULT){'leak'{'WARNING: 2 ObjectDB instances were leaked at exit.'} 'error'{'ERROR: injected late engine failure'} default{''}}
+                    if ($code -ne 0) {
+                        switch ($env:OBP_TEST_RUNNER_FAULT) {
+                            'negative-rid-out' { $marker += "`nWARNING: 1 RID of type CanvasItem was leaked." }
+                            'negative-rids-err' { $errorText = 'WARNING: 2 RIDs of type CanvasItem were leaked.' }
+                            'negative-shader-err' { $errorText = 'SHADER ERROR: invalid shader' }
+                            'negative-unhandled-out' { $marker += "`nUnhandled exception. System.InvalidOperationException: injected" }
+                        }
+                        [IO.File]::WriteAllText($StandardOutputPath,$marker)
+                    }
                     [IO.File]::WriteAllText($StandardErrorPath,$errorText)
                     if($ArgumentList -contains '--log-file'){Set-Content -LiteralPath $ArgumentList[[Array]::IndexOf($ArgumentList,'--log-file')+1] ($marker+"`n"+$errorText)}
                     return $code
@@ -371,6 +388,7 @@ public sealed class SmokeProcessResultTests
                     "stale" => "Native player report was not produced by this run.",
                     "empty" => "missing its two weapon baselines",
                     "partial" => "does not contain a complete four-second trial",
+                    _ when fault.StartsWith("negative-", StringComparison.Ordinal) => "Diagnostic CLI check bad-list failed",
                     _ => runner switch
                     {
                         "player-session-smoke.ps1" => "Player session lifecycle smoke failed",

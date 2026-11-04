@@ -48,7 +48,8 @@ function Invoke-CliCheck {
     $code = Invoke-ObpNativeProcessCapture -FilePath $engine -ArgumentList $engineArgs -WorkingDirectory $repoRoot -StandardOutputPath $log -StandardErrorPath $errors
     $passed = $code -eq $ExpectedExit -and (Select-String -LiteralPath $log -SimpleMatch $Expected -Quiet)
     if ($ExpectedExit -eq 0 -and -not (Test-ObpSmokeLog -ExitCode $code -Log ([IO.File]::ReadAllText($log) + "`n" + [IO.File]::ReadAllText($errors)) -CompletionMarker $Expected)) { $passed = $false }
-    if (Select-String -LiteralPath $errors -Pattern 'SCRIPT ERROR:|ObjectDB instances (?:were )?leaked|resources still in use|\[cli-tool-engine-smoke\] FAIL:' -Quiet) { $passed = $false }
+    $combined = [IO.File]::ReadAllText($log) + "`n" + [IO.File]::ReadAllText($errors)
+    if ($combined -match 'SCRIPT ERROR:|SHADER ERROR:|Unhandled\s+exception\b|FATAL\b|ObjectDB instances (?:were )?leaked|resources still in use|Leaked instance:|RIDs? of type [^\r\n]* (?:was|were) leaked|quit preparation failed|\[cli-tool-engine-smoke\] FAIL:') { $passed = $false }
     $results.Add([pscustomobject]@{ Name = $Name; Passed = $passed; ExitCode = $code; Log = ($Name + '.log') })
     if (-not $passed) { throw "Diagnostic CLI check $Name failed. Inspect its local logs." }
     Write-Information "$Name passed" -InformationAction Continue
