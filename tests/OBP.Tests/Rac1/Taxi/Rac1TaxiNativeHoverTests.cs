@@ -39,6 +39,17 @@ public sealed class Rac1TaxiNativeHoverTests
                 thirty.Advance(1d / 30d);
             oneTwenty.Advance(1d / 120d);
             oneTwenty.Advance(1d / 120d);
+            if (i % 2 == 1)
+            {
+                Assert.Equal(sixty.HeightOffset, thirty.HeightOffset, 10);
+                Assert.Equal(sixty.HeightOffset, oneTwenty.HeightOffset, 10);
+                Assert.Equal(sixty.PitchRadians, thirty.PitchRadians, 10);
+                Assert.Equal(sixty.PitchRadians, oneTwenty.PitchRadians, 10);
+                Assert.Equal(sixty.RollRadians, thirty.RollRadians, 10);
+                Assert.Equal(sixty.RollRadians, oneTwenty.RollRadians, 10);
+            }
+            if (i == 59)
+                Assert.Equal(.2 * Math.Sin(phases.Height + 60 * 2d * Math.PI / 180d), sixty.HeightOffset, 10);
         }
 
         // Height advances before sampling; tilt/spin sample their old phase.
