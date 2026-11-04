@@ -12,7 +12,7 @@ public sealed class EffectsResultTests
         foreach (string shell in new[] { "powershell.exe", "pwsh.exe" })
             foreach (string mode in new[] { "render", "record", "replay" })
             {
-                foreach (string fault in new[] { "clean", "incomplete", "missing", "late-error", "leak" })
+                foreach (string fault in new[] { "clean", "incomplete", "missing", "late-error", "leak", "managed-exception", "tagged-failure" })
                     yield return [shell, mode, fault];
                 foreach (string fault in mode == "render" ? new[] { "empty-captures", "missing-image", "missing-family" }
                     : new[] { "short-tape", "missing-end", "missing-commands", "wrong-count" })
@@ -83,6 +83,8 @@ public sealed class EffectsResultTests
             if (fault == "incomplete") log = "[effects-smoke] started";
             if (fault == "late-error") log += "\n[playtest] finalization failed: injected";
             if (fault == "leak") log += "\nWARNING: 2 ObjectDB instances were leaked at exit.";
+            if (fault == "managed-exception") log += "\nSystem.InvalidOperationException: injected";
+            if (fault == "tagged-failure") log += "\n[effects-smoke] FAIL: injected";
             string script = $"""
                 $ErrorActionPreference = 'Stop'
                 . {Quote(Path.Combine(RepoPaths.Root, "tools/obp-effects-result.ps1"))}
