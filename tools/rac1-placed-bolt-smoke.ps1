@@ -9,6 +9,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'obp-window.ps1')
+. (Join-Path $PSScriptRoot 'obp-smoke-process.ps1')
 if (-not $Rac1Iso -or -not (Test-Path -LiteralPath $Rac1Iso -PathType Leaf)) {
     throw 'A supported R&C1 ISO is required.'
 }
@@ -23,7 +24,8 @@ if (-not $SkipBuild) {
 }
 foreach ($level in @(0, 8, 11)) {
     $windowArgs = if ($Render) { @(Get-ObpWindowArguments) } else { @('--headless') }
-    & $godot @windowArgs '--path' (Join-Path $root 'game') '--rendering-method' $RenderingMethod '--' '--rac1-iso' $Rac1Iso '--destination' "rac1:LEVEL$level" '--no-profile' '--rac1-placed-bolt-smoke'
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    $code = Invoke-ObpSmokeProcess -FilePath $godot -ArgumentList (@($windowArgs) + @('--path', (Join-Path $root 'game'), '--rendering-method', $RenderingMethod, '--', '--rac1-iso', $Rac1Iso, '--destination', "rac1:LEVEL$level", '--no-profile', '--rac1-placed-bolt-smoke')) `
+        -CompletionMarker '[lifecycle] quit-request reason=rac1-placed-bolt-smoke-pass exitCode=0' -WorkingDirectory $root
+    if ($code -ne 0) { exit $code }
 }
 exit 0

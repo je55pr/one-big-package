@@ -20,6 +20,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'obp-window.ps1')
+. (Join-Path $PSScriptRoot 'obp-smoke-process.ps1')
 
 if (-not $Rac1Iso -or -not (Test-Path -LiteralPath $Rac1Iso -PathType Leaf)) {
   Write-Error 'A supported R&C1 ISO is required. Pass -Rac1Iso or set OBP_RAC1_ISO.'
@@ -48,10 +49,10 @@ $godotArgs = @(Get-ObpWindowArguments) + @(
 )
 
 Write-Host 'R&C1 synthetic combat host-contract smoke' -ForegroundColor Cyan
-& $godot @godotArgs
-$code = $LASTEXITCODE
+$code = Invoke-ObpSmokeProcess -FilePath $godot -ArgumentList $godotArgs `
+  -CompletionMarker '[lifecycle] quit-request reason=rac1-combat-contract-pass exitCode=0' -WorkingDirectory $root
 if ($code -ne 0) {
-  Write-Error "R&C1 synthetic combat host-contract smoke failed (exit $code)."
+  Write-Error "R&C1 synthetic combat host-contract smoke failed (exit $code)." -ErrorAction Continue
   exit $code
 }
 

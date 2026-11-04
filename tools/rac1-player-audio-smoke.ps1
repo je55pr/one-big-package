@@ -6,11 +6,13 @@ param(
     [switch]$SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'obp-smoke-process.ps1')
 $root = Split-Path -Parent $PSScriptRoot
 $godot = & (Join-Path $PSScriptRoot 'prepare-game-smoke.ps1') -Sources @($Rac1Iso) -SourceCount 1 -SkipBuild:$SkipBuild
 [string[]]$windowArgs = if ($Rendered) { @('--windowed', '--position', '-20000,-20000', '--resolution', '960x540') } else { @('--headless') }
-& $godot @windowArgs '--path' (Join-Path $root 'game') '--rendering-method' 'gl_compatibility' '--' '--rac1-iso' $Rac1Iso '--destination' 'rac1:LEVEL0' '--fixed-seed' '121' '--rac1-player-audio-smoke'
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+$code = Invoke-ObpSmokeProcess -FilePath $godot -ArgumentList (@($windowArgs) + @('--path', (Join-Path $root 'game'), '--rendering-method', 'gl_compatibility', '--', '--rac1-iso', $Rac1Iso, '--destination', 'rac1:LEVEL0', '--fixed-seed', '121', '--rac1-player-audio-smoke')) `
+    -CompletionMarker '[lifecycle] quit-request reason=rac1-player-audio-smoke-pass exitCode=0' -WorkingDirectory $root
+if ($code -ne 0) { exit $code }
 
 # Static-camera capture deliberately has no player. Diagnostic construction must
 # report that unavailable fixture instead of dereferencing an unbound audio owner.
