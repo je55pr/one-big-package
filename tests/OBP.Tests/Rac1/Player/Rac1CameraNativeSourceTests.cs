@@ -63,10 +63,12 @@ public sealed class Rac1CameraNativeSourceTests
         var code = witness["code"]!.AsArray();
         switch (fault)
         {
+            case "complete": break;
             case "missing": code.RemoveAt(0); break;
             case "duplicate": code[1] = code[0]!.DeepClone(); break;
             case "renamed": code[0]!["stage"] = "replacement"; break;
             case "empty-range": code[0]!["end"] = code[0]!["start"]!.GetValue<string>(); break;
+            default: throw new ArgumentOutOfRangeException(nameof(fault), fault, "Unknown witness fault.");
         }
         void Check() => RequireCodeStages(JsonSerializer.SerializeToElement(code));
         if (fault == "complete") Check();

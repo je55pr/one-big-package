@@ -101,9 +101,11 @@ public sealed class Rac1WaterNativeSourceTests
     [InlineData("entry", "missing")]
     [InlineData("entry", "duplicate")]
     [InlineData("entry", "replacement")]
+    [InlineData("entry", "null-output")]
     [InlineData("periodicQuery", "missing")]
     [InlineData("periodicQuery", "duplicate")]
     [InlineData("periodicQuery", "replacement")]
+    [InlineData("periodicQuery", "null-output")]
     public void WaterWitnessRequiresThePreservedCodeAndInputCohorts(string cohort, string fault)
     {
         var witness = JsonNode.Parse(File.ReadAllText(Path.Combine(RepoPaths.Root, "research/generated/rac1-water-native-witness.json")))!;
@@ -117,6 +119,8 @@ public sealed class Rac1WaterNativeSourceTests
                 case "replacement" when cohort == "code": rows[0]!["stage"] = "replacement"; break;
                 case "empty-range": rows[0]!["end"] = rows[0]!["start"]!.GetValue<string>(); break;
                 case "replacement": rows[0]!["input"]![0] = 999; break;
+                case "null-output": rows[^1]!["output"]![0] = null; break;
+                default: throw new ArgumentOutOfRangeException(nameof(fault), fault, "Unknown witness fault.");
             }
         }
         void Check() => RequireWitnessCohorts(JsonSerializer.SerializeToElement(witness));
@@ -164,6 +168,9 @@ public sealed class Rac1WaterNativeSourceTests
             {
                 Assert.Equal(inputs[index], rows[index].GetProperty("input").EnumerateArray().Select(value => value.GetSingle()));
                 Assert.Equal(outputColumns, rows[index].GetProperty("output").GetArrayLength());
+                Assert.All(rows[index].GetProperty("output").EnumerateArray(), value =>
+                    Assert.True(value.ValueKind == JsonValueKind.Number &&
+                        value.TryGetDouble(out double number) && double.IsFinite(number)));
             }
         }
     }

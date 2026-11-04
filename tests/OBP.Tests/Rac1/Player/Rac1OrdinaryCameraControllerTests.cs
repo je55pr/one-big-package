@@ -266,6 +266,7 @@ public sealed class Rac1OrdinaryCameraControllerTests
                 case "missing-checkpoint": cases[0]!["samples"]!.AsArray().RemoveAt(0); break;
                 case "incomplete-frames" when cohort == "follow": cases[0]!["segments"]![0]!["frames"] = 0; break;
                 case "incomplete-frames": cases[0]!["frames"] = 0; break;
+                default: throw new ArgumentOutOfRangeException(nameof(fault), fault, "Unknown trace fault.");
             }
         }
         void Check() => RequireTraceCohorts(JsonSerializer.SerializeToElement(witness));
