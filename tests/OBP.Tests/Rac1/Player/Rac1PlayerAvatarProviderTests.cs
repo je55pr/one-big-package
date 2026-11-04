@@ -146,6 +146,8 @@ public sealed class Rac1PlayerAvatarProviderTests
         {
             Assert.NotEmpty(clip.LocalFrames);
             Assert.Equal(clip.FrameDurationsSeconds.Count, clip.FrameCount);
+            Assert.NotNull(clip.FrameTimelinePositions);
+            Assert.Equal(clip.FrameCount, clip.FrameTimelinePositions.Count);
         });
         Assert.All(avatar.AnimationClips.SelectMany(clip => clip.LocalFrames), frame =>
         {
