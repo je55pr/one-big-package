@@ -57,7 +57,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         var baseline = Current.SampledPose?.LocalPositions ?? CurrentClip.LocalFrames[
             CurrentClip.FrameIndexAt(Current.ElapsedAt(_clockSeconds), Current.Loop)];
         var socketJoints = SocketJoints();
-        var (positions, deltas) = rig.ApplyJointOffsets(basis, baseline, _easeOffsets, socketJoints.Values.Distinct().ToArray());
+        var (positions, deltas) = rig.ApplyJointOffsets(basis, baseline, _easeOffsets, socketJoints.Values.Distinct().ToArray(), ResolvedBodyPose());
         if (ReferenceEquals(positions, baseline)) return Current;
         if (_attachments.TryGetValue(baseline, out var sources))
         {

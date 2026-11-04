@@ -109,7 +109,10 @@ public sealed partial class Rac1EquipmentView : Node3D
     {
         var sample = _clock.Current;
         var clip = _model.Clips[_sequence];
-        var a = clip.Frames[sample.CurrentFrame]; var b = clip.Frames[sample.NextFrame];
+        // A clip that plays once holds its last key; the clock reports the wrap towards frame 0 there,
+        // which would collapse a construction animation into its folded first pose for two updates.
+        int next = !_loop && sample.NextFrame < sample.CurrentFrame ? sample.CurrentFrame : sample.NextFrame;
+        var a = clip.Frames[sample.CurrentFrame]; var b = clip.Frames[next];
         var vertices = new Vector3[a.Length / 3];
         float minimumHeight = float.PositiveInfinity;
         for (int i = 0; i < vertices.Length; i++)
@@ -131,7 +134,7 @@ public sealed partial class Rac1EquipmentView : Node3D
             minimumHeight = MathF.Min(minimumHeight, vertices[i].Y);
         }
         FootOffset = MathF.Max(0, -minimumHeight);
-        var origin = System.Numerics.Vector3.Lerp(clip.Origins[sample.CurrentFrame], clip.Origins[sample.NextFrame], sample.Fraction);
+        var origin = System.Numerics.Vector3.Lerp(clip.Origins[sample.CurrentFrame], clip.Origins[next], sample.Fraction);
         var muzzle = new PlayerAvatarPoint(origin.X, origin.Y, origin.Z);
         if (hand is not null) muzzle = hand.Transform(muzzle);
         MuzzleLocal = _avatar is null ? new(-(float)muzzle.X, (float)muzzle.Z, (float)muzzle.Y) :
@@ -140,7 +143,7 @@ public sealed partial class Rac1EquipmentView : Node3D
         if (clip.SocketOrigins is { } sockets)
             foreach (var pair in sockets)
             {
-                var p = System.Numerics.Vector3.Lerp(pair.Value[sample.CurrentFrame], pair.Value[sample.NextFrame], sample.Fraction);
+                var p = System.Numerics.Vector3.Lerp(pair.Value[sample.CurrentFrame], pair.Value[next], sample.Fraction);
                 var point = new PlayerAvatarPoint(p.X, p.Y, p.Z);
                 if (hand is not null) point = hand.Transform(point);
                 _socketOrigins[pair.Key] = _avatar is null ? new(-(float)point.X, (float)point.Z, (float)point.Y) :

@@ -86,6 +86,14 @@ internal sealed class Rac1EquipmentViewPresentation
             view.Play(0, false, ++_poseGeneration, 1);
     }
 
+    /// <summary>
+    /// True while a gun-type weapon in the hand is still playing its construction (sequence 0). Retail
+    /// guns cannot fire before they are built; the gloves have no construction and are never held back.
+    /// </summary>
+    internal bool UnderConstruction(Rac1WeaponId weapon) =>
+        Rac1ArsenalRules.HasArmSlotAnimations(weapon) && _views.TryGetValue(weapon, out var view) &&
+        GodotObject.IsInstanceValid(view) && view.Visible && view.Sequence == 0;
+
     internal void PlayPyrocitor(bool emitting)
     {
         if (_views.TryGetValue(Rac1WeaponId.Pyrocitor, out var view))
@@ -128,11 +136,14 @@ internal sealed class Rac1EquipmentViewPresentation
             bool isVisible = visible(profile.Item);
             view.Visible = isVisible;
             if (!isVisible) continue;
-            if (profile.Item == Rac1WeaponId.Blaster)
+            // Sequence 0 is the weapon's construction when drawn; it returns to ready by itself,
+            // so the held-state selectors below must not cut it off on the first update.
+            bool constructing = view.Sequence == 0;
+            if (profile.Item == Rac1WeaponId.Blaster && !constructing)
                 view.Play(useTicks > 0 ? 4 : 1);
-            if (profile.Item is Rac1WeaponId.Taunter or Rac1WeaponId.MorphORay or Rac1WeaponId.TeslaClaw)
+            if (profile.Item is Rac1WeaponId.Taunter or Rac1WeaponId.MorphORay or Rac1WeaponId.TeslaClaw && !constructing)
                 view.Play(arsenalHeld ? 3 : 1);
-            if (profile.Item == Rac1WeaponId.SuckCannon)
+            if (profile.Item == Rac1WeaponId.SuckCannon && !constructing)
             {
                 if (native?.Vacuuming == true) view.Play(3);
                 else if (view.Sequence != 5)
