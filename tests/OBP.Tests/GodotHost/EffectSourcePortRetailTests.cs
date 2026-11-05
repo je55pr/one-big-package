@@ -39,7 +39,7 @@ public sealed class EffectSourcePortRetailTests
                 var observations = world.Capture(); Assert.Equal(6, observations.Length); Assert.All(observations, e => Assert.True(e.State.ParticleCount > 0));
                 Assert.All(observations.GroupBy(e => e.Recipe.Source.Game), group => Assert.Equal(2, group.Count()));
                 Assert.Equal(new long[] { 152, 152, 41, 41, 160, 580 }, observations.Select(e => e.State.RandomSamples));
-                var output = world.CaptureDraw(view); Assert.All(output, entry => Assert.NotEmpty(entry.Frame.Sprites));
+                var output = world.CaptureDraw(view); Assert.Equal(6, output.Length); Assert.All(output, entry => Assert.NotEmpty(entry.Frame.Sprites));
                 reference ??= output.SelectMany(e => e.Frame.Sprites).ToArray(); referenceStates ??= observations.Select(e => e.State).ToArray();
                 Assert.All(output.SelectMany(e => e.Frame.Sprites), s => Assert.Contains(world.Textures, t => t.Source == s.Texture));
                 string actual = JsonSerializer.Serialize(output.Select(e => e.Frame), new JsonSerializerOptions { IncludeFields = true });

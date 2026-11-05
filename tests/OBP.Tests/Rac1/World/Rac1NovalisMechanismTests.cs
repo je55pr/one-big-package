@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using OBP.IO;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Level;
@@ -10,19 +11,30 @@ namespace OBP.Tests;
 
 public sealed class Rac1NovalisMechanismTests
 {
-    private static JsonDocument Witness() => JsonDocument.Parse(File.ReadAllText(Path.Combine(RepoPaths.Root, "research/generated/rac1-novalis-mechanisms.json")));
-    public static IEnumerable<object[]> OriginalTrials()
+    private static readonly (int Instance, int Class, bool Restored)[] TrialPlan =
+    [
+        (711, 701, false), (711, 701, true), (712, 701, false), (713, 701, false),
+        (714, 703, false), (715, 703, false),
+        (727, 715, false), (728, 715, false), (729, 715, false), (730, 715, false), (731, 715, false),
+        (893, 768, false), (894, 768, false), (895, 768, false), (896, 768, false),
+        (897, 769, false), (898, 769, false), (899, 769, false), (900, 769, false),
+    ];
+    private static string WitnessPath => Path.Combine(RepoPaths.Root, "research/generated/rac1-novalis-mechanisms.json");
+    private static JsonDocument Witness()
     {
-        using var doc = Witness();
-        for (int i = 0; i < doc.RootElement.GetProperty("trials").GetArrayLength(); i++) yield return [i];
+        var doc = JsonDocument.Parse(File.ReadAllText(WitnessPath));
+        try { RequireWitnessCohorts(doc.RootElement); return doc; }
+        catch { doc.Dispose(); throw; }
     }
+    public static IEnumerable<object[]> OriginalTrials() => TrialPlan.Select(trial => new object[] { trial.Instance, trial.Restored });
 
     [Theory]
     [MemberData(nameof(OriginalTrials))]
-    public void ReplaysOriginalMipsMechanismTrace(int index)
+    public void ReplaysOriginalMipsMechanismTrace(int instance, bool restored)
     {
         using var doc = Witness();
-        var trial = doc.RootElement.GetProperty("trials")[index];
+        var trial = doc.RootElement.GetProperty("trials").EnumerateArray().Single(trial =>
+            trial.GetProperty("instance").GetInt32() == instance && trial.GetProperty("restoredFallen").GetBoolean() == restored);
         Rac1NovalisMechanism mechanism = Create(Source(trial), Vector(trial.GetProperty("trigger")), trial.GetProperty("restoredFallen").GetBoolean());
         var samples = trial.GetProperty("samples").EnumerateArray().ToDictionary(s => s.GetProperty("tick").GetInt32());
         int tick = 0;
@@ -105,6 +117,80 @@ public sealed class Rac1NovalisMechanismTests
         Assert.Throws<InvalidDataException>(() => new Rac1NovalisPiston(source with { PVar = new byte[8] }));
         BinaryPrimitives.WriteSingleLittleEndian(source.PVar!.AsSpan(0xb0), float.NaN);
         Assert.Throws<InvalidDataException>(() => new Rac1NovalisPiston(source));
+    }
+
+    [Theory]
+    [InlineData("complete")]
+    [InlineData("missing-code")]
+    [InlineData("renamed-code")]
+    [InlineData("empty-range")]
+    [InlineData("missing-trial")]
+    [InlineData("duplicate-trial")]
+    [InlineData("short-segment")]
+    [InlineData("missing-sample")]
+    [InlineData("duplicate-sample")]
+    public void WitnessRequiresEveryRetainedMechanismTrialAndCheckpoint(string fault)
+    {
+        var witness = JsonNode.Parse(File.ReadAllText(WitnessPath))!;
+        var code = witness["code"]!.AsArray();
+        var trials = witness["trials"]!.AsArray();
+        var door = trials.Single(trial =>
+            trial!["instance"]!.GetValue<int>() == 711 && !trial["restoredFallen"]!.GetValue<bool>())!;
+        switch (fault)
+        {
+            case "complete": break;
+            case "missing-code": code.Clear(); break;
+            case "renamed-code": code[0]!["name"] = "replacement"; break;
+            case "empty-range": code[0]!["end"] = code[0]!["start"]!.GetValue<int>(); break;
+            case "missing-trial": trials.RemoveAt(0); break;
+            case "duplicate-trial": trials[1] = trials[0]!.DeepClone(); break;
+            case "short-segment": door["segments"]![0]!["ticks"] = 1; break;
+            case "missing-sample": door["samples"]!.AsArray().RemoveAt(0); break;
+            case "duplicate-sample": door["samples"]![1] = door["samples"]![0]!.DeepClone(); break;
+            default: throw new ArgumentOutOfRangeException(nameof(fault), fault, "Unknown witness fault.");
+        }
+        void Check() => RequireWitnessCohorts(JsonSerializer.SerializeToElement(witness));
+        if (fault == "complete") Check();
+        else Assert.ThrowsAny<Xunit.Sdk.XunitException>(Check);
+    }
+
+    private static void RequireWitnessCohorts(JsonElement witness)
+    {
+        // Input families and code windows are retained independently in
+        // tools/OBP.Rac1NovalisRouteProbe/Program.cs. Checkpoint ticks pin the
+        // existing original-instruction observations, including transition/sound samples.
+        var code = witness.GetProperty("code").EnumerateArray().Select(block => (
+            Name: block.GetProperty("name").GetString()!, Start: block.GetProperty("start").GetInt32(),
+            End: block.GetProperty("end").GetInt32())).ToArray();
+        Assert.Equal(new[] { ("approachDoors", 0x2fed68, 0x2ff028), ("pistons", 0x2f95c0, 0x2f9810),
+            ("staircaseRocks", 0x2f9080, 0x2f95c0) }, code);
+        var trials = witness.GetProperty("trials").EnumerateArray().ToArray();
+        Assert.Equal(TrialPlan.OrderBy(trial => trial.Instance).ThenBy(trial => trial.Restored),
+            trials.Select(trial => (Instance: trial.GetProperty("instance").GetInt32(),
+                Class: trial.GetProperty("nativeClassId").GetInt32(), Restored: trial.GetProperty("restoredFallen").GetBoolean()))
+                .OrderBy(trial => trial.Instance).ThenBy(trial => trial.Restored));
+        foreach (var trial in trials)
+        {
+            int instance = trial.GetProperty("instance").GetInt32();
+            int nativeClass = trial.GetProperty("nativeClassId").GetInt32();
+            bool restored = trial.GetProperty("restoredFallen").GetBoolean();
+            int[] segments = nativeClass switch { 701 => [2, 1, 1, 210], 703 or 715 => [650], _ => [1, 1, 1, 24, 6, 5, 24, 25] };
+            Assert.Equal(segments, trial.GetProperty("segments").EnumerateArray().Select(segment => segment.GetProperty("ticks").GetInt32()));
+            int ticks = segments.Sum();
+            int[] events = nativeClass switch
+            {
+                701 when restored => [],
+                701 when instance == 711 => [49, 118],
+                701 when instance == 712 => [64, 133],
+                701 => [77, 146],
+                703 => [165, 285, 495, 615],
+                715 => [142, 262, 284, 404, 426, 546, 568],
+                _ => [24, 33, 38, 43, 62, 82],
+            };
+            var checkpoints = Enumerable.Range(0, 6).Concat(Enumerable.Range(0, ticks).Where(tick => tick % 30 == 0))
+                .Append(ticks - 1).Concat(events).Distinct().Order();
+            Assert.Equal(checkpoints, trial.GetProperty("samples").EnumerateArray().Select(sample => sample.GetProperty("tick").GetInt32()).Order());
+        }
     }
 
     private static Rac1NovalisMechanism Create(Rac1Instances.MobyInstance source, Vector3 trigger, bool restored = false) => source.OClass switch

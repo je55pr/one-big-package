@@ -21,7 +21,8 @@ public readonly record struct Rac1LocomotionAnimationInput(
     bool CrouchHeld = false, float InputMagnitude = 0, float NativeYawVelocity = 0,
     float? ContactMotionLength = null, float? UncappedInputMagnitude = null,
     Rac1MovementAnimationSelection? Traversal = null,
-    Rac1MovementAnimationSelection? GroundEntry = null);
+    Rac1MovementAnimationSelection? GroundEntry = null,
+    float YawError = 0);
 
 public sealed partial class Rac1PlayerAnimationPresentationController
 {

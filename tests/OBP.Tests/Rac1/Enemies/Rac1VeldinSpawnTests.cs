@@ -38,7 +38,9 @@ public sealed class Rac1VeldinSpawnTests
     public void RetailAllLevels_ClassZeroPlacementIsUniqueIndexZeroAndNeverShipPosition()
     {
         using var reader = OpenRetail();
-        foreach (var level in Rac1DiscIndex.Read(reader).Levels.OrderBy(level => level.LevelId))
+        var levels = Rac1DiscIndex.Read(reader).Levels.OrderBy(level => level.LevelId).ToArray();
+        Assert.Equal(Enumerable.Range(0, 19), levels.Select(level => level.LevelId));
+        foreach (var level in levels)
         {
             byte[] gameplay = Rac1LevelSettings.ReadGameplay(reader, level);
             var ratchet = Assert.Single(Rac1Instances.Parse(gameplay).MobyInstances, moby => moby.OClass == 0);
@@ -60,7 +62,9 @@ public sealed class Rac1VeldinSpawnTests
     public void RetailAllLevels_PlayerStartProviderUsesAuthoredClassZeroTransform()
     {
         using var reader = OpenRetail();
-        foreach (var level in Rac1DiscIndex.Read(reader).Levels.OrderBy(level => level.LevelId))
+        var levels = Rac1DiscIndex.Read(reader).Levels.OrderBy(level => level.LevelId).ToArray();
+        Assert.Equal(Enumerable.Range(0, 19), levels.Select(level => level.LevelId));
+        foreach (var level in levels)
         {
             byte[] gameplay = Rac1LevelSettings.ReadGameplay(reader, level);
             var ratchet = Assert.Single(

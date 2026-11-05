@@ -30,6 +30,7 @@ public sealed class Rac1TeslaPresentationTests
         var tesla = new Rac1TeslaPresentation();
         Assert.Empty(tesla.ProjectTargetLine(new(100), new(100), Rac1PickupRandom.FromSeed(1)));
         var vertical = tesla.ProjectTargetLine(new(100), new(100, 100, 300), Rac1PickupRandom.FromSeed(1));
+        Assert.Equal(4, vertical.Count);
         Assert.All(vertical, layer =>
         {
             Assert.Equal(20, layer.Points.Count);
