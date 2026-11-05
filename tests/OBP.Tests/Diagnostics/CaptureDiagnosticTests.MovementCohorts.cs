@@ -20,6 +20,7 @@ public sealed partial class CaptureDiagnosticTests
     [InlineData("foreign-source", false)]
     [InlineData("duplicate-toad", false)]
     [InlineData("unexpected-class", false)]
+    [InlineData("unexpected-enemy", false)]
     public async Task MovementSaveCannotClaimEnemyRestorationWithoutBothSourceQualifiedDeaths(string cohort, bool accepted)
     {
         // Synthetic scenario ports isolate admission of the death cohort; they
@@ -34,6 +35,7 @@ public sealed partial class CaptureDiagnosticTests
             "foreign-source" => targets.Select(target => target with { SourceGame = ObpSourceGame.Rac2 }).ToArray(),
             "duplicate-toad" => [targets[0], targets[1] with { NativeClassId = Rac1ClassIds.VeldinToad }],
             "unexpected-class" => [targets[0], targets[1] with { NativeClassId = Rac1ClassIds.WoodenCrate }],
+            "unexpected-enemy" => [targets[0], targets[1] with { NativeClassId = Rac1NovalisPeckbotSession.ClassId }],
             _ => throw new ArgumentOutOfRangeException(nameof(cohort)),
         };
         var clock = new Fixture();
