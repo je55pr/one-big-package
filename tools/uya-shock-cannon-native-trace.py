@@ -96,7 +96,8 @@ def main():
     subprocess.run(command, check=True)
     environment = dict(os.environ, OBP_UYA_CANNON_ORACLE=str(program), OBP_UYA_CANNON_RAM=str(image))
     subprocess.run(['dotnet', 'test', str(ROOT / 'tests/OBP.Tests'), '-c', 'Release', '--nologo',
-                    '--filter', 'FullyQualifiedName~UyaShockCannonNativeOracleTests'], env=environment, check=True)
+                    '--filter', 'FullyQualifiedName~Rac3ShockCannonNativeOracleTests',
+                    '--', 'RunConfiguration.TreatNoTestsAsError=true'], cwd=ROOT, env=environment, check=True)
 
 
 if __name__ == '__main__':
