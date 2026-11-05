@@ -3382,9 +3382,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:ActivateOwnedWorld(:WorldSceneLease < GodotWorldResources >):void:private",
       "Owner": "#376",
-      "Rationale": "Private one-line forward to WorldSceneLifetime and GodotWorldResources used by the root's wiring and lifecycle callbacks.",
+      "Rationale": "Wires owned world-activation ports. The effects diagnostic borrows the SourceSetupCoordinator polling lease for temporary source removal; the root owns no diagnostic state or source-admission rules.",
       "ExpiresWith": "permanent",
-      "Hash": "c5452bde1df2bf84f8ddf5bafed4a57004e115e0e01fd3220fa4532732a0fa31"
+      "Hash": "9fcfec608a53d844f955ccbe66cbecfb4a79159442b7f8cce2628727b170f822"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:EnterWorld(:string,:Func < RuntimeWorld >,:ObpDestination ?,:string ?,:FusionLabDefinition ?):bool:private",
