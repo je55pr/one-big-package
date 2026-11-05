@@ -79,6 +79,9 @@ public sealed class Rac1TaxiNativeShuttleTrafficTests
             fast.Advance(1d / 120);
             fast.Advance(1d / 120);
             if (i % 2 == 0) slow.Advance(1d / 30);
+            if (i == 59)
+                // First sixty native steps travel .00125*(1+...+60) = 2.2875 units.
+                Assert.Equal(7.7125, native.Position.X, 10);
             if (i % 2 != 0)
             {
                 Assert.InRange(native.Position.DistanceSquared(slow.Position), 0, 1e-10);
@@ -93,9 +96,6 @@ public sealed class Rac1TaxiNativeShuttleTrafficTests
                     break;
                 }
             }
-            if (i == 59)
-                // First sixty native steps travel .00125*(1+...+60) = 2.2875 units.
-                Assert.Equal(7.7125, native.Position.X, 10);
         }
         Assert.InRange(arrivedAt, 60, 36000);
         Assert.Equal(Source, native.Position);
