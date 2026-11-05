@@ -212,9 +212,10 @@ public sealed class Rac2ParticleRetailTests
     }
     private static void RequireProtocolCohorts(string[][] rows, int frames)
     {
-        Assert.Equal(Enumerable.Range(0, 111), rows.Where(row => row[0] == "D").Select(row => int.Parse(row[1], CultureInfo.InvariantCulture)).Order());
-        Assert.Equal(Enumerable.Range(0, 109), rows.Where(row => row[0] == "T").Select(row => int.Parse(row[1], CultureInfo.InvariantCulture)).Order());
-        Assert.Equal(Enumerable.Range(0, frames + 1), rows.Where(row => row[0] == "F").Select(row => int.Parse(row[1], CultureInfo.InvariantCulture)).Order());
+        // The original-code oracle emits each indexed cohort in ascending native order.
+        Assert.Equal(Enumerable.Range(0, 111), rows.Where(row => row[0] == "D").Select(row => int.Parse(row[1], CultureInfo.InvariantCulture)));
+        Assert.Equal(Enumerable.Range(0, 109), rows.Where(row => row[0] == "T").Select(row => int.Parse(row[1], CultureInfo.InvariantCulture)));
+        Assert.Equal(Enumerable.Range(0, frames + 1), rows.Where(row => row[0] == "F").Select(row => int.Parse(row[1], CultureInfo.InvariantCulture)));
     }
 
     [Theory]
@@ -235,6 +236,22 @@ public sealed class Rac2ParticleRetailTests
         if (duplicate) rows.Add(rows.First(row => row[0] == kind && row[1] == "0").ToArray());
         else Assert.True(rows.Remove(rows.First(row => row[0] == kind && row[1] == "1")));
         Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => RequireProtocolCohorts(rows.ToArray(), 1));
+    }
+
+    [Theory]
+    [InlineData("D")]
+    [InlineData("T")]
+    [InlineData("F")]
+    public void SyntheticProtocolCohortsRejectReorderedIds(string kind)
+    {
+        // Protocol-only controls preserve every ID and count while changing order.
+        var rows = Enumerable.Range(0, 111).Select(id => new[] { "D", id.ToString(CultureInfo.InvariantCulture) })
+            .Concat(Enumerable.Range(0, 109).Select(id => new[] { "T", id.ToString(CultureInfo.InvariantCulture) }))
+            .Concat(Enumerable.Range(0, 2).Select(id => new[] { "F", id.ToString(CultureInfo.InvariantCulture) })).ToArray();
+        RequireProtocolCohorts(rows, 1);
+        int first = Array.FindIndex(rows, row => row[0] == kind);
+        (rows[first], rows[first + 1]) = (rows[first + 1], rows[first]);
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => RequireProtocolCohorts(rows, 1));
     }
 
     private static int FirstDifference(byte[] a, byte[] b) => Enumerable.Range(0, a.Length).FirstOrDefault(i => a[i] != b[i], -1);
