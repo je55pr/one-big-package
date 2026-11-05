@@ -10,26 +10,38 @@ namespace OBP.Tests;
 public sealed class EffectsExperimentScenarioTests
 {
     [Theory]
-    [InlineData(false, false, false)]
-    [InlineData(true, false, false)]
-    [InlineData(false, true, false)]
-    [InlineData(false, false, true)]
-    public async Task SyntheticObservationsRequireAdvancingTrilogyClocks(bool frozen, bool foreignSource, bool oneLagging)
+    [InlineData(false, false, false, false)]
+    [InlineData(true, false, false, false)]
+    [InlineData(false, true, false, false)]
+    [InlineData(false, false, true, false)]
+    [InlineData(false, false, false, true)]
+    public async Task SyntheticObservationsRequireAdvancingTrilogyClocks(bool frozen, bool foreignSource, bool oneLagging, bool incomplete)
     {
         string directory = Path.Combine(Path.GetTempPath(), "obp-effects-clock-" + Guid.NewGuid().ToString("N"));
         string report = Path.Combine(directory, "report.json");
         try
         {
             // Synthetic port observations only; no renderer, retail assets or native parity is claimed.
-            var fixture = new Fixture(frozen, foreignSource, oneLagging);
+            var fixture = new Fixture(frozen, foreignSource, oneLagging, incomplete);
+            if (foreignSource)
+            {
+                fixture.Start();
+                var substituted = fixture.Read();
+                Assert.Equal(6, substituted.Length);
+                Assert.Equal(3, substituted.Select(observation => observation.Recipe.Source.Game).Distinct().Count());
+                Assert.DoesNotContain(substituted, observation => observation.Recipe.Source.Game == ObpSourceGame.Rac1);
+                Assert.Equal(2, substituted.Count(observation => observation.Recipe.Source.Game == ObpSourceGame.Synthetic));
+                fixture.Reset();
+            }
             var definition = new DiagnosticScenarioDefinition("synthetic-effects-clock", DiagnosticSourceAccess.AssetFree,
                 DiagnosticSetup.AssetFreeFixture, [], TimeSpan.FromSeconds(10), 10000);
             var scenario = new EffectsExperimentScenario(definition, fixture, fixture, fixture, report, _ => { });
             using var run = new DiagnosticRunContext(fixture, CancellationToken.None, 10000);
-            if (frozen || foreignSource || oneLagging)
+            if (frozen || foreignSource || oneLagging || incomplete)
             {
-                await Assert.ThrowsAsync<InvalidOperationException>(() => scenario.RunAsync(run));
-                Assert.Equal(frozen || oneLagging ? 120 : 20, fixture.PhysicsWaits);
+                var error = await Assert.ThrowsAsync<InvalidOperationException>(() => scenario.RunAsync(run));
+                Assert.Contains(foreignSource ? "all three trilogy source identities" : "twenty active ticks together", error.Message);
+                Assert.Equal(frozen || oneLagging || incomplete ? 120 : 20, fixture.PhysicsWaits);
                 Assert.Equal(0, fixture.Captures);
                 Assert.False(File.Exists(report));
             }
@@ -46,7 +58,7 @@ public sealed class EffectsExperimentScenarioTests
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true); }
     }
 
-    private sealed class Fixture(bool frozen, bool foreignSource, bool oneLagging) : IDiagnosticEffectsFixture, IDiagnosticFrameClock,
+    private sealed class Fixture(bool frozen, bool foreignSource, bool oneLagging, bool incomplete) : IDiagnosticEffectsFixture, IDiagnosticFrameClock,
         IDiagnosticNavigationActions, IDiagnosticSourceAttachmentFixture
     {
         private bool _active, _detached;
@@ -60,7 +72,7 @@ public sealed class EffectsExperimentScenarioTests
         public int TextureCount => _active ? 6 : 0;
         public int BatchCount => _active ? 3 : 0;
         public bool RetiredWorldClean => true;
-        public ImmutableArray<EffectObservation> Read() => !_active ? [] : [.. Enumerable.Range(0, 6)
+        public ImmutableArray<EffectObservation> Read() => !_active ? [] : [.. Enumerable.Range(0, incomplete ? 5 : 6)
             .Select(index => new EffectObservation(new("synthetic", 0, 0, index),
                 new(new(foreignSource && index % 3 == 0 ? ObpSourceGame.Synthetic : Games[index % 3],
                     "synthetic", "fixture", "effect", index.ToString()), "synthetic"),
@@ -70,11 +82,11 @@ public sealed class EffectsExperimentScenarioTests
         public void Start() { _active = true; _tick = 0; }
         public void Reset() => _active = false;
         public void StopAll() => _active = false;
-        public bool Rejects(EffectHandle handle) => true;
+        public bool Rejects(EffectHandle _) => true;
         public IDisposable Camera() => new Release(() => { });
-        public void Baseline() { }
+        public void Baseline() { /* Asset-free observations have no renderer baseline. */ }
         public EffectImageEvidence Capture(string name) { Captures++; return new(name, 1, 1, new Dictionary<string, int>()); }
-        public void RememberWorld() { }
+        public void RememberWorld() { /* This synthetic fixture retains no world lease. */ }
         public DiagnosticFrameSnapshot ReadFrames() => new(0, (ulong)PhysicsWaits);
         public Task NextAsync(DiagnosticFramePhase phase, CancellationToken cancellationToken)
         {
@@ -82,9 +94,14 @@ public sealed class EffectsExperimentScenarioTests
             if (phase == DiagnosticFramePhase.Physics) { PhysicsWaits++; if (_active && !frozen) _tick++; }
             return Task.CompletedTask;
         }
-        public Task<DiagnosticActionResult> NavigateAsync(string destinationId, CancellationToken cancellationToken)
+        public Task<DiagnosticActionResult> NavigateAsync(string _, CancellationToken __)
             => Task.FromResult(new DiagnosticActionResult(true, null));
-        public IDisposable Detach(ObpSourceGame game, bool refreshOnDetach) { _detached = true; return new Release(() => _detached = false); }
+        public IDisposable Detach(ObpSourceGame game, bool _)
+        {
+            Assert.Equal(ObpSourceGame.Rac2, game);
+            _detached = true;
+            return new Release(() => _detached = false);
+        }
     }
     private sealed class Release(Action release) : IDisposable { public void Dispose() => release(); }
 }
