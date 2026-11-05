@@ -15,7 +15,7 @@ public sealed class Rac1ArsenalScenario(MovementDiagnosticContext context, Rac1W
         async Task Equip(Rac1WeaponId weapon)
         {
             Driver.SetAction(MovementDiagnosticDriver.Traversal, false);
-            Ports.Equipment.Select(weapon); await PhysicsFramesAsync(10);
+            Ports.Equipment.Select(weapon); await PhysicsFramesAsync(75); // guns cannot fire until built (about 62 updates)
         }
         await Equip(Rac1WeaponId.Devastator);
         var crate = Crate(7); await PhysicsFramesAsync(3);

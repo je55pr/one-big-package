@@ -142,6 +142,13 @@ public sealed class Rac1PlayerAvatarProviderTests
         Assert.Equal(PlayerAvatarAxisDirection.PositiveY, avatar.Axes.Forward);
         Assert.Equal(PlayerAvatarAxisDirection.PositiveZ, avatar.Axes.Up);
         Assert.Equal(-0.03446032626043135, avatar.BaseHeight, 12);
+        Assert.All(avatar.AnimationClips, clip =>
+        {
+            Assert.NotEmpty(clip.LocalFrames);
+            Assert.Equal(clip.FrameDurationsSeconds.Count, clip.FrameCount);
+            Assert.NotNull(clip.FrameTimelinePositions);
+            Assert.Equal(clip.FrameCount, clip.FrameTimelinePositions.Count);
+        });
         Assert.All(avatar.AnimationClips.SelectMany(clip => clip.LocalFrames), frame =>
         {
             Assert.Equal(5_583 * 3, frame.Length);
@@ -176,8 +183,10 @@ public sealed class Rac1PlayerAvatarProviderTests
             iso!, Rac1PlayerAvatarProvider.RatchetAvatarId);
         using var reader = new FileRandomAccessReader(iso!);
         var catalogue = Rac1DiscIndex.Read(reader);
+        var levels = catalogue.Levels.OrderBy(level => level.LevelId).ToArray();
+        Assert.Equal(Enumerable.Range(0, 19), levels.Select(level => level.LevelId));
 
-        foreach (var level in catalogue.Levels.OrderBy(level => level.LevelId))
+        foreach (var level in levels)
         {
             var core = Rac1LevelCore.Open(reader, level);
             var native = Rac1RatchetAvatar.Decode(core, includeTraversalClips: false);

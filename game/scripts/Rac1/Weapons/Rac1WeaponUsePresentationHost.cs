@@ -133,6 +133,19 @@ internal sealed class Rac1WeaponUsePresentationHost(Rac1WorldModule world, Rac1W
         else report("Enter an R&C1 world before changing the arsenal preview.");
     }
 
+    /// <summary>
+    /// OBP developer tool (not a retail action): refill every owned ammo item and refresh the HUD, whose
+    /// projection only changes when it is refreshed. The campaign inventory is saved state, so a refill
+    /// there is persisted deliberately; preview and Fusion-test inventories are temporary.
+    /// </summary>
+    internal void RefillAllAmmo(bool persist)
+    {
+        State.Weapons().RefillAllAmmo();
+        State.Fusion().Session?.RefillForeignAmmo();
+        if (persist) Views.Persist("developer ammo refill");
+        Views.RefreshHud();
+    }
+
     internal void TogglePreview() => SetPreview(Input.IsKeyPressed(Key.Shift));
 
     internal void SetPreview(bool disable)
@@ -172,7 +185,9 @@ internal sealed class Rac1WeaponUsePresentationHost(Rac1WorldModule world, Rac1W
         var weapons = State.Weapons();
         if (Environment.Loading() || Equipment.Assets(Environment.Ordinary(), world.Loot.PickupAssets) is null ||
             player is null || use.Session is null) return;
-        bool eligible = Environment.Alive() && !player.Rac1WrenchFrame.Active && !world.Wrench.ThrowActive;
+        // A gun cannot fire until it has finished building in the hand, so a weapon switch never fires at once.
+        bool eligible = Environment.Alive() && !player.Rac1WrenchFrame.Active && !world.Wrench.ThrowActive &&
+            !Equipment.NativeViews.UnderConstruction(weapons.Equipped);
         var frame = use.BeginFrame(eligible, () => world.Weapons.Detector.Equipped, weapons,
             world.Weapons.Arsenal.SetHeld, world.Weapons.Arsenal.AdmitUse);
         if (frame.PyroChanged) Equipment.NativeViews.PlayPyrocitor(frame.Pyro);

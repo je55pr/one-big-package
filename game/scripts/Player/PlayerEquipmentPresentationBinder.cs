@@ -165,7 +165,14 @@ internal sealed class PlayerEquipmentPresentationBinder
     {
         if (previous != state.Held.NativeItemId &&
             avatar.Controller is Rac1PlayerAnimationPresentationController controller)
+        {
             NativeViews.RefreshAttachment(state.Inventory.Equipped, controller);
+            // Drawing a weapon from the wrench builds it in the hand. Quick Select already did this
+            // on selection; the Circle draw path reaches the hand through here.
+            if (state.Held.NativeItemId is { } drawn && Enum.IsDefined((Rac1WeaponId)drawn) &&
+                Rac1WeaponProfiles.IsAdditional((Rac1WeaponId)drawn))
+                NativeViews.PlaySelection((Rac1WeaponId)drawn);
+        }
         RefreshRac1HandVisibility(state, avatar);
     }
 
@@ -173,6 +180,14 @@ internal sealed class PlayerEquipmentPresentationBinder
         state.Fusion?.Selected.SourceGame is not (ObpSourceGame.Rac2 or ObpSourceGame.Rac3) &&
         state.Held.Hand.IsHolding(new(ObpSourceGame.Rac1, (int)item)) &&
         !state.WaterHandItemHidden && !state.WrenchFrameActive && !state.WrenchThrowActive;
+
+    /// <summary>
+    /// Arm slot count of the gun-type weapon visible in Ratchet's hand (item table +0x18): 2 for the big
+    /// two-handed guns, 1 for the one-handed ones, 0 for gloves, the wrench and anything hidden.
+    /// </summary>
+    internal int HeldArmSlots(Rac1HandPresentationContext state) =>
+        state.Held.NativeItemId is { } held && Enum.IsDefined((Rac1WeaponId)held) &&
+        IsRac1HandEquipmentVisible((Rac1WeaponId)held, state) ? Rac1ArsenalRules.ArmSlotCount((Rac1WeaponId)held) : 0;
 
     /// <summary>Evaluate and present the selected equipment body pose at the borrowed avatar clock.</summary>
     internal void ApplyAvatarEquipmentPose(PlayerAvatarPresentationHost avatar,

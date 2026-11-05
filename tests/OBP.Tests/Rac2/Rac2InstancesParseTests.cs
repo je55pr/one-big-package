@@ -285,6 +285,7 @@ public sealed class Rac2InstancesParseTests
 
         Rac2Instances.Gameplay g = Rac2Instances.Parse(data);
 
+        Assert.Equal(new[] { 0, 2 }, g.MobyInstances.Select(m => m.Index));
         Assert.All(g.MobyInstances, m => Assert.Null(m.PVarData));
     }
 }

@@ -29,6 +29,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'obp-window.ps1')
+. (Join-Path $PSScriptRoot 'obp-smoke-process.ps1')
 
 foreach ($source in @(
   @{ label='R&C1'; path=$Rac1Iso },
@@ -66,10 +67,11 @@ $destinations = @('rac1:LEVEL0', 'rac2:LEVEL1', 'rac3:TABLE1')
 foreach ($destination in $destinations) {
   Write-Host "movement smoke: $destination" -ForegroundColor Cyan
   $windowArgs = @(Get-ObpWindowArguments)
-  & $godot @windowArgs @commonArgs '--destination' $destination
-  if ($LASTEXITCODE -ne 0) {
-    Write-Error "movement smoke failed for $destination (exit $LASTEXITCODE)"
-    exit $LASTEXITCODE
+  $code = Invoke-ObpSmokeProcess -FilePath $godot -ArgumentList (@($windowArgs) + $commonArgs + @('--destination', $destination)) `
+    -CompletionMarker '[lifecycle] quit-request reason=movement-smoke-pass exitCode=0' -WorkingDirectory $root
+  if ($code -ne 0) {
+    Write-Error "movement smoke failed for $destination (exit $code)" -ErrorAction Continue
+    exit $code
   }
 }
 
