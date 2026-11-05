@@ -66,6 +66,7 @@ public abstract class FusionWeaponScenarioSupport(MovementDiagnosticContext cont
         Require(actual.Origin.DistanceTo(previous.Origin) < .00001f && actual.X.DistanceTo(previous.X) < .00001f &&
             actual.Y.DistanceTo(previous.Y) < .00001f && actual.Z.DistanceTo(previous.Z) < .00001f, $"{Selected} gun snapped at a transition boundary");
         var skin = animation.Skin ?? throw new DiagnosticUnavailableException("The source skin pose is unavailable.");
+        Require(skin.Length == previousSkin.Value.Length, $"{Selected} source pose coordinate count changed at a transition boundary");
         Require(skin.Zip(previousSkin.Value, (a, b) => Math.Abs(a - b)).Max() < .00001, $"{Selected} arms/body did not retain the rendered source pose");
     }
     protected async Task CheckFusionJumpAttachmentAsync(bool moving)
