@@ -31,7 +31,8 @@ function Remove-ObpSmokeHistory {
         -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -and
         (Test-Path -LiteralPath (Join-Path $_.FullName '.complete') -PathType Leaf)
     } | Sort-Object LastWriteTimeUtc -Descending)
-    # Bound completed histories while keeping recent failure logs and all active runs.
+    # Keep the newest 50 completed histories for at most 14 days, regardless of
+    # outcome. Active histories are ineligible for deletion.
     for ($index = 0; $index -lt $completed.Count; $index++) {
         if ($index -ge 50 -or $completed[$index].LastWriteTimeUtc -lt [DateTime]::UtcNow.AddDays(-14)) {
             Remove-Item -LiteralPath $completed[$index].FullName -Recurse -Force
@@ -46,7 +47,9 @@ function Invoke-ObpSmokeProcess {
         [Parameter(Mandatory = $true)][string]$CompletionMarker,
         [string]$WorkingDirectory = (Get-Location).Path
     )
-    $history = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../.build/smoke-results'))
+    $historyRoot = $env:OBP_SMOKE_RESULTS_ROOT
+    if ([string]::IsNullOrWhiteSpace($historyRoot)) { $historyRoot = Join-Path $PSScriptRoot '../.build/smoke-results' }
+    $history = [IO.Path]::GetFullPath($historyRoot)
     $logs = Join-Path $history ([guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $logs -Force | Out-Null
     $stdout = Join-Path $logs 'stdout.log'

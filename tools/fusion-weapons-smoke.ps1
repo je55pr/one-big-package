@@ -70,7 +70,14 @@ try {
 }
 finally { $env:OBP_FUSION_CAPTURE_DIR = $previousCapture }
 foreach ($log in Get-ChildItem -LiteralPath $Out -Filter '*.log') {
-    if (Test-ObpSmokeFailure -Log ([IO.File]::ReadAllText($log.FullName))) { throw "Godot lifecycle error in $($log.Name)" }
+    $text = [IO.File]::ReadAllText($log.FullName)
+    if ($log.Name -ceq ([IO.Path]::GetFileName($invalidReport) + '.stderr.log')) {
+        # The report and exit code above already establish this exact expected
+        # rejection. Every other line, including leaks, still goes through the gate.
+        $expectedLine = '[playtest] FAIL: ' + $expectedError
+        $text = ($text -split '\r?\n' | Where-Object { $_ -cne $expectedLine }) -join "`n"
+    }
+    if (Test-ObpSmokeFailure -Log $text) { throw "Godot lifecycle error in $($log.Name)" }
 }
 Write-Host "[fusion-weapons] PASS. Local captures, recording and reports: $Out" -ForegroundColor Green
 exit 0

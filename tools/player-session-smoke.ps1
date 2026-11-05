@@ -28,3 +28,4 @@ if (-not (Test-ObpSmokeLog -ExitCode $code -Log $log -CompletionMarker '[player-
     throw "Player session lifecycle smoke failed ($code). Inspect $Out"
 }
 Write-Host '[player-session] PASS' -ForegroundColor Green
+exit 0

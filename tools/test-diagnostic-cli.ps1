@@ -92,3 +92,4 @@ finally {
         ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $Out 'summary.json') -Encoding UTF8
     Write-Host "Diagnostic CLI evidence: $Out"
 }
+exit 0

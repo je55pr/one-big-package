@@ -84,7 +84,9 @@ function Invoke-ObpNativeProcessCapture {
                 if (-not $process.HasExited) {
                     if ($PSVersionTable.PSEdition -eq 'Core') { $process.Kill($true) }
                     else { $process.Kill() }
-                    [void]$process.WaitForExit(5000)
+                    if (-not $process.WaitForExit(5000)) {
+                        Write-Warning -WarningAction Continue "Native child $($process.Id) is still running after the cleanup wait."
+                    }
                 }
             }
             catch [InvalidOperationException] { } # The process may exit between HasExited and Kill.

@@ -176,12 +176,14 @@ public sealed class SmokeProcessResultTests
             var result = await Run(shell, $"""
                 $ErrorActionPreference = 'Stop'
                 . {Quote(Path.Combine(RepoPaths.Root, "tools/obp-smoke-process.ps1"))}
+                $env:OBP_SMOKE_RESULTS_ROOT={Quote(Path.Combine(directory, "history"))}
                 Start-Transcript -LiteralPath {Quote(transcript)} | Out-Null
                 $code = Invoke-ObpSmokeProcess -FilePath {Quote(shell)} -ArgumentList @('-NoProfile','-NonInteractive','-File',{Quote(child)},'-Message',{Quote(message)}) -CompletionMarker {Quote(Marker)}
                 Stop-Transcript | Out-Null
                 exit $code
                 """);
             Assert.True(result.Code == expected, result.Error + result.Output);
+            Assert.Single(Directory.GetDirectories(Path.Combine(directory, "history")));
             Assert.Contains(message, result.Output);
             string recorded = File.ReadAllText(transcript);
             Assert.Contains(message, recorded);
@@ -223,6 +225,7 @@ public sealed class SmokeProcessResultTests
             var result = await Run(shell, $"""
                 $ErrorActionPreference = 'Stop'
                 . {Quote(Path.Combine(RepoPaths.Root, "tools/obp-smoke-process.ps1"))}
+                $env:OBP_SMOKE_RESULTS_ROOT={Quote(Path.Combine(directory, "history"))}
                 $code = Invoke-ObpSmokeProcess -FilePath {Quote(shell)} -ArgumentList @('-NoProfile','-NonInteractive','-File',{Quote(child)}) -CompletionMarker {Quote(Marker)}
                 exit $code
                 """, line =>
@@ -234,6 +237,7 @@ public sealed class SmokeProcessResultTests
             Assert.True(result.Code == 0, result.Error + result.Output);
             Assert.Equal(2, observed.Count);
             Assert.Equal(1, released);
+            Assert.Single(Directory.GetDirectories(Path.Combine(directory, "history")));
         }
         finally { Directory.Delete(directory, recursive: true); }
     }
@@ -261,6 +265,18 @@ public sealed class SmokeProcessResultTests
     [InlineData("pwsh", "player-capabilities-smoke.ps1", "partial", false)]
     [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "foreign-baseline", false)]
     [InlineData("pwsh", "player-capabilities-smoke.ps1", "foreign-baseline", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "case-baseline", false)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "case-baseline", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "reordered-trace", false)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "reordered-trace", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "middle-clock", false)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "middle-clock", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "missing-field", false)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "missing-field", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "bad-coordinate", false)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "bad-coordinate", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "invalid-json", false)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "invalid-json", false)]
     [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "clean", true)]
     [InlineData("pwsh", "test-diagnostic-cli.ps1", "clean", true)]
     [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "leak", false)]
@@ -289,6 +305,8 @@ public sealed class SmokeProcessResultTests
     [InlineData("pwsh", "fusion-weapons-smoke.ps1", "record-log-error", false)]
     [InlineData("powershell.exe", "fusion-weapons-smoke.ps1", "replay-log-rid", false)]
     [InlineData("pwsh", "fusion-weapons-smoke.ps1", "replay-log-rid", false)]
+    [InlineData("powershell.exe", "fusion-weapons-smoke.ps1", "expected-rejection-leak", false)]
+    [InlineData("pwsh", "fusion-weapons-smoke.ps1", "expected-rejection-leak", false)]
     public async Task LifecycleRunnersRejectLeaksAndRequireFreshCompleteTrials(string shell, string runner, string fault, bool expected)
     {
         shell = RequireShell(shell);
@@ -325,12 +343,18 @@ public sealed class SmokeProcessResultTests
                         $marker = '[player-capabilities-smoke] PASS: fixture'
                         $report = $ArgumentList[[Array]::IndexOf($ArgumentList,'--player-capabilities-out')+1]
                         if ($env:OBP_TEST_RUNNER_FAULT -ne 'stale') {
-                            $samples = @(1..40 | ForEach-Object { @{Tick=$_*6;Clock=$_/10.0} })
+                            $samples = @(1..40 | ForEach-Object { @{Tick=$_*6;Clock=$_/10.0;Sequence=$null;Frame=$null;Pose=('A'*64);Attachment='{}';Facing=0;Position=@(0,0,0);Camera=@(0,0,0)} })
                             $document = @{Version=1;Baselines=@{'rac2/item:30'=$samples;'rac3/item:43'=$samples}}
                             if ($env:OBP_TEST_RUNNER_FAULT -eq 'empty') { $document.Baselines=@{} }
                             if ($env:OBP_TEST_RUNNER_FAULT -eq 'partial') { $document.Baselines['rac2/item:30']=@($samples[0]) }
                             if ($env:OBP_TEST_RUNNER_FAULT -eq 'foreign-baseline') { $document.Baselines.Remove('rac2/item:30'); $document.Baselines['synthetic/item:30']=$samples }
+                            if ($env:OBP_TEST_RUNNER_FAULT -eq 'case-baseline') { $document.Baselines.Remove('rac2/item:30'); $document.Baselines['RAC2/item:30']=$samples }
+                            if ($env:OBP_TEST_RUNNER_FAULT -eq 'reordered-trace') { $swap=$samples[4];$samples[4]=$samples[5];$samples[5]=$swap }
+                            if ($env:OBP_TEST_RUNNER_FAULT -eq 'middle-clock') { $samples[5].Clock=.5 }
+                            if ($env:OBP_TEST_RUNNER_FAULT -eq 'missing-field') { $samples[5].Remove('Pose') }
+                            if ($env:OBP_TEST_RUNNER_FAULT -eq 'bad-coordinate') { $samples[5].Camera[1]='NaN' }
                             $document | ConvertTo-Json -Depth 6 -Compress | Set-Content -LiteralPath $report
+                            if ($env:OBP_TEST_RUNNER_FAULT -eq 'invalid-json') { Set-Content -LiteralPath $report '{broken' }
                         }
                     } elseif ($ArgumentList -contains '--shots') {
                         if ($ArgumentList -contains '--shots-world') { $marker='reason=shots-missing-gc-source exitCode=2' }
@@ -379,12 +403,17 @@ public sealed class SmokeProcessResultTests
                 if($invalid){$result=@{Result='invalid';Error='Recorded cross-game weapon sources do not match (rac2). Attach the exact original sources used by the recording.'}}
                 else{$result=@{Result='matched';Markers=@(1,2,3);CheckpointsCompared=10}}
                 $result|ConvertTo-Json|Set-Content -LiteralPath $path
+                if($invalid){
+                    $errorText='[playtest] FAIL: '+$result.Error
+                    if($env:OBP_TEST_RUNNER_FAULT -eq 'expected-rejection-leak'){$errorText += "`nWARNING: 1 RID of type CanvasItem was leaked."}
+                    Set-Content -LiteralPath ($path+'.stderr.log') $errorText
+                }
                 if($env:OBP_TEST_RUNNER_FAULT -eq 'replay-log-rid'){Set-Content (Join-Path (Split-Path $path) 'replay-native.log') 'WARNING: 1 RID of type CanvasItem was leaked.'}
                 $global:LASTEXITCODE=if($invalid){2}else{0}
                 '@
                 if ({{{{{Quote(fault)}}}}} -eq 'stale') {
                     New-Item -ItemType Directory $out | Out-Null
-                    $samples = @(1..40 | ForEach-Object { @{Tick=$_*6;Clock=$_/10.0} })
+                    $samples = @(1..40 | ForEach-Object { @{Tick=$_*6;Clock=$_/10.0;Sequence=$null;Frame=$null;Pose=('A'*64);Attachment='{}';Facing=0;Position=@(0,0,0);Camera=@(0,0,0)} })
                     $history = @{Version=1;Baselines=@{'rac2/item:30'=$samples;'rac3/item:43'=$samples}} | ConvertTo-Json -Depth 6 -Compress
                     foreach($fps in 30,120){Set-Content (Join-Path $out "trace-$fps.json") $history}
                 }
@@ -393,7 +422,10 @@ public sealed class SmokeProcessResultTests
                 if ({{{{{Quote(runner)}}}}} -ne 'test-diagnostic-cli.ps1') {
                     $parameters.Rac1Iso=$source;$parameters.Rac2Iso=$source;$parameters.Rac3Iso=$source
                 }
+                # A previous native failure must not become this successful script's result.
+                $global:LASTEXITCODE=17
                 & (Join-Path $tools {{{{{Quote(runner)}}}}}) @parameters
+                exit $LASTEXITCODE
                 """;
             var result = await Run(shell, script);
             Assert.True((result.Code == 0) == expected, runner + ": " + fault + "\n" + result.Error + result.Output);
@@ -402,9 +434,11 @@ public sealed class SmokeProcessResultTests
                 string reason = fault switch
                 {
                     "stale" => "Native player report was not produced by this run.",
-                    "empty" or "foreign-baseline" => "missing its two weapon baselines",
-                    "partial" => "does not contain a complete four-second trial",
-                    "record-log-error" or "replay-log-rid" => "Godot lifecycle error",
+                    "empty" or "foreign-baseline" or "case-baseline" => "missing its two weapon baselines",
+                    "partial" or "reordered-trace" or "middle-clock" => "does not contain a complete four-second trial",
+                    "missing-field" or "bad-coordinate" => "missing or invalid native sample fields",
+                    "invalid-json" => "invalid JSON",
+                    "record-log-error" or "replay-log-rid" or "expected-rejection-leak" => "Godot lifecycle error",
                     _ when fault.StartsWith("negative-", StringComparison.Ordinal) => "Diagnostic CLI check bad-list failed",
                     _ => runner switch
                     {
@@ -426,8 +460,9 @@ public sealed class SmokeProcessResultTests
         {
             foreach (string shell in new[] { "powershell.exe", "pwsh" })
                 foreach (string fault in new[] { "clean", "profile", "nonzero", "no-marker", "leak", "missing-report", "stale",
-                    "partial", "bad-tick", "bad-vector", "bad-identity", "foreign-state", "missing-profile", "same-output", "alias-content" })
-                    yield return [shell, fault, fault switch { "clean" or "profile" => 0, "nonzero" => 17, "same-output" or "alias-content" => 1, _ => 2 }];
+                    "partial", "bad-tick", "bad-vector", "bad-identity", "foreign-state", "missing-profile", "same-output", "alias-content",
+                    "missing-phase", "missing-floor", "missing-support", "missing-step", "missing-contacts", "bad-contact", "empty-contacts" })
+                    yield return [shell, fault, fault switch { "clean" or "profile" or "empty-contacts" => 0, "nonzero" => 17, "same-output" or "alias-content" => 1, _ => 2 }];
         }
     }
 
@@ -464,7 +499,7 @@ public sealed class SmokeProcessResultTests
                     if((Option '--replay-forward') -ne '2' -or -not [IO.Path]::IsPathRooted($state) -or -not [IO.Path]::IsPathRooted($out)){throw 'Movement fixture argument boundary changed'}
                     $fault=$env:OBP_TEST_MOVEMENT_FAULT
                     if($fault -in 'profile','missing-profile' -and $ArgumentList -notcontains '--replay-profile'){throw 'Missing requested profiling argument'}
-                    $samples=@(0..2 | ForEach-Object { @{Tick=$_;Position=@{X=$_;Y=0;Z=0};Velocity=@{X=1;Y=0;Z=0};FacingYaw=0;ControlHeading=0} })
+                    $samples=@(0..2 | ForEach-Object { @{Tick=$_;Position=@{X=$_;Y=0;Z=0};Velocity=@{X=1;Y=0;Z=0};FacingYaw=0;ControlHeading=0;Phase='Grounded';Floor=$true;Support=$true;SmallStep='none';ContactNormals=@(@{X=0;Y=1;Z=0})} })
                     $report=@{StateFile=[IO.Path]::GetFileName($state);HostAssemblyId='00000000-0000-0000-0000-000000000001';PhysicsHz=60;Samples=$samples}
                     switch($fault){
                         'profile' {foreach($sample in $samples){$profile=@{};foreach($field in 'ElapsedMs','RenderFrame','ControllerMs','ContactMs','SlideMs','SmallStepMs','CrestMs','PresentationMs','CameraMs','EngineProcessMs','EnginePhysicsMs','RenderCpuMs','RenderGpuMs','Fps'){$profile[$field]=0};$sample.Profile=$profile}}
@@ -473,6 +508,13 @@ public sealed class SmokeProcessResultTests
                         'bad-vector' {$samples[1].Position.X='NaN'}
                         'bad-identity' {$report.HostAssemblyId=''}
                         'foreign-state' {$report.StateFile='another-state.json'}
+                        'missing-phase' {$samples[1].Remove('Phase')}
+                        'missing-floor' {$samples[1].Remove('Floor')}
+                        'missing-support' {$samples[1].Remove('Support')}
+                        'missing-step' {$samples[1].Remove('SmallStep')}
+                        'missing-contacts' {$samples[1].Remove('ContactNormals')}
+                        'bad-contact' {$samples[1].ContactNormals[0].Z='NaN'}
+                        'empty-contacts' {foreach($sample in $samples){$sample.ContactNormals=@()}}
                     }
                     if($fault -notin 'missing-report','stale'){$report|ConvertTo-Json -Depth 8|Set-Content -LiteralPath $out}
                     $output=if($fault -eq 'no-marker'){''}else{'[movement-replay] PASS; frames=2, output=fixture'}
