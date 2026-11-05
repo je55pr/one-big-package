@@ -37,7 +37,7 @@ if (!$SkipBuild) {
 function Invoke-EffectsRun([string]$RunName, [string[]]$ExtraArguments) {
     # Only remove this mode's known reports/images so stale output cannot certify a new process.
     $fresh = if ($RunName -eq 'render') { @('report.json', 'fusion-lab.png', 'rac1-LEVEL0.png', 'rac2-LEVEL1.png', 'rac3-TABLE1.png', 'obp-fusion-lab.png') }
-        elseif ($RunName -eq 'replay') { @('replay.json') } elseif ($RunName -eq 'record') { @('record.json') } else { @() }
+        elseif ($RunName -eq 'replay') { @('replay.json') } else { @() }
     foreach ($name in $fresh) {
         $path = Join-Path $output $name
         if (Test-Path -LiteralPath $path -PathType Leaf) { Remove-Item -LiteralPath $path }
@@ -51,7 +51,7 @@ function Invoke-EffectsRun([string]$RunName, [string[]]$ExtraArguments) {
     $start.RedirectStandardOutput = $true
     $start.RedirectStandardError = $true
     $start.EnvironmentVariables['OBP_EFFECT_REPLAY_STOP_FRAME'] = $RecordingStopFrame.ToString([Globalization.CultureInfo]::InvariantCulture)
-    $arguments = @('--path', (Join-Path $root 'game'), '--rendering-method', 'gl_compatibility', '--rendering-driver', 'opengl3',
+    $arguments = @('--path', (Join-Path $root 'game'), '--windowed', '--position', '-20000,-20000', '--rendering-method', 'gl_compatibility', '--rendering-driver', 'opengl3',
         '--fixed-fps', '60', '--max-fps', '60', '--resolution', '960x540', '--', '--effects-smoke', '--fixed-seed', '1234', '--no-profile',
         '--source-config', (Join-Path $output 'sources.private.json'), '--rac1-iso', $Rac1Iso, '--rac2-iso', $Rac2Iso, '--rac3-iso', $Rac3Iso) + $ExtraArguments
     # Windows CRT quoting also works on the repository's Windows PowerShell 5.1 baseline.

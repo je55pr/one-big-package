@@ -239,7 +239,8 @@ public sealed class EffectsResultTests
                     """);
                 Assert.NotEqual(0, result.Code);
                 Assert.Contains(mode == "record" ? "Effects recording is missing or empty" : $"Effects {mode} is missing its fresh", result.Output);
-                Assert.False(File.Exists(report));
+                if (mode == "record") Assert.Equal("""{"Result":"matched","Error":null,"Steps":132,"CheckpointsCompared":2}""", File.ReadAllText(report));
+                else Assert.False(File.Exists(report));
                 if (protectedTape is not null) Assert.Equal(protectedTape, Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(Path.Combine(output, "effects.jsonl.gz")))));
             }
         }
