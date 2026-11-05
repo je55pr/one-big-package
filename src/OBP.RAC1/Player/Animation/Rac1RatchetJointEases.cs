@@ -63,6 +63,7 @@ public sealed class Rac1RatchetJointEases
     private readonly int[] _tailTimer = new int[4];
     private readonly float[] _tailPitch = new float[4], _tailYaw = new float[4];
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "S2245", Justification = "Cosmetic idle wander timing for animation; a seedable, deterministic generator is required for replayable tests and has no security role.")]
     public Rac1RatchetJointEases(Rac1HeroEaseTable table, int seed = 0x52414331)
     {
         _table = table ?? throw new ArgumentNullException(nameof(table));
