@@ -9,7 +9,8 @@ function Invoke-ObpNativeProcessCapture {
         [Parameter(Mandatory = $true)][string]$StandardOutputPath,
         [Parameter(Mandatory = $true)][string]$StandardErrorPath,
         [string]$WorkingDirectory = (Get-Location).Path,
-        [scriptblock]$OnOutput
+        [scriptblock]$OnOutput,
+        [ValidateRange(0, 2147483647)][int]$TimeoutSeconds = 0
     )
     $start = New-Object System.Diagnostics.ProcessStartInfo
     $start.FileName = $FilePath
@@ -38,12 +39,16 @@ function Invoke-ObpNativeProcessCapture {
         }
         [void]$process.Start()
         $started = $true
+        $watch = [Diagnostics.Stopwatch]::StartNew()
         if ($OnOutput) {
             # Service both asynchronous reads from this PowerShell runspace.
             # Event callbacks on native threads cannot safely invoke script blocks.
             $stdoutRead = $process.StandardOutput.ReadLineAsync()
             $stderrRead = $process.StandardError.ReadLineAsync()
             while ($null -ne $stdoutRead -or $null -ne $stderrRead) {
+                if ($TimeoutSeconds -gt 0 -and $watch.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
+                    throw [TimeoutException]::new("Native process timed out after $TimeoutSeconds seconds. Stdout: $StandardOutputPath; stderr: $StandardErrorPath")
+                }
                 if ($null -ne $stdoutRead -and $stdoutRead.IsCompleted) {
                     $line = $stdoutRead.GetAwaiter().GetResult()
                     if ($null -eq $line) { $stdoutRead = $null }
@@ -65,13 +70,21 @@ function Invoke-ObpNativeProcessCapture {
                 $pending = @($stdoutRead, $stderrRead) | Where-Object { $null -ne $_ }
                 if ($pending) { [Threading.Tasks.Task]::WaitAny([Threading.Tasks.Task[]]@($pending), 100) | Out-Null }
             }
-            while (-not $process.WaitForExit(100)) { }
+            while (-not $process.WaitForExit(100)) {
+                if ($TimeoutSeconds -gt 0 -and $watch.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
+                    throw [TimeoutException]::new("Native process timed out after $TimeoutSeconds seconds. Stdout: $StandardOutputPath; stderr: $StandardErrorPath")
+                }
+            }
             return $process.ExitCode
         }
         # Drain both pipes concurrently; a full stderr pipe must not deadlock stdout.
         $stdout = $process.StandardOutput.ReadToEndAsync()
         $stderr = $process.StandardError.ReadToEndAsync()
-        while (-not $process.WaitForExit(100)) { }
+        while (-not $process.WaitForExit(100)) {
+            if ($TimeoutSeconds -gt 0 -and $watch.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
+                throw [TimeoutException]::new("Native process timed out after $TimeoutSeconds seconds. Stdout: $StandardOutputPath; stderr: $StandardErrorPath")
+            }
+        }
         [IO.File]::WriteAllText($StandardOutputPath, $stdout.GetAwaiter().GetResult(), $utf8)
         [IO.File]::WriteAllText($StandardErrorPath, $stderr.GetAwaiter().GetResult(), $utf8)
         return $process.ExitCode
@@ -89,7 +102,7 @@ function Invoke-ObpNativeProcessCapture {
                     }
                 }
             }
-            catch [InvalidOperationException] { } # The process may exit between HasExited and Kill.
+            catch [InvalidOperationException] { Write-Verbose 'Native child exited during cleanup.' }
             catch { Write-Warning -WarningAction Continue "Native child cleanup failed: $($_.Exception.Message)" }
         }
         if ($stdoutWriter) { $stdoutWriter.Dispose() }

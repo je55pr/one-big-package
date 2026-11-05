@@ -307,6 +307,8 @@ public sealed class SmokeProcessResultTests
     [InlineData("pwsh", "fusion-weapons-smoke.ps1", "replay-log-rid", false)]
     [InlineData("powershell.exe", "fusion-weapons-smoke.ps1", "expected-rejection-leak", false)]
     [InlineData("pwsh", "fusion-weapons-smoke.ps1", "expected-rejection-leak", false)]
+    [InlineData("powershell.exe", "fusion-weapons-smoke.ps1", "expected-file-rejection-leak", false)]
+    [InlineData("pwsh", "fusion-weapons-smoke.ps1", "expected-file-rejection-leak", false)]
     public async Task LifecycleRunnersRejectLeaksAndRequireFreshCompleteTrials(string shell, string runner, string fault, bool expected)
     {
         shell = RequireShell(shell);
@@ -407,6 +409,9 @@ public sealed class SmokeProcessResultTests
                     $errorText='[playtest] FAIL: '+$result.Error
                     if($env:OBP_TEST_RUNNER_FAULT -eq 'expected-rejection-leak'){$errorText += "`nWARNING: 1 RID of type CanvasItem was leaked."}
                     Set-Content -LiteralPath ($path+'.stderr.log') $errorText
+                    $fileText='[playtest] FAIL: '+$result.Error
+                    if($env:OBP_TEST_RUNNER_FAULT -eq 'expected-file-rejection-leak'){$fileText += "`nWARNING: 1 RID of type CanvasItem was leaked."}
+                    Set-Content -LiteralPath ($path+'.log') $fileText
                 }
                 if($env:OBP_TEST_RUNNER_FAULT -eq 'replay-log-rid'){Set-Content (Join-Path (Split-Path $path) 'replay-native.log') 'WARNING: 1 RID of type CanvasItem was leaked.'}
                 $global:LASTEXITCODE=if($invalid){2}else{0}
@@ -438,7 +443,7 @@ public sealed class SmokeProcessResultTests
                     "partial" or "reordered-trace" or "middle-clock" => "does not contain a complete four-second trial",
                     "missing-field" or "bad-coordinate" => "missing or invalid native sample fields",
                     "invalid-json" => "invalid JSON",
-                    "record-log-error" or "replay-log-rid" or "expected-rejection-leak" => "Godot lifecycle error",
+                    "record-log-error" or "replay-log-rid" or "expected-rejection-leak" or "expected-file-rejection-leak" => "Godot lifecycle error",
                     _ when fault.StartsWith("negative-", StringComparison.Ordinal) => "Diagnostic CLI check bad-list failed",
                     _ => runner switch
                     {
@@ -461,7 +466,7 @@ public sealed class SmokeProcessResultTests
             foreach (string shell in new[] { "powershell.exe", "pwsh" })
                 foreach (string fault in new[] { "clean", "profile", "nonzero", "no-marker", "leak", "missing-report", "stale",
                     "partial", "bad-tick", "bad-vector", "bad-identity", "foreign-state", "missing-profile", "same-output", "alias-content",
-                    "missing-phase", "missing-floor", "missing-support", "missing-step", "missing-contacts", "bad-contact", "empty-contacts" })
+                    "missing-phase", "missing-floor", "missing-support", "missing-step", "missing-contacts", "bad-contact", "empty-contacts", "numeric-overflow" })
                     yield return [shell, fault, fault switch { "clean" or "profile" or "empty-contacts" => 0, "nonzero" => 17, "same-output" or "alias-content" => 1, _ => 2 }];
         }
     }
@@ -516,7 +521,11 @@ public sealed class SmokeProcessResultTests
                         'bad-contact' {$samples[1].ContactNormals[0].Z='NaN'}
                         'empty-contacts' {foreach($sample in $samples){$sample.ContactNormals=@()}}
                     }
-                    if($fault -notin 'missing-report','stale'){$report|ConvertTo-Json -Depth 8|Set-Content -LiteralPath $out}
+                    if($fault -notin 'missing-report','stale'){
+                        $json=$report|ConvertTo-Json -Depth 8 -Compress
+                        if($fault -eq 'numeric-overflow'){$json=$json.Replace('"X":1','"X":1e999')}
+                        Set-Content -LiteralPath $out $json
+                    }
                     $output=if($fault -eq 'no-marker'){''}else{'[movement-replay] PASS; frames=2, output=fixture'}
                     $errorText=if($fault -eq 'leak'){'WARNING: 1 RID of type CanvasItem was leaked.'}else{''}
                     return [pscustomobject]@{Code=$(if($fault -eq 'nonzero'){17}else{0});Output=$output;Error=$errorText}
@@ -556,6 +565,32 @@ public sealed class SmokeProcessResultTests
             var result = await Run(shell, script);
             Assert.True(result.Code == expectedExit, fault + ": expected " + expectedExit + ", got " + result.Code + "\n" + result.Error + result.Output);
             Assert.Equal(state, File.ReadAllText(Path.Combine(directory, "state.json")));
+            if (expectedExit != 0)
+            {
+                string text = result.Error + result.Output;
+                string reason = fault switch
+                {
+                    "nonzero" => "Smoke native process exited with code 17",
+                    "no-marker" or "leak" => "Smoke did not complete cleanly",
+                    "missing-report" or "stale" => "did not produce a fresh report",
+                    "partial" => "initial sample and every requested physics update",
+                    "bad-tick" => "ticks are incomplete or out of order",
+                    "bad-vector" => "missing or non-finite position/velocity coordinate",
+                    "bad-identity" or "foreign-state" => "state/build/physics identity",
+                    "missing-profile" => "missing requested timing measurements",
+                    "same-output" or "alias-content" => "must not overwrite the input state",
+                    "missing-phase" or "missing-floor" or "missing-support" or "missing-step" or "missing-contacts" => "missing phase/support/contact state",
+                    "bad-contact" => "missing or non-finite contact normal coordinate",
+                    "numeric-overflow" => text.Contains("unrepresentable number", StringComparison.Ordinal) ? "unrepresentable number" : "missing or non-finite position/velocity coordinate",
+                    _ => throw new ArgumentOutOfRangeException(nameof(fault)),
+                };
+                Assert.Contains(reason, text);
+                if (fault == "leak")
+                {
+                    string stderr = Assert.Single(Directory.GetFiles(directory, "stderr.log", SearchOption.AllDirectories));
+                    Assert.Contains("RID of type CanvasItem was leaked", File.ReadAllText(stderr));
+                }
+            }
         }
         finally { Directory.Delete(directory, recursive: true); }
     }

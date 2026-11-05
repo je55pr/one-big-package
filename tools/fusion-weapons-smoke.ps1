@@ -71,7 +71,8 @@ try {
 finally { $env:OBP_FUSION_CAPTURE_DIR = $previousCapture }
 foreach ($log in Get-ChildItem -LiteralPath $Out -Filter '*.log') {
     $text = [IO.File]::ReadAllText($log.FullName)
-    if ($log.Name -ceq ([IO.Path]::GetFileName($invalidReport) + '.stderr.log')) {
+    if ($log.Name -ceq ([IO.Path]::GetFileName($invalidReport) + '.stderr.log') -or
+        $log.Name -ceq ([IO.Path]::GetFileName($invalidReport) + '.log')) {
         # The report and exit code above already establish this exact expected
         # rejection. Every other line, including leaks, still goes through the gate.
         $expectedLine = '[playtest] FAIL: ' + $expectedError

@@ -24,6 +24,7 @@ function Write-ObpSmokeOutput {
 }
 
 function Remove-ObpSmokeHistory {
+    [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Low')]
     param([Parameter(Mandatory = $true)][string]$Root)
     $rootPath = [IO.Path]::GetFullPath($Root).TrimEnd([IO.Path]::DirectorySeparatorChar)
     $completed = @(Get-ChildItem -LiteralPath $rootPath -Directory | Where-Object {
@@ -35,7 +36,22 @@ function Remove-ObpSmokeHistory {
     # outcome. Active histories are ineligible for deletion.
     for ($index = 0; $index -lt $completed.Count; $index++) {
         if ($index -ge 50 -or $completed[$index].LastWriteTimeUtc -lt [DateTime]::UtcNow.AddDays(-14)) {
-            Remove-Item -LiteralPath $completed[$index].FullName -Recurse -Force
+            $path = $completed[$index].FullName
+            if ($PSCmdlet.ShouldProcess($path, 'Remove expired completed smoke history')) {
+                try { Remove-Item -LiteralPath $path -Recurse -Force -ErrorAction Stop }
+                catch {
+                    # A partial deletion must remain eligible for a later retry.
+                    try {
+                        if (Test-Path -LiteralPath $path -PathType Container) {
+                            [IO.File]::WriteAllText((Join-Path $path '.complete'), 'cleanup-incomplete')
+                            # Restoring the marker must not promote old evidence into the newest fifty.
+                            (Get-Item -LiteralPath $path).LastWriteTimeUtc = $completed[$index].LastWriteTimeUtc
+                        }
+                    }
+                    catch { Write-Verbose 'Could not restore the completed-history marker.' }
+                    Write-Warning -WarningAction Continue "Could not remove completed smoke history $path. Continuing retention."
+                }
+            }
         }
     }
 }
@@ -45,7 +61,8 @@ function Invoke-ObpSmokeProcess {
         [Parameter(Mandatory = $true)][string]$FilePath,
         [Parameter(Mandatory = $true)][string[]]$ArgumentList,
         [Parameter(Mandatory = $true)][string]$CompletionMarker,
-        [string]$WorkingDirectory = (Get-Location).Path
+        [string]$WorkingDirectory = (Get-Location).Path,
+        [ValidateRange(1, 2147483647)][int]$TimeoutSeconds = 900
     )
     $historyRoot = $env:OBP_SMOKE_RESULTS_ROOT
     if ([string]::IsNullOrWhiteSpace($historyRoot)) { $historyRoot = Join-Path $PSScriptRoot '../.build/smoke-results' }
@@ -57,7 +74,7 @@ function Invoke-ObpSmokeProcess {
     Write-ObpSmokeOutput "Smoke native stdout/stderr: $logs"
     try {
         $code = Invoke-ObpNativeProcessCapture -FilePath $FilePath -ArgumentList $ArgumentList -WorkingDirectory $WorkingDirectory `
-        -StandardOutputPath $stdout -StandardErrorPath $stderr -OnOutput { param($line) Write-ObpSmokeOutput $line }
+        -StandardOutputPath $stdout -StandardErrorPath $stderr -TimeoutSeconds $TimeoutSeconds -OnOutput { param($line) Write-ObpSmokeOutput $line }
     }
     finally {
         # Native cleanup has finished before this run becomes eligible for retention.

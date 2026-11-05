@@ -62,7 +62,8 @@ function Test-ObpMovementReplayNumber {
 }
 try {
     if (-not (Test-Path -LiteralPath $Out -PathType Leaf)) { throw 'Movement replay did not produce a fresh report.' }
-    $report = Get-Content -LiteralPath $Out -Raw | ConvertFrom-Json
+    try { $report = Get-Content -LiteralPath $Out -Raw | ConvertFrom-Json }
+    catch { throw 'Movement replay report is invalid JSON or contains an unrepresentable number.' }
     $assembly = [guid]::Empty
     if ($report.StateFile -cne [IO.Path]::GetFileName($State) -or
         -not [guid]::TryParse([string]$report.HostAssemblyId, [ref]$assembly) -or $assembly -eq [guid]::Empty -or

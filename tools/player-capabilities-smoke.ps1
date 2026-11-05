@@ -60,7 +60,7 @@ foreach ($fps in @(30, 120)) {
             foreach ($field in @('Tick', 'Sequence', 'Frame', 'Pose', 'Attachment', 'Facing', 'Position', 'Camera', 'Clock')) {
                 if ($null -eq $sample.PSObject.Properties[$field]) { throw "Native player report has missing or invalid native sample fields: $field." }
             }
-            if ($sample.Pose -isnot [string] -or $sample.Pose -notmatch '^[a-f0-9]{64}$' -or
+            if ($sample.Pose -isnot [string] -or $sample.Pose -notmatch '^[A-Fa-f0-9]{64}$' -or
                 $sample.Attachment -isnot [string] -or [string]::IsNullOrWhiteSpace($sample.Attachment) -or
                 -not (Test-ObpPlayerTrialNumber $sample.Facing) -or
                 ($null -ne $sample.Sequence -and $sample.Sequence -isnot [string]) -or
