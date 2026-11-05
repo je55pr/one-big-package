@@ -39,7 +39,7 @@ public sealed class Rac1TaxiNativeHoverTests
                 thirty.Advance(1d / 30d);
             oneTwenty.Advance(1d / 120d);
             oneTwenty.Advance(1d / 120d);
-            if (i % 2 == 1)
+            if (i % 2 != 0)
             {
                 Assert.Equal(sixty.HeightOffset, thirty.HeightOffset, 10);
                 Assert.Equal(sixty.HeightOffset, oneTwenty.HeightOffset, 10);

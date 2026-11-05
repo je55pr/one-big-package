@@ -87,7 +87,7 @@ public sealed class Rac1TaxiNativeYawSeekTests
             fast.Advance(-1.3, Frame / 2);
             if (i % 2 == 0)
                 slow.Advance(-1.3, Frame * 2);
-            if (i % 2 == 1)
+            if (i % 2 != 0)
             {
                 Assert.Equal(native.HeadingRadians, slow.HeadingRadians, 10);
                 Assert.Equal(native.HeadingRadians, fast.HeadingRadians, 10);

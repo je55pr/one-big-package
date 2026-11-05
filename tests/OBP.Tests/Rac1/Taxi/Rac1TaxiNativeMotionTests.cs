@@ -55,7 +55,7 @@ public sealed class Rac1TaxiNativeMotionTests
                 halfRate.Advance(1d / 30);
             doubleRate.Advance(1d / 120);
             doubleRate.Advance(1d / 120);
-            if (i % 2 == 1)
+            if (i % 2 != 0)
             {
                 Compare(halfRate);
                 Compare(doubleRate);
