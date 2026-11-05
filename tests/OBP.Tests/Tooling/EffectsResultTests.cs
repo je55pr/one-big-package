@@ -53,7 +53,7 @@ public sealed class EffectsResultTests
                 for (int index = 0; index < steps; index++)
                 {
                     int frame = index / 2;
-                    object[] commands = index % 2 == 1 && frame is 1 or 30 or 40 && fault != "missing-commands"
+                    object[] commands = index % 2 != 0 && frame is 1 or 30 or 40 && fault != "missing-commands"
                         ? [new { Kind = "effects", Value = frame == 30 ? "reset" : "start" }] : [];
                     writer.WriteLine(JsonSerializer.Serialize(new
                     {
@@ -164,9 +164,85 @@ public sealed class EffectsResultTests
         return executable!;
     }
 
+    [SkippableTheory]
+    [InlineData("powershell")]
+    [InlineData("pwsh")]
+    public async Task ZeroExitNativeRunnerCannotUseStaleEvidenceOrOmitFreshOutputs(string shell)
+    {
+        string executable = RequireShell(shell);
+        string directory = Path.Combine(Path.GetTempPath(), "obp effects native stub " + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            // Executable protocol stub only: no game, source bytes, rendering or native parity.
+            File.WriteAllText(Path.Combine(directory, "Stub.csproj"), """
+                <Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework></PropertyGroup></Project>
+                """);
+            File.WriteAllText(Path.Combine(directory, "Program.cs"), """
+                System.Console.WriteLine("[effects-smoke] PASS:");
+                System.Console.WriteLine("[playtest] SAVED synthetic; steps=132; markers=0");
+                System.Console.WriteLine("reason=playtest-record-smoke-pass exitCode=0");
+                System.Console.WriteLine("[playtest] PASS;");
+                System.Console.WriteLine("reason=playtest-replay-complete exitCode=0");
+                """);
+            string build = Path.Combine(directory, "compiled");
+            var compiled = await Run(executable, $"""
+                $ErrorActionPreference='Stop'
+                & dotnet build {Quote(Path.Combine(directory, "Stub.csproj"))} -o {Quote(build)} --nologo
+                exit $LASTEXITCODE
+                """);
+            Assert.True(compiled.Code == 0, compiled.Output);
+            string native = Path.Combine(build, OperatingSystem.IsWindows() ? "Stub.exe" : "Stub");
+            foreach (string mode in new[] { "render", "record", "replay" })
+            {
+                string output = Path.Combine(directory, mode);
+                Directory.CreateDirectory(output);
+                if (mode == "replay")
+                {
+                    using var file = File.Create(Path.Combine(output, "effects.jsonl.gz"));
+                    using var gzip = new GZipStream(file, CompressionMode.Compress);
+                    using var writer = new StreamWriter(gzip);
+                    writer.WriteLine("""{"Header":{"Version":2,"Destination":"obp:fusion-lab"}}""");
+                    for (int index = 0; index < 132; index++)
+                    {
+                        int frame = index / 2;
+                        object[] commands = index % 2 != 0 && frame is 1 or 30 or 40
+                            ? [new { Kind = "effects", Value = frame == 30 ? "reset" : "start" }] : [];
+                        writer.WriteLine(JsonSerializer.Serialize(new
+                        {
+                            Step = new
+                            {
+                                Index = index,
+                                Kind = index % 2,
+                                Checkpoint = index == 131 ? new { Synthetic = true } : null,
+                                Commands = commands
+                            }
+                        }));
+                    }
+                    writer.WriteLine("""{"End":{"Steps":132,"Reason":"saved"}}""");
+                }
+                string? protectedTape = mode == "replay" ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(Path.Combine(output, "effects.jsonl.gz")))) : null;
+                string report = Path.Combine(output, mode == "render" ? "report.json" : "replay.json");
+                File.WriteAllText(report, """{"Result":"matched","Error":null,"Steps":132,"CheckpointsCompared":2}""");
+                var result = await Run(executable, $"""
+                    $ErrorActionPreference='Stop'
+                    & {Quote(Path.Combine(RepoPaths.Root, "tools/test-effects.ps1"))} -SkipBuild -Mode {mode} `
+                        -Godot {Quote(native)} -Rac1Iso {Quote(native)} -Rac2Iso {Quote(native)} -Rac3Iso {Quote(native)} `
+                        -OutputDirectory {Quote(output)}
+                    """);
+                Assert.NotEqual(0, result.Code);
+                Assert.Contains(mode == "record" ? "Effects recording is missing or empty" : "Cannot find path", result.Output);
+                if (mode != "record") Assert.False(File.Exists(report));
+                if (protectedTape is not null) Assert.Equal(protectedTape, Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(Path.Combine(output, "effects.jsonl.gz")))));
+            }
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
     private static async Task<(int Code, string Output)> Run(string executable, string script)
     {
-        var start = new ProcessStartInfo(executable) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+        Assert.True(File.Exists(executable));
+        var start = new ProcessStartInfo(executable) { WorkingDirectory = RepoPaths.Root, UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         foreach (string argument in new[] { "-NoProfile", "-NonInteractive", "-EncodedCommand", Convert.ToBase64String(Encoding.Unicode.GetBytes(script)) }) start.ArgumentList.Add(argument);
         using var process = Process.Start(start)!;
         var stdout = process.StandardOutput.ReadToEndAsync(); var stderr = process.StandardError.ReadToEndAsync();

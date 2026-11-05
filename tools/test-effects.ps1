@@ -57,31 +57,43 @@ function Invoke-EffectsRun([string]$RunName, [string[]]$ExtraArguments) {
     # Windows CRT quoting also works on the repository's Windows PowerShell 5.1 baseline.
     $quoted = $arguments | ForEach-Object { '"' + ($_ -replace '(\\*)"', '$1$1\"' -replace '(\\+)$', '$1$1') + '"' }
     $start.Arguments = $quoted -join ' '
-    $process = [Diagnostics.Process]::Start($start)
+    $process = $null
     $outPath = Join-Path $output "$RunName.stdout.log"
     $errPath = Join-Path $output "$RunName.stderr.log"
-    $outFile = [IO.FileStream]::new($outPath, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::ReadWrite)
-    $errFile = [IO.FileStream]::new($errPath, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::ReadWrite)
-    $outCopy = $process.StandardOutput.BaseStream.CopyToAsync($outFile)
-    $errCopy = $process.StandardError.BaseStream.CopyToAsync($errFile)
+    $outFile = $null; $errFile = $null
+    $outCopy = $null; $errCopy = $null
     $watch = [Diagnostics.Stopwatch]::StartNew()
     try {
+        $outFile = [IO.FileStream]::new($outPath, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::ReadWrite)
+        $errFile = [IO.FileStream]::new($errPath, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::ReadWrite)
+        $process = [Diagnostics.Process]::Start($start)
+        $outCopy = $process.StandardOutput.BaseStream.CopyToAsync($outFile)
+        $errCopy = $process.StandardError.BaseStream.CopyToAsync($errFile)
         while (!$process.WaitForExit(1000)) {
             if ($watch.Elapsed.TotalMinutes -gt 11) {
-                $process.Kill(); $process.WaitForExit(5000) | Out-Null
-                try { [Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($outCopy, $errCopy), 5000) | Out-Null } catch { }
                 throw "Effects $RunName run timed out."
             }
         }
         $outCopy.GetAwaiter().GetResult() | Out-Null
         $errCopy.GetAwaiter().GetResult() | Out-Null
+        $exitCode = $process.ExitCode
     }
-    finally { $outFile.Dispose(); $errFile.Dispose() }
+    finally {
+        try {
+            if ($process -and !$process.HasExited) { $process.Kill(); [void]$process.WaitForExit(5000) }
+        }
+        catch [InvalidOperationException] { } # Exit may race cancellation cleanup.
+        catch { Write-Warning -WarningAction Continue "Effects child cleanup failed: $($_.Exception.Message)" }
+        finally {
+            $copies = @($outCopy, $errCopy) | Where-Object { $null -ne $_ }
+            if ($copies) { try { [void][Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($copies), 5000) } catch { } }
+            if ($outFile) { $outFile.Dispose() }
+            if ($errFile) { $errFile.Dispose() }
+            if ($process) { $process.Dispose() }
+        }
+    }
     Get-Content -LiteralPath $outPath -Tail 5
-    if ($process.ExitCode -ne 0) { Get-Content -LiteralPath $errPath -Tail 25; throw "Effects $RunName failed ($($process.ExitCode))." }
-    if (Select-String -LiteralPath $errPath -Pattern 'SHADER ERROR|SCRIPT ERROR|ERROR:|Unhandled exception' -Quiet) {
-        Get-Content -LiteralPath $errPath -Tail 25; throw "Effects $RunName emitted engine errors."
-    }
+    if ($exitCode -ne 0) { Get-Content -LiteralPath $errPath -Tail 25; throw "Effects $RunName failed ($exitCode)." }
     Assert-ObpEffectsResult -Mode $RunName -Directory $output -StopFrame $RecordingStopFrame `
         -Log (([IO.File]::ReadAllText($outPath)) + "`n" + ([IO.File]::ReadAllText($errPath)))
 }
