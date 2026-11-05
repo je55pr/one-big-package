@@ -109,6 +109,20 @@ public sealed class PlayerSkeletalSampler
         }
     }
 
+    /// <summary>
+    /// Post-multiply a local rotation offset onto an already resolved joint, so
+    /// procedural joint work composes over every animation layer before the
+    /// hierarchy is evaluated. The offset uses the same channel convention as the
+    /// source rotations.
+    /// </summary>
+    public void ComposeLocalRotation(int joint, Quaternion offset)
+    {
+        if ((uint)joint >= _local.Length) throw new ArgumentOutOfRangeException(nameof(joint));
+        if (!Finite(offset)) throw new ArgumentException("Invalid procedural joint rotation.", nameof(offset));
+        var channels = _local[joint];
+        _local[joint] = channels with { Rotation = Quaternion.Normalize(Quaternion.Multiply(channels.Rotation, offset)) };
+    }
+
     public double[] Skin(double[]? baseline = null, IReadOnlyCollection<int>? changedJoints = null)
     {
         if (baseline is not null && baseline.Length != _skin.Positions.Length)

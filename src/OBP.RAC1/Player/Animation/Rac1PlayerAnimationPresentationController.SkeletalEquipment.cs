@@ -43,6 +43,13 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     public PlayerAnimationPresentation ApplySourceEquipment(PlayerEquipmentAnimationSource source,
         bool moving, bool crouching, bool useStarted, bool triggerHeld)
     {
+        ApplySourceEquipmentCore(source, moving, crouching, useStarted, triggerHeld);
+        return ApplyJointEases();
+    }
+
+    private PlayerAnimationPresentation ApplySourceEquipmentCore(PlayerEquipmentAnimationSource source,
+        bool moving, bool crouching, bool useStarted, bool triggerHeld)
+    {
         RestoreEquipmentBasePose();
         if (_equipmentRig is null) throw new InvalidOperationException("Avatar has no admitted skeletal skin.");
         var basis = EquipmentBaseSample();
@@ -61,6 +68,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
             body?.BlendKey, body?.Progress ?? 1, initial);
         var sockets = _attachments.GetOrCreateValue(positions);
         sockets[PlayerEquipmentPose.HandAttachmentKey] = _equipmentRig.Attachment(plan.HandJoint);
+        _sourceHandJoint = plan.HandJoint;
         sockets[Rac1WrenchAttachment.SocketKey] = _equipmentRig.Attachment(56);
         sockets[Gameplay.Rac1BombProjectileSession.GloveSocketKey] = _equipmentRig.Attachment(54);
         _equipmentBase = Current;
