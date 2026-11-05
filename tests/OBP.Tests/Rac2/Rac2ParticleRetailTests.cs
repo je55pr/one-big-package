@@ -148,7 +148,7 @@ public sealed class Rac2ParticleRetailTests
         string program = Oracle(); using var fixture = new Fixture();
         var instance = fixture.Instances[0];
         Compare(program, fixture, instance, instance.PVarData!, 1234, 1, false, 100);
-        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => Compare(program, fixture, instance,
+        Assert.Throws<Xunit.Sdk.EqualException>(() => Compare(program, fixture, instance,
             instance.PVarData!, 1234, 1, false, 100, rows => duplicate
                 ? rows.Append(rows.First(row => row[0] == kind && row[1] == "0").ToArray()).ToArray()
                 : rows.Where(row => row[0] != kind || row[1] != "0").ToArray()));
@@ -160,7 +160,7 @@ public sealed class Rac2ParticleRetailTests
         string program = Oracle(); using var fixture = new Fixture();
         var instance = fixture.Instances[0];
         Compare(program, fixture, instance, instance.PVarData!, 1234, 1, false, 100);
-        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => Compare(program, fixture, instance,
+        Assert.Throws<Xunit.Sdk.ContainsException>(() => Compare(program, fixture, instance,
             instance.PVarData!, 1234, 1, false, 100, rows => rows.Where(row => row[0] != "R").ToArray()));
     }
 
@@ -235,7 +235,7 @@ public sealed class Rac2ParticleRetailTests
         RequireProtocolCohorts(rows.ToArray(), 1);
         if (duplicate) rows.Add(rows.First(row => row[0] == kind && row[1] == "0").ToArray());
         else Assert.True(rows.Remove(rows.First(row => row[0] == kind && row[1] == "1")));
-        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => RequireProtocolCohorts(rows.ToArray(), 1));
+        Assert.Throws<Xunit.Sdk.EqualException>(() => RequireProtocolCohorts(rows.ToArray(), 1));
     }
 
     [Theory]
@@ -251,7 +251,7 @@ public sealed class Rac2ParticleRetailTests
         RequireProtocolCohorts(rows, 1);
         int first = Array.FindIndex(rows, row => row[0] == kind);
         (rows[first], rows[first + 1]) = (rows[first + 1], rows[first]);
-        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => RequireProtocolCohorts(rows, 1));
+        Assert.Throws<Xunit.Sdk.EqualException>(() => RequireProtocolCohorts(rows, 1));
     }
 
     private static int FirstDifference(byte[] a, byte[] b) => Enumerable.Range(0, a.Length).FirstOrDefault(i => a[i] != b[i], -1);
