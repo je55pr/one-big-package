@@ -36,8 +36,16 @@ public sealed class Rac3NativeMobyRecoveryTests
         Assert.Equal(expandedTriangles, world.TotalDynamicTriangles +
             (world.AnimatedMeshes?.Sum(m => m.TriangleCount) ?? 0));
         Assert.True(world.TotalDynamicTriangles > oldWorld.TotalDynamicTriangles);
-        Assert.All(world.DynamicObjects.SelectMany(o => o.Meshes).SelectMany(m => m.Positions),
-            p => Assert.True(double.IsFinite(p)));
+        var meshes = world.DynamicObjects.SelectMany(o => o.Meshes).ToArray();
+        Assert.NotEmpty(meshes);
+        Assert.All(meshes, mesh =>
+        {
+            Assert.NotEmpty(mesh.Positions);
+            Assert.Equal(0, mesh.Positions.Length % 3);
+            Assert.NotEmpty(mesh.Indices);
+            Assert.All(mesh.Positions, p => Assert.True(double.IsFinite(p)));
+            Assert.All(mesh.Indices, index => Assert.InRange(index, 0, mesh.Positions.Length / 3 - 1));
+        });
     }
 
     [SkippableFact]
@@ -81,6 +89,8 @@ public sealed class Rac3NativeMobyRecoveryTests
         var native = Rac3Assets.ReadMobyClasses(core, textureCount, nativePoseOverride: true).Decoded[7158].Mesh;
         Assert.True(legacy.SkinningApplied);
         Assert.True(native.SkinningApplied);
+        Assert.NotEmpty(legacy.Indices);
+        Assert.NotEmpty(legacy.Positions);
         Assert.Equal(legacy.Indices, native.Indices);
         Assert.Equal(legacy.Positions, native.Positions);
         Assert.False(native.NativeInitialPoseApplied);
@@ -94,6 +104,10 @@ public sealed class Rac3NativeMobyRecoveryTests
         var path = Path.Combine(RepoPaths.Root, "research", "generated",
             "rac3-ntscu-original.production-import-census.json");
         using var document = JsonDocument.Parse(File.ReadAllText(path));
+        Assert.Equal(51, document.RootElement.GetProperty("rows").GetArrayLength());
+        Assert.Equal(
+            Rac3DestinationCatalogue.Instance.Destinations.Select(destination => Rac3WorldProvider.Instance.ResolveTableIndex(destination)!.Value).Order(),
+            document.RootElement.GetProperty("rows").EnumerateArray().Select(row => row.GetProperty("tableIndex").GetInt32()).Order());
         using var reader = new FileRandomAccessReader(iso!);
         foreach (var row in document.RootElement.GetProperty("rows").EnumerateArray())
         {
@@ -140,8 +154,36 @@ public sealed class Rac3NativeMobyRecoveryTests
         var animated = Assert.IsAssignableFrom<IReadOnlyList<OBP.Runtime.RuntimeAnimatedMesh>>(world.AnimatedMeshes);
         Assert.Equal(45, animated.Count);
         Assert.Equal(37_922, animated.Sum(m => m.TriangleCount));
-        Assert.All(animated, m => Assert.All(m.Frames.SelectMany(frame => frame),
-            value => Assert.True(double.IsFinite(value))));
+        foreach (var (oClass, sequenceId, frames, instances, surfaces) in new[]
+        {
+            (6800, 2, 9, new[] { 665, 666, 667, 668 }, 2),
+            (6577, 2, 11, new[] { 513, 514, 515 }, 1),
+            (6317, 4, 25, new[] { 477, 478, 479 }, 2),
+            (6886, 15, 8, Enumerable.Range(672, 28).ToArray(), 1),
+        })
+            foreach (int instanceId in instances)
+            {
+                var meshes = animated.Where(m => m.Name.StartsWith($"uya-preview-moby{oClass}_i{instanceId}_", StringComparison.Ordinal)).ToArray();
+                Assert.Equal(surfaces, meshes.Length);
+                Assert.All(meshes, mesh =>
+                {
+                    Assert.Contains($"_s{sequenceId}_", mesh.Name, StringComparison.Ordinal);
+                    Assert.Equal(frames, mesh.Frames.Count);
+                });
+            }
+        Assert.All(animated, m =>
+        {
+            Assert.NotEmpty(m.Frames);
+            Assert.NotEmpty(m.Frames[0]);
+            Assert.Equal(0, m.Frames[0].Length % 3);
+            Assert.NotEmpty(m.Indices);
+            Assert.All(m.Indices, index => Assert.InRange(index, 0, m.Frames[0].Length / 3 - 1));
+            Assert.All(m.Frames, frame =>
+            {
+                Assert.Equal(m.Frames[0].Length, frame.Length);
+                Assert.All(frame, value => Assert.True(double.IsFinite(value)));
+            });
+        });
 
         // This class is the native-sphere outlier. Verify its rendered preview
         // uses native inverse-bind poses, not the old rotation-only evaluator.
@@ -151,9 +193,13 @@ public sealed class Rac3NativeMobyRecoveryTests
         var cls = Rac3Assets.ReadMobyClasses(opened.Core, texCount, nativePoseOverride: true).Decoded[6317];
         var sequence = cls.Sequences.Single(s => s.Index == 4);
         var native = Ps2MobyNativePose.Pose(cls.NativePoseSource!, cls.Mesh, sequence.Frames[0]);
+        Assert.NotEmpty(native);
+        Assert.Equal(cls.Mesh.Positions.Length, native.Length);
         var instance = gameplay.MobyInstances.Single(m => m.Index == 477 && m.OClass == 6317);
         var transform = Rac3Gameplay.MobyTransform(instance);
         var preview = animated.First(m => m.Name.StartsWith("uya-preview-moby6317_i477_", StringComparison.Ordinal));
+        Assert.Equal(sequence.Frames.Count, preview.Frames.Count);
+        Assert.Equal(native.Length, preview.Frames[0].Length);
         for (int i = 0; i < Math.Min(30, native.Length); i += 3)
         {
             double x = native[i], y = native[i + 2], z = native[i + 1];

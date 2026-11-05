@@ -196,7 +196,7 @@ public partial class AmbientUvScrollProbe : Node
     private void VerifyRetailSkyGroupIfAvailable()
     {
         string? iso = System.Environment.GetEnvironmentVariable("OBP_UYA_ISO");
-        if (string.IsNullOrWhiteSpace(iso) || !System.IO.File.Exists(iso))
+        if (string.IsNullOrWhiteSpace(iso))
         {
             GD.Print("[ambient-uv-scroll-smoke] SKIP: no retail UYA source configured");
             return;

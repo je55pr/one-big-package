@@ -67,6 +67,34 @@ public sealed class PlayerSkeletalSampler
 
     public PlayerSkeletalPose CapturePose() => new((PlayerJointChannels[])_local.Clone());
 
+    /// <summary>Start from an already resolved pose (for example one that carries a transition blend).</summary>
+    public void LoadPose(PlayerSkeletalPose pose)
+    {
+        if (pose.Joints.Count != _local.Length) throw new InvalidDataException("Pose does not belong to this skeleton.");
+        // Validate every joint before copying, so a rejected pose never leaves the sampler half-loaded.
+        foreach (var channels in pose.Joints)
+            if (!Finite(channels.Rotation) || channels.Scale is not { } scale || !Finite(scale) ||
+                channels.Translation is not { } translation || !Finite(translation))
+                throw new InvalidDataException("Pose contains unresolved or invalid channels.");
+        for (int j = 0; j < _local.Length; j++) _local[j] = pose.Joints[j];
+    }
+
+    /// <summary>One joint's resolved local channels, so callers can blend a layer across transitions.</summary>
+    public PlayerJointChannels GetLocal(int joint)
+    {
+        if ((uint)joint >= _local.Length) throw new ArgumentOutOfRangeException(nameof(joint));
+        return _local[joint];
+    }
+
+    public void SetLocal(int joint, PlayerJointChannels channels)
+    {
+        if ((uint)joint >= _local.Length) throw new ArgumentOutOfRangeException(nameof(joint));
+        if (!Finite(channels.Rotation) || channels.Scale is not { } scale || !Finite(scale) ||
+            channels.Translation is not { } translation || !Finite(translation))
+            throw new ArgumentException("Invalid joint channels.", nameof(channels));
+        _local[joint] = channels;
+    }
+
     /// <summary>Blend resolved local channels before hierarchy evaluation, skinning and socket extraction.</summary>
     public void BlendFrom(PlayerSkeletalPose source, float fraction)
     {
@@ -107,6 +135,20 @@ public sealed class PlayerSkeletalSampler
             _local[joint] = new(Quaternion.Lerp(basis.Rotation, q, weight),
                 Vector3.Lerp(basis.Scale!.Value, scale, weight), Vector3.Lerp(basis.Translation!.Value, translation, weight));
         }
+    }
+
+    /// <summary>
+    /// Post-multiply a local rotation offset onto an already resolved joint, so
+    /// procedural joint work composes over every animation layer before the
+    /// hierarchy is evaluated. The offset uses the same channel convention as the
+    /// source rotations.
+    /// </summary>
+    public void ComposeLocalRotation(int joint, Quaternion offset)
+    {
+        if ((uint)joint >= _local.Length) throw new ArgumentOutOfRangeException(nameof(joint));
+        if (!Finite(offset)) throw new ArgumentException("Invalid procedural joint rotation.", nameof(offset));
+        var channels = _local[joint];
+        _local[joint] = channels with { Rotation = Quaternion.Normalize(Quaternion.Multiply(channels.Rotation, offset)) };
     }
 
     public double[] Skin(double[]? baseline = null, IReadOnlyCollection<int>? changedJoints = null)

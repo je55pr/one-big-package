@@ -49,6 +49,8 @@ public sealed class Rac1LevelEntryRetailWitnessTests
                 .Select(value => value.GetString()));
 
         JsonElement directRefs = seed.GetProperty("campaignFieldDirectRefs");
+        Assert.Equal(new[] { "currentLevel", "galacticMap", "perLevelVisited", "visitedPlanets" },
+            directRefs.EnumerateObject().Select(field => field.Name).Order());
         foreach (JsonProperty field in directRefs.EnumerateObject())
         {
             Assert.Empty(field.Value.GetProperty("levelInit").EnumerateArray());
@@ -106,6 +108,8 @@ public sealed class Rac1LevelEntryRetailWitnessTests
             .GetProperty("openingCampaignState");
 
         Assert.Equal(0, opening.GetProperty("currentLevel").GetInt32());
+        Assert.Equal(20, opening.GetProperty("visitedPlanets").GetArrayLength());
+        Assert.Equal(20, opening.GetProperty("galacticMap").GetArrayLength());
         Assert.All(
             opening.GetProperty("visitedPlanets").EnumerateArray(),
             value => Assert.Equal(0, value.GetInt32()));

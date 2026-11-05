@@ -26,6 +26,12 @@ public sealed partial class Rac1EquipmentView : Node3D
     private readonly Dictionary<int, Vector3> _socketOrigins = [];
     public Vector3 MuzzleAt(int socket) => _socketOrigins.GetValueOrDefault(socket, MuzzleLocal);
     public int Sequence => _sequence;
+
+    /// <summary>
+    /// True from <see cref="Build"/> until its one-shot construction clip has finished. This is explicit
+    /// rather than read from the sequence, because sequence 0 is also where a model with no ready clip rests.
+    /// </summary>
+    public bool Constructing { get; private set; }
     public int NativeClass => _model.NativeClass;
     public float FootOffset { get; private set; }
 
@@ -56,10 +62,18 @@ public sealed partial class Rac1EquipmentView : Node3D
     public void Play(int sequence, bool loop = true, long generation = 0, int returnSequence = 1)
     {
         if (!_model.Clips.ContainsKey(sequence) || _sequence == sequence && _generation == generation) return;
+        Constructing = false;
         _sequence = sequence; _loop = loop; _generation = generation;
         _returnSequence = _model.Clips.ContainsKey(returnSequence) ? returnSequence : 0;
         _clock.ResumePlayback(sequence, 0, 0, 1);
         _position = _model.Clips[sequence].Positions[0]; _soundPending = true;
+    }
+
+    /// <summary>Play the weapon's construction (sequence 0) once, then settle to its ready pose.</summary>
+    public void Build(long generation)
+    {
+        Play(0, false, generation, 1);
+        Constructing = _sequence == 0 && !_loop;
     }
 
     public void BlendTo(int sequence, int ticks, long generation)
@@ -95,6 +109,7 @@ public sealed partial class Rac1EquipmentView : Node3D
                 wrapped && (cue.PositionFrames > before || _loop && cue.PositionFrames <= _position)) sounds.Add(cue.SoundId);
         if (!_loop && wrapped)
         {
+            Constructing = false;
             _sequence = _returnSequence; _loop = true;
             _clock.ResumePlayback(_sequence, 0, 0, 1);
             _position = _model.Clips[_sequence].Positions[0]; _soundPending = true;
@@ -109,7 +124,10 @@ public sealed partial class Rac1EquipmentView : Node3D
     {
         var sample = _clock.Current;
         var clip = _model.Clips[_sequence];
-        var a = clip.Frames[sample.CurrentFrame]; var b = clip.Frames[sample.NextFrame];
+        // A clip that plays once holds its last key; the clock reports the wrap towards frame 0 there,
+        // which would collapse a construction animation into its folded first pose for two updates.
+        int next = !_loop && sample.NextFrame < sample.CurrentFrame ? sample.CurrentFrame : sample.NextFrame;
+        var a = clip.Frames[sample.CurrentFrame]; var b = clip.Frames[next];
         var vertices = new Vector3[a.Length / 3];
         float minimumHeight = float.PositiveInfinity;
         for (int i = 0; i < vertices.Length; i++)
@@ -131,7 +149,7 @@ public sealed partial class Rac1EquipmentView : Node3D
             minimumHeight = MathF.Min(minimumHeight, vertices[i].Y);
         }
         FootOffset = MathF.Max(0, -minimumHeight);
-        var origin = System.Numerics.Vector3.Lerp(clip.Origins[sample.CurrentFrame], clip.Origins[sample.NextFrame], sample.Fraction);
+        var origin = System.Numerics.Vector3.Lerp(clip.Origins[sample.CurrentFrame], clip.Origins[next], sample.Fraction);
         var muzzle = new PlayerAvatarPoint(origin.X, origin.Y, origin.Z);
         if (hand is not null) muzzle = hand.Transform(muzzle);
         MuzzleLocal = _avatar is null ? new(-(float)muzzle.X, (float)muzzle.Z, (float)muzzle.Y) :
@@ -140,7 +158,7 @@ public sealed partial class Rac1EquipmentView : Node3D
         if (clip.SocketOrigins is { } sockets)
             foreach (var pair in sockets)
             {
-                var p = System.Numerics.Vector3.Lerp(pair.Value[sample.CurrentFrame], pair.Value[sample.NextFrame], sample.Fraction);
+                var p = System.Numerics.Vector3.Lerp(pair.Value[sample.CurrentFrame], pair.Value[next], sample.Fraction);
                 var point = new PlayerAvatarPoint(p.X, p.Y, p.Z);
                 if (hand is not null) point = hand.Transform(point);
                 _socketOrigins[pair.Key] = _avatar is null ? new(-(float)point.X, (float)point.Z, (float)point.Y) :

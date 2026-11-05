@@ -108,7 +108,9 @@ public partial class PlayerHost : CharacterBody3D
             NativeYawVelocity: (float)_rac1Yaw.YawVelocity,
             UncappedInputMagnitude: (float)_rac1Movement.AnalogueInput.UncappedMagnitude,
             Traversal: _rac1Movement.TraversalAnimation ?? _rac1Movement.OrdinaryAirAnimation,
-            GroundEntry: _rac1Movement.GroundAnimationEntry);
+            GroundEntry: _rac1Movement.GroundAnimationEntry,
+            // Native yaw_error: the turn still owed to the stick target after this update.
+            YawError: (float)Rac1RatchetYawController.WrapPi(_rac1Yaw.TargetYaw - _rac1Yaw.CurrentYaw));
         ApplyRac1WrenchGroundAnimationHandoff();
 
         UpdateRac1FacingPresentation();

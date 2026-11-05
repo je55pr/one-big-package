@@ -9,6 +9,7 @@ param(
     [switch]$SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'obp-smoke-process.ps1')
 $root = Split-Path -Parent $PSScriptRoot
 $manifest = Get-Content (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | ConvertFrom-Json
 $godot = Join-Path $root ".tools/godot/$($manifest.godot.artifacts.win64.exe)"
@@ -27,8 +28,8 @@ if ($Rac3Iso) { $sourceArgs += @('--rac3-iso', $Rac3Iso) }
 $previousCapture = $env:OBP_CONTROLLER_CAPTURE_DIR
 try {
     if ($CaptureDirectory) { $env:OBP_CONTROLLER_CAPTURE_DIR = [IO.Path]::GetFullPath($CaptureDirectory) }
-    & $godot @windowArgs '--fixed-fps' '60' '--path' (Join-Path $root 'game') '--rendering-method' 'gl_compatibility' 'res://scenes/ControllerSmoke.tscn' '--' '--controller-smoke' @sourceArgs
-    $result = $LASTEXITCODE
+    $result = Invoke-ObpSmokeProcess -FilePath $godot -ArgumentList (@($windowArgs) + @('--fixed-fps', '60', '--path', (Join-Path $root 'game'), '--rendering-method', 'gl_compatibility', 'res://scenes/ControllerSmoke.tscn', '--', '--controller-smoke') + $sourceArgs) `
+        -CompletionMarker '[lifecycle] quit-request reason=controller-smoke-pass exitCode=0' -WorkingDirectory $root
 }
 finally { $env:OBP_CONTROLLER_CAPTURE_DIR = $previousCapture }
 exit $result
