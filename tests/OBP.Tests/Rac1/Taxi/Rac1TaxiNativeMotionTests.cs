@@ -44,7 +44,7 @@ public sealed class Rac1TaxiNativeMotionTests
     [Fact]
     public void RetailSixtyHertzSteppingIsIndependentOfHostPhysicsRate()
     {
-        Rac1TaxiPoint[] path = [new(0, 0, 0), new(3, 4, 0), new(3, 4, 8), new(3, 4, 20)];
+        Rac1TaxiPoint[] path = [new(0, 0, 0), new(3, 4, 12), new(3, 4, 16), new(3, 4, 20)];
         var native = new Rac1TaxiNativeMotion(path);
         var halfRate = new Rac1TaxiNativeMotion(path);
         var doubleRate = new Rac1TaxiNativeMotion(path);
@@ -55,6 +55,15 @@ public sealed class Rac1TaxiNativeMotionTests
                 halfRate.Advance(1d / 30);
             doubleRate.Advance(1d / 120);
             doubleRate.Advance(1d / 120);
+            if (i == 59)
+            {
+                // Before braking or the first corner, sixty acceleration steps
+                // travel 2.2875 units along the thirteen-unit (3,4,12) segment.
+                double travelled = .00125 * 60 * 61 / 2;
+                Assert.Equal(travelled * 3 / 13, native.Position.X, 10);
+                Assert.Equal(travelled * 4 / 13, native.Position.Y, 10);
+                Assert.Equal(travelled * 12 / 13, native.Position.Z, 10);
+            }
             if (i % 2 != 0)
             {
                 Compare(halfRate);
