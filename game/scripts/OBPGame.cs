@@ -889,7 +889,7 @@ public partial class OBPGame : Node3D
             id => id == "obp:fusion-lab" ? EnterFusionLab() :
                 TrilogyWorldProviders.Resolve(id) is { } next && OnDestinationChosen(next),
             (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code),
-            message => GD.Print(message), message => GD.PrintErr(message))),
+            message => GD.Print(message), message => GD.PrintErr(message), Sources.Setup.PauseReadinessPollingForDiagnostic)),
         PublishSummary: summary => _navigation.LoadSummary = summary,
         PlayerGeneration: () => _playerSession!.Capture().Generation));
 
