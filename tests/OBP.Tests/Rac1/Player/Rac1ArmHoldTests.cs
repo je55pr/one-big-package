@@ -3,7 +3,7 @@ using OBP.RAC1.Player;
 using OBP.Runtime.Player;
 using Xunit;
 
-namespace OBP.Tests.Rac1.Player;
+namespace OBP.Tests;
 
 /// <summary>
 /// The held-weapon arm layers: moby classes 1 and 2 supply the right and left arm "holding a gun"
@@ -17,6 +17,10 @@ public sealed class Rac1ArmHoldTests
         Assert.Equal(2, Rac1ArsenalRules.ArmSlotCount(Rac1WeaponId.Pyrocitor));
         Assert.Equal(2, Rac1ArsenalRules.ArmSlotCount(Rac1WeaponId.SuckCannon));
         Assert.Equal(2, Rac1ArsenalRules.ArmSlotCount(Rac1WeaponId.Devastator));
+        Assert.Equal(2, Rac1ArsenalRules.ArmSlotCount(Rac1WeaponId.VisibombGun));
+        Assert.Equal(2, Rac1ArsenalRules.ArmSlotCount(Rac1WeaponId.Ryno));
+        Assert.Equal(1, Rac1ArsenalRules.ArmSlotCount(Rac1WeaponId.TeslaClaw));
+        Assert.Equal(1, Rac1ArsenalRules.ArmSlotCount(Rac1WeaponId.MorphORay));
         Assert.Equal(1, Rac1ArsenalRules.ArmSlotCount(Rac1WeaponId.Blaster));
         Assert.Equal(1, Rac1ArsenalRules.ArmSlotCount(Rac1WeaponId.Taunter));
         foreach (var glove in new[] { Rac1WeaponId.FirstRanged, Rac1WeaponId.MineGlove, Rac1WeaponId.GloveOfDoom,

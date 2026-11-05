@@ -71,14 +71,12 @@ public sealed class PlayerSkeletalSampler
     public void LoadPose(PlayerSkeletalPose pose)
     {
         if (pose.Joints.Count != _local.Length) throw new InvalidDataException("Pose does not belong to this skeleton.");
-        for (int j = 0; j < _local.Length; j++)
-        {
-            var channels = pose.Joints[j];
+        // Validate every joint before copying, so a rejected pose never leaves the sampler half-loaded.
+        foreach (var channels in pose.Joints)
             if (!Finite(channels.Rotation) || channels.Scale is not { } scale || !Finite(scale) ||
                 channels.Translation is not { } translation || !Finite(translation))
                 throw new InvalidDataException("Pose contains unresolved or invalid channels.");
-            _local[j] = channels;
-        }
+        for (int j = 0; j < _local.Length; j++) _local[j] = pose.Joints[j];
     }
 
     /// <summary>One joint's resolved local channels, so callers can blend a layer across transitions.</summary>

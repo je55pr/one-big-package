@@ -129,7 +129,7 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
         {
             rig = new Rac1RatchetEquipmentRig(native, layerJoints, armHold)
             {
-                ArmHoldStatus = armHold is null ? "Held-gun arm hold unavailable: arm classes 1 and 2 are absent." : null,
+                ArmHoldStatus = armHold is null ? "Held-gun arm hold unavailable: one of arm classes 1 and 2 is absent." : null,
             };
         }
         catch (InvalidDataException ex)

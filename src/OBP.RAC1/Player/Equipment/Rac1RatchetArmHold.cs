@@ -9,9 +9,10 @@ namespace OBP.RAC1.Player;
 /// Source data for the held-weapon arm layers. Retail runs two animation slots on Ratchet whenever the
 /// selected item has arm animations (item table +0x18): slot 0 uses moby class 1 over joint list 12
 /// (the right arm) and slot 1 uses class 2 over list 13 (the left arm). Each class carries 23
-/// sequences with the same frame counts as Ratchet's sequences 0..22, so while the body plays one of
-/// those, the arms play the same sequence and frame in their "holding a gun" version
-/// (<c>0x20dd20</c>). A weapon is therefore held in the idle, run and jump poses, not only while firing.
+/// sequences numbered like Ratchet's sequences 0..22, so while the body plays one of those, the arms
+/// play the same sequence and frame in their "holding a gun" version (<c>0x20dd20</c>). Only sequences
+/// whose frame count matches the body clip can follow its clock; mismatched ones (retail sequence 17) are
+/// skipped. A weapon is therefore held in the idle, run and jump poses, not only while firing.
 /// </summary>
 public sealed record Rac1RatchetArmHoldSource(
     IReadOnlyList<IReadOnlyList<int>> BankJoints,
