@@ -36,7 +36,8 @@ def main():
                               '-o', str(program)], check=True)
     environment = dict(os.environ, OBP_SKELETON_ORACLE=str(program))
     subprocess.run(['dotnet', 'test', str(ROOT / 'tests/OBP.Tests'), '-c', 'Release', '--nologo',
-                    '--filter', 'FullyQualifiedName~TrilogySkeletalRetailTests'], env=environment, check=True)
+                    '--filter', 'FullyQualifiedName~TrilogySkeletalRetailTests',
+                    '--', 'RunConfiguration.TreatNoTestsAsError=true'], cwd=ROOT, env=environment, check=True)
 
 
 if __name__ == '__main__':
