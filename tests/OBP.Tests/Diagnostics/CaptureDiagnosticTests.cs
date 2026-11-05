@@ -3,10 +3,14 @@ using System.Numerics;
 using OBP.Game.Diagnostics;
 using OBP.Game;
 using OBP.Core;
+using OBP.RAC1.Gameplay;
+using OBP.RAC1.Player;
+using OBP.Runtime;
+using OBP.Runtime.Gameplay;
 
 namespace OBP.Tests;
 
-public sealed class CaptureDiagnosticTests
+public sealed partial class CaptureDiagnosticTests
 {
     [Fact]
     public void AcceptanceWithoutAnOutputDoesNotReadUnavailablePresentationState()
