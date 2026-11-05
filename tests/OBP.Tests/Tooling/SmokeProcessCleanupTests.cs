@@ -10,10 +10,12 @@ public sealed class SmokeProcessCleanupTests
     [InlineData("powershell.exe", "cancel-buffered")]
     [InlineData("powershell.exe", "callback")]
     [InlineData("powershell.exe", "timeout")]
+    [InlineData("powershell.exe", "timeout-buffered")]
     [InlineData("pwsh", "cancel-stream")]
     [InlineData("pwsh", "cancel-buffered")]
     [InlineData("pwsh", "callback")]
     [InlineData("pwsh", "timeout")]
+    [InlineData("pwsh", "timeout-buffered")]
     public async Task StoppedPipelinesAndCallbackFailuresTerminateTheirNativeChild(string shell, string fault)
     {
         shell = Shell(shell);
@@ -22,10 +24,12 @@ public sealed class SmokeProcessCleanupTests
         try
         {
             string pid = Path.Combine(directory, "child.pid"), child = Path.Combine(directory, "child.ps1");
-            File.WriteAllText(child, $"[IO.File]::WriteAllText({Quote(pid)},[string]$PID); [Console]::Out.WriteLine('ready'); Start-Sleep -Seconds 90");
-            string callback = fault == "cancel-buffered" ? "" : fault == "callback"
+            File.WriteAllText(child, $"[IO.File]::WriteAllText({Quote(pid)},[string]$PID); [Console]::Out.WriteLine('ready'); [Console]::Error.WriteLine('child diagnostic'); Start-Sleep -Seconds 90");
+            File.WriteAllText(Path.Combine(directory, "out.log"), "stale stdout");
+            File.WriteAllText(Path.Combine(directory, "err.log"), "stale stderr");
+            string callback = fault is "cancel-buffered" or "timeout-buffered" ? "" : fault == "callback"
                 ? " -OnOutput { param($line) throw 'original callback failure' }" : " -OnOutput { param($line) }";
-            if (fault == "timeout") callback += " -TimeoutSeconds 1";
+            if (fault.StartsWith("timeout", StringComparison.Ordinal)) callback += " -TimeoutSeconds 5";
             string invocation = $". {Quote(Path.Combine(RepoPaths.Root, "tools/obp-native-process.ps1"))}; " +
                 $"Invoke-ObpNativeProcessCapture -FilePath {Quote(shell)} -ArgumentList @('-NoProfile','-NonInteractive','-File',{Quote(child)}) " +
                 $"-StandardOutputPath {Quote(Path.Combine(directory, "out.log"))} -StandardErrorPath {Quote(Path.Combine(directory, "err.log"))}" + callback;
@@ -47,14 +51,14 @@ public sealed class SmokeProcessCleanupTests
                     }
                     try { $child=[Diagnostics.Process]::GetProcessById($childId) }
                     catch [ArgumentException] { } # A callback failure may already have reaped the child.
-                    if({{{Quote(fault)}}} -notin 'callback','timeout'){$pipeline.Stop()}
+                    if({{{Quote(fault)}}} -notin 'callback','timeout','timeout-buffered'){$pipeline.Stop()}
                     $failure=''
                     try{$null=$pipeline.EndInvoke($pending)}catch{$failure=$_.Exception.ToString()}
                     $failure += ($pipeline.Streams.Error | Out-String)
                     if({{{Quote(fault)}}} -eq 'callback' -and $failure -notmatch 'original callback failure'){
                         throw ('The original callback failure was lost: '+$failure)
                     }
-                    if({{{Quote(fault)}}} -eq 'timeout' -and $failure -notmatch 'Native process timed out after 1 seconds'){
+                    if({{{Quote(fault)}}} -like 'timeout*' -and $failure -notmatch 'Native process timed out after 5 seconds'){
                         throw ('The timeout failure was lost: '+$failure)
                     }
                     if($child -and -not $child.WaitForExit(5000)){throw 'Native child survived pipeline termination.'}
@@ -66,6 +70,13 @@ public sealed class SmokeProcessCleanupTests
                 """);
             Assert.True(result.Code == 0, result.Text);
             Assert.Contains("cleanup-verified", result.Text);
+            Assert.DoesNotContain("stale stdout", File.ReadAllText(Path.Combine(directory, "out.log")));
+            Assert.DoesNotContain("stale stderr", File.ReadAllText(Path.Combine(directory, "err.log")));
+            if (fault.StartsWith("timeout", StringComparison.Ordinal))
+            {
+                Assert.Contains("ready", File.ReadAllText(Path.Combine(directory, "out.log")));
+                Assert.Contains("child diagnostic", File.ReadAllText(Path.Combine(directory, "err.log")));
+            }
         }
         finally { Directory.Delete(directory, recursive: true); }
     }
