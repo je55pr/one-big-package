@@ -334,6 +334,12 @@ public partial class ControllerSmoke : Node
         Require(Find<Rac1PlanetTravelUi>() is null && !GetTree().Paused, "R3 did not close the map");
         await Press(JoyButton.Start);
         await EnterRetailPageAsync(Rac1RetailMenuPage.Development, "OBP DEVELOPMENT TOOLS");
+        // The OBP refill tool is reachable by controller and returns to gameplay.
+        await Capture("development-page");
+        await FocusButton("REFILL ALL AMMO"); await Press(JoyButton.A);
+        Require(!GetTree().Paused && Find<PauseMenuUi>() is null, "Refill all ammo did not return to gameplay");
+        await Press(JoyButton.Start);
+        await EnterRetailPageAsync(Rac1RetailMenuPage.Development, "OBP DEVELOPMENT TOOLS");
         await FocusButton("TOGGLE WEAPON PREVIEW"); await Press(JoyButton.A);
         Require(!GetTree().Paused, "Preview selection left gameplay paused");
         Require(Find<PlayerHud>()!.IsVisibleInTree() && DebugLabel("DevelopmentNotice")?.IsVisibleInTree() != true,

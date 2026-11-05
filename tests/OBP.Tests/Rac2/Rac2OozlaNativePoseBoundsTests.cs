@@ -44,9 +44,15 @@ public sealed class Rac2OozlaNativePoseBoundsTests(ITestOutputHelper output)
                 if (r <= 0) continue;
                 int outside = 0, count = 0;
                 double maxDistance = 0, maxSpan = 0;
-                foreach (var frame in seq.Frames)
+                for (int frameIndex = 0; frameIndex < seq.Frames.Count; frameIndex++)
                 {
+                    var frame = seq.Frames[frameIndex];
                     var positions = Ps2MobyNativePose.Pose(source, moby.Mesh, frame);
+                    string context = $"class={id} sequence={seq.Index} frame={frameIndex}";
+                    Assert.True(moby.Mesh.Positions.Length == positions.Length,
+                        $"{context}: expected {moby.Mesh.Positions.Length} coordinates, got {positions.Length}");
+                    Assert.All(positions, (position, component) => Assert.True(double.IsFinite(position),
+                        $"{context} component={component}: nonfinite coordinate"));
                     double minX = double.PositiveInfinity, minY = double.PositiveInfinity, minZ = double.PositiveInfinity,
                            maxX = double.NegativeInfinity, maxY = double.NegativeInfinity, maxZ = double.NegativeInfinity;
                     for (int v = 0; v < positions.Length; v += 3)

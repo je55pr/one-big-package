@@ -122,6 +122,7 @@ public sealed class Rac1AuthoredMobyCensusTests
         Assert.Equal(3, ratchet.PVarPlacements);
         Assert.Equal(16, ratchet.NoPVarPlacements);
         Assert.Equal([32], ratchet.PVarByteSizes);
+        Assert.Equal(Enumerable.Range(0, 19), ratchet.Levels.Select(row => row.Level).Order());
         Assert.All(ratchet.Levels, row =>
         {
             Assert.True(row.RatchetSequenceTableAvailable);
