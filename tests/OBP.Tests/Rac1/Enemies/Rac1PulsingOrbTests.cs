@@ -52,8 +52,11 @@ public sealed class Rac1PulsingOrbTests
             var mobies = Rac1Instances.Parse(Rac1LevelSettings.ReadGameplay(reader, level)).MobyInstances;
             foreach (var source in mobies.Where(m => m.OClass == Rac1PulsingOrbSession.NativeClassId))
             {
-                Assert.True(session.Register(level.LevelId, Source(source.Index,
-                    BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(source.PVar!)))));
+                Assert.NotNull(source.PVar);
+                Assert.Equal(16, source.PVar.Length);
+                var original = Source(source.Index, source.PVar);
+                Assert.Equal<byte>(source.PVar, Assert.Single(original.NativePayloads!, payload => payload.Format == "rac1-pvar").Data);
+                Assert.True(session.Register(level.LevelId, original));
                 total++;
             }
         }
@@ -64,6 +67,11 @@ public sealed class Rac1PulsingOrbTests
     {
         var pvar = new byte[16];
         BinaryPrimitives.WriteInt32LittleEndian(pvar, BitConverter.SingleToInt32Bits(phaseDegrees));
+        return Source(id, pvar);
+    }
+
+    private static RuntimeDynamicObject Source(int id, byte[] pvar)
+    {
         return new(ObpSourceGame.Rac1, Rac1PulsingOrbSession.NativeClassId, id, null, "orb", "orb",
             new RuntimeObjectTransform(new double[16]), [],
             NativePayloads: [new RuntimeOpaquePayload("rac1-pvar", pvar)]);

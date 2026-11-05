@@ -59,6 +59,7 @@ public sealed class Rac3ParticleTests
         var rng = Rac3ParticleRandom.FromSeed(1234); var session = new Rac3ParticleSession(Assets(), rng);
         Assert.Equal(new(6, 6), session.EmitShockCannonBeamGlow(Owner, Muzzle, End)); Assert.Equal(29, rng.SamplesConsumed);
         var points = session.Live.ToArray();
+        Assert.Equal(6, points.Length);
         foreach (var p in points[..5]) { Assert.InRange(p.Position.X, 2, 18); Assert.Equal(168000, p.NativeSize); }
         Assert.Equal(new(2, 3, 4), points[5].Position); Assert.Equal(63000.00390625f, points[5].NativeSize);
         Assert.All(points, p => { Assert.Equal(0x50804020u, p.Color); Assert.Equal(Rac3ParticleRecipe.ShockCannonBeamGlow, p.Recipe); Assert.InRange(p.Texture, 53, 56); });

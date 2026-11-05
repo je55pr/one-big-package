@@ -100,6 +100,7 @@ public sealed class Rac3ParticleRetailTests
     private static void Compare(string program, Fixture fixture, bool beam, uint seed, int age, int frames, bool repeat, Vector4 muzzle, Vector4 end, float distance, bool constructor = false)
     {
         var rows = fixture.Execute(program, beam, seed, frames, age, repeat, false, muzzle, end, distance, constructor).Select(r => r.Split(' ')).ToArray();
+        RequireProtocolCohorts(rows, frames);
         foreach (var row in rows.Where(r => r[0] == "D")) Assert.Equal(fixture.Assets.Definitions.Texture(int.Parse(row[1]), 0), int.Parse(row[2]));
         foreach (var row in rows.Where(r => r[0] == "T"))
         {
@@ -113,7 +114,8 @@ public sealed class Rac3ParticleRetailTests
             else if (beam) session.EmitShockCannonBeamGlow(Rac3ParticleTests.Owner, muzzle, end);
             else session.EmitShockCannonCharging(Rac3ParticleTests.Owner, age, muzzle);
         }
-        Emit(); var draw = Rac3ParticleDraw.ReadVeldin(fixture.Level);
+        Emit(); Assert.Equal(constructor ? 1 : beam ? 6 : 2, session.Count);
+        var draw = Rac3ParticleDraw.ReadVeldin(fixture.Level);
         var view = new Rac3ParticleDraw.View(new(muzzle.X, muzzle.Y, muzzle.Z - distance), Vector3.UnitZ, 1f / 420000, int.MaxValue);
         for (int tick = 0; tick <= frames; tick++)
         {
@@ -138,6 +140,36 @@ public sealed class Rac3ParticleRetailTests
             if (tick < frames) { session.Step(); if (repeat) Emit(); }
         }
     }
+
+    private static void RequireProtocolCohorts(string[][] rows, int frames)
+    {
+        Assert.Equal(Enumerable.Range(0, 129), rows.Where(row => row[0] == "D").Select(row => int.Parse(row[1], CultureInfo.InvariantCulture)).Order());
+        Assert.Equal(Enumerable.Range(0, 65), rows.Where(row => row[0] == "T").Select(row => int.Parse(row[1], CultureInfo.InvariantCulture)).Order());
+        Assert.Equal(Enumerable.Range(0, frames + 1), rows.Where(row => row[0] == "F").Select(row => int.Parse(row[1], CultureInfo.InvariantCulture)).Order());
+    }
+
+    [Theory]
+    [InlineData("D", false)]
+    [InlineData("D", true)]
+    [InlineData("T", false)]
+    [InlineData("T", true)]
+    [InlineData("F", false)]
+    [InlineData("F", true)]
+    public void SyntheticProtocolCohortsRejectMissingOrDuplicatedIds(string kind, bool duplicate)
+    {
+        // Protocol metadata only. These synthetic rows contain no native records,
+        // sprite descriptors or oracle/golden values.
+        var rows = Enumerable.Range(0, 129).Select(id => new[] { "D", id.ToString(CultureInfo.InvariantCulture), "0" })
+            .Concat(Enumerable.Range(0, 65).Select(id => new[] { "T", id.ToString(CultureInfo.InvariantCulture), "0", "0" }))
+            .Concat(Enumerable.Range(0, 2).Select(id => new[] { "F", id.ToString(CultureInfo.InvariantCulture), "0", "0" })).ToList();
+        RequireProtocolCohorts(rows.ToArray(), 1);
+        int index = rows.FindIndex(row => row[0] == kind && row[1] == "1");
+        Assert.True(index >= 0);
+        if (duplicate) rows.Add(rows.First(row => row[0] == kind && row[1] == "0").ToArray());
+        else rows.RemoveAt(index);
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => RequireProtocolCohorts(rows.ToArray(), 1));
+    }
+
     private static int Difference(byte[] a, byte[] b) => Enumerable.Range(0, a.Length).FirstOrDefault(i => a[i] != b[i], -1);
     private static byte[] Words(IEnumerable<string> words)
     {

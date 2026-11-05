@@ -485,6 +485,8 @@ public sealed partial class PauseMenuUi
         debugOutput.Toggled += enabled => DebugOutputChanged?.Invoke(enabled);
         _retailColumn.AddChild(debugOutput);
         _retailFocusOrder.Add(debugOutput);
+        if (_retailDevelopmentPage == 0)
+            AddRetailButton("REFILL ALL AMMO", () => RefillAllAmmoRequested?.Invoke());
 
         if (MovementStatesAvailable)
         {

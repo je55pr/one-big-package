@@ -122,6 +122,7 @@ public sealed class WorldSceneLifetimeTests
         fixture.Scenes.Retire();
         Assert.Null(fixture.Scenes.Current);
         Assert.Null(fixture.Entries.Current);
+        Assert.Equal(5, fixture.Activated.Count);
         Assert.All(fixture.Activated, resource => Assert.Equal(1, resource.Disposals));
         Assert.All(fixture.Activated, resource => Assert.False(resource.HasBindings));
         Assert.Equal("rac1:LEVEL0", fixture.Scenes.DestinationId); // Only small navigation metadata survives.

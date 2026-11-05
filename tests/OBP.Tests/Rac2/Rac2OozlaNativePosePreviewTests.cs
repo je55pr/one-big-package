@@ -31,6 +31,7 @@ public sealed class Rac2OozlaNativePosePreviewTests
         foreach (var (id, before) in control)
         {
             var after = preview[id];
+            Assert.Equal(after.Mesh.Positions.Length, after.Mesh.Normals.Length);
             Assert.Equal(before.Mesh.Indices, after.Mesh.Indices);
             Assert.Equal(before.Mesh.Uvs, after.Mesh.Uvs);
             if (!after.Mesh.NativeInitialPoseApplied)

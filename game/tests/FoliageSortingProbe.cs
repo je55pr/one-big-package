@@ -168,7 +168,9 @@ public partial class FoliageSortingProbe : Node
         {
             var blendMeshes = scene.AmbientMeshBindings!
                 .Where(binding => binding.AssetKind == "shrub" && binding.TextureId == id)
-                .Select(binding => binding.Mesh);
+                .Select(binding => binding.Mesh).ToArray();
+            if (blendMeshes.Length != (id == 16 ? 2 : 1))
+                throw new InvalidOperationException($"Fixed/additive alpha shrub {id} fixture meshes must be built.");
             foreach (var blendMesh in blendMeshes)
             {
                 var blendMaterial = (StandardMaterial3D)blendMesh.MaterialOverride;

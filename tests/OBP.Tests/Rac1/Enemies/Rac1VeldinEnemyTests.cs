@@ -217,7 +217,7 @@ public sealed class Rac1VeldinEnemyTests
         Assert.InRange(position.X, 4.9, 5.2);
         var angular = new Rac1MobySteering(MathF.PI - .01f);
         float yaw = angular.Step(-MathF.PI + .1f, .01f, .01f, .2f, true);
-        Assert.InRange(Rac1MobySteering.Wrap(yaw - (MathF.PI - .01f)), 0, .02f);
+        Assert.InRange(Rac1MobySteering.Wrap(yaw - (MathF.PI - .01f)), .00999f, .01001f);
         Assert.Equal(Vector3.Zero, motion.Step(position, new(20, 0, 0), new(20, 0, 0), true, true));
     }
 

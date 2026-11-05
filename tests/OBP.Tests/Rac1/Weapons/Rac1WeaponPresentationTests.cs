@@ -65,12 +65,14 @@ public sealed class Rac1WeaponPresentationTests
             foreach (int frame in new[] { 0, clip.FrameCount - 1 })
             {
                 var actual = rig.Sample(new(0, 0, 0, 0, false), new(sequence, frame, frame, 0, false), 1, true, standing);
+                Assert.Equal(standing.Length, actual.Length);
                 Assert.All(actual.Zip(clip.LocalFrames[frame]), pair => Assert.InRange(Math.Abs(pair.First - pair.Second), 0, .00001));
             }
         }
         var mask = right.Concat(left).ToHashSet();
         var run = asset.Clip(4).LocalFrames[10];
         var moving = rig.Sample(new(4, 10, 10, 0, false), new(57, 2, 2, 0, false), 1, false, run);
+        Assert.Equal(run.Length, moving.Length);
         int unaffected = 0;
         for (int vertex = 0; vertex < moving.Length / 3; vertex++)
         {
