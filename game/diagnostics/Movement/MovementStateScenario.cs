@@ -13,7 +13,11 @@ public sealed class MovementStateScenario(CaptureDiagnosticContext context, Move
         using var scope = states.Begin();
         movement.Driver.Clear();
         await WaitGroundedAsync(); await Physics(8);
-        var defeated = states.StageLethalReactions(); var broken = states.BreakCrate();
+        var defeated = states.StageLethalReactions();
+        Require(!defeated.IsDefault && defeated.Length == 2 && defeated.All(target => target.SourceGame == OBP.Core.ObpSourceGame.Rac1) &&
+            defeated.Select(target => target.NativeClassId).Order().SequenceEqual(new[] { Rac1ClassIds.VeldinToad, Rac1ClassIds.VeldinFlameRobot }),
+            "movement save fixture death cohort must stage one R&C1 toad and one R&C1 robot");
+        var broken = states.BreakCrate();
         Require(states.SelectAndConsumeBomb(), "movement save fixture could not consume ammo"); states.Credit(37);
         var expected = states.ReadWorld();
         Key(CaptureKey.F12, true); Key(CaptureKey.F12, false);
