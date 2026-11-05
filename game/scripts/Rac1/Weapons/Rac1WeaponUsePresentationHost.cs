@@ -133,6 +133,19 @@ internal sealed class Rac1WeaponUsePresentationHost(Rac1WorldModule world, Rac1W
         else report("Enter an R&C1 world before changing the arsenal preview.");
     }
 
+    /// <summary>
+    /// OBP developer tool (not a retail action): refill every owned ammo item and refresh the HUD, whose
+    /// projection only changes when it is refreshed. The campaign inventory is saved state, so a refill
+    /// there is persisted deliberately; preview and Fusion-test inventories are temporary.
+    /// </summary>
+    internal void RefillAllAmmo(bool persist)
+    {
+        State.Weapons().RefillAllAmmo();
+        State.Fusion().Session?.RefillForeignAmmo();
+        if (persist) Views.Persist("developer ammo refill");
+        Views.RefreshHud();
+    }
+
     internal void TogglePreview() => SetPreview(Input.IsKeyPressed(Key.Shift));
 
     internal void SetPreview(bool disable)
