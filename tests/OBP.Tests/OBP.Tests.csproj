@@ -46,6 +46,7 @@
     <Compile Include="../../game/scripts/Rac1/Enemies/Rac1EnemyTickClock.cs" Link="Game/Rac1/Enemies/Rac1EnemyTickClock.cs" />
     <Compile Include="../../game/scripts/Rac1/Enemies/Rac1EnemyContactMotion.cs" Link="Game/Rac1/Enemies/Rac1EnemyContactMotion.cs" />
     <Compile Include="../../game/diagnostics/CaptureReplay/EffectReplayScript.cs" Link="Diagnostics/CaptureReplay/EffectReplayScript.cs" />
+    <Compile Include="../../game/diagnostics/CaptureReplay/EffectsExperimentScenario.cs" Link="Diagnostics/CaptureReplay/EffectsExperimentScenario.cs" />
     <Compile Include="../../game/scripts/Rac2/Rac2WorldLeaseClock.cs" Link="Game/Rac2/Rac2WorldLeaseClock.cs" />
     <Compile Include="../../game/scripts/CaptureReplay/CaptureCheckpointSnapshot.cs" Link="Game/CaptureReplay/CaptureCheckpointSnapshot.cs" />
     <Compile Include="../../game/scripts/CaptureReplay/CaptureFrameSnapshot.cs" Link="Game/CaptureReplay/CaptureFrameSnapshot.cs" />

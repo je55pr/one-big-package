@@ -14,17 +14,24 @@ internal static class DiagnosticWorldFailures
     internal static RuntimeWorld Load() => throw new InvalidDataException("Intentional staged-load failure");
 }
 
-internal sealed class DiagnosticSourceAttachmentFixture(ObpSourceLibrary sources, Action refresh) : IDiagnosticSourceAttachmentFixture
+internal sealed class DiagnosticSourceAttachmentFixture(ObpSourceLibrary sources, Action refresh,
+    Func<IDisposable>? pauseReadinessPolling = null) : IDiagnosticSourceAttachmentFixture
 {
     public IDisposable Detach(ObpSourceGame game, bool refreshOnDetach)
     {
         var source = sources.Get(game) ?? throw new DiagnosticUnavailableException("The fixture source is not attached: " + game);
-        if (!sources.Remove(game)) throw new DiagnosticUnavailableException("The fixture source could not be detached.");
+        var pollingPause = pauseReadinessPolling?.Invoke();
+        try { if (!sources.Remove(game)) throw new DiagnosticUnavailableException("The fixture source could not be detached."); }
+        catch { pollingPause?.Dispose(); throw; }
         var lease = new AttachmentLease(() =>
         {
-            using var reader = new FileRandomAccessReader(source.Path);
-            sources.Restore(new(source.Game, source.Identity.BuildId, source.Path), reader);
-            refresh();
+            try
+            {
+                using var reader = new FileRandomAccessReader(source.Path);
+                sources.Restore(new(source.Game, source.Identity.BuildId, source.Path), reader);
+                refresh();
+            }
+            finally { pollingPause?.Dispose(); }
         });
         try { if (refreshOnDetach) refresh(); }
         catch { lease.Dispose(); throw; }

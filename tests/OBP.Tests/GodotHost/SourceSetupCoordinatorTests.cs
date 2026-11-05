@@ -8,6 +8,43 @@ namespace OBP.Tests;
 
 public sealed class SourceSetupCoordinatorTests
 {
+    [Fact]
+    public void DiagnosticPollingPausesAreScopedNestedAndDoNotConsumeTheOrdinaryClock()
+    {
+        using var f = new Fixture(); var setup = f.Create();
+        Assert.True(setup.ResolveStartup(f.Arguments(3), false));
+        Assert.False(setup.Due(.75, true));
+        using (setup.PauseReadinessPollingForDiagnostic())
+        {
+            var nested = setup.PauseReadinessPollingForDiagnostic();
+            Assert.False(setup.Due(10, true));
+            nested.Dispose(); nested.Dispose();
+            Assert.False(setup.Due(10, true));
+            Assert.True(setup.RequireOrdinary(out _));
+        }
+        Assert.True(setup.Due(.25, true));
+        Assert.False(setup.Due(.75, true));
+        Assert.True(setup.Due(.25, true));
+    }
+
+    [Fact]
+    public void DiagnosticPollingPauseNeverBypassesExplicitSourceAdmissionOrClearsInvalidation()
+    {
+        using var f = new Fixture(); var setup = f.Create();
+        Assert.True(setup.ResolveStartup(f.Arguments(3), false));
+        using (setup.PauseReadinessPollingForDiagnostic())
+        {
+            Assert.True(setup.Library.Remove(ObpSourceGame.Rac2));
+            Assert.False(setup.Due(10, true));
+            Assert.False(setup.RequireOrdinary(out _));
+            Assert.True(setup.ConsumersInvalidated);
+        }
+        Assert.True(setup.Due(1, true));
+        Assert.False(setup.RequireOrdinary(out _));
+        Assert.True(setup.ConsumersInvalidated);
+        Assert.True(setup.ProfileSuspended);
+    }
+
     [Theory]
     [InlineData(0, false)]
     [InlineData(1, false)]

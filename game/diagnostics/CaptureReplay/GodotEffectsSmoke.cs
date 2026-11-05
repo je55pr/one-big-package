@@ -24,7 +24,8 @@ internal static class GodotEffectsSmoke
         Func<string, bool> Navigate,
         Action<string, int> Quit,
         Action<string> Log,
-        Action<string> Error);
+        Action<string> Error,
+        Func<IDisposable> PauseReadinessPolling);
 
     internal static bool IsRequested(CommandLineArgs args, int worldSwitches) =>
         args.EffectsSmoke && !args.PlaytestRequested && worldSwitches == 1;
@@ -44,7 +45,7 @@ internal static class GodotEffectsSmoke
             TimeSpan.FromMinutes(10), 30000, "obp:fusion-lab");
         var scenario = new EffectsExperimentScenario(definition, fixture,
             new EffectDiagnosticNavigation(ports.Navigate),
-            new DiagnosticSourceAttachmentFixture(ports.Sources, () => { }), report, ports.Log);
+            new DiagnosticSourceAttachmentFixture(ports.Sources, () => { }, ports.PauseReadinessPolling), report, ports.Log);
         var runner = new DiagnosticScenarioRunner(
             new GodotDiagnosticSources(() => [.. ports.Sources.Attached.Values.Select(source =>
                 new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
