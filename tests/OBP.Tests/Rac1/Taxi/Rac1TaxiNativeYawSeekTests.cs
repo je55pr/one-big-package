@@ -77,14 +77,35 @@ public sealed class Rac1TaxiNativeYawSeekTests
     {
         var slow = new Rac1TaxiNativeYawSeek(0.35);
         var fast = new Rac1TaxiNativeYawSeek(0.35);
+        var native = new Rac1TaxiNativeYawSeek(0.35);
         // 30 Hz and 120 Hz hosts should yield the same sixty
         // original R&C1 updates, including persistent angular speed.
-        for (int i = 0; i < 30; i++)
-            slow.Advance(-1.3, Frame * 2);
-        for (int i = 0; i < 120; i++)
+        for (int i = 0; i < 60; i++)
+        {
+            native.Advance(-1.3, Frame);
             fast.Advance(-1.3, Frame / 2);
-        Assert.Equal(slow.HeadingRadians, fast.HeadingRadians, 10);
-        Assert.Equal(slow.SpinRadiansPerFrame, fast.SpinRadiansPerFrame, 10);
+            fast.Advance(-1.3, Frame / 2);
+            if (i % 2 == 0)
+                slow.Advance(-1.3, Frame * 2);
+            if (i == 3)
+            {
+                // Four native acceleration steps accumulate 1+2+3+4 units of PI/240.
+                Assert.Equal(.35 - 10 * Math.PI / 240, native.HeadingRadians, 10);
+                Assert.Equal(-Math.PI / 60, native.SpinRadiansPerFrame, 10);
+            }
+            if (i % 2 != 0)
+            {
+                Assert.Equal(native.HeadingRadians, slow.HeadingRadians, 10);
+                Assert.Equal(native.HeadingRadians, fast.HeadingRadians, 10);
+                Assert.Equal(native.SpinRadiansPerFrame, slow.SpinRadiansPerFrame, 10);
+                Assert.Equal(native.SpinRadiansPerFrame, fast.SpinRadiansPerFrame, 10);
+            }
+        }
+        Assert.NotEqual(0.35, native.HeadingRadians);
+        Assert.Equal(native.HeadingRadians, slow.HeadingRadians, 10);
+        Assert.Equal(native.HeadingRadians, fast.HeadingRadians, 10);
+        Assert.Equal(native.SpinRadiansPerFrame, slow.SpinRadiansPerFrame, 10);
+        Assert.Equal(native.SpinRadiansPerFrame, fast.SpinRadiansPerFrame, 10);
     }
 
     [Fact]
