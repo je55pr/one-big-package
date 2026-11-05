@@ -72,7 +72,8 @@ public sealed class Rac1TaxiNativeShuttleTrafficTests
         Assert.True(slow.TryStartUnoccupiedReposition(Source));
         Assert.True(fast.TryStartUnoccupiedReposition(Source));
         Assert.True(native.TryStartUnoccupiedReposition(Source));
-        for (int i = 0; i < 60; i++)
+        int arrivedAt = 0;
+        for (int i = 0; i < 36000; i++)
         {
             native.Advance(1d / 60);
             fast.Advance(1d / 120);
@@ -86,8 +87,21 @@ public sealed class Rac1TaxiNativeShuttleTrafficTests
                 Assert.Equal(native.NativeState, fast.NativeState);
                 Assert.Equal(native.CurrentSide, slow.CurrentSide);
                 Assert.Equal(native.CurrentSide, fast.CurrentSide);
+                if (native.NativeState == Rac1TaxiNativeShuttleTraffic.IdleState)
+                {
+                    arrivedAt = i + 1;
+                    break;
+                }
             }
+            if (i == 59)
+                // First sixty native steps travel .00125*(1+...+60) = 2.2875 units.
+                Assert.Equal(7.7125, native.Position.X, 10);
         }
+        Assert.InRange(arrivedAt, 60, 36000);
+        Assert.Equal(Source, native.Position);
+        Assert.Equal(Source, slow.Position);
+        Assert.Equal(Source, fast.Position);
+        Assert.Equal(Rac1TaxiNativeShuttleTraffic.IdleState, native.NativeState);
         Assert.NotEqual(Far, native.Position);
         Assert.InRange(native.Position.DistanceSquared(slow.Position), 0, 1e-10);
         Assert.InRange(native.Position.DistanceSquared(fast.Position), 0, 1e-10);

@@ -87,6 +87,12 @@ public sealed class Rac1TaxiNativeYawSeekTests
             fast.Advance(-1.3, Frame / 2);
             if (i % 2 == 0)
                 slow.Advance(-1.3, Frame * 2);
+            if (i == 3)
+            {
+                // Four native acceleration steps accumulate 1+2+3+4 units of PI/240.
+                Assert.Equal(.35 - 10 * Math.PI / 240, native.HeadingRadians, 10);
+                Assert.Equal(-Math.PI / 60, native.SpinRadiansPerFrame, 10);
+            }
             if (i % 2 != 0)
             {
                 Assert.Equal(native.HeadingRadians, slow.HeadingRadians, 10);

@@ -44,7 +44,7 @@ public sealed class Rac1TaxiNativeMotionTests
     [Fact]
     public void RetailSixtyHertzSteppingIsIndependentOfHostPhysicsRate()
     {
-        Rac1TaxiPoint[] path = [P(0), P(5), P(13), P(25)];
+        Rac1TaxiPoint[] path = [new(0, 0, 0), new(3, 4, 0), new(3, 4, 8), new(3, 4, 20)];
         var native = new Rac1TaxiNativeMotion(path);
         var halfRate = new Rac1TaxiNativeMotion(path);
         var doubleRate = new Rac1TaxiNativeMotion(path);
@@ -63,7 +63,7 @@ public sealed class Rac1TaxiNativeMotionTests
         }
 
         Assert.True(native.Arrived);
-        Assert.Equal(P(25), native.Position);
+        Assert.Equal(new Rac1TaxiPoint(3, 4, 20), native.Position);
 
         void Compare(Rac1TaxiNativeMotion other)
         {
