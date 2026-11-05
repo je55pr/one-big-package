@@ -39,8 +39,28 @@ public sealed class Rac1TaxiNativeHoverTests
                 thirty.Advance(1d / 30d);
             oneTwenty.Advance(1d / 120d);
             oneTwenty.Advance(1d / 120d);
+            if (i % 2 != 0)
+            {
+                Assert.Equal(sixty.HeightOffset, thirty.HeightOffset, 10);
+                Assert.Equal(sixty.HeightOffset, oneTwenty.HeightOffset, 10);
+                Assert.Equal(sixty.PitchRadians, thirty.PitchRadians, 10);
+                Assert.Equal(sixty.PitchRadians, oneTwenty.PitchRadians, 10);
+                Assert.Equal(sixty.RollRadians, thirty.RollRadians, 10);
+                Assert.Equal(sixty.RollRadians, oneTwenty.RollRadians, 10);
+            }
+            if (i == 59)
+                Assert.Equal(.2 * Math.Sin(phases.Height + 60 * 2d * Math.PI / 180d), sixty.HeightOffset, 10);
         }
 
+        // Height advances before sampling; tilt/spin sample their old phase.
+        // Anchor the twelve-second trial to the retained native rates so three
+        // equally frozen clocks cannot satisfy only cross-rate comparisons.
+        double height = .2 * Math.Sin(phases.Height + 720 * 2d * Math.PI / 180d);
+        double tilt = Math.PI / 40 * Math.Sin(phases.Tilt + 719 * 70d * Math.PI / 180d / 60d);
+        double spin = phases.Spin + 719 * 100d * Math.PI / 180d / 60d;
+        Assert.Equal(height, sixty.HeightOffset, 10);
+        Assert.Equal(tilt * Math.Sin(spin), sixty.PitchRadians, 10);
+        Assert.Equal(tilt * Math.Cos(spin), sixty.RollRadians, 10);
         Assert.Equal(sixty.HeightOffset, thirty.HeightOffset, 10);
         Assert.Equal(sixty.HeightOffset, oneTwenty.HeightOffset, 10);
         Assert.Equal(sixty.PitchRadians, thirty.PitchRadians, 10);
