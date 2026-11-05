@@ -83,8 +83,8 @@ try {
         foreach ($angle in @($sample.FacingYaw, $sample.ControlHeading)) {
             if (-not (Test-ObpMovementReplayNumber $angle)) { throw 'Movement replay has a missing or non-finite heading.' }
         }
-        if ($sample.Phase -isnot [string] -or $sample.Floor -isnot [bool] -or $sample.Support -isnot [bool] -or
-            $sample.SmallStep -isnot [string] -or $sample.ContactNormals -isnot [array]) {
+        if ($sample.Phase -isnot [string] -or [string]::IsNullOrWhiteSpace($sample.Phase) -or $sample.Floor -isnot [bool] -or $sample.Support -isnot [bool] -or
+            $sample.SmallStep -isnot [string] -or [string]::IsNullOrWhiteSpace($sample.SmallStep) -or $sample.ContactNormals -isnot [array]) {
             throw 'Movement replay has missing phase/support/contact state.'
         }
         foreach ($normal in $sample.ContactNormals) {

@@ -42,7 +42,7 @@ foreach ($fps in @(30, 120)) {
     try { $document = $trace | ConvertFrom-Json }
     catch { throw "Native player report at $fps FPS is invalid JSON: $report. $($_.Exception.Message)" }
     $weapons = @($document.Baselines.PSObject.Properties)
-    if ($document.Version -ne 1 -or $weapons.Count -ne 2 -or
+    if (-not (Test-ObpPlayerTrialNumber $document.Version) -or $document.Version -ne 1 -or $weapons.Count -ne 2 -or
         @(Compare-Object @('rac2/item:30', 'rac3/item:43') @($weapons.Name) -CaseSensitive).Count -ne 0) {
         throw 'Native player report is missing its two weapon baselines.'
     }

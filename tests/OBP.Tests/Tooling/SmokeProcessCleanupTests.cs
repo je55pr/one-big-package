@@ -44,13 +44,17 @@ public sealed class SmokeProcessCleanupTests
                     $childId=0
                     while($childId -le 0) {
                         if(Test-Path -LiteralPath {{{Quote(pid)}}}){
-                            [void][int]::TryParse([IO.File]::ReadAllText({{{Quote(pid)}}}),[ref]$childId)
+                            try { [void][int]::TryParse([IO.File]::ReadAllText({{{Quote(pid)}}}),[ref]$childId) }
+                            catch [IO.IOException] { Write-Verbose 'Waiting for the child PID file writer.' }
                         }
                         if([DateTime]::UtcNow -gt $deadline){throw 'Native child did not start.'}
                         if($childId -le 0){Start-Sleep -Milliseconds 20}
                     }
                     try { $child=[Diagnostics.Process]::GetProcessById($childId) }
-                    catch [ArgumentException] { } # A callback failure may already have reaped the child.
+                    catch [ArgumentException] {
+                        if({{{Quote(fault)}}} -in 'cancel-stream','cancel-buffered'){throw 'Native child exited before cancellation.'}
+                    }
+                    if({{{Quote(fault)}}} -in 'cancel-stream','cancel-buffered' -and $child.HasExited){throw 'Native child exited before cancellation.'}
                     if({{{Quote(fault)}}} -notin 'callback','timeout','timeout-buffered'){$pipeline.Stop()}
                     $failure=''
                     try{$null=$pipeline.EndInvoke($pending)}catch{$failure=$_.Exception.ToString()}

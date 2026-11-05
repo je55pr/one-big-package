@@ -97,7 +97,7 @@ public sealed class SmokeProcessResultTests
             string completion = Marker.Replace("rac1-crate-smoke-pass", reason);
             File.WriteAllText(Path.Combine(tools, "obp-native-process.ps1"), $$"""
                 function Invoke-ObpNativeProcessCapture {
-                    param($FilePath, [string[]]$ArgumentList, $WorkingDirectory, $StandardOutputPath, $StandardErrorPath)
+                    param($FilePath, [string[]]$ArgumentList, $WorkingDirectory, $StandardOutputPath, $StandardErrorPath, $OnOutput, [int]$TimeoutSeconds=0)
                     if ($ArgumentList -contains '--rac1-bomb-glove-smoke' -and $env:OBP_BOMB_REPRO_STATE -cne {{(stateMode ? Quote(state) : "$null")}}) {
                         throw 'Bomb Glove state path was not forwarded through its environment boundary.'
                     }
@@ -277,6 +277,10 @@ public sealed class SmokeProcessResultTests
     [InlineData("pwsh", "player-capabilities-smoke.ps1", "bad-coordinate", false)]
     [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "invalid-json", false)]
     [InlineData("pwsh", "player-capabilities-smoke.ps1", "invalid-json", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "string-version", false)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "string-version", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "boolean-version", false)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "boolean-version", false)]
     [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "clean", true)]
     [InlineData("pwsh", "test-diagnostic-cli.ps1", "clean", true)]
     [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "leak", false)]
@@ -330,7 +334,7 @@ public sealed class SmokeProcessResultTests
                 $env:OBP_TEST_RUNNER_FAULT = {{{{{Quote(fault)}}}}}
                 Set-Content (Join-Path $tools 'obp-native-process.ps1') @'
                 function Invoke-ObpNativeProcessCapture {
-                    param($FilePath,[string[]]$ArgumentList,$WorkingDirectory,$StandardOutputPath,$StandardErrorPath)
+                    param($FilePath,[string[]]$ArgumentList,$WorkingDirectory,$StandardOutputPath,$StandardErrorPath,$OnOutput,[int]$TimeoutSeconds=0)
                     $pathIndex=[Array]::IndexOf($ArgumentList,'--path')
                     if($pathIndex -lt 0 -or $ArgumentList[$pathIndex+1] -ne (Join-Path $WorkingDirectory 'game')){throw 'Fixture received an invalid game path.'}
                     if($ArgumentList -contains '--player-session-smoke' -or $ArgumentList -contains '--player-capabilities-smoke' -or $ArgumentList -contains '--fusion-smoke'){
@@ -342,11 +346,14 @@ public sealed class SmokeProcessResultTests
                     $marker = '[player-session-smoke] PASS: fixture'
                     $code = 0
                     if ($ArgumentList -contains '--player-capabilities-smoke') {
+                        if($TimeoutSeconds -ne 900){throw 'Capability smoke deadline was not passed to native capture.'}
                         $marker = '[player-capabilities-smoke] PASS: fixture'
                         $report = $ArgumentList[[Array]::IndexOf($ArgumentList,'--player-capabilities-out')+1]
                         if ($env:OBP_TEST_RUNNER_FAULT -ne 'stale') {
                             $samples = @(1..40 | ForEach-Object { @{Tick=$_*6;Clock=$_/10.0;Sequence=$null;Frame=$null;Pose=('A'*64);Attachment='{}';Facing=0;Position=@(0,0,0);Camera=@(0,0,0)} })
                             $document = @{Version=1;Baselines=@{'rac2/item:30'=$samples;'rac3/item:43'=$samples}}
+                            if ($env:OBP_TEST_RUNNER_FAULT -eq 'string-version') { $document.Version='1' }
+                            if ($env:OBP_TEST_RUNNER_FAULT -eq 'boolean-version') { $document.Version=$true }
                             if ($env:OBP_TEST_RUNNER_FAULT -eq 'empty') { $document.Baselines=@{} }
                             if ($env:OBP_TEST_RUNNER_FAULT -eq 'partial') { $document.Baselines['rac2/item:30']=@($samples[0]) }
                             if ($env:OBP_TEST_RUNNER_FAULT -eq 'foreign-baseline') { $document.Baselines.Remove('rac2/item:30'); $document.Baselines['synthetic/item:30']=$samples }
@@ -439,7 +446,7 @@ public sealed class SmokeProcessResultTests
                 string reason = fault switch
                 {
                     "stale" => "Native player report was not produced by this run.",
-                    "empty" or "foreign-baseline" or "case-baseline" => "missing its two weapon baselines",
+                    "empty" or "foreign-baseline" or "case-baseline" or "string-version" or "boolean-version" => "missing its two weapon baselines",
                     "partial" or "reordered-trace" or "middle-clock" => "does not contain a complete four-second trial",
                     "missing-field" or "bad-coordinate" => "missing or invalid native sample fields",
                     "invalid-json" => "invalid JSON",
@@ -466,7 +473,7 @@ public sealed class SmokeProcessResultTests
             foreach (string shell in new[] { "powershell.exe", "pwsh" })
                 foreach (string fault in new[] { "clean", "profile", "nonzero", "no-marker", "leak", "missing-report", "stale",
                     "partial", "bad-tick", "bad-vector", "bad-identity", "foreign-state", "missing-profile", "same-output", "alias-content",
-                    "missing-phase", "missing-floor", "missing-support", "missing-step", "missing-contacts", "bad-contact", "empty-contacts", "numeric-overflow" })
+                    "missing-phase", "missing-floor", "missing-support", "missing-step", "missing-contacts", "bad-contact", "empty-contacts", "numeric-overflow", "blank-phase", "blank-step" })
                     yield return [shell, fault, fault switch { "clean" or "profile" or "empty-contacts" => 0, "nonzero" => 17, "same-output" or "alias-content" => 1, _ => 2 }];
         }
     }
@@ -517,6 +524,8 @@ public sealed class SmokeProcessResultTests
                         'missing-floor' {$samples[1].Remove('Floor')}
                         'missing-support' {$samples[1].Remove('Support')}
                         'missing-step' {$samples[1].Remove('SmallStep')}
+                        'blank-phase' {$samples[1].Phase=''}
+                        'blank-step' {$samples[1].SmallStep=' '}
                         'missing-contacts' {$samples[1].Remove('ContactNormals')}
                         'bad-contact' {$samples[1].ContactNormals[0].Z='NaN'}
                         'empty-contacts' {foreach($sample in $samples){$sample.ContactNormals=@()}}
@@ -541,7 +550,7 @@ public sealed class SmokeProcessResultTests
                 Set-Content (Join-Path $tools 'obp-native-process.ps1') @'
                 . (Join-Path $PSScriptRoot 'fixture-runtime.ps1')
                 function Invoke-ObpNativeProcessCapture {
-                    param($FilePath,[string[]]$ArgumentList,$WorkingDirectory,$StandardOutputPath,$StandardErrorPath,$OnOutput)
+                    param($FilePath,[string[]]$ArgumentList,$WorkingDirectory,$StandardOutputPath,$StandardErrorPath,$OnOutput,[int]$TimeoutSeconds=0)
                     $result=Invoke-FixtureMovement -ArgumentList $ArgumentList
                     [IO.File]::WriteAllText($StandardOutputPath,$result.Output)
                     [IO.File]::WriteAllText($StandardErrorPath,$result.Error)
@@ -579,7 +588,7 @@ public sealed class SmokeProcessResultTests
                     "bad-identity" or "foreign-state" => "state/build/physics identity",
                     "missing-profile" => "missing requested timing measurements",
                     "same-output" or "alias-content" => "must not overwrite the input state",
-                    "missing-phase" or "missing-floor" or "missing-support" or "missing-step" or "missing-contacts" => "missing phase/support/contact state",
+                    "missing-phase" or "missing-floor" or "missing-support" or "missing-step" or "missing-contacts" or "blank-phase" or "blank-step" => "missing phase/support/contact state",
                     "bad-contact" => "missing or non-finite contact normal coordinate",
                     "numeric-overflow" => text.Contains("unrepresentable number", StringComparison.Ordinal) ? "unrepresentable number" : "missing or non-finite position/velocity coordinate",
                     _ => throw new ArgumentOutOfRangeException(nameof(fault)),
@@ -610,6 +619,7 @@ public sealed class SmokeProcessResultTests
         if (Path.GetFileName(shell) is not ("pwsh" or "pwsh.exe" or "powershell.exe") || !File.Exists(shell))
             throw new ArgumentException("An installed PowerShell executable is required.", nameof(shell));
         var start = new ProcessStartInfo(shell) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+        start.Environment.Remove("OBP_SMOKE_RESULTS_ROOT");
         foreach (string argument in new[] { "-NoProfile", "-NonInteractive", "-EncodedCommand", Convert.ToBase64String(Encoding.Unicode.GetBytes(script)) })
             start.ArgumentList.Add(argument);
         using var process = new Process { StartInfo = start };
