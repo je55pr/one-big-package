@@ -1,10 +1,37 @@
 using Godot;
+using OBP.Godot;
 using OBP.RAC1.Player;
 
 namespace OBP.Game;
 
 public partial class PlayerHost
 {
+    /// <summary>
+    /// Forward probe for the held-weapon wall response (<c>0x20a240</c>): a line from the capsule
+    /// surface to <paramref name="length"/> units ahead at <paramref name="height"/> above the hero.
+    /// Returns the 3D distance from the hero to the hit, or null. While the weapon is in use the
+    /// native probe ignores crates and other movable objects, so only the static world counts then.
+    /// </summary>
+    internal float? ProbeRac1ForwardWall(float height, float length, bool ignoreMovables)
+    {
+        var position = ScenePlayerToNative(GlobalPosition);
+        double yaw = _rac1Yaw.CurrentYaw, cos = Math.Cos(yaw), sin = Math.Sin(yaw);
+        var from = LedgeNativeToScene(new Rac1NativeVector3(
+            position.X + cos * (0.45 - 0.02), position.Y + sin * (0.45 - 0.02), position.Z + height));
+        var to = LedgeNativeToScene(new Rac1NativeVector3(
+            position.X + cos * length, position.Y + sin * length, position.Z + height));
+        var query = PhysicsRayQueryParameters3D.Create(from, to);
+        query.Exclude = new global::Godot.Collections.Array<Rid> { GetRid() };
+        var hit = GetWorld3D().DirectSpaceState.IntersectRay(query);
+        if (hit.Count == 0 || !hit.ContainsKey("position")) return null;
+        // Retail (0x20a990) returns on the first hit when it is a crate while the item is in use; it does
+        // not keep looking for the wall behind it, so neither does this.
+        if (ignoreMovables && !(hit.ContainsKey("collider") &&
+            hit["collider"].As<Node>() is RuntimeWorldScene.RuntimeCollisionBody3D))
+            return null;
+        return GlobalPosition.DistanceTo((Vector3)hit["position"]);
+    }
+
     /// <summary>
     /// Static-world execution adapter for the recovered wall-jump producer.
     /// Domain and wall-normal history are supplied by the controller. Godot's

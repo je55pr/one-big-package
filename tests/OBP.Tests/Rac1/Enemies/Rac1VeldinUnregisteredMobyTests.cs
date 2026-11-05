@@ -25,6 +25,7 @@ public sealed class Rac1VeldinUnregisteredMobyTests
         // presentation, not an admitted native surface.
         var source = classes.Mobies[1964];
         Assert.Equal(30, source.Mesh.Indices.Length / 3);
+        Assert.Equal(30, source.TriangleTextureIds.Length);
         Assert.All(source.TriangleTextureIds, id => Assert.Equal(-1, id));
         var placement = Assert.Single(instances.MobyInstances, i => i.OClass == 1964);
         Assert.Equal(295, placement.Index);

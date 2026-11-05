@@ -57,7 +57,8 @@ public sealed class WorldEffectRootBoundaryTests
         Assert.Contains("if (!IsRequested(args, worldSwitches)) return;", launcher, StringComparison.Ordinal);
         Assert.Contains("var ports = bind();", launcher, StringComparison.Ordinal);
         Assert.Contains("new EffectsExperimentScenario(definition, fixture,", launcher, StringComparison.Ordinal);
-        Assert.Contains("new DiagnosticSourceAttachmentFixture(ports.Sources, () => { })", launcher, StringComparison.Ordinal);
+        Assert.Contains("new DiagnosticSourceAttachmentFixture(ports.Sources, () => { }, ports.PauseReadinessPolling)", launcher, StringComparison.Ordinal);
+        Assert.Contains("Sources.Setup.PauseReadinessPollingForDiagnostic", entry, StringComparison.Ordinal);
         Assert.Contains("new ExistingDiagnosticWorld(ports.ReadWorld, ports.Operations.Token)", launcher, StringComparison.Ordinal);
         Assert.Contains("DiagnosticScenarioDispatch.Start([scenario], ports.Operations, runner, ports.Quit, ports.Error);", launcher, StringComparison.Ordinal);
         Assert.DoesNotContain("partial class OBPGame", launcher, StringComparison.Ordinal);

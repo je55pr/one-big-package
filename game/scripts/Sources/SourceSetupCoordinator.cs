@@ -39,6 +39,7 @@ public sealed class SourceSetupCoordinator
     private bool _initialized;
     private bool _presentationInvalidated;
     private double _elapsed;
+    private int _diagnosticPollingPauses;
     public ObpSourceLibrary Library { get; private set; }
     public SourceAccessMode Access { get; }
     public string ConfigurationPath { get; }
@@ -243,10 +244,27 @@ public sealed class SourceSetupCoordinator
     }
     public bool Due(double delta, bool ordinarySurface)
     {
-        if (Access == SourceAccessMode.ExplicitDiagnostic || !StartupResolved || !ordinarySurface) return false;
+        if (Access == SourceAccessMode.ExplicitDiagnostic || !StartupResolved || !ordinarySurface ||
+            Volatile.Read(ref _diagnosticPollingPauses) != 0) return false;
         _elapsed += delta;
         if (_elapsed < 1) return false;
         _elapsed = 0; return true;
+    }
+    // Only a supervised diagnostic's temporary source-removal window defers
+    // periodic polling. Explicit admission still calls RequireOrdinary normally.
+    internal IDisposable PauseReadinessPollingForDiagnostic()
+    {
+        Interlocked.Increment(ref _diagnosticPollingPauses);
+        return new DiagnosticPollingPause(this);
+    }
+    private sealed class DiagnosticPollingPause(SourceSetupCoordinator owner) : IDisposable
+    {
+        private SourceSetupCoordinator? _owner = owner;
+        public void Dispose()
+        {
+            var owner = Interlocked.Exchange(ref _owner, null);
+            if (owner is not null) Interlocked.Decrement(ref owner._diagnosticPollingPauses);
+        }
     }
     public void SuspendProfile() => ProfileSuspended = true;
     internal void ReplaceDiagnosticLibrary(ObpSourceLibrary library)

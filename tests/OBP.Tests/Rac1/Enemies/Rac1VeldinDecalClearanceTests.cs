@@ -21,6 +21,7 @@ public sealed class Rac1VeldinDecalClearanceTests
         Assert.Equal(500, placement.OClass);
         var cls = classes[placement.OClass];
         Assert.Equal(42, cls.Mesh.Indices.Length / 3);
+        Assert.Equal(42, cls.TriangleTextureIds.Length);
         Assert.All(cls.TriangleTextureIds, id => Assert.Equal(17, id));
 
         var source = new List<(double X, double Y, double Z)>();

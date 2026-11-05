@@ -19,6 +19,8 @@ public sealed class Rac1CampaignSavePolicyTests
         Assert.Equal(
             Rac1LevelVisitState.Visited,
             restored.Campaign.GetLevelState(0));
+        Assert.Equal(20, restored.Campaign.VisitedPlanets.Count);
+        Assert.Equal(20, restored.Campaign.GalacticMap.Count);
         Assert.All(restored.Campaign.VisitedPlanets, value => Assert.Equal(0, value));
         Assert.All(restored.Campaign.GalacticMap, value => Assert.Equal(0, value));
         Assert.True(restored.Weapons.OwnsFirstRanged);

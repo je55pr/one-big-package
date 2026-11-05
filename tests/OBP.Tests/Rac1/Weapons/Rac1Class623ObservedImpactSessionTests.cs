@@ -131,10 +131,13 @@ public sealed class Rac1Class623ObservedImpactSessionTests
             Assert.True(targets.ApplyObservedNativeImpact(index, 0, 1f).TakesTerminalPath);
             Assert.Equal(new Rac1Class623InitialTargetState(14, false), targets.Get(index));
         });
-        Assert.Equal(44, targets.Advance(
-            id => new(id, 830, 2), _ => false).Count);
+        var activated = targets.Advance(id => new(id, 830, 2), _ => false);
+        Assert.Equal(44, activated.Count);
+        var remaining = targetSources.Where(x => targets.Get(x.Index).NativeState == 1).ToArray();
+        Assert.Equal(44, remaining.Length);
+        Assert.Equal(activated.Order(), remaining.Select(source => source.Index).Order());
 
-        Assert.All(targetSources.Where(x => targets.Get(x.Index).NativeState == 1), source =>
+        Assert.All(remaining, source =>
         {
             Assert.True(targets.ApplyObservedNativeImpact(source.Index, 0, 1f).TakesTerminalPath);
         });

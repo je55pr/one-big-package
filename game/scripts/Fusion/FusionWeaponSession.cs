@@ -69,6 +69,16 @@ public sealed class FusionWeaponSession
         return true;
     }
 
+    /// <summary>
+    /// OBP convenience (not a retail action): fill the cross-game weapons to capacity.
+    /// R&amp;C1 ammo belongs to the shared R&amp;C1 inventory and is refilled there.
+    /// </summary>
+    public void RefillForeignAmmo()
+    {
+        LancerSession.AddAmmo(Rac2LancerProfile.AmmoCapacity);
+        CannonSession.AddAmmo(Rac3ShockCannonProfile.AmmoCapacity);
+    }
+
     public WeaponStatus Status(SourceWeaponKey weapon) => weapon.SourceGame == ObpSourceGame.Rac1
         ? new(weapon, Rac1Inventory.GetAmmo(weapon.NativeItemId), Rac1ItemAmmoDescriptors.Get(weapon.NativeItemId).MaxAmmo, "ready")
         : weapon == Lancer ? new(weapon, LancerSession.Ammo, Rac2LancerProfile.AmmoCapacity,

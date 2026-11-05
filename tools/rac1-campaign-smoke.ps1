@@ -24,22 +24,14 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'obp-window.ps1')
+. (Join-Path $PSScriptRoot 'obp-smoke-process.ps1')
 
 if (-not $Rac1Iso -or -not (Test-Path -LiteralPath $Rac1Iso -PathType Leaf)) {
   Write-Error 'A supported R&C1 ISO is required. Pass -Rac1Iso or set OBP_RAC1_ISO.'
   exit 2
 }
 
-$manifest = Get-Content (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | ConvertFrom-Json
-$godot = Join-Path $root ".tools/godot/$($manifest.godot.artifacts.win64.exe)"
-if (-not (Test-Path -LiteralPath $godot -PathType Leaf)) {
-  & (Join-Path $PSScriptRoot 'bootstrap-godot.ps1') -Platform win64 | Out-Null
-}
-
-if (-not $SkipBuild) {
-  & (Join-Path $PSScriptRoot 'build.ps1') -Game
-  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-}
+$godot = & (Join-Path $PSScriptRoot 'prepare-game-smoke.ps1') -Sources @($Rac1Iso) -SourceCount 1 -SkipBuild:$SkipBuild
 
 $statePath = Join-Path ([IO.Path]::GetTempPath()) (
   'obp-rac1-campaign-' + [guid]::NewGuid().ToString('N') + '.json')
@@ -58,10 +50,11 @@ try {
   foreach ($pass in 1..2) {
     Write-Host "R&C1 campaign smoke pass $pass/2" -ForegroundColor Cyan
     $windowArgs = if ($Render) { @(Get-ObpWindowArguments) } else { @('--headless') }
-    & $godot @windowArgs @commonArgs
-    if ($LASTEXITCODE -ne 0) {
-      Write-Error "R&C1 campaign smoke pass $pass failed (exit $LASTEXITCODE)."
-      exit $LASTEXITCODE
+    $code = Invoke-ObpSmokeProcess -FilePath $godot -ArgumentList (@($windowArgs) + $commonArgs) `
+      -CompletionMarker '[lifecycle] quit-request reason=rac1-campaign-smoke-pass exitCode=0' -WorkingDirectory $root
+    if ($code -ne 0) {
+      Write-Error "R&C1 campaign smoke pass $pass failed (exit $code)." -ErrorAction Continue
+      exit $code
     }
   }
 

@@ -11,9 +11,22 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     private int? _equipmentSequence;
     private double? _equipmentPhase;
     private bool _equipmentLoop, _equipmentFullBody;
+    // How much of the whole-body use pose is applied; moves gradually so state changes never pop the legs.
+    private float _equipmentBodyBlend;
 
     private void RestoreEquipmentBasePose()
     {
+        // The procedural joint layer is applied last, so it is undone first.
+        if (_easeBase is not null)
+        {
+            Current = _easeBase;
+            _easeBase = null;
+        }
+        if (_armHoldBase is not null)
+        {
+            Current = _armHoldBase;
+            _armHoldBase = null;
+        }
         if (_equipmentBase is null) return;
         Current = _equipmentBase;
         _equipmentBase = null;
@@ -25,12 +38,21 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     /// </summary>
     public PlayerAnimationPresentation ApplyEquipmentPose(int? sourceSequence, double? phaseSeconds = null, bool loop = true, bool fullBody = false)
     {
+        BeginArmHoldTick();
+        ApplyEquipmentPoseCore(sourceSequence, phaseSeconds, loop, fullBody);
+        ApplyArmHold();
+        return ApplyJointEases();
+    }
+
+    private PlayerAnimationPresentation ApplyEquipmentPoseCore(int? sourceSequence, double? phaseSeconds, bool loop, bool fullBody)
+    {
         RestoreEquipmentBasePose();
-        if (_equipmentMask is null) { _equipmentAmount = 0; return Current; }
+        if (_equipmentMask is null) { _equipmentAmount = 0; _equipmentBodyBlend = 0; return Current; }
+        bool freshEntry = _equipmentAmount == 0;
         if (sourceSequence is null)
         {
             _equipmentAmount = Math.Max(0, _equipmentAmount - .07f); // 0x20e728 hold-release fade.
-            if (_equipmentAmount == 0 || _equipmentSequence is null) return Current;
+            if (_equipmentAmount == 0 || _equipmentSequence is null) { _equipmentBodyBlend = 0; return Current; }
             sourceSequence = _equipmentSequence; phaseSeconds = _equipmentPhase; loop = _equipmentLoop;
             fullBody = _equipmentFullBody && Current.SemanticState == PlayerAnimationState.Idle;
         }
@@ -40,6 +62,10 @@ public sealed partial class Rac1PlayerAnimationPresentationController
             _equipmentLoop = loop; _equipmentFullBody = fullBody;
             _equipmentAmount = Math.Min(1, _equipmentAmount + .2f);
         }
+        // The whole-body pose follows the requested state at a bounded rate; a fresh use starts at it.
+        float wantBody = fullBody ? 1f : 0f;
+        _equipmentBodyBlend = freshEntry ? wantBody
+            : Math.Clamp(wantBody, _equipmentBodyBlend - .15f, _equipmentBodyBlend + .15f);
         var descriptor = Rac1PlayerAvatarProvider.AnimationDescriptor(sourceSequence.Value);
         var clip = _avatar.AnimationClips.Single(clip => clip.Id == descriptor.Id);
         var sample = clip.SampleAt(phaseSeconds ?? _clockSeconds, loop);
@@ -52,7 +78,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         {
             var basis = EquipmentBaseSample();
             var positions = _equipmentRig.Sample(basis, new(sourceSequence.Value, frame, next, fraction, false),
-                _equipmentAmount, fullBody, baseline);
+                _equipmentAmount, fullBody, baseline, _equipmentBodyBlend);
             var sockets = _attachments.GetOrCreateValue(positions);
             sockets[Rac1WrenchAttachment.SocketKey] = _equipmentRig.Attachment(56);
             sockets[Gameplay.Rac1BombProjectileSession.GloveSocketKey] = _equipmentRig.Attachment(54);

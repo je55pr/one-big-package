@@ -19,7 +19,8 @@ try {
     $env:OBP_RAC1_ISO = $IsoPath
     dotnet test tests/OBP.Tests/OBP.Tests.csproj `
         -c Release --no-restore `
-        --filter 'FullyQualifiedName~Rac1VeldinSpawnTests'
+        --filter 'FullyQualifiedName~Rac1VeldinSpawnTests' `
+        -- RunConfiguration.TreatNoTestsAsError=true
     if ($LASTEXITCODE -ne 0) { throw "spawn retail tests failed: $LASTEXITCODE" }
 }
 finally {

@@ -312,6 +312,7 @@ public sealed class Rac2MobyNativePoseTests
             recoverPersistentVertexCache: _ => true,
             previewNativeInitialPose: id => { Assert.Equal(2827, id); previewCalls++; return true; });
         Assert.True(classes.TryGetValue(2827, out var recovered));
+        Assert.NotEmpty(recovered.Mesh.Positions);
         Assert.Equal(GcUyaMoby.ReadClass(source).Positions, recovered.Mesh.Positions);
         Assert.False(recovered.Mesh.NativeInitialPoseApplied);
         Assert.Equal(0, previewCalls);
@@ -355,6 +356,7 @@ public sealed class Rac2MobyNativePoseTests
             GcUyaMoby.ReadClass(source, recoverPersistentVertexCache: true));
         Assert.Contains("duplicate VU1 vertex-cache slot", error.Message);
         var legacy = GcUyaMoby.ReadClass(source);
+        Assert.NotEmpty(legacy.Positions);
 
         var assets = new byte[source.Length + 16];
         source.CopyTo(assets, 16);
@@ -453,6 +455,7 @@ public sealed class Rac2MobyNativePoseTests
             int end = core.SectionBoundaries.FirstOrDefault(x => x > begin, core.Assets.Length);
             byte[] source = core.Assets.AsSpan(begin, end - begin).ToArray();
             var moby = classes[id];
+            Assert.NotEmpty(moby.Mesh.Positions);
             foreach (var frame in moby.Sequences.SelectMany(s => s.Frames))
             {
                 var result = Ps2MobyNativePose.Pose(source, moby.Mesh, frame);
