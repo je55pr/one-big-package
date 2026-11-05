@@ -49,6 +49,12 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     /// <summary>Discard eased angles, e.g. after respawn or a world reload.</summary>
     public void ResetJointEases()
     {
+        // Drop the ease overlay from the presented pose, not only the spring state.
+        if (_easeBase is not null)
+        {
+            Current = _easeBase;
+            _easeBase = null;
+        }
         _jointEases?.Reset();
         _easeOffsets = [];
     }

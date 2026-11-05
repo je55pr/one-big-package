@@ -21,6 +21,18 @@ public sealed class Rac1RatchetJointEasesTests
         RetailAttachments.Select(id => new Rac1HeroEaseTable.Record(id, 0, 0)).ToArray());
 
     [Fact]
+    public void ResetCopiesEachTableRecordsSpringParametersToItsOwnIndex()
+    {
+        // Distinct non-zero values per index, so a shifted or reversed copy cannot pass.
+        var table = Rac1HeroEaseTable.Create(RetailAttachments
+            .Select((id, i) => new Rac1HeroEaseTable.Record(id, 0.01f + i * 0.001f, 0.1f + i * 0.01f)).ToArray());
+        var eases = new Rac1RatchetJointEases(table);
+        eases.Reset();
+        for (int i = 0; i < RetailAttachments.Length; i++)
+            Assert.Equal((0.01f + i * 0.001f, 0.1f + i * 0.01f), eases.Parameters(i));
+    }
+
+    [Fact]
     public void EulerQuaternionUsesTheNativeNegatedAxisConventionAndXyzOrder()
     {
         var x = Rac1RatchetJointEases.EulerQuaternion(0.4f, 0, 0);
