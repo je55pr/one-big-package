@@ -51,6 +51,13 @@ public partial class ControllerSmoke
         for (int tab = 0; tab < 5; tab++) await Press(JoyButton.RightShoulder);
         await FocusButton("SHOW DEBUG OUTPUT");
         Require(Focus() is CheckButton { ButtonPressed: true }, "Common developer selection did not persist.");
+        await Capture("developer-tab");
+        // The ammo tool lives in the same Developer tab and returns to gameplay.
+        await FocusButton("REFILL ALL AMMO"); await Press(JoyButton.A);
+        Require(!GetTree().Paused && Find<PauseMenuUi>() is null, "Refill all ammo did not return to gameplay.");
+        await Press(JoyButton.Start); menu = Find<PauseMenuUi>()!;
+        for (int tab = 0; tab < 5; tab++) await Press(JoyButton.RightShoulder);
+        await FocusButton("SHOW DEBUG OUTPUT");
         await Press(JoyButton.A); await Press(JoyButton.Start);
         Require(!player.DebugOutputEnabled, "Disabling common diagnostics failed.");
         await Button(JoyButton.Y, true);

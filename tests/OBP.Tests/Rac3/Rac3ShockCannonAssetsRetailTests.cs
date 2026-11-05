@@ -66,8 +66,15 @@ public sealed partial class Rac3ShockCannonRetailTests
         // Original recovery cue2 is a silent 11-frame ADPCM sample, not a
         // missing decoder result. Do not invent a reload sound to fill it.
         var recovery = Rac3ShockCannonAssets.Audio(source, 2, 0);
-        Assert.All(Assert.Single(recovery.Voices).Clip.InterleavedPcm16, sample => Assert.Equal(0, sample));
-        Assert.All(source.SoundBank!.DecodeTone(Assert.Single(source.SoundBank.Sounds[2].Tones)).Samples, sample => Assert.Equal(0, sample));
+        var recoveryPcm = Assert.Single(recovery.Voices).Clip.InterleavedPcm16;
+        Assert.NotEmpty(recoveryPcm);
+        Assert.All(recoveryPcm, sample => Assert.Equal(0, sample));
+        var recoveryDefinition = source.SoundDefinitions[2];
+        var recoveryTone = source.SoundBank!.DecodeTone(Assert.Single(source.SoundBank.Sounds[recoveryDefinition.SoundIndex].Tones));
+        Assert.Equal(11, recoveryTone.Info.FrameCount);
+        var recoverySamples = recoveryTone.Samples;
+        Assert.Equal(11 * Ps2SpuAdpcm.SamplesPerFrame, recoverySamples.Length);
+        Assert.All(recoverySamples, sample => Assert.Equal(0, sample));
         var charge = Rac3ShockCannonAssets.Audio(source, 3, 0);
         Assert.Equal(new[] { false, true, true }, charge.Voices.Select(v => v.Loop));
         Assert.Equal(new[] { 0d, 225d / 240, 275d / 240 }, charge.Voices.Select(v => v.StartSeconds));
@@ -80,9 +87,17 @@ public sealed partial class Rac3ShockCannonRetailTests
         var shot = Rac3ShockCannonAssets.Audio(source, 4, 123);
         var repeated = Rac3ShockCannonAssets.Audio(source, 4, 123);
         Assert.Equal(5, shot.Voices.Count);
+        Assert.Equal(shot.Voices.Count, repeated.Voices.Count);
         Assert.Equal(new[] { 0d, 0, 0, 8d / 240, 18d / 240 }, shot.Voices.Select(v => v.StartSeconds));
         for (int i = 0; i < shot.Voices.Count; i++)
+        {
+            Assert.NotEmpty(shot.Voices[i].Clip.InterleavedPcm16);
             Assert.Equal(shot.Voices[i].Clip.InterleavedPcm16, repeated.Voices[i].Clip.InterleavedPcm16);
+            Assert.Equal(shot.Voices[i].StartSeconds, repeated.Voices[i].StartSeconds);
+            Assert.Equal(shot.Voices[i].Loop, repeated.Voices[i].Loop);
+            Assert.Equal(shot.Voices[i].Clip.LoopStartFrame, repeated.Voices[i].Clip.LoopStartFrame);
+            Assert.Equal(shot.Voices[i].Clip.LoopEndFrame, repeated.Voices[i].Clip.LoopEndFrame);
+        }
         Assert.All(shot.Voices, v => Assert.False(v.Loop));
         var empty = Rac3ShockCannonAssets.Audio(source, 1, 0);
         Assert.Equal(381, empty.Definition.MinimumPitch);
