@@ -82,11 +82,11 @@ function Invoke-EffectsRun([string]$RunName, [string[]]$ExtraArguments) {
         try {
             if ($process -and !$process.HasExited) { $process.Kill(); [void]$process.WaitForExit(5000) }
         }
-        catch [InvalidOperationException] { } # Exit may race cancellation cleanup.
+        catch [InvalidOperationException] { Write-Verbose 'Effects child exited during cleanup.' }
         catch { Write-Warning -WarningAction Continue "Effects child cleanup failed: $($_.Exception.Message)" }
         finally {
             $copies = @($outCopy, $errCopy) | Where-Object { $null -ne $_ }
-            if ($copies) { try { [void][Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($copies), 5000) } catch { } }
+            if ($copies) { try { [void][Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($copies), 5000) } catch { Write-Verbose 'Effects output drain ended during cleanup.' } }
             if ($outFile) { $outFile.Dispose() }
             if ($errFile) { $errFile.Dispose() }
             if ($process) { $process.Dispose() }
