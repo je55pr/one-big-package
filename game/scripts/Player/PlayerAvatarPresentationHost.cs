@@ -323,6 +323,8 @@ internal sealed class PlayerAvatarPresentationHost
             var (height, length) = controller.JointEaseWallProbe(active);
             wall = player.ProbeRac1ForwardWall(height, length, ignoreMovables: active);
         }
+        // The held gun's arm layers (0x20dd20): one arm for one-handed guns, both for the big ones.
+        controller.StepArmHold(slots);
         controller.StepJointEases(input.YawError, carries, wall);
     }
 

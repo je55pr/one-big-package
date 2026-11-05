@@ -165,7 +165,14 @@ internal sealed class PlayerEquipmentPresentationBinder
     {
         if (previous != state.Held.NativeItemId &&
             avatar.Controller is Rac1PlayerAnimationPresentationController controller)
+        {
             NativeViews.RefreshAttachment(state.Inventory.Equipped, controller);
+            // Drawing a weapon from the wrench builds it in the hand. Quick Select already did this
+            // on selection; the Circle draw path reaches the hand through here.
+            if (state.Held.NativeItemId is { } drawn && Enum.IsDefined((Rac1WeaponId)drawn) &&
+                Rac1WeaponProfiles.IsAdditional((Rac1WeaponId)drawn))
+                NativeViews.PlaySelection((Rac1WeaponId)drawn);
+        }
         RefreshRac1HandVisibility(state, avatar);
     }
 

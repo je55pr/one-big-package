@@ -43,7 +43,9 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     public PlayerAnimationPresentation ApplySourceEquipment(PlayerEquipmentAnimationSource source,
         bool moving, bool crouching, bool useStarted, bool triggerHeld)
     {
+        BeginArmHoldTick();
         ApplySourceEquipmentCore(source, moving, crouching, useStarted, triggerHeld);
+        ApplyArmHold();
         return ApplyJointEases();
     }
 

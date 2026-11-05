@@ -6,7 +6,7 @@ using OBP.RAC1.Player;
 using OBP.Runtime.Player;
 using Xunit;
 
-namespace OBP.Tests.Rac1.Player;
+namespace OBP.Tests;
 
 /// <summary>
 /// Ratchet's procedural joint layer (the native hero eases). The constants asserted

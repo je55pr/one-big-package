@@ -104,10 +104,16 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
             new PlayerAvatarAxes(
                 Axis(native.RightAxis), Axis(native.ForwardAxis), Axis(native.UpAxis)),
             Skeleton: null);
-        var ratchet = Rac1StaticClasses.Read(core).Mobies[0];
+        var staticClasses = Rac1StaticClasses.Read(core);
+        var ratchet = staticClasses.Mobies[0];
         var payload = core.Assets.AsSpan(ratchet.AssetOffset, ratchet.AssetLength);
-        var layerJoints = Animation.Rac1MobyAttachment.ReadAnimationLayerJoints(payload, 12)
-            .Concat(Animation.Rac1MobyAttachment.ReadAnimationLayerJoints(payload, 13)).ToArray();
+        var rightArm = Animation.Rac1MobyAttachment.ReadAnimationLayerJoints(payload, 12);
+        var leftArm = Animation.Rac1MobyAttachment.ReadAnimationLayerJoints(payload, 13);
+        var layerJoints = rightArm.Concat(leftArm).ToArray();
+        // Moby classes 1 and 2 are the two arm hold animation sets (joint lists 12 and 13).
+        Rac1RatchetArmHoldSource? armHold = staticClasses.Mobies.TryGetValue(1, out var rightClass) &&
+            staticClasses.Mobies.TryGetValue(2, out var leftClass)
+            ? new([rightArm, leftArm], [rightClass.Sequences, leftClass.Sequences]) : null;
         // 0x20e4c8 selects the source arm lists through table0x15f6a0.
         var upper = new bool[native.Skeleton.Count];
         foreach (int joint in layerJoints) upper[joint] = true;
@@ -116,7 +122,23 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
             for (int influence = 0; influence < 3; influence++)
                 if (upper[native.Mesh.VertexJoints[vertex * 3 + influence]])
                     mask[vertex] += native.Mesh.VertexWeights[vertex * 3 + influence];
-        var rig = new Rac1RatchetEquipmentRig(native, layerJoints);
+        // The arm hold is an optional layer too: absent or mismatched arm classes leave Ratchet loading
+        // without it, with the reason in ArmHoldStatus, instead of failing the whole avatar.
+        Rac1RatchetEquipmentRig rig;
+        try
+        {
+            rig = new Rac1RatchetEquipmentRig(native, layerJoints, armHold)
+            {
+                ArmHoldStatus = armHold is null ? "Held-gun arm hold unavailable: one of arm classes 1 and 2 is absent." : null,
+            };
+        }
+        catch (InvalidDataException ex)
+        {
+            rig = new Rac1RatchetEquipmentRig(native, layerJoints)
+            {
+                ArmHoldStatus = $"Held-gun arm hold unavailable: {ex.Message.TrimEnd('.')}.",
+            };
+        }
         // The procedural joint (hero ease) table lives in the same canonical level overlay. It is an
         // optional layer: a table that does not match leaves Ratchet loading without it, with the reason
         // available as the rig's HeroEaseStatus, instead of failing the whole avatar.

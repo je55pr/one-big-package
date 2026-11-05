@@ -58,6 +58,8 @@ public static class Rac1ArsenalRules
         _ => 0,
     };
 
+    public static bool HasArmSlotAnimations(Rac1WeaponId weapon) => ArmSlotCount(weapon) != 0;
+
     public static int FireTicks(Rac1WeaponId weapon) => weapon switch
     {
         Rac1WeaponId.Devastator => 35, // 0x2b2d48 -> PVar+0.
