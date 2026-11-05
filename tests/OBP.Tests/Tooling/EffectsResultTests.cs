@@ -14,7 +14,7 @@ public sealed class EffectsResultTests
             {
                 foreach (string fault in new[] { "clean", "incomplete", "missing", "late-error", "leak", "managed-exception", "tagged-failure", "rid-leak", "rids-leak" })
                     yield return [shell, mode, fault];
-                foreach (string fault in mode == "render" ? new[] { "empty-captures", "missing-image", "missing-family", "invalid-image", "truncated-image", "wrong-dimensions" }
+                foreach (string fault in mode == "render" ? new[] { "empty-captures", "missing-image", "missing-family", "invalid-image", "truncated-image", "wrong-dimensions", "header-only", "bad-crc", "missing-iend", "trailing-data" }
                     : new[] { "short-tape", "missing-end", "missing-commands", "wrong-count" })
                     yield return [shell, mode, fault];
                 if (mode == "replay") yield return [shell, mode, "invalid-report"];
@@ -32,11 +32,15 @@ public sealed class EffectsResultTests
         {
             // Protocol observations only; these fixtures do not claim rendered output or native parity.
             var captures = new[] { "fusion-lab.png", "rac1-LEVEL0.png", "rac2-LEVEL1.png", "rac3-TABLE1.png", "obp-fusion-lab.png" }
-                .Select(name => new { File = name, Width = fault == "wrong-dimensions" ? 2 : 1, Height = 1, ChangedPixels = new { rac1 = 100, rac2 = fault == "missing-family" ? 0 : 100, rac3 = 100 } }).ToArray();
-            byte[] png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=");
+                .Select(name => new { File = name, Width = fault == "wrong-dimensions" ? 21 : 20, Height = 20, ChangedPixels = new { rac1 = 100, rac2 = fault == "missing-family" ? 0 : 100, rac3 = 100 } }).ToArray();
+            byte[] png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAH0lEQVR4nGP4z8BANiJf5xDWPFTdPRpiQ0fzKCAFAABJXCrkw26iogAAAABJRU5ErkJggg==");
             foreach (var capture in captures) File.WriteAllBytes(Path.Combine(directory, capture.File), png);
             if (fault == "invalid-image") File.WriteAllText(Path.Combine(directory, captures[0].File), "synthetic text is not a PNG capture");
             if (fault == "truncated-image") File.WriteAllBytes(Path.Combine(directory, captures[0].File), png[..8]);
+            if (fault == "header-only") File.WriteAllBytes(Path.Combine(directory, captures[0].File), png[..24]);
+            if (fault == "missing-iend") File.WriteAllBytes(Path.Combine(directory, captures[0].File), png[..^12]);
+            if (fault == "trailing-data") File.WriteAllBytes(Path.Combine(directory, captures[0].File), [.. png, 0]);
+            if (fault == "bad-crc") { var corrupt = png.ToArray(); corrupt[32] ^= 1; File.WriteAllBytes(Path.Combine(directory, captures[0].File), corrupt); }
             File.WriteAllText(Path.Combine(directory, "report.json"), JsonSerializer.Serialize(new
             {
                 Version = 1,
@@ -105,10 +109,13 @@ public sealed class EffectsResultTests
         "late-error" or "leak" or "managed-exception" or "tagged-failure" or "rid-leak" or "rids-leak" => "emitted a failure or leaked resources",
         "incomplete" => $"Effects {(mode == "record" ? "recording" : mode)} did not complete",
         "missing" when mode == "record" => "Effects recording is missing or empty",
-        "missing" => "Cannot find path",
+        "missing" => $"Effects {mode} is missing its fresh",
         "empty-captures" => "Effects render report is incomplete",
         "missing-image" or "missing-family" => "Effects render lacks its captured trilogy images",
         "invalid-image" or "truncated-image" or "wrong-dimensions" => "Effects render lacks a valid PNG header",
+        "header-only" or "missing-iend" => "Effects render has incomplete PNG chunks",
+        "bad-crc" => "Effects render has an invalid PNG chunk checksum",
+        "trailing-data" => "Effects render has invalid PNG chunk completion",
         "short-tape" or "missing-end" or "missing-commands" => "Effects tape did not complete its requested native windows",
         "wrong-count" when mode == "record" => "Effects recording did not complete",
         "wrong-count" or "invalid-report" => "Effects replay report is incomplete or diverged",
@@ -148,7 +155,7 @@ public sealed class EffectsResultTests
             }
             else
             {
-                Assert.Contains("Start", result.Output, StringComparison.Ordinal);
+                Assert.Contains("Running effects replay acceptance...", result.Output, StringComparison.Ordinal);
                 Assert.False(File.Exists(report));
             }
         }
@@ -190,7 +197,7 @@ public sealed class EffectsResultTests
                 $ErrorActionPreference='Stop'
                 & dotnet build {Quote(Path.Combine(directory, "Stub.csproj"))} -o {Quote(build)} --nologo
                 exit $LASTEXITCODE
-                """);
+                """, timeoutSeconds: 120);
             Assert.True(compiled.Code == 0, compiled.Output);
             string native = Path.Combine(build, OperatingSystem.IsWindows() ? "Stub.exe" : "Stub");
             foreach (string mode in new[] { "render", "record", "replay" })
@@ -222,7 +229,7 @@ public sealed class EffectsResultTests
                     writer.WriteLine("""{"End":{"Steps":132,"Reason":"saved"}}""");
                 }
                 string? protectedTape = mode == "replay" ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(Path.Combine(output, "effects.jsonl.gz")))) : null;
-                string report = Path.Combine(output, mode == "render" ? "report.json" : "replay.json");
+                string report = Path.Combine(output, mode == "render" ? "report.json" : mode == "record" ? "record.json" : "replay.json");
                 File.WriteAllText(report, """{"Result":"matched","Error":null,"Steps":132,"CheckpointsCompared":2}""");
                 var result = await Run(executable, $"""
                     $ErrorActionPreference='Stop'
@@ -231,22 +238,22 @@ public sealed class EffectsResultTests
                         -OutputDirectory {Quote(output)}
                     """);
                 Assert.NotEqual(0, result.Code);
-                Assert.Contains(mode == "record" ? "Effects recording is missing or empty" : "Cannot find path", result.Output);
-                if (mode != "record") Assert.False(File.Exists(report));
+                Assert.Contains(mode == "record" ? "Effects recording is missing or empty" : $"Effects {mode} is missing its fresh", result.Output);
+                Assert.False(File.Exists(report));
                 if (protectedTape is not null) Assert.Equal(protectedTape, Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(Path.Combine(output, "effects.jsonl.gz")))));
             }
         }
         finally { Directory.Delete(directory, recursive: true); }
     }
 
-    private static async Task<(int Code, string Output)> Run(string executable, string script)
+    private static async Task<(int Code, string Output)> Run(string executable, string script, int timeoutSeconds = 30)
     {
         Assert.True(File.Exists(executable));
         var start = new ProcessStartInfo(executable) { WorkingDirectory = RepoPaths.Root, UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         foreach (string argument in new[] { "-NoProfile", "-NonInteractive", "-EncodedCommand", Convert.ToBase64String(Encoding.Unicode.GetBytes(script)) }) start.ArgumentList.Add(argument);
         using var process = Process.Start(start)!;
         var stdout = process.StandardOutput.ReadToEndAsync(); var stderr = process.StandardError.ReadToEndAsync();
-        try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(30)); }
+        try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(timeoutSeconds)); }
         catch (TimeoutException) { process.Kill(entireProcessTree: true); throw; }
         return (process.ExitCode, await stderr + await stdout);
     }

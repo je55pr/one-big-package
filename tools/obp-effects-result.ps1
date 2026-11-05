@@ -1,6 +1,50 @@
 #Requires -Version 5.1
 . (Join-Path $PSScriptRoot 'obp-smoke-process.ps1')
 
+function Assert-ObpEffectsPngChunks([IO.Stream]$Stream) {
+    # Complete structural PNG evidence: ordered critical chunks, bounded lengths
+    # and every CRC, including IDAT and the terminating IEND.
+    $table = New-Object uint32[] 256
+    for ($index = 0; $index -lt 256; $index++) {
+        [uint32]$value = $index
+        for ($bit = 0; $bit -lt 8; $bit++) {
+            if ($value -band 1) { $value = [uint32](($value -shr 1) -bxor [uint32]3988292384) }
+            else { $value = $value -shr 1 }
+        }
+        $table[$index] = $value
+    }
+    $reader = [IO.BinaryReader]::new($Stream, [Text.Encoding]::ASCII, $true)
+    try {
+        $Stream.Position = 8; $first = $true; $dataSeen = $false
+        while ($Stream.Position -lt $Stream.Length) {
+            if ($Stream.Length - $Stream.Position -lt 12) { throw 'Effects render has incomplete PNG chunks.' }
+            $bytes = $reader.ReadBytes(4)
+            [long]$length = ([long]$bytes[0] -shl 24) + ([long]$bytes[1] -shl 16) + ([long]$bytes[2] -shl 8) + $bytes[3]
+            $kind = $reader.ReadBytes(4); $name = [Text.Encoding]::ASCII.GetString($kind)
+            if ($length -gt [int]::MaxValue -or $length -gt $Stream.Length - $Stream.Position - 4) { throw 'Effects render has incomplete PNG chunks.' }
+            if (($first -and ($name -cne 'IHDR' -or $length -ne 13)) -or (!$first -and $name -ceq 'IHDR')) {
+                throw 'Effects render has invalid PNG chunk order.'
+            }
+            $data = $reader.ReadBytes([int]$length)
+            [uint32]$crc = 4294967295
+            foreach ($byte in $kind) { $crc = [uint32](($crc -shr 8) -bxor $table[($crc -bxor $byte) -band 255]) }
+            foreach ($byte in $data) { $crc = [uint32](($crc -shr 8) -bxor $table[($crc -bxor $byte) -band 255]) }
+            $crc = [uint32]($crc -bxor [uint32]4294967295)
+            $bytes = $reader.ReadBytes(4)
+            [long]$expected = ([long]$bytes[0] -shl 24) + ([long]$bytes[1] -shl 16) + ([long]$bytes[2] -shl 8) + $bytes[3]
+            if ($crc -ne $expected) { throw 'Effects render has an invalid PNG chunk checksum.' }
+            if ($name -ceq 'IDAT' -and $length -gt 0) { $dataSeen = $true }
+            if ($name -ceq 'IEND') {
+                if (!$dataSeen -or $length -ne 0 -or $Stream.Position -ne $Stream.Length) { throw 'Effects render has invalid PNG chunk completion.' }
+                return
+            }
+            $first = $false
+        }
+        throw 'Effects render has incomplete PNG chunks.'
+    }
+    finally { $reader.Dispose() }
+}
+
 function Read-ObpEffectsTape([string]$Path, [int]$StopFrame) {
     if (!(Test-Path -LiteralPath $Path -PathType Leaf) -or (Get-Item -LiteralPath $Path).Length -eq 0) {
         throw 'Effects recording is missing or empty.'
@@ -47,7 +91,9 @@ function Assert-ObpEffectsResult([string]$Mode, [string]$Directory, [string]$Log
     }
     if ($Mode -eq 'render') {
         if (!$Log.Contains('[effects-smoke] PASS:')) { throw 'Effects render did not complete.' }
-        $report = Get-Content -LiteralPath (Join-Path $Directory 'report.json') -Raw | ConvertFrom-Json
+        $reportPath = Join-Path $Directory 'report.json'
+        if (!(Test-Path -LiteralPath $reportPath -PathType Leaf)) { throw 'Effects render is missing its fresh report.json.' }
+        $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
         $names = @('fusion-lab.png', 'rac1-LEVEL0.png', 'rac2-LEVEL1.png', 'rac3-TABLE1.png', 'obp-fusion-lab.png')
         if ($report.Version -ne 1 -or $report.Passed -cne $true -or @($report.Samples).Count -ne 14 -or @($report.Captures).Count -ne 5 -or
             @(Compare-Object $names @($report.Captures | ForEach-Object File)).Count -ne 0) {
@@ -69,6 +115,7 @@ function Assert-ObpEffectsResult([string]$Mode, [string]$Directory, [string]$Log
                 $height = ([long]$header[20] -shl 24) + ([long]$header[21] -shl 16) + ([long]$header[22] -shl 8) + $header[23]
                 if ($read -ne 24 -or $signature -cne '89-50-4E-47-0D-0A-1A-0A-00-00-00-0D-49-48-44-52' -or
                     $width -ne $capture.Width -or $height -ne $capture.Height) { throw 'Effects render lacks a valid PNG header matching its reported dimensions.' }
+                Assert-ObpEffectsPngChunks -Stream $file
             }
             finally { $file.Dispose() }
         }
@@ -82,7 +129,9 @@ function Assert-ObpEffectsResult([string]$Mode, [string]$Directory, [string]$Log
         return
     }
     if (!$Log.Contains('[playtest] PASS;') -or !$Log.Contains('reason=playtest-replay-complete exitCode=0')) { throw 'Effects replay did not complete.' }
-    $report = Get-Content -LiteralPath (Join-Path $Directory 'replay.json') -Raw | ConvertFrom-Json
+    $reportPath = Join-Path $Directory 'replay.json'
+    if (!(Test-Path -LiteralPath $reportPath -PathType Leaf)) { throw 'Effects replay is missing its fresh replay.json.' }
+    $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
     if ($report.Result -cne 'matched' -or $null -ne $report.Error -or $null -ne $report.FirstDifference -or
         # Replay also compares the header's initial state, before the step checkpoints.
         $report.Steps -ne $tape.Steps -or $report.CheckpointsCompared -ne ($tape.Checkpoints + 1)) {

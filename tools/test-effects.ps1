@@ -37,7 +37,7 @@ if (!$SkipBuild) {
 function Invoke-EffectsRun([string]$RunName, [string[]]$ExtraArguments) {
     # Only remove this mode's known reports/images so stale output cannot certify a new process.
     $fresh = if ($RunName -eq 'render') { @('report.json', 'fusion-lab.png', 'rac1-LEVEL0.png', 'rac2-LEVEL1.png', 'rac3-TABLE1.png', 'obp-fusion-lab.png') }
-        elseif ($RunName -eq 'replay') { @('replay.json') } else { @() }
+        elseif ($RunName -eq 'replay') { @('replay.json') } elseif ($RunName -eq 'record') { @('record.json') } else { @() }
     foreach ($name in $fresh) {
         $path = Join-Path $output $name
         if (Test-Path -LiteralPath $path -PathType Leaf) { Remove-Item -LiteralPath $path }
@@ -101,3 +101,4 @@ if ($Mode -in @('all', 'render')) { Invoke-EffectsRun 'render' @('--acceptance-o
 if ($Mode -in @('all', 'record')) { Invoke-EffectsRun 'record' @('--destination', 'obp:fusion-lab', '--record-playtest', (Join-Path $output 'effects.jsonl.gz'), '--playtest-report', (Join-Path $output 'record.json')) }
 if ($Mode -in @('all', 'replay')) { Invoke-EffectsRun 'replay' @('--destination', 'obp:fusion-lab', '--replay-playtest', (Join-Path $output 'effects.jsonl.gz'), '--playtest-report', (Join-Path $output 'replay.json')) }
 Write-Host 'Effects acceptance passed. Captures, replay and local source configuration remain in the ignored output directory.'
+exit 0
