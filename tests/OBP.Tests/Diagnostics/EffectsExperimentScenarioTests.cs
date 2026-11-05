@@ -10,19 +10,20 @@ namespace OBP.Tests;
 public sealed class EffectsExperimentScenarioTests
 {
     [Theory]
-    [InlineData(false, false, false, false)]
-    [InlineData(true, false, false, false)]
-    [InlineData(false, true, false, false)]
-    [InlineData(false, false, true, false)]
-    [InlineData(false, false, false, true)]
-    public async Task SyntheticObservationsRequireAdvancingTrilogyClocks(bool frozen, bool foreignSource, bool oneLagging, bool incomplete)
+    [InlineData(false, false, false, false, false)]
+    [InlineData(true, false, false, false, false)]
+    [InlineData(false, true, false, false, false)]
+    [InlineData(false, false, true, false, false)]
+    [InlineData(false, false, false, true, false)]
+    [InlineData(false, false, false, false, true)]
+    public async Task SyntheticObservationsRequireAdvancingTrilogyClocks(bool frozen, bool foreignSource, bool oneLagging, bool incomplete, bool extraSource)
     {
         string directory = Path.Combine(Path.GetTempPath(), "obp-effects-clock-" + Guid.NewGuid().ToString("N"));
         string report = Path.Combine(directory, "report.json");
         try
         {
             // Synthetic port observations only; no renderer, retail assets or native parity is claimed.
-            var fixture = new Fixture(frozen, foreignSource, oneLagging, incomplete);
+            var fixture = new Fixture(frozen, foreignSource, oneLagging, incomplete, extraSource);
             if (foreignSource)
             {
                 fixture.Start();
@@ -33,14 +34,24 @@ public sealed class EffectsExperimentScenarioTests
                 Assert.Equal(2, substituted.Count(observation => observation.Recipe.Source.Game == ObpSourceGame.Synthetic));
                 fixture.Reset();
             }
+            if (extraSource)
+            {
+                fixture.Start();
+                var extra = fixture.Read();
+                Assert.Equal(6, extra.Length);
+                Assert.Equal(4, extra.Select(observation => observation.Recipe.Source.Game).Distinct().Count());
+                foreach (var game in new[] { ObpSourceGame.Rac1, ObpSourceGame.Rac2, ObpSourceGame.Rac3, ObpSourceGame.Synthetic })
+                    Assert.Contains(extra, observation => observation.Recipe.Source.Game == game);
+                fixture.Reset();
+            }
             var definition = new DiagnosticScenarioDefinition("synthetic-effects-clock", DiagnosticSourceAccess.AssetFree,
                 DiagnosticSetup.AssetFreeFixture, [], TimeSpan.FromSeconds(10), 10000);
             var scenario = new EffectsExperimentScenario(definition, fixture, fixture, fixture, report, _ => { });
             using var run = new DiagnosticRunContext(fixture, CancellationToken.None, 10000);
-            if (frozen || foreignSource || oneLagging || incomplete)
+            if (frozen || foreignSource || oneLagging || incomplete || extraSource)
             {
                 var error = await Assert.ThrowsAsync<InvalidOperationException>(() => scenario.RunAsync(run));
-                Assert.Contains(foreignSource ? "all three trilogy source identities" : "twenty active ticks together", error.Message);
+                Assert.Contains(foreignSource || extraSource ? "all three trilogy source identities" : "twenty active ticks together", error.Message);
                 Assert.Equal(frozen || oneLagging || incomplete ? 120 : 20, fixture.PhysicsWaits);
                 Assert.Equal(0, fixture.Captures);
                 Assert.False(File.Exists(report));
@@ -58,7 +69,7 @@ public sealed class EffectsExperimentScenarioTests
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true); }
     }
 
-    private sealed class Fixture(bool frozen, bool foreignSource, bool oneLagging, bool incomplete) : IDiagnosticEffectsFixture, IDiagnosticFrameClock,
+    private sealed class Fixture(bool frozen, bool foreignSource, bool oneLagging, bool incomplete, bool extraSource) : IDiagnosticEffectsFixture, IDiagnosticFrameClock,
         IDiagnosticNavigationActions, IDiagnosticSourceAttachmentFixture
     {
         private bool _active, _detached;
@@ -74,7 +85,7 @@ public sealed class EffectsExperimentScenarioTests
         public bool RetiredWorldClean => true;
         public ImmutableArray<EffectObservation> Read() => !_active ? [] : [.. Enumerable.Range(0, incomplete ? 5 : 6)
             .Select(index => new EffectObservation(new("synthetic", 0, 0, index),
-                new(new(foreignSource && index % 3 == 0 ? ObpSourceGame.Synthetic : Games[index % 3],
+                new(new((foreignSource && index % 3 == 0) || (extraSource && index == 0) ? ObpSourceGame.Synthetic : Games[index % 3],
                     "synthetic", "fixture", "effect", index.ToString()), "synthetic"),
                 new RuntimeEffectState(oneLagging ? Math.Min(_tick, index == 0 ? 19 : 20) : _tick, 1, true, 1, 1, 1)))
             .Where(observation => !_detached || observation.Recipe.Source.Game != ObpSourceGame.Rac2)];
