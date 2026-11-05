@@ -69,21 +69,24 @@ public sealed class Rac1AdditionalUseHostTests
         use.ResetSession(inventory);
         use.ResetInputState();
 
-        bool detectorChecked = false;
+        bool detectorChecked = false, arsenalHeld = true;
         use.RequestFire();
         var blocked = use.BeginFrame(true, () => { detectorChecked = true; return true; },
-            inventory, held => Assert.False(held), () => true);
+            inventory, held => arsenalHeld = held, () => true);
         Assert.True(detectorChecked);
         Assert.Null(blocked.Shot);
         Assert.False(blocked.Held);
         Assert.False(use.FireRequested);
+        Assert.False(arsenalHeld);
 
+        arsenalHeld = true;
         use.RequestFire();
         var ineligible = use.BeginFrame(false,
             () => throw new InvalidOperationException("Ineligible input must not probe the detector."),
-            inventory, held => Assert.False(held), () => true);
+            inventory, held => arsenalHeld = held, () => true);
         Assert.Null(ineligible.Shot);
         Assert.False(use.FireRequested);
+        Assert.False(arsenalHeld);
         Assert.Equal(0, use.ShotsFired);
         Assert.Equal(0, use.Session!.Generation);
     }

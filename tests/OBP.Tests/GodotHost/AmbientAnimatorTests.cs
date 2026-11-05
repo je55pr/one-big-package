@@ -64,7 +64,12 @@ public class AmbientAnimatorTests
     public void SameTime_SameOutput()
     {
         var anim = UvScroll((0.037, 0.011, 0));
-        Assert.Equal(AmbientAnimator.Sample(anim, 12.34), AmbientAnimator.Sample(anim, 12.34));
+        var first = AmbientAnimator.Sample(anim, 12.34);
+        Assert.Equal(0.45658, first.U, precision: 9);
+        Assert.Equal(0.13574, first.V, precision: 9);
+        Assert.Equal(0, first.Radians);
+        AmbientAnimator.Sample(Spin((0, 0.5, 0)), 4);
+        Assert.Equal(first, AmbientAnimator.Sample(anim, 12.34));
     }
 
     [Fact]

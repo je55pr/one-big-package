@@ -351,6 +351,24 @@ public sealed class Rac1WeaponInventory
         return new Rac1AmmoGrantResult(nativeItemId, ammoBefore, _ammo[nativeItemId]);
     }
 
+    /// <summary>
+    /// OBP convenience (not a retail action): raise every owned ammo-using item to its
+    /// recovered capacity. Unowned items and items without ammo are untouched.
+    /// Returns how many items gained ammo.
+    /// </summary>
+    public int RefillAllAmmo()
+    {
+        int refilled = 0;
+        for (int item = 0; item < Rac1NativeInventoryLayout.ItemCount; item++)
+        {
+            var descriptor = Rac1ItemAmmoDescriptors.Get(item);
+            if (!descriptor.UsesAmmo || !OwnsNativeItem(item) || _ammo[item] >= descriptor.MaxAmmo) continue;
+            _ammo[item] = descriptor.MaxAmmo;
+            refilled++;
+        }
+        return refilled;
+    }
+
     public int AddAmmoClamped(int nativeItemId, int amount) =>
         GrantAmmoClamped(nativeItemId, amount).AmmoAfter;
 

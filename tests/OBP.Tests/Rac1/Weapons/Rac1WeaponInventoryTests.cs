@@ -283,6 +283,23 @@ public sealed class Rac1WeaponInventoryTests
     }
 
     [Fact]
+    public void RefillAllAmmoRaisesOnlyOwnedAmmoItemsToTheirCapacity()
+    {
+        var inventory = new Rac1WeaponInventory(ownsFirstRanged: true, firstRangedAmmo: 3);
+        inventory.AcquireNativeItem((int)Rac1WeaponId.Pyrocitor);
+        inventory.TryConsumeAmmo((int)Rac1WeaponId.Pyrocitor, 20);
+
+        Assert.Equal(2, inventory.RefillAllAmmo());
+        Assert.Equal(40, inventory.FirstRangedAmmo);
+        Assert.Equal(240, inventory.GetAmmo((int)Rac1WeaponId.Pyrocitor));
+        // Items that are not owned (here the Blaster, capacity 200) stay empty.
+        Assert.Equal(0, inventory.GetAmmo((int)Rac1WeaponId.Blaster));
+        Assert.False(inventory.OwnsNativeItem((int)Rac1WeaponId.Blaster));
+        // A second call has nothing left to do.
+        Assert.Equal(0, inventory.RefillAllAmmo());
+    }
+
+    [Fact]
     public void WrenchUseDoesNotConsumeRangedAmmo()
     {
         var inventory = new Rac1WeaponInventory(true, firstRangedAmmo: 6);

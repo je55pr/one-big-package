@@ -63,6 +63,8 @@ public sealed class Rac1BoltCrateRetailTests
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
         var world = Rac1WorldImport.Build(reader, 0);
-        Assert.All(world.DynamicObjects!.Where(o => o.NativeClassId != 500), o => Assert.Null(o.NativeUid));
+        var otherObjects = world.DynamicObjects!.Where(o => o.NativeClassId != 500).ToArray();
+        Assert.NotEmpty(otherObjects);
+        Assert.All(otherObjects, o => Assert.Null(o.NativeUid));
     }
 }

@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace OBP.Game.Diagnostics;
 
 public sealed class BugReporterScenario(CaptureDiagnosticContext context, ICaptureRecorderDiagnosticFixture recorder,
@@ -95,5 +97,38 @@ public sealed class BugReporterScenario(CaptureDiagnosticContext context, ICaptu
         }
         Require(reports.ReadArchive().ReplaysMatchedSameBuild, "Replay required a build override or diverged.");
         Log("[bug-report-smoke] two fresh-process same-build replays through saved report markers PASS");
+    }
+
+    // File-backed replay metadata verification, kept independent of the Godot UI.
+    internal static bool ReplayFilesMatchSavedReports(Guid[] expectedReportIds, IEnumerable<string> files)
+    {
+        try
+        {
+            var results = files.Select(file =>
+            {
+                using var result = JsonDocument.Parse(File.ReadAllText(file));
+                return result.RootElement.Clone();
+            }).ToArray();
+            return MatchesSavedReportReplays(expectedReportIds, results);
+        }
+        catch (IOException) { return false; }
+        catch (UnauthorizedAccessException) { return false; }
+        catch (JsonException) { return false; }
+    }
+    internal static bool MatchesSavedReportReplays(Guid[] expectedReportIds, JsonElement[] results)
+    {
+        if (expectedReportIds.Length != 2 || expectedReportIds.Distinct().Count() != 2 ||
+            expectedReportIds.Contains(Guid.Empty) || results.Length != 2) return false;
+        var actualIds = new List<Guid>();
+        foreach (var result in results)
+        {
+            if (result.ValueKind != JsonValueKind.Object ||
+                !result.TryGetProperty("Result", out var outcome) || outcome.ValueKind != JsonValueKind.String || outcome.GetString() != "matched" ||
+                !result.TryGetProperty("BuildChanged", out var changed) || changed.ValueKind != JsonValueKind.False ||
+                !result.TryGetProperty("ReportMarker", out var marker) || marker.ValueKind != JsonValueKind.Object ||
+                !marker.TryGetProperty("Id", out var id) || id.ValueKind != JsonValueKind.String || !id.TryGetGuid(out var reportId)) return false;
+            actualIds.Add(reportId);
+        }
+        return expectedReportIds.Order().SequenceEqual(actualIds.Order());
     }
 }
