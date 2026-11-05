@@ -22,6 +22,25 @@ public sealed class FusionTransitionDiagnosticTests
         else Assert.Contains("coordinate count", Assert.Throws<InvalidOperationException>(() => probe.Check(previous)).Message);
     }
 
+    [Fact]
+    public void MissingSkinRemainsExplicitlyUnavailable()
+    {
+        var probe = new TransitionProbe(new FusionFixture(null));
+        Assert.Contains("source skin pose is unavailable", Assert.Throws<DiagnosticUnavailableException>(
+            () => probe.Check([0, 1, 2, 3, 4, 5])).Message);
+    }
+
+    [Theory]
+    [InlineData(.000009, true)]
+    [InlineData(.000011, false)]
+    public void CompletePoseRetainsTheExistingContinuityTolerance(double offset, bool accepted)
+    {
+        var probe = new TransitionProbe(new FusionFixture([offset, 1, 2, 3, 4, 5]));
+        if (accepted) Assert.Equal(1, probe.Check([0, 1, 2, 3, 4, 5]));
+        else Assert.Contains("rendered source pose", Assert.Throws<InvalidOperationException>(
+            () => probe.Check([0, 1, 2, 3, 4, 5])).Message);
+    }
+
     private sealed class TransitionProbe(IFusionWeaponDiagnosticFixture fusion) : FusionWeaponScenarioSupport(null!, null!, fusion)
     {
         public int Check(ImmutableArray<double> previous)
@@ -32,7 +51,7 @@ public sealed class FusionTransitionDiagnosticTests
         }
     }
 
-    private sealed class FusionFixture(ImmutableArray<double> coordinates) : IFusionWeaponDiagnosticFixture
+    private sealed class FusionFixture(ImmutableArray<double>? coordinates) : IFusionWeaponDiagnosticFixture
     {
         internal static DiagnosticWeaponTransform Transform => new(Vector3.Zero, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
         private static SourceWeaponKey Key => FusionWeaponSession.Lancer;
@@ -43,7 +62,7 @@ public sealed class FusionTransitionDiagnosticTests
         public FusionWeaponTransientDiagnostic ReadTransients() => throw new NotSupportedException();
         public FusionWeaponMenuDiagnostic ReadMenu() => throw new NotSupportedException();
         public int HeldModelCount => throw new NotSupportedException();
-        public int ReadAmmo(SourceWeaponKey weapon) => throw new NotSupportedException();
+        public int ReadAmmo(SourceWeaponKey _) => throw new NotSupportedException();
         public string OriginalInventory() => throw new NotSupportedException();
         public string CurrentInventory() => throw new NotSupportedException();
         public IFusionAssetDiagnosticWitness CaptureAssets() => throw new NotSupportedException();
@@ -55,6 +74,6 @@ public sealed class FusionTransitionDiagnosticTests
         public void ClearTransients() => throw new NotSupportedException();
         public bool ReenterWithoutIsolatedLoadout() => throw new NotSupportedException();
         public void ShowDestinations() => throw new NotSupportedException();
-        public Task CaptureAsync(string name, bool profile, CancellationToken token) => throw new NotSupportedException();
+        public Task CaptureAsync(string _, bool __, CancellationToken ___) => throw new NotSupportedException();
     }
 }
