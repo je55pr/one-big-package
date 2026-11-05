@@ -13,6 +13,18 @@ namespace OBP.Tests;
 public sealed class Rac3WorldTests
 {
     [Fact]
+    public void CommittedCensusCoversEveryCatalogueTableExactlyOnce()
+    {
+        string path = Path.Combine(RepoPaths.Root, "research", "generated", "rac3-ntscu-original.production-import-census.json");
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        var rows = document.RootElement.GetProperty("rows");
+        Assert.Equal(51, rows.GetArrayLength());
+        Assert.Equal(
+            Rac3DestinationCatalogue.Instance.Destinations.Select(destination => Rac3WorldProvider.Instance.ResolveTableIndex(destination)!.Value).Order(),
+            rows.EnumerateArray().Select(row => row.GetProperty("tableIndex").GetInt32()).Order());
+    }
+
+    [Fact]
     public void CataloguePreservesSparseRetailTableIdentity()
     {
         var c = Rac3DestinationCatalogue.Instance;
@@ -190,7 +202,15 @@ public sealed class Rac3WorldTests
                 Assert.Contains($"_s{spec.Sequence}_", m.Name, StringComparison.Ordinal);
                 Assert.Equal(spec.Frames, m.Frames.Count);
                 Assert.Equal(spec.Fps, m.FramesPerSecond, 3);
-                Assert.All(m.Frames.SelectMany(f => f), v => Assert.True(double.IsFinite(v)));
+                Assert.NotEmpty(m.Frames[0]);
+                Assert.Equal(0, m.Frames[0].Length % 3);
+                Assert.NotEmpty(m.Indices);
+                Assert.All(m.Indices, index => Assert.InRange(index, 0, m.Frames[0].Length / 3 - 1));
+                Assert.All(m.Frames, frame =>
+                {
+                    Assert.Equal(m.Frames[0].Length, frame.Length);
+                    Assert.All(frame, v => Assert.True(double.IsFinite(v)));
+                });
             });
             Assert.Contains(classMeshes[0].Frames.Skip(1), frame =>
                 frame.Where((v, i) => Math.Abs(v - classMeshes[0].Frames[0][i]) > 1e-4).Any());
@@ -281,6 +301,9 @@ public sealed class Rac3WorldTests
         using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
         JsonElement rows = document.RootElement.GetProperty("rows");
         Assert.Equal(51, rows.GetArrayLength());
+        Assert.Equal(
+            Rac3DestinationCatalogue.Instance.Destinations.Select(destination => Rac3WorldProvider.Instance.ResolveTableIndex(destination)!.Value).Order(),
+            rows.EnumerateArray().Select(row => row.GetProperty("tableIndex").GetInt32()).Order());
         using var reader = new FileRandomAccessReader(iso!);
         int admittedShipStarts = 0;
         int defaultShipTransforms = 0;

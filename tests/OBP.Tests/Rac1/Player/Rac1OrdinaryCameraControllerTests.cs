@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using OBP.Core.Math;
 using OBP.RAC1.Camera;
 
@@ -6,11 +7,7 @@ namespace OBP.Tests;
 
 public sealed class Rac1OrdinaryCameraControllerTests
 {
-    public static IEnumerable<object[]> NativeScenarios()
-    {
-        using var doc = ReadTrace();
-        return doc.RootElement.GetProperty("cases").EnumerateArray().Select(c => new object[] { c.GetProperty("name").GetString()! }).ToArray();
-    }
+    public static IEnumerable<object[]> NativeScenarios() => FollowPlans.Select(plan => new object[] { plan.Name });
 
     [Theory]
     [MemberData(nameof(NativeScenarios))]
@@ -45,12 +42,7 @@ public sealed class Rac1OrdinaryCameraControllerTests
         }
     }
 
-    public static IEnumerable<object[]> NativeReleaseScenarios()
-    {
-        using var doc = ReadTrace();
-        return doc.RootElement.GetProperty("obstructionRelease").GetProperty("cases").EnumerateArray()
-            .Select(c => new object[] { c.GetProperty("name").GetString()! }).ToArray();
-    }
+    public static IEnumerable<object[]> NativeReleaseScenarios() => ReleasePlans.Select(name => new object[] { name });
 
     [Theory]
     [MemberData(nameof(NativeReleaseScenarios))]
@@ -228,7 +220,97 @@ public sealed class Rac1OrdinaryCameraControllerTests
         public Vec3? Segment(Vec3 a, Vec3 b) => null;
     }
 
-    private static JsonDocument ReadTrace() => JsonDocument.Parse(File.ReadAllText(Path.Combine(RepoPaths.Root, "research/generated/rac1-camera-native-traces.json")));
+    // Preserve discovery independently of the observations under test. Removing a
+    // witness must fail its parameter case instead of removing that case too.
+    private static readonly (string Name, int Frames)[] FollowPlans =
+    [
+        ("horizontal-negative-normal", 240), ("horizontal-negative-inverted", 240),
+        ("horizontal-positive-normal", 240), ("horizontal-positive-inverted", 240),
+        ("vertical-negative-normal", 240), ("vertical-negative-inverted", 240),
+        ("vertical-positive-normal", 240), ("vertical-positive-inverted", 240),
+        ("horizontal-speed-0", 136), ("horizontal-speed-2", 136),
+        ("partial-stick-diagonal", 228), ("sideways-follow", 150),
+        ("forward-back-follow", 210), ("jump-follow", 160),
+    ];
+    private static readonly string[] ReleasePlans =
+    [
+        "neutral", "horizontal-negative", "horizontal-positive", "vertical-up", "vertical-down",
+        "native-negative-diagonal", "native-positive-diagonal", "native-positive-x-negative-y",
+        "native-negative-x-positive-y", "horizontal-below-threshold", "horizontal-above-threshold",
+        "vertical-below-threshold", "vertical-above-threshold", "positive-input-after-release-started",
+    ];
+
+    [Theory]
+    [InlineData("complete", "")]
+    [InlineData("follow", "missing-case")]
+    [InlineData("follow", "duplicate-case")]
+    [InlineData("follow", "missing-samples")]
+    [InlineData("follow", "missing-checkpoint")]
+    [InlineData("follow", "incomplete-frames")]
+    [InlineData("release", "missing-case")]
+    [InlineData("release", "duplicate-case")]
+    [InlineData("release", "missing-samples")]
+    [InlineData("release", "missing-checkpoint")]
+    [InlineData("release", "incomplete-frames")]
+    public void TraceRequiresEveryScenarioAndCheckpoint(string cohort, string fault)
+    {
+        var witness = JsonNode.Parse(File.ReadAllText(TracePath))!;
+        if (cohort != "complete")
+        {
+            var cases = (cohort == "follow" ? witness["cases"] : witness["obstructionRelease"]!["cases"])!.AsArray();
+            switch (fault)
+            {
+                case "missing-case": cases.RemoveAt(0); break;
+                case "duplicate-case": cases[1] = cases[0]!.DeepClone(); break;
+                case "missing-samples": cases[0]!["samples"]!.AsArray().Clear(); break;
+                case "missing-checkpoint": cases[0]!["samples"]!.AsArray().RemoveAt(0); break;
+                case "incomplete-frames" when cohort == "follow": cases[0]!["segments"]![0]!["frames"] = 0; break;
+                case "incomplete-frames": cases[0]!["frames"] = 0; break;
+                default: throw new ArgumentOutOfRangeException(nameof(fault), fault, "Unknown trace fault.");
+            }
+        }
+        void Check() => RequireTraceCohorts(JsonSerializer.SerializeToElement(witness));
+        if (cohort == "complete") Check();
+        else Assert.ThrowsAny<Xunit.Sdk.XunitException>(Check);
+    }
+
+    private static string TracePath => Path.Combine(RepoPaths.Root, "research/generated/rac1-camera-native-traces.json");
+    private static JsonDocument ReadTrace()
+    {
+        var trace = JsonDocument.Parse(File.ReadAllText(TracePath));
+        try { RequireTraceCohorts(trace.RootElement); return trace; }
+        catch { trace.Dispose(); throw; }
+    }
+
+    private static void RequireTraceCohorts(JsonElement trace)
+    {
+        // Input plan names, lengths and checkpoint schedule are independently
+        // retained in tools/rac1-camera-native-trace.py.
+        var follow = trace.GetProperty("cases").EnumerateArray().ToArray();
+        var release = trace.GetProperty("obstructionRelease").GetProperty("cases").EnumerateArray().ToArray();
+        Assert.Equal(FollowPlans.Select(plan => plan.Name).Order(StringComparer.Ordinal),
+            follow.Select(item => item.GetProperty("name").GetString()).Order(StringComparer.Ordinal));
+        Assert.Equal(ReleasePlans.Order(StringComparer.Ordinal),
+            release.Select(item => item.GetProperty("name").GetString()).Order(StringComparer.Ordinal));
+        foreach (var item in follow)
+        {
+            int frames = FollowPlans.Single(plan => plan.Name == item.GetProperty("name").GetString()).Frames;
+            var segments = item.GetProperty("segments").EnumerateArray().ToArray();
+            Assert.NotEmpty(segments);
+            Assert.All(segments, segment => Assert.True(segment.GetProperty("frames").GetInt32() > 0));
+            Assert.Equal(frames, segments.Sum(segment => segment.GetProperty("frames").GetInt32()));
+            RequireSamples(item, frames, [1, 6, 12, 24, 36, 48, 60, 72, 90, 120, 180, frames]);
+        }
+        foreach (var item in release)
+        {
+            Assert.Equal(240, item.GetProperty("frames").GetInt32());
+            RequireSamples(item, 240, [1, 6, 20, 60, 179, 180, 181, 200, 240]);
+        }
+
+        static void RequireSamples(JsonElement item, int frames, int[] checkpoints) =>
+            Assert.Equal(checkpoints.Where(frame => frame <= frames).Distinct().Order(),
+                item.GetProperty("samples").EnumerateArray().Select(sample => sample.GetProperty("frame").GetInt32()).Order());
+    }
     private static Vec3 Vector(JsonElement v) => new(v[0].GetDouble(), v[1].GetDouble(), v[2].GetDouble());
     private static void Near(Vec3 expected, Vec3 actual, double tolerance, string context) => Assert.True(
         Math.Abs(expected.X - actual.X) <= tolerance && Math.Abs(expected.Y - actual.Y) <= tolerance && Math.Abs(expected.Z - actual.Z) <= tolerance,

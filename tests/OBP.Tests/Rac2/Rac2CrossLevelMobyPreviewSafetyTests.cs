@@ -38,6 +38,7 @@ public sealed class Rac2CrossLevelMobyPreviewSafetyTests(ITestOutputHelper log)
             foreach (var (id, a) in before)
             {
                 var b = after[id];
+                Assert.Equal(b.Mesh.Positions.Length, b.Mesh.Normals.Length);
                 Assert.Equal(a.Mesh.Positions.Length, b.Mesh.Positions.Length);
                 Assert.Equal(a.Mesh.Indices, b.Mesh.Indices);
                 Assert.Equal(a.Mesh.Uvs, b.Mesh.Uvs);

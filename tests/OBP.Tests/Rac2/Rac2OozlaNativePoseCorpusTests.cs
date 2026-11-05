@@ -52,11 +52,16 @@ public sealed class Rac2OozlaNativePoseCorpusTests(ITestOutputHelper output)
                 foreach (var seq in cls.Sequences)
                 {
                     if (seq.Frames.Count == 0) continue;
-                    foreach (var frame in seq.Frames.Count > 1 ?
-                        new[] { seq.Frames[0], seq.Frames[^1] } : new[] { seq.Frames[0] })
+                    foreach (int frameIndex in seq.Frames.Count > 1 ? new[] { 0, seq.Frames.Count - 1 } : new[] { 0 })
                     {
+                        var frame = seq.Frames[frameIndex];
                         if (!frame.ExtraChannelsResolved) continue; // Unsupported source frame.
                         var points = Ps2MobyNativePose.Pose(source, cls.Mesh, frame);
+                        string context = $"class={cls.OClass} sequence={seq.Index} frame={frameIndex}";
+                        Assert.True(cls.Mesh.Positions.Length == points.Length,
+                            $"{context}: expected {cls.Mesh.Positions.Length} coordinates, got {points.Length}");
+                        Assert.All(points, (point, component) => Assert.True(double.IsFinite(point),
+                            $"{context} component={component}: nonfinite coordinate"));
                         poses++;
                         if (seq.BoundingSphere is not { } sphere || sphere.Radius <= 0) continue;
                         double k = cls.Mesh.Scale / 1024.0;

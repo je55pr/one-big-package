@@ -22,6 +22,7 @@ public sealed class Rac2Class2827PresentationTests
         {
             Assert.True(clip.FrameCount > 1);
             Assert.Equal(source.Meshes.Count, clip.Surfaces.Count);
+            Assert.Equal(clip.FrameCount, clip.FrameDurationsSeconds.Count);
             Assert.All(clip.FrameDurationsSeconds, duration => Assert.True(double.IsFinite(duration) && duration > 0));
             foreach (var surface in clip.Surfaces)
             {

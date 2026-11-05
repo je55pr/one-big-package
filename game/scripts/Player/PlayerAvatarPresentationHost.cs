@@ -282,7 +282,7 @@ internal sealed class PlayerAvatarPresentationHost
             bindings.Alive(), bindings.Player()?.Rac1WrenchFrame.Active == true,
             CurrentSourceSequence(), controller.TraversalAuthoredAnimationTime) ?? input;
         StepNative(state, input);
-
+        StepJointEases(bindings, controller, input);
 
         bindings.Equipment.ApplyAvatarEquipmentPose(this, controller, state, input,
             new(bindings.Hand(), bindings.Use.UseTicks, bindings.Use.UseAge,
@@ -308,9 +308,30 @@ internal sealed class PlayerAvatarPresentationHost
     }
 
 
+    // Ratchet's procedural joints, including the held-weapon wall response (0x20a990): guns with
+    // arm animations are raised when a wall is within about 1.3 units ahead.
+    private void StepJointEases(WorldBindings bindings, Rac1PlayerAnimationPresentationController controller,
+        Rac1LocomotionAnimationInput input)
+    {
+        var hand = bindings.Hand();
+        int slots = bindings.Equipment.HeldArmSlots(hand);
+        bool carries = slots != 0;
+        float? wall = null;
+        if (carries && PhysicsPlayer is { } player)
+        {
+            bool active = bindings.Use.UseTicks > 0;
+            var (height, length) = controller.JointEaseWallProbe(active);
+            wall = player.ProbeRac1ForwardWall(height, length, ignoreMovables: active);
+        }
+        // The held gun's arm layers (0x20dd20): one arm for one-handed guns, both for the big ones.
+        controller.StepArmHold(slots);
+        controller.StepJointEases(input.YawError, carries, wall);
+    }
+
     private void ResetPlayerAvatarPhysics(WorldBindings bindings)
     {
         bindings.Weapons().ClearTransients();
+        NativeController?.ResetJointEases();
         bindings.Audio()?.Reset();
         Rac1WrenchHost.ResetOrFallback(bindings.Gameplay()?.Wrench, bindings.Audio(), bindings.Player());
         bindings.Gameplay()?.Weapons.ThrownAnimation.Stop();
