@@ -37,7 +37,10 @@ foreach ($fps in @(30, 120)) {
     $trace = Get-Content -LiteralPath $report -Raw
     $document = $trace | ConvertFrom-Json
     $weapons = @($document.Baselines.PSObject.Properties)
-    if ($document.Version -ne 1 -or $weapons.Count -ne 2) { throw 'Native player report is missing its two weapon baselines.' }
+    if ($document.Version -ne 1 -or $weapons.Count -ne 2 -or
+        @(Compare-Object @('rac2/item:30', 'rac3/item:43') @($weapons.Name)).Count -ne 0) {
+        throw 'Native player report is missing its two weapon baselines.'
+    }
     foreach ($weapon in $weapons) {
         $samples = @($weapon.Value)
         if ($samples.Count -ne 40 -or $samples[-1].Tick -ne 240 -or $samples[-1].Clock -ne 4) {

@@ -186,6 +186,7 @@ public sealed class SmokeProcessResultTests
             string recorded = File.ReadAllText(transcript);
             Assert.Contains(message, recorded);
             if (fault is "incomplete" or "leak") Assert.Contains("Smoke did not complete cleanly. Native stdout/stderr:", recorded);
+            if (fault == "nonzero") Assert.Contains("Smoke native process exited with code 17. Native stdout/stderr:", recorded);
             if (fault == "leak")
             {
                 Assert.Contains("WARNING: 2 ObjectDB instances were leaked at exit.", result.Output);
@@ -258,6 +259,8 @@ public sealed class SmokeProcessResultTests
     [InlineData("pwsh", "player-capabilities-smoke.ps1", "empty", false)]
     [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "partial", false)]
     [InlineData("pwsh", "player-capabilities-smoke.ps1", "partial", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "foreign-baseline", false)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "foreign-baseline", false)]
     [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "clean", true)]
     [InlineData("pwsh", "test-diagnostic-cli.ps1", "clean", true)]
     [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "leak", false)]
@@ -282,6 +285,10 @@ public sealed class SmokeProcessResultTests
     [InlineData("pwsh", "fusion-weapons-smoke.ps1", "leak", false)]
     [InlineData("powershell.exe", "fusion-weapons-smoke.ps1", "error", false)]
     [InlineData("pwsh", "fusion-weapons-smoke.ps1", "error", false)]
+    [InlineData("powershell.exe", "fusion-weapons-smoke.ps1", "record-log-error", false)]
+    [InlineData("pwsh", "fusion-weapons-smoke.ps1", "record-log-error", false)]
+    [InlineData("powershell.exe", "fusion-weapons-smoke.ps1", "replay-log-rid", false)]
+    [InlineData("pwsh", "fusion-weapons-smoke.ps1", "replay-log-rid", false)]
     public async Task LifecycleRunnersRejectLeaksAndRequireFreshCompleteTrials(string shell, string runner, string fault, bool expected)
     {
         shell = RequireShell(shell);
@@ -322,6 +329,7 @@ public sealed class SmokeProcessResultTests
                             $document = @{Version=1;Baselines=@{'rac2/item:30'=$samples;'rac3/item:43'=$samples}}
                             if ($env:OBP_TEST_RUNNER_FAULT -eq 'empty') { $document.Baselines=@{} }
                             if ($env:OBP_TEST_RUNNER_FAULT -eq 'partial') { $document.Baselines['rac2/item:30']=@($samples[0]) }
+                            if ($env:OBP_TEST_RUNNER_FAULT -eq 'foreign-baseline') { $document.Baselines.Remove('rac2/item:30'); $document.Baselines['synthetic/item:30']=$samples }
                             $document | ConvertTo-Json -Depth 6 -Compress | Set-Content -LiteralPath $report
                         }
                     } elseif ($ArgumentList -contains '--shots') {
@@ -362,6 +370,7 @@ public sealed class SmokeProcessResultTests
                 $path=$args[[Array]::IndexOf($args,'-Out')+1]
                 $writer=[IO.StreamWriter]::new([IO.Compression.GZipStream]::new([IO.File]::Create($path),[IO.Compression.CompressionLevel]::Fastest))
                 try{$writer.WriteLine('{"Header":{"Weapons":{"Sources":{"rac2":"fixture"}}}}')}finally{$writer.Dispose()}
+                if($env:OBP_TEST_RUNNER_FAULT -eq 'record-log-error'){Set-Content (Join-Path (Split-Path $path) 'record-native.log') 'ERROR: late recording failure'}
                 $global:LASTEXITCODE=0
                 '@
                 Set-Content (Join-Path $tools 'replay-playtest.ps1') @'
@@ -370,6 +379,7 @@ public sealed class SmokeProcessResultTests
                 if($invalid){$result=@{Result='invalid';Error='Recorded cross-game weapon sources do not match (rac2). Attach the exact original sources used by the recording.'}}
                 else{$result=@{Result='matched';Markers=@(1,2,3);CheckpointsCompared=10}}
                 $result|ConvertTo-Json|Set-Content -LiteralPath $path
+                if($env:OBP_TEST_RUNNER_FAULT -eq 'replay-log-rid'){Set-Content (Join-Path (Split-Path $path) 'replay-native.log') 'WARNING: 1 RID of type CanvasItem was leaked.'}
                 $global:LASTEXITCODE=if($invalid){2}else{0}
                 '@
                 if ({{{{{Quote(fault)}}}}} -eq 'stale') {
@@ -392,8 +402,9 @@ public sealed class SmokeProcessResultTests
                 string reason = fault switch
                 {
                     "stale" => "Native player report was not produced by this run.",
-                    "empty" => "missing its two weapon baselines",
+                    "empty" or "foreign-baseline" => "missing its two weapon baselines",
                     "partial" => "does not contain a complete four-second trial",
+                    "record-log-error" or "replay-log-rid" => "Godot lifecycle error",
                     _ when fault.StartsWith("negative-", StringComparison.Ordinal) => "Diagnostic CLI check bad-list failed",
                     _ => runner switch
                     {

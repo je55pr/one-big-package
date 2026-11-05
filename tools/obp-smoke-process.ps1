@@ -23,6 +23,22 @@ function Write-ObpSmokeOutput {
     if ($Message) { Write-Host $Message.TrimEnd() }
 }
 
+function Remove-ObpSmokeHistory {
+    param([Parameter(Mandatory = $true)][string]$Root)
+    $rootPath = [IO.Path]::GetFullPath($Root).TrimEnd([IO.Path]::DirectorySeparatorChar)
+    $completed = @(Get-ChildItem -LiteralPath $rootPath -Directory | Where-Object {
+        $_.Name -match '^[a-f0-9]{32}$' -and $_.Parent.FullName -eq $rootPath -and
+        -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -and
+        (Test-Path -LiteralPath (Join-Path $_.FullName '.complete') -PathType Leaf)
+    } | Sort-Object LastWriteTimeUtc -Descending)
+    # Bound completed histories while keeping recent failure logs and all active runs.
+    for ($index = 0; $index -lt $completed.Count; $index++) {
+        if ($index -ge 50 -or $completed[$index].LastWriteTimeUtc -lt [DateTime]::UtcNow.AddDays(-14)) {
+            Remove-Item -LiteralPath $completed[$index].FullName -Recurse -Force
+        }
+    }
+}
+
 function Invoke-ObpSmokeProcess {
     param(
         [Parameter(Mandatory = $true)][string]$FilePath,
@@ -30,16 +46,30 @@ function Invoke-ObpSmokeProcess {
         [Parameter(Mandatory = $true)][string]$CompletionMarker,
         [string]$WorkingDirectory = (Get-Location).Path
     )
-    $logs = Join-Path $PSScriptRoot ('../.build/smoke-results/' + [guid]::NewGuid().ToString('N'))
+    $history = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../.build/smoke-results'))
+    $logs = Join-Path $history ([guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $logs -Force | Out-Null
     $stdout = Join-Path $logs 'stdout.log'
     $stderr = Join-Path $logs 'stderr.log'
     Write-ObpSmokeOutput "Smoke native stdout/stderr: $logs"
-    $code = Invoke-ObpNativeProcessCapture -FilePath $FilePath -ArgumentList $ArgumentList -WorkingDirectory $WorkingDirectory `
+    try {
+        $code = Invoke-ObpNativeProcessCapture -FilePath $FilePath -ArgumentList $ArgumentList -WorkingDirectory $WorkingDirectory `
         -StandardOutputPath $stdout -StandardErrorPath $stderr -OnOutput { param($line) Write-ObpSmokeOutput $line }
+    }
+    finally {
+        # Native cleanup has finished before this run becomes eligible for retention.
+        try {
+            [IO.File]::WriteAllText((Join-Path $logs '.complete'), 'completed')
+            Remove-ObpSmokeHistory -Root $history
+        }
+        catch { Write-Warning -WarningAction Continue "Smoke log retention failed: $($_.Exception.Message)" }
+    }
     $output = [IO.File]::ReadAllText($stdout)
     $errors = [IO.File]::ReadAllText($stderr)
-    if ($code -ne 0) { return $code }
+    if ($code -ne 0) {
+        Write-ObpSmokeOutput "Smoke native process exited with code $code. Native stdout/stderr: $logs"
+        return $code
+    }
     if (-not (Test-ObpSmokeLog -ExitCode $code -Log ($output + "`n" + $errors) -CompletionMarker $CompletionMarker)) {
         Write-ObpSmokeOutput "Smoke did not complete cleanly. Native stdout/stderr: $logs"
         return 2

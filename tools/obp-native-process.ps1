@@ -65,25 +65,31 @@ function Invoke-ObpNativeProcessCapture {
                 $pending = @($stdoutRead, $stderrRead) | Where-Object { $null -ne $_ }
                 if ($pending) { [Threading.Tasks.Task]::WaitAny([Threading.Tasks.Task[]]@($pending), 100) | Out-Null }
             }
-            $process.WaitForExit()
+            while (-not $process.WaitForExit(100)) { }
             return $process.ExitCode
         }
         # Drain both pipes concurrently; a full stderr pipe must not deadlock stdout.
         $stdout = $process.StandardOutput.ReadToEndAsync()
         $stderr = $process.StandardError.ReadToEndAsync()
-        $process.WaitForExit()
+        while (-not $process.WaitForExit(100)) { }
         [IO.File]::WriteAllText($StandardOutputPath, $stdout.GetAwaiter().GetResult(), $utf8)
         [IO.File]::WriteAllText($StandardErrorPath, $stderr.GetAwaiter().GetResult(), $utf8)
         return $process.ExitCode
     }
-    catch {
-        if ($started -and -not $process.HasExited) {
-            $process.Kill()
-            [void]$process.WaitForExit(5000)
-        }
-        throw
-    }
     finally {
+        # Pipeline termination (including Ctrl+C) runs finally, but not catch.
+        # Cleanup failures must not replace the original callback/pipeline error.
+        if ($started) {
+            try {
+                if (-not $process.HasExited) {
+                    if ($PSVersionTable.PSEdition -eq 'Core') { $process.Kill($true) }
+                    else { $process.Kill() }
+                    [void]$process.WaitForExit(5000)
+                }
+            }
+            catch [InvalidOperationException] { } # The process may exit between HasExited and Kill.
+            catch { Write-Warning -WarningAction Continue "Native child cleanup failed: $($_.Exception.Message)" }
+        }
         if ($stdoutWriter) { $stdoutWriter.Dispose() }
         if ($stderrWriter) { $stderrWriter.Dispose() }
         $process.Dispose()
