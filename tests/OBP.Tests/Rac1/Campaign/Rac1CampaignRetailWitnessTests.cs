@@ -51,6 +51,8 @@ public sealed class Rac1CampaignRetailWitnessTests
         JsonElement missionObject = code.GetProperty("compiledMissionObject");
 
         Assert.Equal(0, opening.GetProperty("currentLevel").GetInt32());
+        Assert.Equal(20, opening.GetProperty("visitedPlanets").GetArrayLength());
+        Assert.Equal(20, opening.GetProperty("galacticMap").GetArrayLength());
         Assert.All(opening.GetProperty("visitedPlanets").EnumerateArray(), value => Assert.Equal(0, value.GetInt32()));
         Assert.All(opening.GetProperty("galacticMap").EnumerateArray(), value => Assert.Equal(0, value.GetInt32()));
         Assert.Equal(1, opening.GetProperty("perLevelState")[0].GetInt32());

@@ -102,7 +102,7 @@ public sealed class Rac1EquipmentViewPresentationOwnershipTests
     public void SourcePosePlaybacksAndNativeSoundRoutingRetainHandSamplingClock()
     {
         string views = Script("Rac1/Weapons/Rac1EquipmentViewPresentation.cs");
-        Assert.Contains("view.Play(0, false, ++_poseGeneration, 1)", views, StringComparison.Ordinal);
+        Assert.Contains("view.Build(++_poseGeneration)", views, StringComparison.Ordinal);
         Assert.Contains("view.Play(emitting ? 3 : 5, false, ++_poseGeneration, emitting ? 4 : 1)", views, StringComparison.Ordinal);
         Assert.Contains("view.Play(Rac1ArsenalRules.HandFireSequence(shot.Weapon), false, shot.Generation)", views, StringComparison.Ordinal);
         Assert.Contains("Rac1WeaponId.MorphORay or Rac1WeaponId.Taunter or Rac1WeaponId.TeslaClaw", views, StringComparison.Ordinal);

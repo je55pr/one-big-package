@@ -37,12 +37,10 @@ public sealed class Rac1LedgeTraversalTests
         Assert.InRange(candidate.HangPosition.X, .13d, .14d);
         Assert.False(candidate.ClimbBodyBlocked);
         Assert.Contains(world.Rays, ray => ray.Mask == Rac1TraversalRayMask.Support);
-        Assert.All(world.BodyQueries, body =>
-        {
-            Assert.Equal((double).45f, body.HorizontalRadius);
-            Assert.Equal((double).6f, body.AxialSpan);
-            Assert.Equal(1.4d + .6f, body.Origin.Z);
-        });
+        var body = Assert.Single(world.BodyQueries);
+        Assert.Equal((double).45f, body.HorizontalRadius);
+        Assert.Equal((double).6f, body.AxialSpan);
+        Assert.Equal(1.4d + .6f, body.Origin.Z);
     }
 
     [Theory]

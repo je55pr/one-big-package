@@ -37,6 +37,10 @@ public sealed class Rac1WeaponsScenario(MovementDiagnosticContext context, Rac1W
             var crates = Targets.ReadCrates().Where(node => Targets.Read(node.Key).Active && node.Key.Target.NativeClassId == 500).Take(4).ToArray();
             Require(crates.Length == 4, "weapon crate fixtures unavailable");
             Ports.Equipment.Select(Rac1WeaponId.Blaster); await PhysicsFramesAsync(8);
+            // A gun still building in the hand cannot fire; the early press is dropped, not queued.
+            int earlyBlaster = Additional.ReadAmmo(15); Ports.Combat.RequestPrimaryAttack(); await PhysicsFramesAsync(3);
+            Require(Additional.ReadAmmo(15) == earlyBlaster, "Blaster fired before it was built");
+            await PhysicsFramesAsync(67);
             Targets.StageCrate(crates[0].Key, Player.Read().GlobalPosition + EquipmentForward * 4);
             await PhysicsFramesAsync(3);
             int ammo = Additional.ReadAmmo(15); Ports.Combat.RequestPrimaryAttack(); await PhysicsFramesAsync(2);
@@ -57,6 +61,9 @@ public sealed class Rac1WeaponsScenario(MovementDiagnosticContext context, Rac1W
             Log("[weapons-smoke] Blaster raw descriptor, victim-kind override and repeated enemy hits PASS");
 
             Ports.Equipment.Select(Rac1WeaponId.Pyrocitor); await PhysicsFramesAsync(8);
+            int earlyPyro = Additional.ReadAmmo(16); Driver.SetAction(MovementDiagnosticDriver.Traversal, true); await PhysicsFramesAsync(24);
+            Require(Additional.ReadAmmo(16) == earlyPyro && !Additional.Read().PyroEmitting, "Pyrocitor fired before it was built");
+            Driver.SetAction(MovementDiagnosticDriver.Traversal, false); await PhysicsFramesAsync(50);
             Targets.StageCrate(crates[1].Key, Player.Read().GlobalPosition + EquipmentForward * 3); await PhysicsFramesAsync(3);
             ammo = Additional.ReadAmmo(16);
             Driver.SetAction(MovementDiagnosticDriver.Traversal, true);
@@ -109,7 +116,7 @@ public sealed class Rac1WeaponsScenario(MovementDiagnosticContext context, Rac1W
             await Rac1SmokeWaitAsync(() => Targets.Read(doomVictim.Key).RewardEmitted, 120, "Doom agent seeking/contact damage");
             Log("[weapons-smoke] Doom canister, four spaced animated bots and accounting PASS");
 
-            Ports.Equipment.Select(Rac1WeaponId.SuckCannon); await PhysicsFramesAsync(8);
+            Ports.Equipment.Select(Rac1WeaponId.SuckCannon); await PhysicsFramesAsync(75); // built before firing
             Targets.StageCrate(crates[3].Key, Player.Read().GlobalPosition + EquipmentForward * 3); await PhysicsFramesAsync(3);
             Driver.SetAction(MovementDiagnosticDriver.Traversal, true); await PhysicsFramesAsync(6);
             Require(Additional.Read().Cargo == 1 && !Targets.Read(crates[3].Key).Active, "Suck Cannon failed capture/removal");
