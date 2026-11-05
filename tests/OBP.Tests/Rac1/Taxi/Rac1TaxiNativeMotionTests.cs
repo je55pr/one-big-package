@@ -44,7 +44,7 @@ public sealed class Rac1TaxiNativeMotionTests
     [Fact]
     public void RetailSixtyHertzSteppingIsIndependentOfHostPhysicsRate()
     {
-        Rac1TaxiPoint[] path = [P(0), P(5), P(13), P(25)];
+        Rac1TaxiPoint[] path = [new(0, 0, 0), new(3, 4, 12), new(3, 4, 16), new(3, 4, 20)];
         var native = new Rac1TaxiNativeMotion(path);
         var halfRate = new Rac1TaxiNativeMotion(path);
         var doubleRate = new Rac1TaxiNativeMotion(path);
@@ -55,14 +55,35 @@ public sealed class Rac1TaxiNativeMotionTests
                 halfRate.Advance(1d / 30);
             doubleRate.Advance(1d / 120);
             doubleRate.Advance(1d / 120);
+            if (i == 59)
+            {
+                // Before braking or the first corner, sixty acceleration steps
+                // travel 2.2875 units along the thirteen-unit (3,4,12) segment.
+                double travelled = .00125 * 60 * 61 / 2;
+                Assert.Equal(travelled * 3 / 13, native.Position.X, 10);
+                Assert.Equal(travelled * 4 / 13, native.Position.Y, 10);
+                Assert.Equal(travelled * 12 / 13, native.Position.Z, 10);
+            }
+            if (i % 2 != 0)
+            {
+                Compare(halfRate);
+                Compare(doubleRate);
+            }
         }
 
-        Assert.Equal(native.Arrived, halfRate.Arrived);
-        Assert.Equal(native.Arrived, doubleRate.Arrived);
-        Assert.Equal(native.WaypointIndex, halfRate.WaypointIndex);
-        Assert.Equal(native.WaypointIndex, doubleRate.WaypointIndex);
-        Assert.Equal(native.Position.X, halfRate.Position.X, 7);
-        Assert.Equal(native.Position.X, doubleRate.Position.X, 7);
+        Assert.True(native.Arrived);
+        Assert.Equal(new Rac1TaxiPoint(3, 4, 20), native.Position);
+
+        void Compare(Rac1TaxiNativeMotion other)
+        {
+            Assert.Equal(native.Arrived, other.Arrived);
+            Assert.Equal(native.WaypointIndex, other.WaypointIndex);
+            Assert.Equal(native.Progress, other.Progress, 10);
+            Assert.Equal(native.SpeedPerFrame, other.SpeedPerFrame, 10);
+            Assert.Equal(native.Position.X, other.Position.X, 7);
+            Assert.Equal(native.Position.Y, other.Position.Y, 7);
+            Assert.Equal(native.Position.Z, other.Position.Z, 7);
+        }
     }
 
     [Fact]

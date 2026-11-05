@@ -79,7 +79,10 @@ public sealed class Rac1MetropolisTaxiRetailTests : IClassFixture<Rac1KerwanReta
     {
         var world = KerwanWorld();
         var session = NewSession(world);
-        foreach (var stop in session.Stops.Where(s => s.OutboundPath.Count > 1))
+        var stops = session.Stops.Where(s => s.OutboundPath.Count > 1).ToArray();
+        Assert.Equal(new[] { 919, 920, 961, 962 },
+            stops.Select(stop => stop.InstanceIndex).Order());
+        foreach (var stop in stops)
         {
             var actor = world.DynamicObjects!.Single(o => o.InstanceIndex == stop.InstanceIndex);
             var m = actor.Transform.Matrix;
@@ -97,7 +100,12 @@ public sealed class Rac1MetropolisTaxiRetailTests : IClassFixture<Rac1KerwanReta
             }
             foreach (var (leg, path) in new[] { ("out", stop.OutboundPath), ("back", stop.ReturnPath) })
             {
-                if (path is not { Count: > 1 }) continue;
+                if (path is not { Count: > 1 })
+                {
+                    Assert.Equal("back", leg);
+                    Assert.Equal(816, stop.NativeClassId);
+                    continue;
+                }
                 var motion = new Rac1TaxiNativeMotion(path);
                 double len = 0;
                 for (int i = 1; i < path.Count; i++)
