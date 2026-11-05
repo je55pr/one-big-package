@@ -82,11 +82,13 @@ public sealed class Rac1ArmHoldTests
         var plain = Controller(iso!);
         plain.ApplyEquipmentPose(null);
         var plainHand = plain.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(0));
+        var plainLeft = plain.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(1));
 
         var held = Controller(iso!);
         for (int i = 0; i < 12; i++) held.StepArmHold(2);
         var heldPose = held.ApplyEquipmentPose(null).SampledPose!.LocalPositions;
         var heldHand = held.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(0));
+        var heldLeft = held.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(1));
 
         Assert.NotNull(heldHand);
         Assert.NotNull(plainHand);
@@ -94,7 +96,13 @@ public sealed class Rac1ArmHoldTests
         double moved = Math.Sqrt(Math.Pow(heldHand!.Origin.X - plainHand!.Origin.X, 2) +
             Math.Pow(heldHand.Origin.Y - plainHand.Origin.Y, 2) + Math.Pow(heldHand.Origin.Z - plainHand.Origin.Z, 2));
         Assert.True(moved > 0.1, $"the held right hand only moved {moved:0.000}");
-        // Skinned arm vertices changed, and nothing outside the arms and what hangs off them did.
+        // Both hands are held: the left (slot 1) moves away from its relaxed position too.
+        Assert.NotNull(heldLeft);
+        Assert.NotNull(plainLeft);
+        double movedLeft = Math.Sqrt(Math.Pow(heldLeft!.Origin.X - plainLeft!.Origin.X, 2) +
+            Math.Pow(heldLeft.Origin.Y - plainLeft.Origin.Y, 2) + Math.Pow(heldLeft.Origin.Z - plainLeft.Origin.Z, 2));
+        Assert.True(movedLeft > 0.05, $"the held left hand only moved {movedLeft:0.000}");
+        // Skinned vertices changed.
         Assert.NotEqual(heldPose, plain.Current.SampledPose?.LocalPositions);
     }
 
