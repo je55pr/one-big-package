@@ -162,7 +162,9 @@ public sealed class Rac2CrateFragment
 
     private void Turn(Vector3 axis, float angle)
     {
+#pragma warning disable S1244 // Exact zero is a no-op rotation; an epsilon would discard intentional small turns.
         if (axis.LengthSquared() < 1e-12f || angle == 0) return;
+#pragma warning restore S1244
         _angularStep = Quaternion.Normalize(Quaternion.CreateFromAxisAngle(Vector3.Normalize(axis), angle) * _angularStep);
         float halfAngle = MathF.Acos(Math.Clamp(_angularStep.W, -1, 1));
         if (halfAngle <= MaximumTurn * .5f) return;

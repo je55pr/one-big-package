@@ -94,46 +94,27 @@ internal sealed partial class Rac2WorldModule : IDisposable
             return;
         }
 
-        try
+        _resources.CrateDiagnostics.Configure(_ports.CrateFocus, _ports.CrateAutoStrike);
+        foreach (var family in nodes.Where(node => node.Source.SourceGame == ObpSourceGame.Rac2 &&
+            Rac2CrateSupply.IsCrate(node.Source.NativeClassId)).GroupBy(node => node.Source.NativeClassId))
         {
-            foreach (var node in nodes.Where(node => node.Source.SourceGame == ObpSourceGame.Rac2 && Rac2CrateSupply.IsCrate(node.Source.NativeClassId)))
+            try { ConfigureCrateFamily(family.Key, family.ToArray()); }
+            catch (Exception ex) when (ex is InvalidDataException or IOException or NotSupportedException or InvalidOperationException)
             {
-                byte? respawn = node.Source.NativeClassId == 500 ? Rac2Class500Authority.Read(node.Source)?.PvarC8 : Rac2CrateSupply.RespawnFlag(node.Source);
-                if (respawn != 0)
+                CrateSupply.RetireFamily(family.Key);
+                foreach (var node in family)
                 {
-                    GD.PrintErr($"[rac2-crates] {node.Source.InteractionId}: respawning/missing crate authority is not supported.");
-                    continue;
+                    if (_crateBodies.Remove(node.Source.InstanceIndex, out var body))
+                    {
+                        body.CollisionLayer = body.CollisionMask = 0;
+                        body.QueueFree();
+                    }
+                    _crates.Remove(node);
                 }
-                _crates.Add(node);
-                // Host convex contact derived from the retail model; PS2 narrow
-                // phase is not reproduced by Godot's physics engine.
-                var body = new AnimatableBody3D { Name = $"Rac2CrateContact_{node.Source.InstanceIndex}", CollisionLayer = 1, CollisionMask = 1, SyncToPhysics = false };
-                _crateBodies.Add(node.Source.InstanceIndex, body);
-                foreach (var mesh in node.Root.GetChildren().OfType<MeshInstance3D>())
-                    body.AddChild(new CollisionShape3D { Shape = mesh.Mesh.CreateConvexShape(), Transform = mesh.Transform });
-                node.Root.AddChild(body);
+                string status = $"class {family.Key} admission unavailable: {ex.Message}";
+                _resources.CrateDiagnostics.Probe.Status = status;
+                GD.PrintErr($"[rac2-crates] LEVEL{_world.LevelId}: {status}");
             }
-            if (_crates.Count > 0)
-            {
-                CrateBolts.Prepare();
-                CrateEffects.Configure(_crates);
-                if (_crates.Any(crate => Rac2CrateSupply.IsSupply(crate.Source.NativeClassId))) CrateSupply.Prepare(_crates);
-            }
-        }
-        catch (Exception ex) when (ex is InvalidDataException or IOException or NotSupportedException or InvalidOperationException)
-        {
-            CrateBolts.Dispose();
-            CrateEffects.Dispose();
-            CrateSupply.Dispose();
-            foreach (var body in _crateBodies.Values)
-            {
-                body.CollisionLayer = body.CollisionMask = 0;
-                body.QueueFree();
-            }
-            _crateBodies.Clear();
-            _crates.Clear();
-            _resources.CrateDiagnostics.Probe.Status = $"crate admission unavailable: {ex.Message}";
-            GD.PrintErr($"[rac2-crates] LEVEL{_world.LevelId}: crate admission unavailable: {ex.Message}");
         }
 
         var openingLiftNode = nodes.FirstOrDefault(n =>
@@ -170,8 +151,33 @@ internal sealed partial class Rac2WorldModule : IDisposable
                     new Rac2OpeningMsr1HostSession(node, hostile);
             }
         }
+    }
 
-        _resources.CrateDiagnostics.Configure(_ports.CrateFocus, _ports.CrateAutoStrike);
+    private void ConfigureCrateFamily(int nativeClass, IReadOnlyList<RuntimeWorldScene.DynamicObjectNode> nodes)
+    {
+        var admitted = new List<RuntimeWorldScene.DynamicObjectNode>();
+        foreach (var node in nodes)
+        {
+            byte? respawn = nativeClass == 500 ? Rac2Class500Authority.Read(node.Source)?.PvarC8 : Rac2CrateSupply.RespawnFlag(node.Source);
+            if (respawn != 0)
+            {
+                GD.PrintErr($"[rac2-crates] {node.Source.InteractionId}: respawning/missing crate authority is not supported.");
+                continue;
+            }
+            _crates.Add(node);
+            admitted.Add(node);
+            // Host convex contact derived from the retail model; PS2 narrow
+            // phase is not reproduced by Godot's physics engine.
+            var body = new AnimatableBody3D { Name = $"Rac2CrateContact_{node.Source.InstanceIndex}", CollisionLayer = 1, CollisionMask = 1, SyncToPhysics = false };
+            _crateBodies.Add(node.Source.InstanceIndex, body);
+            foreach (var mesh in node.Root.GetChildren().OfType<MeshInstance3D>())
+                body.AddChild(new CollisionShape3D { Shape = mesh.Mesh.CreateConvexShape(), Transform = mesh.Transform });
+            node.Root.AddChild(body);
+        }
+        if (admitted.Count == 0) return;
+        if (nativeClass == 500) CrateBolts.Prepare();
+        else CrateSupply.Prepare(nativeClass, admitted);
+        CrateEffects.Configure(nativeClass, admitted);
     }
 
     internal void Arm(PlayerHost player)

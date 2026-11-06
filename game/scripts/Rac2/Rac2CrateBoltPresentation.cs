@@ -195,17 +195,10 @@ internal sealed class Rac2CrateBoltPresentation(
         var rewards = resources.Rac2CrateBolts;
         if (ports.HasNativePlayer() && (long)ports.WalletBalance() + pickup.Denomination > int.MaxValue) return;
         int denomination;
-        try { denomination = rewards.CollectPickup(pickup.PickupId); }
+        try { denomination = rewards.CollectPickup(pickup.PickupId, amount => TryCreditPickup(receipt, pickup.PickupId, amount)); }
         catch (InvalidOperationException) { return; }
-
-        if (ports.HasNativePlayer() && receipt is not null)
-        {
-            receipt.Collected = true;
-            // Preserve native payout and exact pickup identity; no new reward formula.
-            string? rejection = ports.Credit(receipt.Actor, pickup.PickupId, denomination);
-            if (rejection is not null) throw new InvalidOperationException(rejection);
-            ports.RefreshHud();
-        }
+        if (denomination == 0) return;
+        if (receipt is not null) ports.RefreshHud();
         area.QueueFree();
         _areas.Remove(area);
         ports.PickupAudio(Rac2BoltAssets.ClassForDenomination(pickup.Denomination));
@@ -213,6 +206,28 @@ internal sealed class Rac2CrateBoltPresentation(
             $"{rewards.OutstandingPickupCount} physical remain, {rewards.DeferredBolts} deferred";
         GD.Print($"[crate-bolts] pickup={pickup.PickupId} denomination={denomination} " +
                  $"collected={rewards.CollectedBolts} deferred={rewards.DeferredBolts}");
+    }
+
+    // The reward intake requires an admitted collection. Make that state
+    // provisional until wallet credit succeeds, then commit the native receipt.
+    private bool TryCreditPickup(PlayerBoltReceipt? receipt, int pickupId, int denomination)
+    {
+        if (!ports.HasNativePlayer()) return true;
+        if (receipt is null) return false;
+        bool accepted = false;
+        receipt.Collected = true;
+        try
+        {
+            string? rejection = ports.Credit(receipt.Actor, pickupId, denomination);
+            if (rejection is not null)
+            {
+                resources.CrateDiagnostics.Probe.RewardStatus = $"pickup credit waiting: {rejection}";
+                return false;
+            }
+            accepted = true;
+            return true;
+        }
+        finally { if (!accepted) receipt.Collected = false; }
     }
 
     public void Dispose()

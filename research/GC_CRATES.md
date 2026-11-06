@@ -598,11 +598,35 @@ random bend. Passing -2540 as PM had lowered pickup playback by about 19.84
 semitones. The corrected seed-0 bank-53 render is 33,925 frames / 0.7068 seconds,
 versus the incorrect 75,829 frames / 1.5798 seconds; bank 69 is unchanged.
 
-Crate setup is atomic at the lease's admission boundary. If original models,
-textures, audio programs or body setup are unavailable, the host logs an explicit
-crate-admission error, retires the partial effects/pickup owners and removes the
-new crate bodies and registrations. Other world gameplay may still activate;
-unsupported crates are not advertised as working actors.
+Crate setup admits each family separately at the lease boundary. Nanotech loads
+only its sphere donor; ammo loads its class-3291 model and Lancer descriptor.
+Fragment assets and sounds are restricted to the family and its pickup classes.
+If a family's original models, textures, audio programs or body setup are
+unavailable, the host logs an explicit family-admission error, retires its partial
+supply presentation and removes its new crate bodies and registrations. Other
+crate families and world gameplay may still activate; unsupported crates are not
+advertised as working actors. This isolation is OBP host policy, not a recovered
+retail failure path.
+
+Class-table consumers validate count, offset and the complete 64-bit table extent
+before scanning native rows. Physical Bolt collection offers the outstanding
+denomination to player reward intake before committing source-session accounting.
+The host provisionally marks collection for reward admission and restores that
+flag on rejection or exception, leaving the pickup outstanding for a later retry.
+The audio variant generator is deliberately seeded and non-cryptographic: its
+only role is cosmetic pitch variation, with no security decision involved.
+
+The review follow-up's local manual probes rejected oversized, negative and
+truncated class tables before enumeration. Unregistered, stale-lease and throwing
+wallet credits retained both outstanding pickup accounting and the provisional
+actor flag; retry credited one denomination once, and duplicate collection was
+rejected. Family-scoped Oozla audio retained identical PCM for all 11 cues. A
+damaged copy of the class-3291 asset offset rejected ammo decoding while leaving
+Nanotech's two cues available. The in-engine Oozla run admitted all 229 crate
+contacts, collected eight physical Bolts for 32 units, broke a Nanotech crate and
+healed one unit. A separate ammo run retained three drops at planar distance 4.35,
+then collected exactly one after moving inside to 4.15. No automated fixture or
+retail payload is added to the repository.
 
 Local authorised-source inspection verified original parts, sound programs and
 loaded instruction witnesses. The recovery's engine trial broke a real stack

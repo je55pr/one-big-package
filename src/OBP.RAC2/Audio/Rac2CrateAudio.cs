@@ -12,28 +12,33 @@ public static class Rac2CrateAudio
 {
     public sealed record Cue(int NativeClass, int BankSound, double Gain, IReadOnlyList<RuntimeAudioClip> Variants);
     public sealed record Catalogue(IReadOnlyDictionary<(int NativeClass, int LocalSound), Cue> Cues);
-    public static Catalogue Load(string path, int level)
+    public static Catalogue Load(string path, int level) => Load(path, level, null);
+
+    /// <summary>Decode only the requested family's sounds; unrelated unsupported classes cannot reject that family.</summary>
+    public static Catalogue Load(string path, int level, IReadOnlySet<int>? nativeClasses)
     {
         using var reader = new FileRandomAccessReader(path);
         var wad = Iso9660Filesystem.Open(reader).OpenFile($"/G/LEVEL{level}.WAD") ?? throw new InvalidDataException("Crate audio level is unavailable.");
         var header = Rac2LevelWad.ReadHeader(wad);
-        return Read(Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0)), Rac2SoundBank.Open(Rac2LevelWad.RequireLump(wad, header, 1)));
+        return Read(Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0)), Rac2SoundBank.Open(Rac2LevelWad.RequireLump(wad, header, 1)), nativeClasses);
     }
-    public static Catalogue Read(Rac2LevelCore.Core core, Rac2SoundBank bank)
+    public static Catalogue Read(Rac2LevelCore.Core core, Rac2SoundBank bank) => Read(core, bank, null);
+
+    public static Catalogue Read(Rac2LevelCore.Core core, Rac2SoundBank bank, IReadOnlySet<int>? nativeClasses)
     {
         var result = new Dictionary<(int, int), Cue>();
         int directory = core.Header.SoundRemapOffset;
-        var present = Enumerable.Range(0, core.Header.MobyClasses.Count).Select(index =>
-            BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(core.Header.MobyClasses.Offset + index * 32 + 4))).ToHashSet();
-        foreach (int cls in new[] { 500, 501, 511, 3291, 13, 14, 15, 16, 17, 18, 19 }.Where(present.Contains))
+        var rows = Rac2MobyClasses.ClassRows(core);
+        var present = rows.Select(row => row.NativeClass).ToHashSet();
+        foreach (int cls in new[] { 500, 501, 511, 3291, 13, 14, 15, 16, 17, 18, 19 }
+            .Where(cls => present.Contains(cls) && (nativeClasses is null || nativeClasses.Contains(cls))))
         {
             var bytes = Rac2MobyClasses.ClassBytes(core, cls);
             if (bytes.Length < 0x48) throw new InvalidDataException("Truncated crate sound class header.");
             if (bytes[0xd] == 0) continue; // Native class-sound dispatch returns -1 for this class.
             int definitions = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(0x28));
             if (definitions < 0x48 || definitions > bytes.Length - bytes[0xd] * 32) throw new InvalidDataException("Crate SoundDef is out of bounds.");
-            int row = Enumerable.Range(0, core.Header.MobyClasses.Count).Single(index =>
-                BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(core.Header.MobyClasses.Offset + index * 32 + 4)) == cls);
+            int row = rows.Single(row => row.NativeClass == cls).Index;
             long entryOffset = (long)directory + 8 + row * 4L;
             if (directory < 0 || entryOffset > core.Index.Length - 4L) throw new InvalidDataException("Crate sound remap directory is out of bounds.");
             int entry = (int)entryOffset;
@@ -62,7 +67,7 @@ public static class Rac2CrateAudio
                 {
                     // Oozla 0x35574C stores SoundDef +0x10/+0x14 at slot +0x84;
                     // 0x355378 passes it as t1 (PB), distinct from t0 (PM).
-                    int bend = pitchMin == pitchMax ? pitchMin : new Random(seed).Next(pitchMin, pitchMax + 1);
+                    int bend = pitchMin == pitchMax ? pitchMin : SamplePitch(seed, pitchMin, pitchMax);
                     var voices = Ps2SoundRenderer989.TryRenderVoices(bank.Sounds[id], bank.DecodeTone, seed, pitchBend: bend)
                         ?? throw new NotSupportedException($"Original crate sound {id} has an unsupported grain program.");
                     if (voices.Count != 1 || voices[0].Loop || voices[0].StartFrame != 0)
@@ -75,4 +80,7 @@ public static class Rac2CrateAudio
         }
         return new(result);
     }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "S2245", Justification = "Seeded cosmetic audio pitch variation has no security role; deterministic variants are intentional.")]
+    private static int SamplePitch(int seed, int minimum, int maximum) => new Random(seed).Next(minimum, maximum + 1);
 }

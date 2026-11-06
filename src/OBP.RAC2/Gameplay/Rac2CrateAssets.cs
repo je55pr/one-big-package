@@ -28,9 +28,7 @@ public static class Rac2CrateAssets
         if (!Rac2CrateSupply.IsCrate(nativeClass)) throw new ArgumentOutOfRangeException(nameof(nativeClass));
         byte[] bytes = Rac2MobyClasses.ClassBytes(core, nativeClass);
         if (bytes.Length < 0x48) throw new InvalidDataException("Truncated crate fragment class header.");
-        int row = Enumerable.Range(0, core.Header.MobyClasses.Count).Single(index =>
-            BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(core.Header.MobyClasses.Offset + index * 32 + 4)) == nativeClass);
-        int remap = core.Header.MobyClasses.Offset + row * 32 + 16;
+        int remap = Rac2MobyClasses.ClassRows(core).Single(row => row.NativeClass == nativeClass).Offset + 16;
         int corn = BinaryPrimitives.ReadInt16LittleEndian(bytes.AsSpan(0x2e)) * 16;
         float scale = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(0x24)) / 1024;
         var parts = new Dictionary<int, Part>();

@@ -38,10 +38,8 @@ public static class Rac2SupplyAssets
         if (capacity != Rac2LancerProfile.AmmoCapacity || amount <= 0 || amount > capacity ||
             BinaryPrimitives.ReadInt32LittleEndian(descriptor.AsSpan(0x14)) != Rac2LancerProfile.HeldMobyClass)
             throw new InvalidDataException("R&C2 Lancer supply descriptor does not match its native identity.");
-        var entries = Enumerable.Range(0, core.Header.MobyClasses.Count)
-            .Select(index => core.Header.MobyClasses.Offset + index * GcUyaMoby.ClassEntrySize)
-            .Where(at => at >= 0 && at <= core.Index.Length - GcUyaMoby.ClassEntrySize &&
-                BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(at + 4)) == Rac2CrateSupply.AmmoPickupClass).ToArray();
+        var entries = Rac2MobyClasses.ClassRows(core)
+            .Where(row => row.NativeClass == Rac2CrateSupply.AmmoPickupClass).ToArray();
         if (entries.Length != 1)
             throw new InvalidDataException("Original R&C2 ammo pickup model is unavailable.");
         var bytes = Rac2MobyClasses.ClassBytes(core, Rac2CrateSupply.AmmoPickupClass);
@@ -62,7 +60,7 @@ public static class Rac2SupplyAssets
             {
                 int slot = mesh.TriangleMaterialSlots[face];
                 if ((uint)slot >= 16) throw new InvalidDataException("Original ammo part texture slot is unavailable.");
-                return (Texture: (int)core.Index[entries[0] + 0x10 + slot], Material: mesh.TriangleMaterialStateIndices[face]);
+                return (Texture: (int)core.Index[entries[0].Offset + 0x10 + slot], Material: mesh.TriangleMaterialStateIndices[face]);
             })
             .Select(group => new RuntimeObjectMesh("moby", group.Key.Texture, positions, mesh.Uvs,
                 group.SelectMany(face => mesh.Indices.AsSpan(face * 3, 3).ToArray()).ToArray(),

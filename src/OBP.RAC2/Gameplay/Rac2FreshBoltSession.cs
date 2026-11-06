@@ -74,14 +74,25 @@ public sealed class Rac2FreshBoltSession
             pickups, partition.DeferredValue);
     }
 
-    public int CollectPickup(int pickupId)
+    public int CollectPickup(int pickupId) => CollectPickup(pickupId, _ => true);
+
+    /// <summary>
+    /// Offer an outstanding denomination to the host before committing collection.
+    /// A rejected or throwing, non-reentrant acceptance callback leaves this session unchanged.
+    /// Returns zero on rejection; an already consumed pickup remains an error.
+    /// </summary>
+    public int CollectPickup(int pickupId, Func<int, bool> accept)
     {
-        if (!_outstandingPickups.Remove(pickupId, out int denomination))
+        ArgumentNullException.ThrowIfNull(accept);
+        if (!_outstandingPickups.TryGetValue(pickupId, out int denomination))
         {
             throw new InvalidOperationException($"Bolt pickup {pickupId} is not outstanding.");
         }
 
-        CollectedBolts = checked(CollectedBolts + denomination);
+        int collected = checked(CollectedBolts + denomination);
+        if (!accept(denomination)) return 0;
+        _outstandingPickups.Remove(pickupId);
+        CollectedBolts = collected;
         return denomination;
     }
 }
