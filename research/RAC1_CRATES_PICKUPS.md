@@ -95,6 +95,30 @@ against missing health. The first arrival grants one point; further particles
 cannot credit again. Full health retains the cloud. Ordinary health capacity
 remains the existing four points; health upgrades are outside this pass.
 
+### Nanotech orb presentation (class 806, issue #234)
+
+Update `0x2d89f0`, draw callback `0x2d9810`. Every level links the same object at its own addresses, so
+`Rac1NanotechOrbAssets` locates the tables by content and authenticates each block against a SHA-256 taken
+from the authority overlay (Veldin 0x1e14a0..0x1e3c80 and the $gp constants at 0x1619f0); all 19 levels match.
+Nothing from the disc is committed.
+
+- **Cluster**: the cloud exists from the intact crate (state 1), rides it, rests where it stood (state 2) and
+  launches (state 3). Orb radius .25, bob .06 at 2 degrees a tick, shared orbit directions spun 4 degrees a
+  tick, a random per-cloud spin axis/angle, resting orbs breathing .25 +- .15.
+- **Draw** (states 1 and 2 only): a 290-point mesh through a camera-facing basis as three triangle strips
+  (146/109/36 overlapping vertices, gouraud, Fx texture 21, alpha blend) and 32 additive Fx-0xb ring quads
+  whose alpha pulses with the bob (halo to alpha 0 at the outer pair). Colours/ST come from retail tables.
+- **Particles**: kind 0x3e sprites (persistent orb 60000 raw, sparkle 10000, colour 0x7f7f4040, fade 127/life),
+  textures from Part table entry 62; hero-relative kind 0x3b glows and 0x3c glints (entry 53). A resting cloud
+  spawns one sparkle per orb per tick (5 frames far, 40 near).
+- **Flight**: each orb gets a life of 20..80 frames and a Catmull-Rom style curve (`0x257e20`) from its start
+  to Ratchet less .75 along his axis, bowed by a sideways control of 5 fanned 25.7 degrees apart; two sparkles a
+  tick along it. The **first** orb to arrive credits the one point and class501 sound1; the cloud then keeps a
+  four-glow trail and glints on Ratchet until its 300-frame flight timer ends.
+- **Host choices**: draw/Visible gate is frustum plus 48 units; a launch always has eight orbs even if the
+  cloud was never on screen; the target socket is the existing feet+.7 mapping. Sound, health and
+  full-health retention are unchanged.
+
 ### Sound and wallet
 
 Core index+0x70 locates an eight-byte remap header followed by one four-byte row
@@ -127,8 +151,9 @@ Crate UID maps remain level-local and are not serialized to that file.
 Godot ray contacts approximate native swept spheres, and solid crate boxes
 approximate native Moby collision. Fragment camera-quadrant choice, some
 secondary scatter/orientation details and global RNG call order are incomplete.
-Nanotech wisps use an explicitly named host particle presentation; native
-sprite paths, dust, impact/collection sparkles and chrome passes are incomplete.
+The Nanotech cloud now uses the recovered class-806 presentation (below); the intact-crate
+chrome pass (four environment-mapped quads, state 1 only), impact dust and the fall-to-ground
+probe of a released cloud are still incomplete.
 Break-transition timing is collapsed into the existing terminal event. Native
 platform attachment, crushing and special respawn selectors remain outside the
 ordinary path.

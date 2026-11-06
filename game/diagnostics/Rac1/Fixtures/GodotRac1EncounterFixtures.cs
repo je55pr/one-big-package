@@ -66,12 +66,19 @@ internal sealed class GodotRac1EnemyDiagnosticCapture(Node3D owner, Func<CanvasL
         try
         {
             var point = GodotMovementPlayer.Engine(focus);
-            camera.GlobalPosition = point + new Vector3(3, 2, 6);
-            camera.LookAt(point);
             ui.Visible = false; hud.Visible = false;
-            await clock.NextAsync(DiagnosticFramePhase.Process, cancellationToken);
-            await clock.NextAsync(DiagnosticFramePhase.PostDraw, cancellationToken);
-            owner.GetViewport().GetTexture().GetImage().SavePng(Path.Combine(directory, name + ".png"));
+            // Optional OBP_ENEMY_CAPTURE_OFFSETS="x,y,z;x,y,z" writes one image per camera offset (default 3,2,6).
+            var offsets = (System.Environment.GetEnvironmentVariable("OBP_ENEMY_CAPTURE_OFFSETS") ?? "3,2,6").Split(';',
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            for (int index = 0; index < offsets.Length; index++)
+            {
+                var part = offsets[index].Split(',').Select(value => float.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                camera.GlobalPosition = point + new Vector3(part[0], part[1], part[2]);
+                camera.LookAt(point);
+                await clock.NextAsync(DiagnosticFramePhase.Process, cancellationToken);
+                await clock.NextAsync(DiagnosticFramePhase.PostDraw, cancellationToken);
+                owner.GetViewport().GetTexture().GetImage().SavePng(Path.Combine(directory, offsets.Length == 1 ? name + ".png" : $"{name}-{index}.png"));
+            }
         }
         finally
         {

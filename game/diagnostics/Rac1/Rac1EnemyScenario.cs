@@ -133,9 +133,10 @@ public sealed class Rac1EnemyScenario(MovementDiagnosticContext context, IRac1En
 
             // A short staged stand in front of the completed entrance tests the
             // socket-directed attack through actual Godot world/player contact.
-            player.ResetAt(entrance.Read().Position + entrance.Read().Forward * 2.5f + Vector3.UnitY * .05f);
+            player.ResetAt(entrance.Read().Position + entrance.Read().Forward * 4f + Vector3.UnitY * .05f);
             int healthBefore = lifecycle.ReadNanotech().Nanotech;
             await Rac1SmokeWaitAsync(() => Enemies.ReadRobot(Enemy(189).Key).NativeState == 5, 220, "robot wind-up/fire");
+            Require(entrance.Read().BeamFiring, "robot firing state did not present its class-1471 plasma beam");
             await CaptureRac1EnemiesAsync("fire", entrance.Read().Position + Vector3.UnitY);
             if (lifecycle.ReadNanotech().Nanotech == healthBefore)
             {

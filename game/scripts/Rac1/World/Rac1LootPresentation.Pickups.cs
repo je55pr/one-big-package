@@ -188,6 +188,7 @@ internal sealed partial class Rac1LootPresentation
                 _rac1Debris.RemoveAt(i);
             }
         }
+        PresentRac1NanotechOrbs();
         if (collectedValue > 0)
         {
             PersistRac1CampaignState("bolt collection");

@@ -19,6 +19,8 @@ public sealed class Rac1MobySequenceClock
     public float Position { get; private set; }
     public RuntimeObjectAnimationSample Sample { get; private set; }
     public Vector3 ContactSocket => Vector3.Lerp(Clip.ContactSocket[_frame], Clip.ContactSocket[NextFrame], _fraction);
+    /// <summary>Semantic socket 1 in class-local space, when the class authors one.</summary>
+    public Vector3? SecondSocket => Clip.SecondSocket is { } sockets ? Vector3.Lerp(sockets[_frame], sockets[NextFrame], _fraction) : null;
     private Rac1MobyAnimationAssets.Clip Clip => _asset.Clips[Sequence];
     private int NextFrame => (_frame + 1) % Clip.Rates.Length;
 

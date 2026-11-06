@@ -85,7 +85,7 @@ internal sealed class GodotRac1EnemyDiagnosticFixture(GodotRac1EnemyDiagnosticBi
         return new(key, Copy(enemy.Node.Root.GlobalPosition), Copy(enemy.Body.GlobalPosition), Copy(enemy.AuthoredHomePosition),
             Copy(bindings.Forward(enemy.Node)), Copy(bindings.Socket(enemy)), enemy.Node.Root.Visible,
             enemy.Body.CollisionLayer, enemy.Body.CollisionMask, enemy.Grounded, enemy.Body.IsOnFloor(),
-            enemy.NeedsGroundPlacement, enemy.Buried, enemy.DeathPresented, enemy.Flame is not null,
+            enemy.NeedsGroundPlacement, enemy.Buried, enemy.DeathPresented, enemy.Flame is not null || enemy.Beam is not null, enemy.Beam?.Firing == true,
             enemy.Node.AnimationSample, enemy.Animation.Sequence, enemy.Animation.Position, enemy.Animation.Blending);
     }
     public Rac1Class1440DiagnosticSnapshot ReadRobot(ActorInstanceKey key)

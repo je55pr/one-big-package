@@ -42,6 +42,8 @@ public sealed partial class Rac1ParticleSession(Rac1EffectAssets assets, Rac1Pic
         internal Vector3 EndVelocity;
         internal int Stage, MiddleLife, FinalLife;
         internal float EndSize;
+        internal Vector3 Offset;
+        internal bool Relative;
     }
 
     private readonly Particle?[] _slots = capacity is > 0 and <= 65536 ? new Particle[capacity] :
@@ -177,6 +179,9 @@ public sealed partial class Rac1ParticleSession(Rac1EffectAssets assets, Rac1Pic
                 case 8: StepGlow(p); break;
                 case 15: StepSpark(p); break;
                 case 16: StepSteam(p, camera); break;
+                case SparkleType: StepSparkle(p); break;
+                case HeroGlowType: StepHeroGlow(p); break;
+                case GlintType: StepGlint(p); break;
             }
         }
         while (_highest >= 0 && _slots[_highest] is null) _highest--;
