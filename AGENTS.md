@@ -37,6 +37,7 @@
 - `dev` is the sole maintained integration/release branch; do not recreate a permanent `main` release pointer. Keep changes focused and avoid bookkeeping-only commits.
 - Prioritize playable gameplay and native fidelity. Do not add automated tests or test infrastructure unless explicitly requested.
 - When creating/moving scripts under `game/scripts` or `game/diagnostics`, move existing `.cs.uid` files alongside renamed scripts (`git mv`), or run `./tools/sync-godot-uids.ps1` (Linux: `bash tools/sync-godot-uids.sh`) to generate missing sidecars with the checksum-pinned Godot .NET editor. Commit the sidecars. The C#/.NET command skips importing and does not build the game when none are missing; `-Check` or `--check` validates without Godot. Do not manually invent UIDs.
-- Use tools/build.ps1 on Windows or bash tools/build.sh on Linux to compile changes.
+- Use ./tools/build.ps1 on Windows or bash tools/build.sh on Linux to compile changes.
+- Verify formatting with dotnet format OneBigPackage.sln --verify-no-changes --no-restore.
 - Changes depending on retail bytes should be manually checked against authorised local game sources.
 - Keep generated retail evidence payload-free and reproducible.

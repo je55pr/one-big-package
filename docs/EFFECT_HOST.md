@@ -111,8 +111,8 @@ gallery geometry for #258.
 
 ## Reproduction and limits
 
-Run `tools/test.ps1 -Configuration Release`, the format check required by
-`AGENTS.md`, and `tools/test-retail.ps1` with authorized source environment
+Run `https://github.com/je55pr/one-big-package/blob/tests/tools/test.ps1 -Configuration Release`, the format check required by
+`AGENTS.md`, and `https://github.com/je55pr/one-big-package/blob/tests/tools/test-retail.ps1` with authorized source environment
 variables. `EffectSourcePortRetailTests` repeats all six real recipes through
 ten resets in each of five world identities, comparing exact float/byte draw
 facts and native RNG counts. The original #282–#284 instruction oracles remain

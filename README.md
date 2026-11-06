@@ -115,7 +115,7 @@ The original mechanics and encounters are being recovered first, so they can be 
 <tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/4/4a/RY3NO_icon.png/revision/latest?cb=20260126012614" width="72" alt="R.Y.3.N.O."></td><td nowrap="nowrap">R.Y.3.N.O.</td><td nowrap="nowrap">🔴</td><td></td></tr>
 </tbody></table>
 
-Reference: [R&C1 weapons](https://ratchetandclank.fandom.com/wiki/Ratchet_%26_Clank_%282002_game%29), [GC weapon upgrades](https://strategywiki.org/wiki/Ratchet_%26_Clank%3A_Going_Commando/Weapons), [UYA weapon upgrades](https://strategywiki.org/wiki/Ratchet_%26_Clank%3A_Up_Your_Arsenal/Weapons), [R&C1 arsenal evidence](research/RAC1_ARSENAL.md), [cross-game weapon evidence](docs/FUSION_WEAPONS_TESTING.md).
+Reference: [R&C1 weapons](https://ratchetandclank.fandom.com/wiki/Ratchet_%26_Clank_%282002_game%29), [GC weapon upgrades](https://strategywiki.org/wiki/Ratchet_%26_Clank%3A_Going_Commando/Weapons), [UYA weapon upgrades](https://strategywiki.org/wiki/Ratchet_%26_Clank%3A_Up_Your_Arsenal/Weapons), [R&C1 arsenal evidence](research/RAC1_ARSENAL.md), [cross-game weapon evidence](https://github.com/je55pr/one-big-package/blob/tests/docs/FUSION_WEAPONS_TESTING.md).
 
 </details>
 
@@ -823,7 +823,7 @@ remain follow-up work. See the [ownership contract](docs/PLAYER_WORLD_CONTRACT.m
 
 ## Getting started
 
-OBP uses the **.NET 10 LTS SDK 10.0.403** (or a newer servicing patch in the same `10.0.4xx` feature band). The root [`global.json`](global.json) sets `rollForward: latestPatch`; an older or different feature band will not silently take over, including on machines with only 10.0.402. [`Directory.Build.props`](Directory.Build.props) fixes **C# 12.0** for all projects, retaining the language semantics of the `net8.0` target. The newer SDK is required by the existing Roslyn analyzers (SDK 8's compiler produces CS9057), while the .NET 8 target framework and Godot .NET 4.7.2 remain unchanged. **The .NET 8 runtime is also required** to run net8.0 tools and the game; the local bootstrap installs both the selected SDK and runtime without changing the machine-wide installation. CI installs both as well.
+OBP uses the **.NET 10 LTS SDK 10.0.403** (or a newer servicing patch in the same `10.0.4xx` feature band). The root [`global.json`](global.json) sets `rollForward: latestPatch`; an older or different feature band will not silently take over, including on machines with only 10.0.402. [`Directory.Build.props`](Directory.Build.props) fixes **C# 12.0** for all projects, retaining the language semantics of the `net8.0` target. The newer SDK is required by the existing Roslyn analyzers (SDK 8's compiler produces CS9057), while the .NET 8 target framework and Godot .NET 4.7.2 remain unchanged. **The .NET 8 runtime is required to run command-line tools targeting net8.0**; the local bootstrap installs the SDK and runtime without changing machine-wide installations. CI uses the pinned SDK for compilation and formatting.
 
 On Windows, run from the repository root:
 
@@ -863,9 +863,10 @@ OBP requires your own supported retail game files to load original levels. **No 
 
 ## Building
 
-Build with tools/build.ps1 on Windows or bash tools/build.sh on Linux.
+Build with ./tools/build.ps1 on Windows or bash tools/build.sh on Linux.
 CI compiles the solution and retains CodeQL security scanning, but does not run automated tests.
 The removed test suite and related tooling remain available in Git history at the [tests tag](https://github.com/je55pr/one-big-package/tree/tests).
+
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)

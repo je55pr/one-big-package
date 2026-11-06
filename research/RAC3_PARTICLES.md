@@ -186,9 +186,9 @@ admission, opacity/life differences, spin, expiry order, pool reuse, unavailable
 assets, double admission, stale generations, independent damage fences and the
 last native beam-particle update.
 
-Run `./tools/test.ps1 -Configuration Release`,
+Run `./https://github.com/je55pr/one-big-package/blob/tests/tools/test.ps1 -Configuration Release`,
 `dotnet format OneBigPackage.sln --verify-no-changes --no-restore`, and
-`./tools/test-retail.ps1` with authorized local sources. The optional instruction
+`./https://github.com/je55pr/one-big-package/blob/tests/tools/test-retail.ps1` with authorized local sources. The optional instruction
 checks additionally need `OBP_RAC3_PARTICLE_ORACLE`, built using
 `tools/build-rac3-particles-oracle.ps1 -ReferenceRoot ... -Cxx ... -OutputPath ...`.
 The MIT interpreter pin is `3fd14c12e4dff2fd4b6661a6e54187faea3f76c8`; Git

@@ -12,7 +12,7 @@ Cannon recipes and records the independently verified sequel comparison.
 
 ## Checks supplied by the investigation
 
-[EffectsReferenceAuditRetailTests](../tests/OBP.Tests/GodotHost/EffectsReferenceAuditRetailTests.cs)
+[EffectsReferenceAuditRetailTests](https://github.com/je55pr/one-big-package/blob/tests/tests/OBP.Tests/GodotHost/EffectsReferenceAuditRetailTests.cs)
 contains three source witnesses:
 
 | Test | What its assertions establish |
@@ -32,10 +32,10 @@ On an authorised machine, set `OBP_RAC1_ISO`, `OBP_GC_ISO` and
 Git and reports. From the repository root:
 
 ```powershell
-dotnet test tests/OBP.Tests/OBP.Tests.csproj -c Release --nologo --filter FullyQualifiedName~EffectsReferenceAuditRetailTests
-./tools/test.ps1 -Configuration Release
+dotnet test https://github.com/je55pr/one-big-package/blob/tests/tests/OBP.Tests/OBP.Tests.csproj -c Release --nologo --filter FullyQualifiedName~EffectsReferenceAuditRetailTests
+./https://github.com/je55pr/one-big-package/blob/tests/tools/test.ps1 -Configuration Release
 dotnet format OneBigPackage.sln --verify-no-changes --no-restore
-./tools/test-retail.ps1
+./https://github.com/je55pr/one-big-package/blob/tests/tools/test-retail.ps1
 ```
 
 The focused tests are independently skippable per source. A skipped test is not

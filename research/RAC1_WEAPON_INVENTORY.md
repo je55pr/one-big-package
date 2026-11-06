@@ -240,6 +240,6 @@ Rac1WeaponInventoryTests freezes the source-specific layout, all recovered ammo
 capacities/floors, save/session separation, generic ammo clamp behaviour, and the
 existing Wrench/Bomb Glove compatibility path.
 
-tests/tooling/test_rac1_weapon_inventory_probe.py freezes the generated witness
+https://github.com/je55pr/one-big-package/blob/tests/tests/tooling/test_rac1_weapon_inventory_probe.py freezes the generated witness
 shape and the two retained state comparisons. The generator itself fails if any
 promoted save descriptor or loaded-overlay instruction signature changes.

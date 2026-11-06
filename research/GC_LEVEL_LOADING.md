@@ -44,4 +44,4 @@ LBA-oriented asset lookup, but a deeper loader trace remains separate work.
 The initial audio choice used this authority's file-addressable containers,
 known bank ranges and retained remap fields; it did not establish trilogy-wide
 audio equivalence. Runtime and parser ownership follow the native architecture.
-Use the current C# tests and `tools/test-retail.ps1`, not retired browser tools.
+Use the current C# tests and `https://github.com/je55pr/one-big-package/blob/tests/tools/test-retail.ps1`, not retired browser tools.

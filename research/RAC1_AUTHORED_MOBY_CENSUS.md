@@ -21,7 +21,7 @@ Verify the checked-in outputs against an authorized authority ISO with the
 opt-in retail regression test:
 
 ```sh
-OBP_RAC1_ISO="/path/to/RAC1.iso" dotnet test tests/OBP.Tests/OBP.Tests.csproj --filter FullyQualifiedName~AuthorizedRetailReproductionMatchesCheckedInOutputsExactly
+OBP_RAC1_ISO="/path/to/RAC1.iso" dotnet test https://github.com/je55pr/one-big-package/blob/tests/tests/OBP.Tests/OBP.Tests.csproj --filter FullyQualifiedName~AuthorizedRetailReproductionMatchesCheckedInOutputsExactly
 ```
 
 The test rebuilds the census in memory and checks exact JSON and CSV equality

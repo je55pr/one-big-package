@@ -102,7 +102,7 @@ at `daino-selvatico/rac1-native-game` revision
 ```powershell
 ./tools/build-rac1-type6-oracle.ps1 -ReferenceRoot $reference -Cxx $compiler -OutputPath captures/type6-oracle.exe
 $env:OBP_RAC1_TYPE6_ORACLE = (Resolve-Path captures/type6-oracle.exe).Path
-./tools/test-retail.ps1
+./https://github.com/je55pr/one-big-package/blob/tests/tools/test-retail.ps1
 ```
 
 `$reference` is that local pinned checkout; `$compiler` is a C++20 compiler

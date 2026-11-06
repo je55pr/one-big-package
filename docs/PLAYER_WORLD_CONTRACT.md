@@ -1,5 +1,8 @@
 # Source, player, world and actor contract (#265)
 
+> The automated ownership/architecture tests referenced below were retired.
+> The contracts remain developer guidance; old checks are [archived](https://github.com/je55pr/one-big-package/tree/tests).
+
 This is the shared contract for the #264 reconciliation gate. It records OBP
 design, not recovered native equivalence. Version 1 defines executable ports;
 #266/#267 implemented the persistent session and shared native/custom lifecycle
@@ -275,7 +278,7 @@ aliases, conditional access and property patterns for `RuntimeWorld.Game` and
 It scans ordinary game scripts, Godot adapters and Fusion. Explicit staged smoke
 implementations under `game/diagnostics` remain the separate diagnostic boundary.
 
-`tests/OBP.Tests/host-ownership-policy.json` lists individual members with reasons:
+`https://github.com/je55pr/one-big-package/blob/tests/tests/OBP.Tests/host-ownership-policy.json` lists individual members with reasons:
 
 - `adapter`: narrow source import, environment, campaign, provenance or diagnostic
   read with a fixed token fingerprint. It cannot use the legacy player flag or

@@ -1,5 +1,9 @@
 # Root ownership and decomposition (#333 / #376)
 
+> The architectural test guards and census tooling described in this historical
+> decomposition were retired. The ownership boundaries remain design guidance;
+> the old checks are preserved at the [tests tag](https://github.com/je55pr/one-big-package/tree/tests).
+
 `OBPGame` is the Godot composition root. It receives engine lifecycle and input callbacks, creates owned
 components lazily, and delegates through narrow ports. New gameplay policy, native encounter state, source
 algorithms and diagnostic assertions belong in their actual owners. Existing world, session, actor and operation
@@ -19,7 +23,7 @@ preserved.
 The starting commit is `eea806399f864f30949d665701d39d510549a7ac`: 122 root-declaring files (121 `OBPGame*.cs`
 plus the `ControllerSmoke.cs` fragment), 27,362 file lines, 756 direct methods, 457 direct fields (312 mutable),
 44 exposed direct members and 2,654 distinct cross-file root references. These are measurements, not size quotas.
-The frozen origin ledger in `tests/OBP.Tests/root-boundary-policy.json` is hash-pinned and may not be expanded.
+The original root ledger is archived as historical evidence and is no longer enforced by automated tests.
 
 ## Final architecture
 
@@ -46,12 +50,12 @@ Composition modules (`ApplicationDiagnostics`, `CaptureComposition`, `PlayerServ
 `Rac1WorldComposition`, `Rac2WorldComposition`) derive from `CompositionBase` over `ApplicationComponents`. They are
 composition roots: they read the application through a small set of shared views and bind owned components to
 narrow ports. They are not read-only and are not a service locator (nothing resolves by type). Gameplay classes,
-fixtures and scenarios never receive them; `CompositionBaseArchitectureTests` pins the permitted derived types,
+fixtures and scenarios should not receive them; the former `CompositionBaseArchitectureTests` checked the derived types,
 forbids use outside composition files and ratchets the shared surface so it can only shrink. A view needed by one
 module belongs in that module. The modules still read the application through those shared views, so replacing
 them with per-module port records remains a possible further narrowing rather than something this design claims.
 
-`OBPGame.WorldEntry.cs` and every other root partial are retired; the guard rejects a new root partial or member.
+`OBPGame.WorldEntry.cs` and every other root partial are retired; avoid introducing new root partials or members.
 The single remaining script keeps its UID, scene association and the public host contracts the bootstrap scene and
 fixtures call.
 
@@ -61,7 +65,7 @@ Every remaining member is a reviewed composition member with owner `#376`, dispo
 one-sentence reason in the root-boundary policy. They fall into owner references and lazy accessors, established
 public host contracts, lazy factories, read-only projections and private one-line forwards; the counts and reasons
 are in [OBPGAME_ROOT_CENSUS.md](OBPGAME_ROOT_CENSUS.md#remaining-root-members). A ceiling pinned by
-`RootBoundaryArchitectureTests` can only go down. Composition code may expose an existing source implementation or a
+the former root-boundary tests checked. Composition code may expose an existing source implementation or a
 native controller's facts, but may not implement its formula, tick, damage dispatch or scenario assertions.
 
 ## Extending without touching `OBPGame`
@@ -75,22 +79,14 @@ native controller's facts, but may not implement its formula, tick, damage dispa
   R&C1, its lease-scoped host module; equipment state lives in the persistent player session.
 - **A new smoke or diagnostic scenario** registers its stable identity and admission in
   `WorldSmokeHarness`/`DiagnosticScenarioRegistry`, binds focused ports in `ApplicationDiagnostics`, and uses an
-  existing typed harness. A new CLI flag belongs in `CommandLineArgs`. `DiagnosticRegistryTests` and
-  `WorldSmokeArchitectureTests` pin aliases, admission, owner selection and bounded dispatch.
+  existing typed harness. A new CLI flag belongs in `CommandLineArgs`. The retired registry tests previously checked aliases, admission, owner selection and bounded dispatch.
 
-## Reproducing the measurements
+## Historical measurements
 
-From the repository root, without retail sources:
-
-```text
-dotnet run --project tools/OBP.ArchitectureTool -c Release -- check .
-dotnet run --project tools/OBP.ArchitectureTool -c Release -- census .
-```
-
-The census writes JSON to stdout with per-file/direct-member totals, member keys/hashes and bound cross-file
-reference edges; no assets or machine paths are emitted. The native CI job publishes it as the
-`root-ownership-census` artifact. Compare exposed ports and ownership as well as field/line totals. The same-build
-replay gate validates each revision; recordings from other builds need explicit cross-build investigation.
+The source and ownership counts above were collected using the retired
+`OBP.ArchitectureTool`. The old tool and recorded census policy are archived
+under the [tests tag](https://github.com/je55pr/one-big-package/tree/tests). Current CI only compiles the solution;
+it does not generate an architecture census or enforce the old size limits.
 
 ## #374 R&C3 original-world gameplay owner
 
@@ -248,7 +244,7 @@ Recorded against `dev` after the composition extractions (the closing comment on
 - The portable suite, the Release solution build with warnings as errors, `dotnet format`, the root guard, UID
   coverage and the CI Godot smokes (headless startup, bootstrap lifetime, UV-scroll, foliage, materialless Moby,
   Ratchet visibility, R&C1 hand presentation) pass.
-- The authorised retail-backed reconciliation (`tools/test-reconciliation.ps1`, all 17 phases, no skip flags) passed.
+- The authorised retail-backed reconciliation (`https://github.com/je55pr/one-big-package/blob/tests/tools/test-reconciliation.ps1`, all 17 phases, no skip flags) passed.
 - Not performed by automation and still required for acceptance: the human visual, audible and controller review of
   the affected functionality. Optional native-oracle retail tests, PowerShell 7 tests and the symlink test skip when
   their prerequisites are absent; each skip is listed in the evidence rather than treated as a pass.

@@ -6,6 +6,10 @@ on:
   push:
     branches: [dev]
 
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
@@ -20,8 +24,9 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
-          dotnet-version: '8.0.x'
       - name: Restore
         run: dotnet restore OneBigPackage.sln
+      - name: Verify formatting
+        run: dotnet format OneBigPackage.sln --verify-no-changes --no-restore --verbosity minimal
       - name: Build
         run: dotnet build OneBigPackage.sln -c Release --no-restore --nologo -warnaserror

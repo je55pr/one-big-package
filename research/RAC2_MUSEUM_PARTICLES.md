@@ -191,7 +191,7 @@ debris and the demonstrator's composite/type-97 recipe remain separate work.
 
 ## Reproduction and extension
 
-Run `./tools/test.ps1 -Configuration Release` and `./tools/test-retail.ps1` with
+Run `./https://github.com/je55pr/one-big-package/blob/tests/tools/test.ps1 -Configuration Release` and `./https://github.com/je55pr/one-big-package/blob/tests/tools/test-retail.ps1` with
 authorized local inputs. Retail simulation/asset tests need `OBP_GC_ISO`;
 instruction comparisons additionally need `OBP_RAC2_MUSEUM_ORACLE`.
 Build that optional executable with `tools/build-rac2-museum-oracle.ps1`, giving

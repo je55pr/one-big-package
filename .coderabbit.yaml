@@ -66,3 +66,11 @@ reviews:
         Verify bounded GitHub Actions checks, required native/Godot C# builds,
         no retail payloads or secret exposure, and no unnecessary toolchains.
         PR reviews stay advisory; the build remains the hard merge check.
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "AGENTS.md"
+      - "docs/ARCHITECTURE.md"
+      - "docs/PLAYER_WORLD_CONTRACT.md"

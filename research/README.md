@@ -45,7 +45,7 @@ validation live in code/tests and Git, not completed-task reports.
 
 ## Using the project
 
-[Architecture](../docs/ARCHITECTURE.md), [testing](../docs/RETAIL_TESTING.md),
-[saved repros](../docs/MOVEMENT_REPRO_STATES.md), [weapon controls](../docs/RAC1_WEAPONS_TESTING.md),
+[Architecture](../docs/ARCHITECTURE.md), [testing](https://github.com/je55pr/one-big-package/blob/tests/docs/RETAIL_TESTING.md),
+[saved repros](../docs/MOVEMENT_REPRO_STATES.md), [weapon controls](https://github.com/je55pr/one-big-package/blob/tests/docs/RAC1_WEAPONS_TESTING.md),
 and [Veldin composition alignment](VELDIN_CROSS_GAME_ALIGNMENT.md).
 Speculative design stays in [brainstorming](../docs/brainstorming/README.md).
