@@ -32,14 +32,18 @@ public static class Rac2CrateAudio
             if (definition < 0x48 || definition > bytes.Length - 32) throw new InvalidDataException("Crate SoundDef is out of bounds.");
             int row = Enumerable.Range(0, core.Header.MobyClasses.Count).Single(index =>
                 BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(core.Header.MobyClasses.Offset + index * 32 + 4)) == cls);
-            int entry = checked(directory + 8 + row * 4);
-            if (directory < 0 || entry > core.Index.Length - 4) throw new InvalidDataException("Crate sound remap directory is out of bounds.");
+            long entryOffset = (long)directory + 8 + row * 4L;
+            if (directory < 0 || entryOffset > core.Index.Length - 4L) throw new InvalidDataException("Crate sound remap directory is out of bounds.");
+            int entry = (int)entryOffset;
             int offset = BinaryPrimitives.ReadUInt16LittleEndian(core.Index.AsSpan(entry));
             int count = BinaryPrimitives.ReadUInt16LittleEndian(core.Index.AsSpan(entry + 2));
-            int first = checked(directory + offset);
+            long firstOffset = (long)directory + offset;
             // R&C2 preserves the absent direct slot before its sole local SoundDef.
-            if (count != bytes[0xd] + 1 || first < entry + 4 || first > core.Index.Length - count * 4L || BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(first)) != -1)
+            if (count != bytes[0xd] + 1 || firstOffset < entryOffset + 4 || firstOffset > core.Index.Length - count * 4L)
                 throw new InvalidDataException("Crate SoundDef remap does not match its recovered native layout.");
+            int first = (int)firstOffset;
+            if (BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(first)) != -1)
+                throw new InvalidDataException("Crate SoundDef remap has no absent direct slot.");
             int id = BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(first + 4));
             if ((uint)id >= bank.Sounds.Count) throw new InvalidDataException("Crate sound is outside its original SBlk.");
             int pitchMin = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(definition + 16));

@@ -66,7 +66,8 @@ public static class Ps2SoundRenderer989
         var voices = new List<Voice>(); var lfos = new List<Lfo>();
         // Application pitch bend is a signed normalized controller. Grain PB
         // commands replace it; pitch modifier remains a separate 1/128-semitone offset.
-        var random = new Random(seed ?? sound.Id); double tick = 0, bend = pitchBend / (pitchBend < 0 ? 32768d : 32767d);
+        var random = new Random(seed ?? sound.Id); double tick = 0, bend = 0;
+        if (pitchBend != 0) bend = pitchBend / (pitchBend < 0 ? 32768d : 32767d);
         var registers = new int[4];
         int pc = 0, operations = 0, skipAt = -1, skipTo = -1;
         while (pc < sound.Grains.Count)

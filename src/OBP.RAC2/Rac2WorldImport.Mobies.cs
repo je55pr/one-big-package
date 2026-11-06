@@ -19,15 +19,15 @@ using OBP.Runtime.Presentation;
 namespace OBP.RAC2;
 
 /// <summary>
-/// Native world assembly for a Going Commando retail level — the C# equivalent of
+/// Native world assembly for a Going Commando retail level â€” the C# equivalent of
 /// <c>reference-ts/tools/gc-world.mjs</c>. Opens the level WAD from an ISO,
 /// decodes chunk-0 tfrags + octree collision, instances the tie / shrub / moby
-/// classes (per-texture grouping + vertex welding, native Z-up → OBP Y-up), adds
+/// classes (per-texture grouping + vertex welding, native Z-up â†’ OBP Y-up), adds
 /// moby instance markers, the sky shells and a death-height plane, and grows the
 /// world bounds.
 ///
 /// <para>
-/// Output is a neutral <see cref="RuntimeWorld"/> — no GC or Godot types cross
+/// Output is a neutral <see cref="RuntimeWorld"/> â€” no GC or Godot types cross
 /// this boundary. This is where GC-specific data conversion terminates.
 /// </para>
 public static partial class Rac2WorldImport
@@ -309,16 +309,7 @@ public static partial class Rac2WorldImport
 
                 foreach (var p in nearPl)
                 {
-                    double vx = x - p.Pos.X, vy = z - p.Pos.Y, vz = y - p.Pos.Z;
-                    double dist = System.Math.Sqrt(vx * vx + vy * vy + vz * vz);
-                    if (dist >= p.Radius || dist < 1e-4)
-                    {
-                        continue;
-                    }
-
-                    double atten = 1.0 - dist / p.Radius;
-                    double ndl = System.Math.Max(0.0, -(nx * vx + ny * vy + nz * vz) / dist);
-                    double c = atten * atten * ndl;
+                    double c = MobyPointLightWeight((x, z, y), (nx, ny, nz), p.Pos, p.Radius);
                     lr += p.Colour.R * c;
                     lg += p.Colour.G * c;
                     lb += p.Colour.B * c;
@@ -332,6 +323,17 @@ public static partial class Rac2WorldImport
             colours[v * 4 + 3] = 1f;
         }
         return colours;
+    }
+
+    private static double MobyPointLightWeight((double X, double Y, double Z) vertex,
+        (double X, double Y, double Z) normal, (double X, double Y, double Z) light, float radius)
+    {
+        double vx = vertex.X - light.X, vy = vertex.Y - light.Y, vz = vertex.Z - light.Z;
+        double dist = System.Math.Sqrt(vx * vx + vy * vy + vz * vz);
+        if (dist >= radius || dist < 1e-4) return 0;
+        double atten = 1.0 - dist / radius;
+        double ndl = System.Math.Max(0.0, -(normal.X * vx + normal.Y * vy + normal.Z * vz) / dist);
+        return atten * atten * ndl;
     }
 
     private static byte[] NativeMobyClassBytes(Rac2LevelCore.Core core, int oClass) =>
@@ -418,7 +420,7 @@ public static partial class Rac2WorldImport
         return outp;
     }
 
-    /// <summary>Package the gameplay lights into the neutral runtime lighting model (native Z-up → OBP Y-up).</summary>
+    /// <summary>Package the gameplay lights into the neutral runtime lighting model (native Z-up â†’ OBP Y-up).</summary>
     private static void PlaceMobyInstances(
         IReadOnlyList<Rac2Instances.MobyInstance> instances,
         Dictionary<int, GcUyaMoby.MobyClass> classes,
@@ -430,11 +432,6 @@ public static partial class Rac2WorldImport
         var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation),
             (List<double> P, List<float> U, List<float> C, List<int> I,
                 Dictionary<(double, double, double, double, double, double, double, double), int> Weld)>();
-
-        // Point lights in OBP Y-up space (they are stored native Z-up).
-        var plYUp = pointLights
-            .Select(p => (Pos: YUp(p.Position), p.Radius, p.Colour))
-            .ToArray();
 
         foreach (var inst in instances)
         {
@@ -453,28 +450,9 @@ public static partial class Rac2WorldImport
                 (inst.Position.X, inst.Position.Y, inst.Position.Z),
                 (inst.Rotation.X, inst.Rotation.Y, inst.Rotation.Z), sc);
 
-            // The instance's static ambient, plus the one directional light it
-            // references (native Z-up dirs -> OBP Y-up). See GcInstances.DirLight.
-            var amb = inst.LightColour;
-            Rac2Instances.DirLight? dl = inst.LightIndex >= 0 && inst.LightIndex < dirLights.Count
-                ? dirLights[inst.LightIndex]
-                : null;
-            var (dAx, dAy, dAz) = dl is { } a ? YUp(a.DirectionA) : (0, 0, 0);
-            var (dBx, dBy, dBz) = dl is { } b ? YUp(b.DirectionB) : (0, 0, 0);
-
-            // Point lights whose sphere plausibly reaches this instance (only
-            // mobies are point-lit). Instance origin in OBP Y-up.
-            var instYUp = YUp(inst.Position);
-            var nearPl = plYUp
-                .Where(p => Dist2(p.Pos, instYUp) < (p.Radius + 40.0) * (p.Radius + 40.0))
-                .ToArray();
-
             var meshData = cls.Mesh;
-            bool haveNormals = meshData.Normals.Length == meshData.Positions.Length;
             var worldPos = new double[meshData.Positions.Length];
-            var litR = new float[meshData.Positions.Length / 3];
-            var litG = new float[meshData.Positions.Length / 3];
-            var litB = new float[meshData.Positions.Length / 3];
+            var colours = ShadeMobyVertices(meshData, inst, m, dirLights, pointLights);
             for (int i = 0; i < meshData.Positions.Length; i += 3)
             {
                 var (x, y, z) = Rac2Instances.TransformPoint(m, meshData.Positions[i], meshData.Positions[i + 1], meshData.Positions[i + 2]);
@@ -482,42 +460,6 @@ public static partial class Rac2WorldImport
                 worldPos[i + 1] = R2(z);
                 worldPos[i + 2] = R2(y);
 
-                double lr = amb.R, lg = amb.G, lb = amb.B;
-                if (haveNormals)
-                {
-                    var (nx, ny, nz) = WorldNormal(m, meshData.Normals[i], meshData.Normals[i + 1], meshData.Normals[i + 2]);
-                    if (dl is { } light)
-                    {
-                        // surface faces -direction to be lit (light-travel convention)
-                        double ka = System.Math.Max(0.0, -(nx * dAx + ny * dAy + nz * dAz));
-                        double kb = System.Math.Max(0.0, -(nx * dBx + ny * dBy + nz * dBz));
-                        lr += light.ColourA.X * ka + light.ColourB.X * kb;
-                        lg += light.ColourA.Y * ka + light.ColourB.Y * kb;
-                        lb += light.ColourA.Z * ka + light.ColourB.Z * kb;
-                    }
-
-                    foreach (var p in nearPl)
-                    {
-                        double vx = x - p.Pos.X, vy = z - p.Pos.Y, vz = y - p.Pos.Z; // vertex is (x,z,y) in Y-up
-                        double dist = System.Math.Sqrt(vx * vx + vy * vy + vz * vz);
-                        if (dist >= p.Radius || dist < 1e-4)
-                        {
-                            continue;
-                        }
-
-                        double atten = 1.0 - dist / p.Radius;
-                        double ndl = System.Math.Max(0.0, -(nx * vx + ny * vy + nz * vz) / dist); // toward the light
-                        double c = atten * atten * ndl;
-                        lr += p.Colour.R * c;
-                        lg += p.Colour.G * c;
-                        lb += p.Colour.B * c;
-                    }
-                }
-
-                int vi3 = i / 3;
-                litR[vi3] = (float)System.Math.Clamp(lr, 0.03, 1.0);
-                litG[vi3] = (float)System.Math.Clamp(lg, 0.03, 1.0);
-                litB[vi3] = (float)System.Math.Clamp(lb, 0.03, 1.0);
             }
 
             for (int f = 0; f < cls.TriangleTextureIds.Length; f++)
@@ -539,7 +481,7 @@ public static partial class Rac2WorldImport
                     double px = worldPos[vi * 3], py = worldPos[vi * 3 + 1], pz = worldPos[vi * 3 + 2];
                     float s = meshData.Uvs[vi * 2], t = meshData.Uvs[vi * 2 + 1];
                     double rs = R4(s), rt = R4(t);
-                    double cr = R2(litR[vi]), cg = R2(litG[vi]), cb = R2(litB[vi]);
+                    double cr = R2(colours[vi * 4]), cg = R2(colours[vi * 4 + 1]), cb = R2(colours[vi * 4 + 2]);
                     var key = (px, py, pz, rs, rt, cr, cg, cb);
                     if (!g.Weld.TryGetValue(key, out int idx))
                     {
