@@ -65,7 +65,8 @@ try {
     try { $report = Get-Content -LiteralPath $Out -Raw | ConvertFrom-Json }
     catch { throw 'Movement replay report is invalid JSON or contains an unrepresentable number.' }
     $assembly = [guid]::Empty
-    if ($report.StateFile -cne [IO.Path]::GetFileName($State) -or
+    if ($report.StateFile -isnot [string] -or $report.StateFile -cne [IO.Path]::GetFileName($State) -or
+        $report.HostAssemblyId -isnot [string] -or
         -not [guid]::TryParse([string]$report.HostAssemblyId, [ref]$assembly) -or $assembly -eq [guid]::Empty -or
         -not (Test-ObpMovementReplayNumber $report.PhysicsHz) -or $report.PhysicsHz -le 0) {
         throw 'Movement replay report lost its state/build/physics identity.'

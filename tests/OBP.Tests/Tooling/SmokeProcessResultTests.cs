@@ -281,6 +281,10 @@ public sealed class SmokeProcessResultTests
     [InlineData("pwsh", "player-capabilities-smoke.ps1", "string-version", false)]
     [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "boolean-version", false)]
     [InlineData("pwsh", "player-capabilities-smoke.ps1", "boolean-version", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "scalar-attachment", false)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "scalar-attachment", false)]
+    [InlineData("powershell.exe", "player-capabilities-smoke.ps1", "null-attachment", true)]
+    [InlineData("pwsh", "player-capabilities-smoke.ps1", "null-attachment", true)]
     [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "clean", true)]
     [InlineData("pwsh", "test-diagnostic-cli.ps1", "clean", true)]
     [InlineData("powershell.exe", "test-diagnostic-cli.ps1", "leak", false)]
@@ -329,7 +333,7 @@ public sealed class SmokeProcessResultTests
                 Copy-Item {{{{{Quote(Path.Combine(RepoPaths.Root, "tools", runner))}}}}} $tools
                 Copy-Item {{{{{Quote(Path.Combine(RepoPaths.Root, "tools", "obp-smoke-process.ps1"))}}}}} $tools
                 Set-Content (Join-Path $tools 'godot-toolchain.json') '{"godot":{"artifacts":{"win64":{"exe":"fake.ps1"}}}}'
-                Set-Content (Join-Path $root 'source.iso') 'Synthetic prerequisite only; never decoded.'
+                foreach($game in 'rac1','rac2','rac3') { Set-Content (Join-Path $root "source-$game.iso") "Synthetic $game prerequisite only; never decoded." }
                 Set-Content (Join-Path $tools 'prepare-game-smoke.ps1') "return 'unused-engine'"
                 $env:OBP_TEST_RUNNER_FAULT = {{{{{Quote(fault)}}}}}
                 Set-Content (Join-Path $tools 'obp-native-process.ps1') @'
@@ -338,9 +342,9 @@ public sealed class SmokeProcessResultTests
                     $pathIndex=[Array]::IndexOf($ArgumentList,'--path')
                     if($pathIndex -lt 0 -or $ArgumentList[$pathIndex+1] -ne (Join-Path $WorkingDirectory 'game')){throw 'Fixture received an invalid game path.'}
                     if($ArgumentList -contains '--player-session-smoke' -or $ArgumentList -contains '--player-capabilities-smoke' -or $ArgumentList -contains '--fusion-smoke'){
-                        foreach($option in '--rac1-iso','--rac2-iso','--rac3-iso'){
-                            $index=[Array]::IndexOf($ArgumentList,$option)
-                            if($index -lt 0 -or $ArgumentList[$index+1] -ne (Join-Path $WorkingDirectory 'source.iso')){throw 'Fixture source argument boundary was lost.'}
+                        foreach($game in 'rac1','rac2','rac3'){
+                            $index=[Array]::IndexOf($ArgumentList,"--$game-iso")
+                            if($index -lt 0 -or $ArgumentList[$index+1] -ne (Join-Path $WorkingDirectory "source-$game.iso")){throw "Fixture $game source argument boundary was lost."}
                         }
                     }
                     $marker = '[player-session-smoke] PASS: fixture'
@@ -362,6 +366,8 @@ public sealed class SmokeProcessResultTests
                             if ($env:OBP_TEST_RUNNER_FAULT -eq 'middle-clock') { $samples[5].Clock=.5 }
                             if ($env:OBP_TEST_RUNNER_FAULT -eq 'missing-field') { $samples[5].Remove('Pose') }
                             if ($env:OBP_TEST_RUNNER_FAULT -eq 'bad-coordinate') { $samples[5].Camera[1]='NaN' }
+                            if ($env:OBP_TEST_RUNNER_FAULT -eq 'scalar-attachment') { $samples[5].Attachment='42' }
+                            if ($env:OBP_TEST_RUNNER_FAULT -eq 'null-attachment') { foreach($sample in $samples){$sample.Attachment='null'} }
                             $document | ConvertTo-Json -Depth 6 -Compress | Set-Content -LiteralPath $report
                             if ($env:OBP_TEST_RUNNER_FAULT -eq 'invalid-json') { Set-Content -LiteralPath $report '{broken' }
                         }
@@ -429,10 +435,11 @@ public sealed class SmokeProcessResultTests
                     $history = @{Version=1;Baselines=@{'rac2/item:30'=$samples;'rac3/item:43'=$samples}} | ConvertTo-Json -Depth 6 -Compress
                     foreach($fps in 30,120){Set-Content (Join-Path $out "trace-$fps.json") $history}
                 }
-                $source = Join-Path $root 'source.iso'
                 $parameters = @{Out=$out;SkipBuild=$true}
                 if ({{{{{Quote(runner)}}}}} -ne 'test-diagnostic-cli.ps1') {
-                    $parameters.Rac1Iso=$source;$parameters.Rac2Iso=$source;$parameters.Rac3Iso=$source
+                    $parameters.Rac1Iso=Join-Path $root 'source-rac1.iso'
+                    $parameters.Rac2Iso=Join-Path $root 'source-rac2.iso'
+                    $parameters.Rac3Iso=Join-Path $root 'source-rac3.iso'
                 }
                 # A previous native failure must not become this successful script's result.
                 $global:LASTEXITCODE=17
@@ -448,9 +455,12 @@ public sealed class SmokeProcessResultTests
                     "stale" => "Native player report was not produced by this run.",
                     "empty" or "foreign-baseline" or "case-baseline" or "string-version" or "boolean-version" => "missing its two weapon baselines",
                     "partial" or "reordered-trace" or "middle-clock" => "does not contain a complete four-second trial",
-                    "missing-field" or "bad-coordinate" => "missing or invalid native sample fields",
+                    "missing-field" or "bad-coordinate" or "scalar-attachment" => "missing or invalid native sample fields",
                     "invalid-json" => "invalid JSON",
-                    "record-log-error" or "replay-log-rid" or "expected-rejection-leak" or "expected-file-rejection-leak" => "Godot lifecycle error",
+                    "record-log-error" => "Godot lifecycle error in record-native.log",
+                    "replay-log-rid" => "Godot lifecycle error in replay-native.log",
+                    "expected-rejection-leak" => "Godot lifecycle error in wrong-source.report.json.stderr.log",
+                    "expected-file-rejection-leak" => "Godot lifecycle error in wrong-source.report.json.log",
                     _ when fault.StartsWith("negative-", StringComparison.Ordinal) => "Diagnostic CLI check bad-list failed",
                     _ => runner switch
                     {
@@ -473,7 +483,7 @@ public sealed class SmokeProcessResultTests
             foreach (string shell in new[] { "powershell.exe", "pwsh" })
                 foreach (string fault in new[] { "clean", "profile", "nonzero", "no-marker", "leak", "missing-report", "stale",
                     "partial", "bad-tick", "bad-vector", "bad-identity", "foreign-state", "missing-profile", "same-output", "alias-content",
-                    "missing-phase", "missing-floor", "missing-support", "missing-step", "missing-contacts", "bad-contact", "empty-contacts", "numeric-overflow", "blank-phase", "blank-step" })
+                    "missing-phase", "missing-floor", "missing-support", "missing-step", "missing-contacts", "bad-contact", "empty-contacts", "numeric-overflow", "blank-phase", "blank-step", "array-state", "array-build" })
                     yield return [shell, fault, fault switch { "clean" or "profile" or "empty-contacts" => 0, "nonzero" => 17, "same-output" or "alias-content" => 1, _ => 2 }];
         }
     }
@@ -520,6 +530,8 @@ public sealed class SmokeProcessResultTests
                         'bad-vector' {$samples[1].Position.X='NaN'}
                         'bad-identity' {$report.HostAssemblyId=''}
                         'foreign-state' {$report.StateFile='another-state.json'}
+                        'array-state' {$report.StateFile=@()}
+                        'array-build' {$report.HostAssemblyId=@('00000000-0000-0000-0000-000000000001')}
                         'missing-phase' {$samples[1].Remove('Phase')}
                         'missing-floor' {$samples[1].Remove('Floor')}
                         'missing-support' {$samples[1].Remove('Support')}
@@ -585,12 +597,12 @@ public sealed class SmokeProcessResultTests
                     "partial" => "initial sample and every requested physics update",
                     "bad-tick" => "ticks are incomplete or out of order",
                     "bad-vector" => "missing or non-finite position/velocity coordinate",
-                    "bad-identity" or "foreign-state" => "state/build/physics identity",
+                    "bad-identity" or "foreign-state" or "array-state" or "array-build" => "state/build/physics identity",
                     "missing-profile" => "missing requested timing measurements",
                     "same-output" or "alias-content" => "must not overwrite the input state",
                     "missing-phase" or "missing-floor" or "missing-support" or "missing-step" or "missing-contacts" or "blank-phase" or "blank-step" => "missing phase/support/contact state",
                     "bad-contact" => "missing or non-finite contact normal coordinate",
-                    "numeric-overflow" => text.Contains("unrepresentable number", StringComparison.Ordinal) ? "unrepresentable number" : "missing or non-finite position/velocity coordinate",
+                    "numeric-overflow" => Path.GetFileName(shell) == "powershell.exe" ? "unrepresentable number" : "missing or non-finite position/velocity coordinate",
                     _ => throw new ArgumentOutOfRangeException(nameof(fault)),
                 };
                 Assert.Contains(reason, text);

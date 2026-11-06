@@ -69,6 +69,9 @@ foreach ($fps in @(30, 120)) {
             }
             try { $null = $sample.Attachment | ConvertFrom-Json }
             catch { throw 'Native player report has missing or invalid native sample fields: attachment JSON.' }
+            if ($sample.Attachment.Trim() -cne 'null' -and -not $sample.Attachment.TrimStart().StartsWith('{')) {
+                throw 'Native player report has missing or invalid native sample fields: attachment JSON.'
+            }
             foreach ($vector in @($sample.Position, $sample.Camera)) {
                 if (@($vector).Count -ne 3) { throw 'Native player report has missing or invalid native sample fields: coordinates.' }
                 foreach ($coordinate in $vector) {
