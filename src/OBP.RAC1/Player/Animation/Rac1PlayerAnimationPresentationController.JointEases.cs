@@ -9,6 +9,8 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     private IReadOnlyList<Rac1RatchetJointEases.Offset> _easeOffsets = [];
     private PlayerAnimationPresentation? _easeBase;
     private int _sourceHandJoint = 56;
+    /// <summary>Independently skinned poses before/after this update's procedural rotations.</summary>
+    public (IReadOnlyList<double> Before, IReadOnlyList<double> After)? JointEaseSkinChange { get; private set; }
 
     /// <summary>True once a retail ease table has been admitted for this avatar.</summary>
     public bool HasJointEases => _equipmentRig?.HeroEases is not null;
@@ -57,6 +59,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         }
         _jointEases?.Reset();
         _easeOffsets = [];
+        JointEaseSkinChange = null;
     }
 
     private PlayerAnimationPresentation ApplyJointEases()
@@ -67,6 +70,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
             CurrentClip.FrameIndexAt(Current.ElapsedAt(_clockSeconds), Current.Loop)];
         var socketJoints = SocketJoints();
         var (positions, deltas) = rig.ApplyJointOffsets(basis, baseline, _easeOffsets, socketJoints.Values.Distinct().ToArray(), ResolvedBodyPose());
+        JointEaseSkinChange = rig.JointEaseSkinChange;
         if (ReferenceEquals(positions, baseline)) return Current;
         if (_attachments.TryGetValue(baseline, out var sources))
         {

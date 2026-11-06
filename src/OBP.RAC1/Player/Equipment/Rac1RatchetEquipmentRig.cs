@@ -49,6 +49,7 @@ public sealed class Rac1RatchetEquipmentRig
     private bool _holdBlending, _holdPrevBlending;
     private float _holdFraction;
     private int _holdPrevSequence = -1;
+    internal (IReadOnlyList<double> Before, IReadOnlyList<double> After)? JointEaseSkinChange { get; private set; }
 
     public Rac1RatchetEquipmentRig(Rac1RatchetAvatar.Asset asset, IReadOnlyList<int> layerJoints,
         Rac1RatchetArmHoldSource? armHold = null)
@@ -268,6 +269,7 @@ public sealed class Rac1RatchetEquipmentRig
         PlayerSkeletalPose? body = null)
     {
         PlayerSkeletalClip? clip = null;
+        JointEaseSkinChange = null;
         if (offsets.Count == 0 || body is null && !Asset.Clips.TryGetValue(basis.Sequence, out clip))
             return (current, new Dictionary<int, Matrix4x4>());
         var target = basis.IsBlending ? basis with { CurrentFrame = basis.NextFrame, Fraction = 0 } : basis;
@@ -284,6 +286,9 @@ public sealed class Rac1RatchetEquipmentRig
         var worldBefore = _sampler.JointMatrices.ToArray();
         for (int i = 0; i < offsets.Count; i++) _sampler.ComposeLocalRotation(changed[i], offsets[i].Rotation);
         var after = _sampler.Skin(null, changed.Distinct().ToArray());
+        // Retain the independently evaluated deformation, not a difference derived
+        // from the final presented vertices. These arrays are never mutated again.
+        JointEaseSkinChange = (Array.AsReadOnly(before), Array.AsReadOnly(after));
         var result = (double[])current.Clone();
         for (int i = 0; i < result.Length; i++) result[i] += after[i] - before[i];
         var deltas = new Dictionary<int, Matrix4x4>();

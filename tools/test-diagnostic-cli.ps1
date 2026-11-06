@@ -18,7 +18,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
-. (Join-Path $PSScriptRoot 'obp-native-process.ps1')
+. (Join-Path $PSScriptRoot 'obp-smoke-process.ps1')
 if (-not $Out) { $Out = Join-Path $repoRoot ('captures/diagnostic-cli/' + [guid]::NewGuid().ToString('N')) }
 $Out = [IO.Path]::GetFullPath($Out)
 if (Test-Path -LiteralPath $Out) { throw 'Choose a new evidence directory to keep profiles/source configuration isolated.' }
@@ -47,7 +47,9 @@ function Invoke-CliCheck {
     $log = Join-Path $Out ($Name + '.log'); $errors = Join-Path $Out ($Name + '.err.log')
     $code = Invoke-ObpNativeProcessCapture -FilePath $engine -ArgumentList $engineArgs -WorkingDirectory $repoRoot -StandardOutputPath $log -StandardErrorPath $errors
     $passed = $code -eq $ExpectedExit -and (Select-String -LiteralPath $log -SimpleMatch $Expected -Quiet)
-    if (Select-String -LiteralPath $errors -Pattern 'SCRIPT ERROR:|ObjectDB instances leaked|resources still in use|\[cli-tool-engine-smoke\] FAIL:' -Quiet) { $passed = $false }
+    if ($ExpectedExit -eq 0 -and -not (Test-ObpSmokeLog -ExitCode $code -Log ([IO.File]::ReadAllText($log) + "`n" + [IO.File]::ReadAllText($errors)) -CompletionMarker $Expected)) { $passed = $false }
+    $combined = [IO.File]::ReadAllText($log) + "`n" + [IO.File]::ReadAllText($errors)
+    if (Test-ObpSmokeFailure -Log $combined) { $passed = $false }
     $results.Add([pscustomobject]@{ Name = $Name; Passed = $passed; ExitCode = $code; Log = ($Name + '.log') })
     if (-not $passed) { throw "Diagnostic CLI check $Name failed. Inspect its local logs." }
     Write-Information "$Name passed" -InformationAction Continue
@@ -90,3 +92,4 @@ finally {
         ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $Out 'summary.json') -Encoding UTF8
     Write-Host "Diagnostic CLI evidence: $Out"
 }
+exit 0

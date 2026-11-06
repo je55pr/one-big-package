@@ -58,7 +58,8 @@ public abstract class FusionWeaponScenarioSupport(MovementDiagnosticContext cont
             expected.Z.DistanceTo(held.Local.Z) < .00001f, $"{Selected} axes do not follow the animated hand");
     }
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "S1244", Justification = "The exact zero blend reset is an original native animation transition witness.")]
-    protected void RequireFusionTransitionContinuity(DiagnosticWeaponTransform previous, ImmutableArray<double>? previousSkin, ref int boundaries)
+    protected void RequireFusionTransitionContinuity(DiagnosticWeaponTransform previous, ImmutableArray<double>? previousSkin, ref int boundaries,
+        ImmutableArray<double>? previousJointEaseDelta)
     {
         var animation = Fusion.ReadAnimation();
         if (!animation.Blending || animation.BlendFraction != 0 || previousSkin is null) return;
@@ -66,8 +67,16 @@ public abstract class FusionWeaponScenarioSupport(MovementDiagnosticContext cont
         Require(actual.Origin.DistanceTo(previous.Origin) < .00001f && actual.X.DistanceTo(previous.X) < .00001f &&
             actual.Y.DistanceTo(previous.Y) < .00001f && actual.Z.DistanceTo(previous.Z) < .00001f, $"{Selected} gun snapped at a transition boundary");
         var skin = animation.Skin ?? throw new DiagnosticUnavailableException("The source skin pose is unavailable.");
-        Require(skin.Length == previousSkin.Value.Length, $"{Selected} source pose coordinate count changed at a transition boundary");
-        Require(skin.Zip(previousSkin.Value, (a, b) => Math.Abs(a - b)).Max() < .00001, $"{Selected} arms/body did not retain the rendered source pose");
+        Require(skin.Length > 0 && skin.Length == previousSkin.Value.Length, $"{Selected} source pose coordinate count changed at a transition boundary");
+        foreach (var (label, delta) in new[] { ("previous", previousJointEaseDelta), ("current", animation.JointEaseDelta) })
+            Require(delta is null || !delta.Value.IsDefault && delta.Value.Length == skin.Length && delta.Value.All(double.IsFinite),
+                $"{Selected} {label} procedural pose coordinate count or values are invalid");
+        // A zero-fraction transition freezes animation channels, not the native
+        // procedural springs applied afterward. Compare every final rendered
+        // coordinate with the prior pose plus that independently skinned change.
+        Require(Enumerable.Range(0, skin.Length).All(i => double.IsFinite(skin[i]) && double.IsFinite(previousSkin.Value[i]) &&
+            Math.Abs(skin[i] - (previousSkin.Value[i] + (animation.JointEaseDelta?[i] ?? 0) - (previousJointEaseDelta?[i] ?? 0))) < .00001),
+            $"{Selected} arms/body did not retain the rendered source pose");
     }
     protected async Task CheckFusionJumpAttachmentAsync(bool moving)
     {
@@ -78,8 +87,8 @@ public abstract class FusionWeaponScenarioSupport(MovementDiagnosticContext cont
         for (int tick = 0; tick < 65; tick++)
         {
             if (tick == 16) FusionKey(DiagnosticPhysicalKey.Space, false);
-            var previous = Fusion.ReadHeld(key).Local; var previousSkin = Fusion.ReadAnimation().Skin;
-            await PhysicsFramesAsync(1); RequireFusionHandAttachment(); RequireFusionTransitionContinuity(previous, previousSkin, ref boundaries);
+            var previous = Fusion.ReadHeld(key).Local; var previousAnimation = Fusion.ReadAnimation();
+            await PhysicsFramesAsync(1); RequireFusionHandAttachment(); RequireFusionTransitionContinuity(previous, previousAnimation.Skin, ref boundaries, previousAnimation.JointEaseDelta);
             if (Fusion.ReadAnimation().TraversalSequence is 7 or 8)
             {
                 sawJump = true; var current = Fusion.ReadHeld(key).Local;
@@ -100,8 +109,8 @@ public abstract class FusionWeaponScenarioSupport(MovementDiagnosticContext cont
             SetAnalogueSmokeInput(0, phase.Move ? 1 : 0);
             for (int tick = 0; tick < phase.Ticks; tick++)
             {
-                var previous = Fusion.ReadHeld(Selected).Local; var skin = Fusion.ReadAnimation().Skin;
-                await PhysicsFramesAsync(1); RequireFusionHandAttachment(); RequireFusionTransitionContinuity(previous, skin, ref boundaries);
+                var previous = Fusion.ReadHeld(Selected).Local; var previousAnimation = Fusion.ReadAnimation();
+                await PhysicsFramesAsync(1); RequireFusionHandAttachment(); RequireFusionTransitionContinuity(previous, previousAnimation.Skin, ref boundaries, previousAnimation.JointEaseDelta);
                 if (Animation.Read().Sequence is int sequence) sequences.Add(sequence);
             }
         }

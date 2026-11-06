@@ -9,7 +9,8 @@ function Invoke-ObpNativeProcessCapture {
         [Parameter(Mandatory = $true)][string]$StandardOutputPath,
         [Parameter(Mandatory = $true)][string]$StandardErrorPath,
         [string]$WorkingDirectory = (Get-Location).Path,
-        [scriptblock]$OnOutput
+        [scriptblock]$OnOutput,
+        [ValidateRange(0, 2147483647)][int]$TimeoutSeconds = 0
     )
     $start = New-Object System.Diagnostics.ProcessStartInfo
     $start.FileName = $FilePath
@@ -28,6 +29,8 @@ function Invoke-ObpNativeProcessCapture {
     $started = $false
     $stdoutWriter = $null
     $stderrWriter = $null
+    $stdoutFile = $null; $stderrFile = $null
+    $stdoutCopy = $null; $stderrCopy = $null
     try {
         $utf8 = New-Object System.Text.UTF8Encoding($false)
         if ($OnOutput) {
@@ -36,14 +39,23 @@ function Invoke-ObpNativeProcessCapture {
             $stdoutWriter.AutoFlush = $true
             $stderrWriter.AutoFlush = $true
         }
+        else {
+            # Open fresh logs before launch and retain partial output on cancellation.
+            $stdoutFile = [IO.FileStream]::new($StandardOutputPath, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::ReadWrite)
+            $stderrFile = [IO.FileStream]::new($StandardErrorPath, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::ReadWrite)
+        }
         [void]$process.Start()
         $started = $true
+        $watch = [Diagnostics.Stopwatch]::StartNew()
         if ($OnOutput) {
             # Service both asynchronous reads from this PowerShell runspace.
             # Event callbacks on native threads cannot safely invoke script blocks.
             $stdoutRead = $process.StandardOutput.ReadLineAsync()
             $stderrRead = $process.StandardError.ReadLineAsync()
             while ($null -ne $stdoutRead -or $null -ne $stderrRead) {
+                if ($TimeoutSeconds -gt 0 -and $watch.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
+                    throw [TimeoutException]::new("Native process timed out after $TimeoutSeconds seconds. Stdout: $StandardOutputPath; stderr: $StandardErrorPath")
+                }
                 if ($null -ne $stdoutRead -and $stdoutRead.IsCompleted) {
                     $line = $stdoutRead.GetAwaiter().GetResult()
                     if ($null -eq $line) { $stdoutRead = $null }
@@ -65,27 +77,57 @@ function Invoke-ObpNativeProcessCapture {
                 $pending = @($stdoutRead, $stderrRead) | Where-Object { $null -ne $_ }
                 if ($pending) { [Threading.Tasks.Task]::WaitAny([Threading.Tasks.Task[]]@($pending), 100) | Out-Null }
             }
-            $process.WaitForExit()
+            while (-not $process.WaitForExit(100)) {
+                if ($TimeoutSeconds -gt 0 -and $watch.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
+                    throw [TimeoutException]::new("Native process timed out after $TimeoutSeconds seconds. Stdout: $StandardOutputPath; stderr: $StandardErrorPath")
+                }
+            }
             return $process.ExitCode
         }
         # Drain both pipes concurrently; a full stderr pipe must not deadlock stdout.
-        $stdout = $process.StandardOutput.ReadToEndAsync()
-        $stderr = $process.StandardError.ReadToEndAsync()
-        $process.WaitForExit()
-        [IO.File]::WriteAllText($StandardOutputPath, $stdout.GetAwaiter().GetResult(), $utf8)
-        [IO.File]::WriteAllText($StandardErrorPath, $stderr.GetAwaiter().GetResult(), $utf8)
+        $stdoutCopy = $process.StandardOutput.BaseStream.CopyToAsync($stdoutFile)
+        $stderrCopy = $process.StandardError.BaseStream.CopyToAsync($stderrFile)
+        while (-not $process.WaitForExit(100)) {
+            if ($TimeoutSeconds -gt 0 -and $watch.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
+                throw [TimeoutException]::new("Native process timed out after $TimeoutSeconds seconds. Stdout: $StandardOutputPath; stderr: $StandardErrorPath")
+            }
+        }
+        while (-not $stdoutCopy.IsCompleted -or -not $stderrCopy.IsCompleted) {
+            if ($TimeoutSeconds -gt 0 -and $watch.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
+                throw [TimeoutException]::new("Native output drain timed out after $TimeoutSeconds seconds. Stdout: $StandardOutputPath; stderr: $StandardErrorPath")
+            }
+            $pending = @($stdoutCopy, $stderrCopy) | Where-Object { -not $_.IsCompleted }
+            if ($pending) { [Threading.Tasks.Task]::WaitAny([Threading.Tasks.Task[]]@($pending), 100) | Out-Null }
+        }
+        $stdoutCopy.GetAwaiter().GetResult() | Out-Null
+        $stderrCopy.GetAwaiter().GetResult() | Out-Null
         return $process.ExitCode
     }
-    catch {
-        if ($started -and -not $process.HasExited) {
-            $process.Kill()
-            [void]$process.WaitForExit(5000)
-        }
-        throw
-    }
     finally {
+        # Pipeline termination (including Ctrl+C) runs finally, but not catch.
+        # Cleanup failures must not replace the original callback/pipeline error.
+        if ($started) {
+            try {
+                if (-not $process.HasExited) {
+                    if ($PSVersionTable.PSEdition -eq 'Core') { $process.Kill($true) }
+                    else { $process.Kill() }
+                    if (-not $process.WaitForExit(5000)) {
+                        Write-Warning -WarningAction Continue "Native child $($process.Id) is still running after the cleanup wait."
+                    }
+                }
+            }
+            catch [InvalidOperationException] { Write-Verbose 'Native child exited during cleanup.' }
+            catch { Write-Warning -WarningAction Continue "Native child cleanup failed: $($_.Exception.Message)" }
+        }
         if ($stdoutWriter) { $stdoutWriter.Dispose() }
         if ($stderrWriter) { $stderrWriter.Dispose() }
+        $copies = @($stdoutCopy, $stderrCopy) | Where-Object { $null -ne $_ }
+        if ($copies) {
+            try { [void][Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($copies), 5000) }
+            catch { Write-Verbose 'Native output drain ended during cleanup.' }
+        }
+        if ($stdoutFile) { $stdoutFile.Dispose() }
+        if ($stderrFile) { $stderrFile.Dispose() }
         $process.Dispose()
     }
 }
