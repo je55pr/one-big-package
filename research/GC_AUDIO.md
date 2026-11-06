@@ -373,7 +373,8 @@ The native sound-slot path stores SoundDef +0x10/+0x14 at slot +0x84
 (`0x35574C`), then supplies it as the PB argument t1 (`0x355378`), independently
 of PM in t0. The first implementation incorrectly passed it as PM, producing
 slow, low-pitched Bolt arrivals. `Ps2SoundRenderer989` now distinguishes initial
-signed PB from 1/128-semitone PM; PB grains replace that initial controller.
+signed PB from 1/128-semitone PM. Random/set PB grains replace that initial
+controller; additive PB grains offset it.
 The distinction is corroborated by the pinned 989snd implementation's
 [`PitchBend`](https://github.com/open-goal/jak-project/blob/d04ac9d787be16e75ca1023b93efc8ad1a54d71c/game/sound/989snd/util.cpp)
 and `snd_SFX_GRAIN_TYPE_RAND_PB` in `sfxgrain.cpp`. Exact SPU rate quantization
