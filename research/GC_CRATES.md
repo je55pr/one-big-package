@@ -346,11 +346,61 @@ independently corroborated by pinned Wrench `src/engine/moby_low.h` and
 `moby_packet.h`; implementation follows bounded retail reads, without copying
 Wrench code. Generic emitter `0x0031BF10` supplies planar/upward launch 3..6 / 60,
 spin 90..270 degrees per second and gravity 10..20 / 3600. Constructor
-`0x002D1400` supplies damping 0.45, stopping threshold 0.033333335 and lifetime
-180. Airborne lifetime advances every fourth tick; after contact, every tick.
-The host uses swept point contacts, normal reflection, spin and a 2/128 fade
-mapping. These are bounded presentation adaptations; the native corner-contact
-solver and exact angular/RNG sequence are not reproduced.
+`0x002D1400` supplies speed-loss fraction 0.45, minimum loss 0.033333335 and
+lifetime 180. Lifetime advances every fourth tick while the support count is
+zero, then every tick after a support is anchored. The contact-state recovery
+below replaces the initial centre-ray/free-spin approximation. Exact native
+collision predicates and angular/RNG ordering remain outside the port.
+
+#### Contact points and settling
+
+The pinned [OpenRAC generic-motion reference](https://github.com/OpenRAC/rac2-decomp/blob/40e6fafd5c9edbab103513fa8046d24275ec3ca5/src/game/00273B70-rc2.c)
+dispatches generic motion using PVar +0x5D and gates
+the lifetime update on +0x5C. The init body in `00273978.c` corroborates the
+field layout (its introductory camera comment does not identify this actual
+fragment caller). Loaded Oozla bytes establish the concrete call chain:
+
+- `0x390CF8` calls generic update `0x2D15F8` for the emitted mode-2 parts.
+- `0x2D17C4..0x2D17EC` chooses free flight for +0x5C == 0 and supported motion
+  for counts 1/2; count >= 3 returns finished before advancing the pose.
+- `0x2D21F0..0x2D2228` appends a supporting vertex index. `0x2D2298` prunes
+  the support set with contact-plane predicates; arbitrary three impacts do
+  not constitute a stable support.
+- `0x2D1D70` rotates about a supporting point, or the midpoint of a supporting
+  edge. Gravity supplies the lever/up cross-product correction via +0x4C
+  (`0.0017453295` radians); `0x2D25E0` constrains rotation to the edge.
+  Angular correction at `0x2D2510` bounds its increment and resulting step.
+- `0x2D2630` reflects velocity. For floor-like normals with up dot > 0.7,
+  it moves speed toward zero by max(speed * 0.45, 0.033333335), clamped at zero.
+  The old multiply-by-0.45 response did not reproduce this minimum loss.
+- Finished generic motion starts the fragment's fade state at `0x390D44`.
+  The fade state still calls the generic update, then subtracts two from
+  native alpha at `0x390D68..0x390D88`. Settled parts retain their pose.
+
+Helper `0x3068B8` reads each part's corncob sphere followed by packed s16 XYZ
+contact points, scaled by runtime model scale / 1024. The fourth short of the
+first packed point is the count. Oozla parts 0/2/5 have **16/12/12 original
+contact points**. The importer retains them relative to the same part centre
+used by rendering, rather than colliding a single point at the centre.
+
+OBP now distinguishes free flight, point support, edge support and settled
+motion. Supported motion pivots about its anchors instead of applying residual
+linear translation; three stable supports freeze translation and orientation
+before fading. Godot supplies swept corner contacts. Its deepest-hit choice,
+2mm ray skin and projected-centre edge/triangle support adapter remain explicit
+host choices, rather than claims to reproduce the PS2 narrow phase. Moving
+supports, nonstandard gravity and exact native quaternion/plane arithmetic
+remain unrecovered.
+
+A local inspection dropped all three original hulls onto a supplied flat plane
+using 16 fixed seeds per hull. All 48 trajectories acquired stable three-point
+support and retired; sampled settled velocities were exactly zero. This is a
+bounded contact-adapter exercise, not a PS2 frame-equivalence claim.
+An external, temporary SceneTree observer also recorded the actual Godot Oozla
+crate-31 break with fixed seed 1440: the three pieces became stationary by
+frames 67/91/113 of the observation and retired at 127/151/173. Each retained
+exactly the same position and orientation through its final 64 observed frames.
+No observer or automated fixture is added to production.
 
 The intact class-500 box also uses texture 40. Its imported surfaces multiply
 that texture by computed per-instance ambient/directional/point-light colours.

@@ -65,7 +65,8 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
         {
             var pivot = new Vector3(-part.Pivot.X, part.Pivot.Z, part.Pivot.Y);
             Vector3 position = crate.Root.GlobalTransform * pivot;
-            var motion = new Rac2CrateFragment(part.Index, ToNative(position), Sample);
+            var contacts = part.ContactVertices.Select(vertex => ToNative(crate.Root.GlobalBasis * FromNative(vertex))).ToArray();
+            var motion = new Rac2CrateFragment(part.Index, ToNative(position), contacts, Sample);
             var node = new Node3D { Name = $"Rac2CrateFragment_{crate.Source.InstanceIndex}_{part.Index}" };
             foreach (var surface in part.Surfaces)
                 node.AddChild(new MeshInstance3D
@@ -144,14 +145,16 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
         for (int index = _fragments.Count - 1; index >= 0; index--)
         {
             var fragment = _fragments[index];
-            var before = FromNative(fragment.Motion.Position);
-            var next = FromNative(fragment.Motion.Position + fragment.Motion.Velocity);
-            var query = PhysicsRayQueryParameters3D.Create(before + Vector3.Up * .03f, next - Vector3.Up * .03f);
-            query.Exclude = excluded;
-            var hit = space.IntersectRay(query);
-            Rac2BoltContact? contact = hit.TryGetValue("position", out var point) && hit.TryGetValue("normal", out var normal)
-                ? new(ToNative(point.AsVector3()) + ToNative(normal.AsVector3()) * .03f, ToNative(normal.AsVector3())) : null;
-            fragment.Motion.Step(contact);
+            fragment.Motion.Step((vertex, before, next) =>
+            {
+                // Original part corners meet the world; 2mm ray skin is a host allowance.
+                var query = PhysicsRayQueryParameters3D.Create(FromNative(before) + Vector3.Up * .002f,
+                    FromNative(next) - Vector3.Up * .002f);
+                query.Exclude = excluded;
+                var hit = space.IntersectRay(query);
+                return hit.TryGetValue("position", out var point) && hit.TryGetValue("normal", out var normal)
+                    ? new(vertex, ToNative(point.AsVector3()), ToNative(normal.AsVector3())) : null;
+            });
             fragment.Node.GlobalPosition = FromNative(fragment.Motion.Position);
             var q = fragment.Motion.Rotation;
             fragment.Node.Quaternion = new Quaternion(-q.X, q.Z, q.Y, q.W) * fragment.InitialRotation;

@@ -12,7 +12,7 @@ namespace OBP.RAC2.Gameplay;
 /// <summary>Original class-500 detachable meshes and their native corncob pivots, not fragments cut from the intact box.</summary>
 public static class Rac2CrateAssets
 {
-    public sealed record Part(int Index, Vector3 Pivot, IReadOnlyList<RuntimeObjectMesh> Surfaces);
+    public sealed record Part(int Index, Vector3 Pivot, IReadOnlyList<RuntimeObjectMesh> Surfaces, IReadOnlyList<Vector3> ContactVertices);
     public sealed record Catalogue(IReadOnlyDictionary<int, Part> Parts, IReadOnlyList<RuntimeTexture> Textures,
         IReadOnlyDictionary<int, IReadOnlyDictionary<int, Part>> LitInstances);
     public static Catalogue Load(string path, int level)
@@ -43,6 +43,18 @@ public static class Rac2CrateAssets
             if (pivotAt > bytes.Length - 16) throw new InvalidDataException("Crate fragment pivot is out of bounds.");
             float F(int offset) => BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(pivotAt + offset)) * scale;
             Vector3 pivot = new(F(0), F(4), F(8));
+            // 0x30695C..0x3069A8: packed s16 XYZ points follow the kernel sphere.
+            // The first point's fourth short carries their count.
+            int pointsAt = pivotAt + 16;
+            if (pointsAt > bytes.Length - 8) throw new InvalidDataException("Crate fragment contact points are truncated.");
+            int pointCount = BinaryPrimitives.ReadInt16LittleEndian(bytes.AsSpan(pointsAt + 6));
+            if (pointCount < 3 || pointCount > 32 || pointsAt + pointCount * 8L > bytes.Length)
+                throw new InvalidDataException("Crate fragment contact points are out of bounds.");
+            var contacts = Enumerable.Range(0, pointCount).Select(index =>
+            {
+                float C(int component) => BinaryPrimitives.ReadInt16LittleEndian(bytes.AsSpan(pointsAt + index * 8 + component * 2)) * scale;
+                return new Vector3(C(0), C(1), C(2)) - pivot;
+            }).ToArray();
             var mesh = GcUyaMoby.ReadBangle(bytes, part);
             nativeMeshes.Add(part, mesh);
             var positions = new double[mesh.Positions.Length];
@@ -64,7 +76,7 @@ public static class Rac2CrateAssets
                         MaterialPresentation: group.Key.Material >= 0 ? Ps2MaterialPresentation.From(mesh.Materials[group.Key.Material], classifyMobySurface: true) : null);
                 }).ToArray();
             if (surfaces.Length == 0) throw new InvalidDataException("Original crate fragment is empty.");
-            parts.Add(part, new(part, pivot, surfaces));
+            parts.Add(part, new(part, pivot, surfaces, contacts));
         }
         var decodedTextures = Rac2LevelTextures.Read(core, Rac2LevelTextures.Table.Moby).Where(texture => textures.Contains(texture.Index))
             .Select(texture => new RuntimeTexture("moby", texture.Index, texture.Width, texture.Height, texture.Rgba)).ToArray();
