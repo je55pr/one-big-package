@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using OBP.Core;
 
 namespace OBP.Game.Diagnostics;
 
@@ -25,8 +26,12 @@ internal sealed class CaptureDiagnosticHarness(CaptureDiagnosticAuthorities auth
     private DiagnosticScenarioDefinition Definition(string id) => new(id + "/v1", DiagnosticSourceAccess.ExplicitSourceDiagnostic,
         // Report replays poll process frames while a child imports its world. Headless
         // process frames are unpaced; their 90-second wall-clock deadlines own this wait.
-        DiagnosticSetup.AssetFreeFixture, id is "reconciliation-capture" or "finished-capture-continuation" or "trilogy-gameplay-smoke"
-            ? authorities.Trilogy : authorities.Current(), TimeSpan.FromMinutes(30), id == "bug-report-smoke" ? int.MaxValue : 108_000);
+        DiagnosticSetup.AssetFreeFixture, id switch
+        {
+            "rac2-crate-smoke" => [.. authorities.Trilogy.Where(source => source.Game is ObpSourceGame.Rac1 or ObpSourceGame.Rac2)],
+            "reconciliation-capture" or "finished-capture-continuation" or "trilogy-gameplay-smoke" => authorities.Trilogy,
+            _ => authorities.Current(),
+        }, TimeSpan.FromMinutes(30), id == "bug-report-smoke" ? int.MaxValue : 108_000);
     private IDiagnosticScenario Scenario(DiagnosticScenarioDefinition definition, Func<CaptureDiagnosticContext, Task> execute) =>
         new CaptureOwnedScenario(definition, inputs, time, log, async context =>
         {

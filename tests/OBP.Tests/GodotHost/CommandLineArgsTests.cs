@@ -23,6 +23,9 @@ public sealed class CommandLineArgsTests
         var capabilities = CommandLineArgs.Parse(["--player-capabilities-smoke", "--player-capabilities-out", "trace.json"]);
         Assert.True(capabilities.PlayerCapabilitiesSmoke); Assert.Equal("trace.json", capabilities.PlayerCapabilitiesOut);
         Assert.False(capabilities.NativeParityRequested);
+        var crates = CommandLineArgs.Parse(["--rac2-crate-smoke", "--destination", "rac2:LEVEL1", "--no-profile"]);
+        Assert.True(crates.Rac2CrateSmoke);
+        Assert.False(crates.NativeParityRequested);
     }
 
     [Fact]

@@ -284,6 +284,21 @@ public sealed partial class CaptureDiagnosticTests
         Assert.Equal(new[] { ("missing-source", 1) }, fixture.Quits);
     }
 
+    [Theory]
+    [InlineData(ObpSourceGame.Rac1, false)]
+    [InlineData(ObpSourceGame.Rac2, false)]
+    [InlineData(ObpSourceGame.Rac3, true)]
+    public void CrateTrialRequiresPlayerAndWorldAuthoritiesWithoutRequiringUnrelatedSource(ObpSourceGame omitted, bool expected)
+    {
+        var fixture = new Fixture { Sources = [.. Fixture.AllSources.Where(source => source.Game != omitted)] };
+        using var operations = new HostOperationScope();
+        bool executed = false;
+        fixture.Harness(operations).Start("rac2-crate-smoke", _ => { executed = true; return Task.CompletedTask; }, "missing-source", 1, true);
+        Assert.Equal(expected, executed);
+        Assert.Equal(expected, fixture.Disposed);
+        Assert.Equal(new[] { expected ? ("rac2-crate-smoke-pass", 0) : ("missing-source", 1) }, fixture.Quits);
+    }
+
     [Fact]
     public async Task DriverCancellationReleasesItsInputWithoutStoppingTheHostOrPublishingAResult()
     {
