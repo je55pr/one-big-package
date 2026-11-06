@@ -39,7 +39,8 @@ internal sealed class PlayerServicesComposition(ApplicationComponents components
         () => _ui, () => _world?.Environment?.DeathHeight,
         node => node.Source.SourceGame == ObpSourceGame.Rac1
             ? Rac1World.Context.MobyRuntime.TryGet(new(node.Source.NativeClassId, node.Source.InstanceIndex), out var native) && native!.IsActive
-            : _worldScenes?.Current?.Resources.Rac2Gameplay?.IsLiveHostile(node) == true,
+            : node.Source.SourceGame == ObpSourceGame.Rac2 && _worldScenes?.Current?.Resources.Rac2Gameplay is { } rac2 &&
+                (rac2.IsLiveHostile(node) || rac2.IsExplosiveDamageProducer(node)),
         () => _worldScenes?.Current?.Resources.Rac1Gameplay?.Lifecycle.RetryPanel is not null,
         () => { FusionWeapons.ClearOnDeath(); Rac1WrenchHost.ResetOrFallback(_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench, _playerAudio, _player); },
         (before, after) => _playerAudio?.NotifyDamage(before, after), () => RefreshRac1HudState(), _hudState,

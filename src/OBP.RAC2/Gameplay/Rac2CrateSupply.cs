@@ -14,7 +14,7 @@ public static class Rac2CrateSupply
     // Class3291 reads it at 0x3D3944..0x3D3990 as planar distance
     // and absolute vertical separation, not a spherical or squared radius.
     public const float AmmoPickupRadius = 4.25f, AmmoPickupHeight = 2.25f;
-    public static bool IsCrate(int nativeClass) => nativeClass is 500 or NanotechClass or AmmoClass;
+    public static bool IsCrate(int nativeClass) => nativeClass is 500 or Rac2ExplosiveCrateSession.NativeClass or NanotechClass or AmmoClass;
     public static bool IsSupply(int nativeClass) => nativeClass is NanotechClass or AmmoClass;
 
     public static byte? RespawnFlag(RuntimeDynamicObject source) =>

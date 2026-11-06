@@ -12,6 +12,120 @@ This document narrows the first interactive-object milestone to the native crate
 - **INFERRED** — strong interpretation, not yet behaviour-proved or symbol-named.
 - **UNKNOWN** — unresolved.
 
+## Explosive crates: class 505
+
+**CONFIRMED:** class **505** is the timed explosive crate. The same exact-authority
+disc was hashed locally before this recovery. The class has 159 authored instances
+across seven level files; every one has PVar `+0xC8=0`:
+
+| Level file | Class-505 instances |
+| --- | ---: |
+| 2 / Maktar | 66 |
+| 3 | 32 |
+| 7 | 10 |
+| 9 | 14 |
+| 13 | 33 |
+| 14 | 3 |
+| 17 | 1 |
+
+Oozla contains the shared code but **no authored explosive crates**. Maktar's
+`lvl.vtbl` entry at `0x2A6348` maps class 505 to update `0x3A52B8`. The following
+Oozla instruction addresses refer to the loaded overlay, never the boot image.
+The public OpenRAC `UpdateCrateMoby`/stack-handler notes and
+`src/game/0030F7B0-update.c` provide corroborating leads; implementation was
+derived independently from the authorized retail instructions, not translated C.
+
+### Fuse, touch and blast
+
+- `0x391240..0x3912D8`: class 505 accepts standing, side, ledge and explicit
+  `damageFlags=0x01000000` touch records. Ordinary touch enters state 5 with
+  command zero. The following state-5 update replaces zero with **179**, then
+  decrements it at the end of the update: the approximately three-second fuse.
+- `0x3912DC..0x391370`: state 1 retains the common mask `0x05830001` and positive
+  damage magnitude check. A hit containing **0x20000** starts command **1**;
+  other hits draw a float in **[5,15)**, then use `CVT.W.S` to select a **5..15**
+  tick fuse. `0x310580` consumes the high 15 bits of newlib `rand`, multiplies
+  by `(15-5)/32768`, then adds five; `0x2E45B8` converts the result. The source
+  session uses the existing RAC2 conditioned newlib generator and EE arithmetic.
+  Its stream is not a replay of other native global RNG consumers.
+- `0x39174C..0x39187C`: a further queried hit while command is at least 16
+  replaces the remaining long fuse with another 5..15 draw. This state-5 branch
+  does not repeat state 1's positive-magnitude check. Beep SoundDef **1** runs
+  when command `%60==57` or command is **13**. Flash RGB is **200/64/64** when
+  command `%60>40` or command `<15`; other ticks restore the saved colour.
+- `0x392724..0x392774`: detonation hides the crate, clears its collider, writes
+  state **3** and initializes PVar `+0xCA=1`. The common stack update also has
+  an immediate underside-break path; host underside contacts feed that path.
+- `0x3913C8..0x3914E0`: steps **1..20** expand a Moby sphere by **0.1 units/tick**
+  and a player sphere by **0.15 units/tick**, ending at **2** and **3** units.
+  The centre is the original crate position plus half its up vector. The Moby
+  descriptor carries **2 damage**, flags **1**, and the owning class-505 Moby.
+  The separate player helper at `0x312D78` receives **4 damage**, flags
+  **0x10000**; `0x312E10/14` writes those into the native damage record.
+  These envelopes are intentionally separate. When `+CA` reaches 21, `+C8=0`
+  follows the existing deactivation route.
+
+The Maktar loaded body corroborates these transitions and envelopes. Its
+reward helper `0x3A6390` takes the common Bolt path when `+C6=0`; authored
+class-505 Bolt values are retained in the existing fresh-session payout policy.
+The resulting physical objects retain their real denomination classes 13..19,
+source build, crate UID provenance and one-time wallet receipts.
+
+### Original sounds and the recovered flash slice
+
+Maktar class-505 local SoundDefs **0/1** map to SBlk **73/74** (explosion/beep).
+Both programs decode through the existing SoundDef/989snd path. All seven
+authored levels admit two original class-505 cues.
+
+The break helper's fragment switch at `0x39263C..0x392670` has **no class-505
+mask**. Explosive crates therefore contribute recent-break pressure but emit
+**no wooden detachable pieces**. Their dedicated explosion call at
+`0x392778..0x3927B4` creates class **5024** with scale one. The first six flash
+sprites at `0x3F8F68..0x3F914C` (Maktar `0x41F958`) use the already implemented
+type-85 constructor/callback: stationary size **3 -> 4**, requested life **30**,
+zero gravity/spin, initial opacity 100 for the first pair and 127 for four more,
+end opacity zero. Colours are `0x388EF7` and `0x0063F7`. The caller replaces
+the texture with definition **92**, frames **0/5/6**, in counts **2/2/2**.
+These resolve to active-level Part textures **70/74/75** in the inspected banks.
+Every authored level decoded this original flash slice successfully.
+
+This implementation reuses that native type-85 simulation and source-qualified
+Part bank. World-size billboard projection remains an OBP presentation adapter;
+the remaining explosion particle families, native draw/depth sorting, full
+camera shake, moving attachments and native repeat/global-action variants are
+not claimed. No RAC1 explosion assets or recipes are substituted.
+
+### Host and player boundaries
+
+Class 505 is promoted from welded scenery into an individual source-qualified
+actor. Godot supplies physical touch/underside contacts, closest-AABB blast
+queries and solid-world visibility; those are host projections, not PS2 narrow
+phase equivalence. Blast visibility excludes registered actor bodies, while
+falling/support queries retain them. Native chain damage reaches admitted RAC2
+crate/hostile controllers with the actual explosive owner, never a fabricated
+weapon key. Additional foreign-actor blast conversions remain outside this slice.
+
+The persistent player's explicitly admitted conversion receives the native
+integer amount through its existing health controller; a destination does not
+select a health provider or avatar. The hidden state-3 crate remains a registered
+damage producer for its 20-step sphere, but is no longer a weapon target or solid
+support. A source-frame/target ledger prevents repeated applied hits; the player
+controller retains its own protection/death rules. A foreign physical weapon
+blast maps explicitly to the RAC2 fast-fuse category; foreign flag bits are not
+reinterpreted as RAC2 flags. Player knockback remains the selected controller's
+existing reaction rather than a recovered RAC2 movement rule.
+
+Local ordinary Maktar input verified touch beeps and flashing, a three-crate
+chain, nearby ordinary crate destruction, wrench-shortened fuses, four explosive
+crates triggered by a Bomb Glove blast, player defeat at close range, and actual
+rendered RAC2 fire/flash sprites with Bolt models. Local probes confirmed all
+159 authored crates' non-repeat fields and seven banks' sound/flash admission.
+A temporary solid-wall control blocked both nearby explosive neighbours while
+the unshielded control chained them; collecting subsequent physical Bolts raised
+the same persistent wallet from 10 to 42 without duplicate credit.
+Captures, observers, native payloads and diagnostic executables remain local;
+no automated tests or test infrastructure were added.
+
 ## Nanotech and ammunition crates: playable shared family
 
 The current authority pass closes the Oozla identities and first-break paths:
@@ -647,4 +761,4 @@ unrecovered.
 
 **INFERRED:** `0x003922B0` is a break/destruction transition helper; selectors `13..19` are Bolt-denomination pickup identities; `0x001A7A32/+0x33` are the Challenge Mode bolt multiplier/sublevel; class 3291 is a generic indexed collectible/resource object; the 56-slot counter system is ammo/inventory-resource state.
 
-Still **UNKNOWN:** exact names of states `0..6`; exact `+0xCC/+0xC6/+0xCA/+0xCB` semantics; broader meaning of `+0xC8` outside the proved Oozla deactivation branch; exact runtime population/history of the packed reward-selector blocks and semantic identity of the active `contextIndex`; exact 56-slot resource names; full native fragment collision/angular behavior and sparkle effects; save/reload/persistence/respawn rules; exact GC identities/alternate semantics of classes 505/512.
+Still **UNKNOWN:** broader crate-family state names and `+0xCC/+0xC6/+0xCB` semantics outside the proved paths; broader meaning of `+0xC8` outside the proved ordinary deactivation branch; exact runtime population/history of the packed reward-selector blocks and semantic identity of the active `contextIndex`; exact 56-slot resource names; full native fragment collision/angular behavior and sparkle effects; save/reload/persistence/respawn rules; complete class-512 alternate Nanotech behaviour. Class 505 and its `+0xCA` expanding-blast counter are resolved above.

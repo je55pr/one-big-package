@@ -15,7 +15,7 @@ internal sealed record Rac2CrateBoltPorts(
     Func<bool> Current,
     Func<bool> HasNativePlayer,
     Func<int> WalletBalance,
-    Func<int, ActorInstanceKey> ActorKey,
+    Func<int, int, ActorInstanceKey> ActorKey,
     Func<ActorInstanceKey, bool> ActorCurrent,
     Action<ActorInstanceKey, string, string, Func<bool>> RegisterActor,
     Func<ActorInstanceKey, int, int, string?> Credit,
@@ -25,10 +25,11 @@ internal sealed record Rac2CrateBoltPorts(
     Func<int> Seed,
     Func<(float Radius, float Height)> AttractionProfile,
     Action<global::Godot.Collections.Array<Rid>> ActorExclusions,
+    Action<global::Godot.Collections.Array<Rid>> OcclusionExclusions,
     Func<RuntimeAudioPlaybackIntent, bool> PlayEffect);
 
 /// <summary>
-/// One R&C2 scene lease owns its physical class-500 pickup areas. The native
+/// One R&C2 scene lease owns its physical crate Bolt pickups. The native
 /// payout session decides denominations and collection; this owner only displays
 /// admitted pickups and forwards exact actor/pickup identities to the grant port.
 /// </summary>
@@ -66,7 +67,7 @@ internal sealed class Rac2CrateBoltPresentation(
         _random = new(ports.Seed());
     }
 
-    internal void Spawn(Vector3 centre, Rac2Class500Payout payout)
+    internal void Spawn(Vector3 centre, Rac2CratePayout payout)
     {
         // The owning module admits only a valid R&C2 source, including class-500
         // actors in a mixed-source world and pre-publication diagnostic auto-strikes.
@@ -87,9 +88,9 @@ internal sealed class Rac2CrateBoltPresentation(
             {
                 int index = checked((world.DynamicObjects?.Select(source => source.InstanceIndex)
                     .DefaultIfEmpty(0).Max() ?? 0) + ++_emittedRewardIndex);
-                receipt = new(ports.ActorKey(index));
+                receipt = new(ports.ActorKey(index, nativeClass));
                 var owned = receipt;
-                ports.RegisterActor(owned.Actor, $"class500:{payout.Uid}:bolt:{pickup.PickupId}",
+                ports.RegisterActor(owned.Actor, $"crate:{payout.Uid}:bolt:{pickup.PickupId}",
                     $"uid:{payout.Uid}", () => !owned.Collected && !_disposed);
             }
             _pickups.Add(new(area, pickup, receipt, motion));

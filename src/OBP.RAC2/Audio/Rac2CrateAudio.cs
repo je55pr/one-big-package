@@ -30,7 +30,7 @@ public static class Rac2CrateAudio
         int directory = core.Header.SoundRemapOffset;
         var rows = Rac2MobyClasses.ClassRows(core);
         var present = rows.Select(row => row.NativeClass).ToHashSet();
-        foreach (int cls in new[] { 500, 501, 511, 3291, 13, 14, 15, 16, 17, 18, 19 }
+        foreach (int cls in new[] { 500, 501, 505, 511, 3291, 13, 14, 15, 16, 17, 18, 19 }
             .Where(cls => present.Contains(cls) && (nativeClasses is null || nativeClasses.Contains(cls))))
         {
             var bytes = Rac2MobyClasses.ClassBytes(core, cls);

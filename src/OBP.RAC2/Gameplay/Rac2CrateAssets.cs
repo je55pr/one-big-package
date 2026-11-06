@@ -34,7 +34,13 @@ public static class Rac2CrateAssets
         var parts = new Dictionary<int, Part>();
         var nativeMeshes = new Dictionary<int, GcUyaMoby.Mesh>();
         var textures = new HashSet<int>();
-        foreach (int part in nativeClass == Rac2CrateSupply.NanotechClass ? new[] { 0, 1, 2 } : new[] { 0, 2, 5 })
+        int[] partIndices = nativeClass switch
+        {
+            Rac2ExplosiveCrateSession.NativeClass => [],
+            Rac2CrateSupply.NanotechClass => [0, 1, 2],
+            _ => [0, 2, 5]
+        };
+        foreach (int part in partIndices)
         {
             if (corn < 0x48 || corn > bytes.Length - 16 || bytes[corn + part + 1] == 255)
                 throw new InvalidDataException("Crate fragment has no original pivot.");

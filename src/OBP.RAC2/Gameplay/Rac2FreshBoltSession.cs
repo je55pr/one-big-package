@@ -5,7 +5,7 @@ using OBP.Runtime;
 namespace OBP.RAC2.Gameplay;
 
 /// <summary>
-/// Fresh-showcase bridge for the first playable GC Bolt-Crate milestone.
+/// Fresh-showcase bridge for the common RAC2 crate Bolt reward path.
 /// The retail executable image carries zero-filled packed selector storage, but
 /// pre-level runtime history can mutate it before a level runs and OBP does not
 /// reconstruct that state yet. Selector zero is therefore an explicit OBP
@@ -26,7 +26,13 @@ public sealed class Rac2FreshBoltSession
     /// The native reward centre is used as a deterministic showcase choice;
     /// native RNG sequence reproduction remains outside this session.
     /// </summary>
-    public Rac2Class500Payout PlanClass500Payout(
+    public Rac2CratePayout PlanClass500Payout(
+        int uid, int authoredBolts, int rewardMultiplierByte,
+        int progressionLikeInput, int rngMod2) =>
+        PlanCratePayout(uid, authoredBolts, rewardMultiplierByte, progressionLikeInput, rngMod2);
+
+    /// <summary>The common authored-bolt path also serves class 505; the same explicit fresh-session choices apply.</summary>
+    public Rac2CratePayout PlanCratePayout(
         int uid, int authoredBolts, int rewardMultiplierByte,
         int progressionLikeInput, int rngMod2)
     {
@@ -67,7 +73,7 @@ public sealed class Rac2FreshBoltSession
         }
 
         DeferredBolts = checked(DeferredBolts + partition.DeferredValue);
-        return new Rac2Class500Payout(
+        return new Rac2CratePayout(
             uid, authoredBolts, selector, percentage,
             percentageScaled, rewardMultiplierByte, effectiveMultiplier, scaled,
             released.ReleasedValue, rewardCentre, pieceBudget,
@@ -98,7 +104,7 @@ public sealed class Rac2FreshBoltSession
 }
 public sealed record Rac2BoltPickup(int PickupId, int Denomination);
 
-public sealed record Rac2Class500Payout(
+public sealed record Rac2CratePayout(
     int Uid,
     int AuthoredBolts,
     int Selector,
