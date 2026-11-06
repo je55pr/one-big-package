@@ -20,11 +20,17 @@ internal sealed class GodotRac1LootDiagnosticCapture(Node owner, Func<int> level
         try
         {
             var point = GodotMovementPlayer.Engine(focus);
-            camera.GlobalPosition = point + new Vector3(2.5f, 1.5f, 3.5f); camera.LookAt(point);
             overlay.Visible = false; hud.Visible = false;
-            await clock.NextAsync(DiagnosticFramePhase.Process, token); await clock.NextAsync(DiagnosticFramePhase.PostDraw, token);
-            using var image = owner.GetViewport().GetTexture().GetImage();
-            if (image.SavePng(Path.Combine(directory, $"level{level()}-{name}.png")) != Error.Ok) throw new IOException("Loot capture failed.");
+            // Optional OBP_CRATE_CAPTURE_OFFSETS="x,y,z;x,y,z" writes one image per camera offset (default 2.5,1.5,3.5).
+            var offsets = DiagnosticCaptureOffsets.Read("OBP_CRATE_CAPTURE_OFFSETS", "2.5,1.5,3.5");
+            for (int index = 0; index < offsets.Length; index++)
+            {
+                camera.GlobalPosition = point + offsets[index]; camera.LookAt(point);
+                await clock.NextAsync(DiagnosticFramePhase.Process, token); await clock.NextAsync(DiagnosticFramePhase.PostDraw, token);
+                using var image = owner.GetViewport().GetTexture().GetImage();
+                string file = offsets.Length == 1 ? $"level{level()}-{name}.png" : $"level{level()}-{name}-{index}.png";
+                if (image.SavePng(Path.Combine(directory, file)) != Error.Ok) throw new IOException("Loot capture failed.");
+            }
         }
         finally
         {

@@ -29,6 +29,27 @@ public sealed record Rac1EffectAssets(
         return new(choices, parts, ReadFxTextures(core, new HashSet<int> { 14, 16 }));
     }
 
+    /// <summary>Part textures for the class-806 orb particles: table entries 62 (sparkle kinds 0 and 1) and 53 (glints).</summary>
+    internal static Rac1EffectAssets DecodeNanotech(Rac1LevelCore.Core core)
+    {
+        var choices = new Dictionary<int, int[]>
+        {
+            [Rac1NanotechOrbAssets.ParticleTextureTable] = Rac1ParticleAssets.TextureChoices(core, Rac1NanotechOrbAssets.ParticleTextureTable, 2),
+            [Rac1NanotechOrbAssets.GlintTextureTable] = Rac1ParticleAssets.TextureChoices(core, Rac1NanotechOrbAssets.GlintTextureTable, 1),
+        };
+        var parts = Rac1ParticleAssets.ReadTextures(core, choices.Values.SelectMany(ids => ids).ToHashSet())
+            .ToDictionary(texture => texture.TextureId);
+        return new(choices, parts, new Dictionary<int, RuntimeTexture>());
+    }
+
+    /// <summary>Part texture of the kind-0x45 spark (beam ends, robot lamp): lookup entry 69, one choice.</summary>
+    public static Rac1EffectAssets DecodeSparks(Rac1LevelCore.Core core)
+    {
+        var choices = new Dictionary<int, int[]> { [Rac1ParticleSession.SparkTextureTable] = Rac1ParticleAssets.TextureChoices(core, Rac1ParticleSession.SparkTextureTable, 1) };
+        var parts = Rac1ParticleAssets.ReadTextures(core, choices.Values.SelectMany(ids => ids).ToHashSet()).ToDictionary(texture => texture.TextureId);
+        return new(choices, parts, new Dictionary<int, RuntimeTexture>());
+    }
+
     public static IReadOnlyDictionary<int, RuntimeTexture> ReadFxTextures(Rac1LevelCore.Core core, IReadOnlySet<int> ids) =>
         Rac1FxTextures.Read(core, ids);
 }

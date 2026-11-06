@@ -35,7 +35,7 @@ internal sealed class Rac1Class1440EnemyAdapter(Rac1EnemyHost host) : IRac1Enemy
             if (next.TurnsToTarget) _host.MoveRac1Enemy(enemy, next.Destination ?? next.LookAt, next.Destination, next.TurnOffset, next.NativeState == 5,
                 next.Destination.HasValue ? next.DistanceToPathEnd : null, directPosition: next.Destination.HasValue);
         }
-        _host.SetRac1EnemyFlame(enemy, next.NativeState == 5);
+        _host.UpdateRac1RobotEffects(enemy, next.NativeState == 5);
         if (next.DamageTarget is { } victim)
         {
             var damage = Rac1DamageRuntime.FromClass1440Contact(new(Rac1ClassIds.VeldinFlameRobot, instance), victim);

@@ -149,7 +149,8 @@ Remaining approximations are explicit:
   by the source clip cycle boundary.
 - The launch/drag/gravity recurrence is recovered; native reaction rebound and
   landing substates are not fully translated. World contact uses Godot sliding.
-- Fire uses a host procedural particle presentation. Robot fragments use retail
+- The robot's attack is **not fire**: its sequence-6 volley is a class-1471 plasma beam
+  (see "Robot beam" below). Robot fragments use retail
   model classes1933/1934/1935/1963 with the existing debris scatter adapter;
   complete native burst/particle programs and fragment allocator budgets remain
   separate work. Creature death uses its retail reaction and mapped sound.
@@ -194,8 +195,8 @@ Headless host checks passed the input-only Veldin route, staged enemy integratio
 (including a query beginning inside the player collider), combat unload/reload,
 wrench attacks, crates on LEVEL0/1 and placed bolts on LEVEL0/8. The rendered
 placed-bolt gate also completed LEVEL11. Earlier rendered enemy fixtures were
-inspected for mesh animation, reactions, robot fragments and procedural flame
-presentation. These are host checks, not a live retail replay.
+inspected for mesh animation, reactions, robot fragments and the beam presentation.
+These are host checks, not a live retail replay.
 
 The idle/entrance regression gate also passed all eight live robot entrance
 routes and the stationary toad rest selector. At fixed host seed1440, maximum
@@ -214,3 +215,37 @@ than pushing its origin back into a centre-ray floor point. Both creatures then
 complete the approach with less than .001 unit of observed floor penetration.
 These ground placement/contact choices remain host adapters, not a recovered
 retail collision solver.
+
+## Robot beam (class 1471 effect manager)
+
+Class 1440 does not breathe fire. While in state 5 it holds one of the three slots of the class-1471
+effect manager, whose update `0x2e2250`, draw `0x2e2af0/0x2e2c88` and end quads `0x2e3388` draw an
+electric beam from socket 0 along the robot heading (`ContactLength` 5, shortened by the first hit).
+`Rac1BeamSlot` (OBP.RAC1) ports the recovered rules; `Rac1EnemyBeamView` only draws them.
+
+- Two 20-point strands per slot: a sine strand (amplitude `j/20*.3+.1` times a sine of a phase that advances
+  10 degrees a tick, beam alpha 0x80 / glow 0x40) and a twisting noisy strand (0x30 / 0x10). Ribbons are
+  camera-facing, half width .6 narrowing to .05 by a smoothstep over `i/20` (the Hermite argument order is an
+  interpretation), the glow ribbon twice as wide. The first segment fades in from alpha 0.
+- Texture scroll -0.2 per tick wrapping at -8. The manager's authored 16-byte PVar is {0, 1}, so the glow and
+  beam are Fx textures 0x28 and 0x29 of the level bank; end quads and the glow below are Fx texture 0xb.
+- Colours are PS2 range (0x80 = 1.0): beam 0x7f7f7f, glow 0x7f4040 (blue-violet). Blend register 0x48 is
+  additive, 0x44 alpha. End quads at the muzzle and strand-0 point 18: an opaque-white jittered core
+  (alpha 0xff, scale .3-.325 / .2-.225) and a 3x additive 0x607f4040 halo.
+- The robot also draws, every update, a camera-facing additive glow (half size .2, colour 0x80ffffff) at its
+  second semantic socket lowered by .333 (`0x2e1c78`).
+- The slot is claimed once, in state 3 of the robot update, by `jal 0x2e1f28` (fx1471_claim) at overlay `0x2e10d4`
+  with `a0` = the robot, `a1` = 0 (endpoint effect flags) and `a2` = 0 (spark tag mode, in the delay slot). The
+  instruction words were read from the retail Veldin overlay (`0x2e10d0` = `0000282d`, `0x2e10d4` = `0c0b87ca`,
+  `0x2e10d8` = `0000302d`) and it is the only `jal 0x2e1f28` in the robot update `0x2e0b88..0x2e1678`; this was a
+  manual check, not an automated test (the project no longer carries them). "The retail beam has
+  **no point lights**" and "every spark drifts" are inferences from those two zero arguments and the public
+  decomp of the slot manager (flag bits 1/2 gate its lights; tag mode 1 gates the attached sparks).
+- Sparks (kind 0x45, spawn `0x274948`, update `0x274a70`): grey additive, 8000..50000 raw, 10..29 frames, random
+  turn, linear fade. The texture is Part lookup entry 69 (the word at `0x1b2194` is entry (0x1b2194-0x1b2080)/4);
+  on Veldin its offset is 0, so it points at the identity block start and resolves to Part texture 0.
+  `Rac1BeamSlot.EmitSparks` emits at each tick: a muzzle spark 20-40 degrees off the beam axis and a tip spark in a
+  random direction, plus one tick in three a 4-frame 120000 flare at each end. `Rac1RobotLampFlash` emits, every
+  update, one drifting spark and three 2-frame flares (80000..120000, one in eight 180000) at the lowered lamp.
+  Not modelled: the muzzle spark's turn by the joint matrix (the beam frame stands in) and the owner-attached
+  modes 1/2/3/4, which these callers do not use.
