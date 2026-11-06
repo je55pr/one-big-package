@@ -37,7 +37,7 @@ internal sealed class Rac1NanotechSpherePresentation : IDisposable
         _scene = scene;
         using var reader = new FileRandomAccessReader(sourcePath);
         // Deliberate donor identity: RAC1 Veldin, never the recipient level ID.
-        var donor = Rac1DiscIndex.Read(reader).Levels.Single(level => level.LevelId == 1);
+        var donor = Rac1DiscIndex.Read(reader).Levels.Single(level => level.LevelId == 0);
         _assets = Rac1NanotechOrbAssets.Decode(Rac1ExecutableOverlay.Read(reader, donor), Rac1LevelCore.Open(reader, donor));
         _random = Rac1PickupRandom.FromSeed(unchecked((uint)seed)).Fork();
         _particles = new(_assets.Particles, _random);
@@ -49,15 +49,23 @@ internal sealed class Rac1NanotechSpherePresentation : IDisposable
             TopLevel = true,
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
         };
-        scene.Root.AddChild(_meshNode);
         _particleView = new Rac1ParticleView
         {
             Name = "Rac1DonorNanotechParticles",
-            SourceBank = new(OBP.Core.ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId, "LEVEL1"),
+            SourceBank = new(OBP.Core.ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId, "LEVEL0"),
         };
-        scene.Root.AddChild(_particleView);
-        foreach (var crate in crates)
-            _riders.Add(crate.Source.InstanceIndex, (crate, Create(ToNative(crate.Root.GlobalPosition))));
+        try
+        {
+            scene.Root.AddChild(_meshNode);
+            scene.Root.AddChild(_particleView);
+            foreach (var crate in crates)
+                _riders.Add(crate.Source.InstanceIndex, (crate, Create(ToNative(crate.Root.GlobalPosition))));
+        }
+        catch
+        {
+            Dispose();
+            throw;
+        }
         GD.Print($"[rac2-supply] RAC1 Veldin nanotech sphere donor ready: riders={_riders.Count}");
     }
 

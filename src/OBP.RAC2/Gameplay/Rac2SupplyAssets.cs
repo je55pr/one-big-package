@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using OBP.IO;
 using OBP.PS2.Elf;
+using OBP.PS2.Geometry;
 using OBP.PS2.Iso;
 using OBP.PS2.Presentation;
 using OBP.RAC2.Level;
@@ -8,7 +9,7 @@ using OBP.Runtime;
 
 namespace OBP.RAC2.Gameplay;
 
-/// <summary>The active level's class-3291 mesh and mapped native ammunition descriptor.</summary>
+/// <summary>The active level's class-3291 detachable ammo part and mapped native ammunition descriptor.</summary>
 public static class Rac2SupplyAssets
 {
     public sealed record Ammo(int Index, int Amount, int Capacity);
@@ -37,9 +38,17 @@ public static class Rac2SupplyAssets
         if (capacity != Rac2LancerProfile.AmmoCapacity || amount <= 0 || amount > capacity ||
             BinaryPrimitives.ReadInt32LittleEndian(descriptor.AsSpan(0x14)) != Rac2LancerProfile.HeldMobyClass)
             throw new InvalidDataException("R&C2 Lancer supply descriptor does not match its native identity.");
-        if (!Rac2MobyClasses.Read(core, level).TryGetValue(Rac2CrateSupply.AmmoPickupClass, out var cls))
+        var entries = Enumerable.Range(0, core.Header.MobyClasses.Count)
+            .Select(index => core.Header.MobyClasses.Offset + index * GcUyaMoby.ClassEntrySize)
+            .Where(at => at >= 0 && at <= core.Index.Length - GcUyaMoby.ClassEntrySize &&
+                BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(at + 4)) == Rac2CrateSupply.AmmoPickupClass).ToArray();
+        if (entries.Length != 1)
             throw new InvalidDataException("Original R&C2 ammo pickup model is unavailable.");
-        var mesh = cls.Mesh;
+        var bytes = Rac2MobyClasses.ClassBytes(core, Rac2CrateSupply.AmmoPickupClass);
+        // 0x3D3F80..94 passes (type=2, class=3291, part=0) to 0x2D11B8.
+        // 0x2D1500..24 sets the detachable-part mask and reads part 0's kernel.
+        // The ordinary class mesh is an untextured ~0.001-unit placeholder.
+        var mesh = GcUyaMoby.ReadBangle(bytes, 0);
         if (mesh.Indices.Length == 0) throw new InvalidDataException("Original indexed ammo pickup model is empty.");
         var positions = new double[mesh.Positions.Length];
         for (int at = 0; at < positions.Length; at += 3)
@@ -49,7 +58,12 @@ public static class Rac2SupplyAssets
             positions[at + 2] = mesh.Positions[at + 1];
         }
         var surfaces = Enumerable.Range(0, mesh.Indices.Length / 3)
-            .GroupBy(face => (Texture: cls.TriangleTextureIds[face], Material: mesh.TriangleMaterialStateIndices[face]))
+            .GroupBy(face =>
+            {
+                int slot = mesh.TriangleMaterialSlots[face];
+                if ((uint)slot >= 16) throw new InvalidDataException("Original ammo part texture slot is unavailable.");
+                return (Texture: (int)core.Index[entries[0] + 0x10 + slot], Material: mesh.TriangleMaterialStateIndices[face]);
+            })
             .Select(group => new RuntimeObjectMesh("moby", group.Key.Texture, positions, mesh.Uvs,
                 group.SelectMany(face => mesh.Indices.AsSpan(face * 3, 3).ToArray()).ToArray(),
                 MaterialPresentation: group.Key.Material >= 0 ? Ps2MaterialPresentation.From(mesh.Materials[group.Key.Material], classifyMobySurface: true) : null)).ToArray();

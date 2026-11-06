@@ -124,7 +124,8 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
                     var query = PhysicsRayQueryParameters3D.Create(FromNative(from) - bottom + Vector3.Up * .1f, FromNative(to) - bottom);
                     query.Exclude = excluded;
                     var hit = space.IntersectRay(query);
-                    return hit.TryGetValue("position", out var point) ? ToNative(point.AsVector3() + bottom) : null;
+                    return hit.TryGetValue("position", out var point) && hit.TryGetValue("normal", out var normal) && normal.AsVector3().Y > .70710677f
+                        ? ToNative(point.AsVector3() + bottom) : null;
                 });
                 pickup.Node.GlobalPosition = FromNative(pickup.Motion.Position);
                 pickup.Node.Rotation = new(0, pickup.Motion.Spin, 0);

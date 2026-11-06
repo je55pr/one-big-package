@@ -44,8 +44,22 @@ Lancer class 1490, **25 rounds per object**, **200 capacity**. The existing
 base Lancer profile and this descriptor are authority for that implemented
 recipient; upgraded weapons/runtime remapping are not claimed. Other level
 overlays relocate their descriptor tables, so the reader deliberately uses
-the recovered Oozla descriptor and the *active level's* class-3291 visuals.
+the recovered Oozla descriptor and the *active level's* class-3291 **part-0** visuals.
 Local extraction confirmed the model/descriptor combination for levels 0/1/2/8.
+
+**Ammo visibility correction:** the ordinary class-3291 mesh is a four-vertex,
+two-triangle, untextured placeholder, only about **0.001 units** across. Earlier
+manual lifetime/collection observations did not establish that mesh's visibility.
+The loaded constructor at `0x3D3F80..0x3D3F94` instead calls `0x2D11B8` with
+**type 2, class 3291, part 0**. Its initializer at `0x2D1500..0x2D1524` enables
+the detachable-part mask and reads that part's kernel. `Rac2SupplyAssets` now
+decodes `ReadBangle(class3291, 0)` and applies the same class-table texture remap
+used by other detachable parts, rather than treating the parent mesh as a
+visible pickup. Oozla's original part has **86 vertices, 96 triangles**, remaps
+slot 0 to **Moby texture 166**, and measures about **0.557 x 0.612 x 0.643 units**
+in host X/Y/Z. No enlargement or replacement geometry is applied. A rendered
+ordinary-game observation confirmed the blue, white-emblem canisters above
+the Oozla floor with their original texture; its image remains local.
 
 **Nanotech admission/credit:** `0x395BD0..0x395D04` requires living health,
 room after accounting for pending clouds, distance below **10** and an
@@ -85,7 +99,7 @@ dead/retired player/world leases cannot receive grants.
 **Requested RAC1 sphere donor:** Nanotech presentation reuses
 `Rac1NanotechOrbAssets`, `Rac1NanotechCluster`, `Rac1ParticleSession`,
 `Rac1FxMaterials` and the existing particle renderer. Assets are authenticated
-against the attached **RAC1 NTSC-U Veldin (level 1)** tables; the RAC2 destination
+against the attached **RAC1 NTSC-U Veldin (level 0)** tables; the RAC2 destination
 ID never selects the donor. The intact crate hosts the glowing sphere/halo and
 orbiting sprites; breaking transfers that same cluster into its resting state.
 Collection uses the donor's curved eight-orb flight and healing trail, with the
@@ -94,9 +108,14 @@ This is deliberate cross-game presentation as requested, not recovered RAC2
 particle/GS parity. The former blue host spheres and fixed 45-tick flight are
 removed. World retirement disposes riders, waiting clouds, flights, materials
 and particles together.
+The selected donor requires an attached, verified RAC1 source. If it is missing,
+the existing atomic crate-admission boundary reports that failure and cleans up
+partial crate state; it does not silently substitute another effect. Ordinary
+trilogy startup already requires all three sources. Per-type partial admission
+for source-isolated diagnostics is not implemented by this world owner.
 
 The ammo
-pickup uses the original class-3291 model with a bounded scatter/homing host
+pickup uses original class-3291 part 0 with a bounded scatter/homing host
 projection and world sweeps; its stopped-on-contact translation is explicitly
 not the complete native generic contact manifold. Ground sweeps retain the
 model's decoded bottom clearance rather than placing its centre on the floor.
