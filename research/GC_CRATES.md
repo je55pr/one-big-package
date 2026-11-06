@@ -277,6 +277,22 @@ reinterpreted as native GC attacks. Repeat contacts with an inactive crate canno
 emit another payout. Godot convex contacts are generated from each retail crate
 mesh and disabled on break; this is host physics, not the PS2 narrow phase.
 
+Bomb Glove area damage already reaches these registered actors through the
+shared blast adapter. Original R&C2 crate bodies were missing from the weapon
+visibility-ray exclusions, however: those bodies could shield their own bounds
+or adjacent crates before the damage adapter ran. `ActorWorldHost` now supplies
+an occlusion-specific list covering original-world actor bodies as well as
+factory-created bodies. Aim/blast visibility uses it, while crate-support and
+pickup physics retain their existing exclusions so stacked crates remain solid.
+Terrain and other non-actor walls still occlude damage. This is an OBP contact
+adapter correction; the R&C1 Bomb Glove's native damage/radius are unchanged.
+
+A temporary external observer drove ordinary equipped-use input in Oozla with
+the selected R&C1 player and fixed seed 1440. Before the correction, two throws
+left crate 31 alive and broke three neighbours. The same input after the change
+broke all seven nearby crates 31..37, each once. Adding a solid wall between
+the player and cluster left all 190 level crates alive. No observer is committed.
+
 `Rac2BoltAssets` reads the active level's original Moby classes 13..19 and their
 texture remaps. Oozla's triangle counts are respectively 52, 48, 96, 192, 162, 174
 and 204. The constructor at loaded `0x00378270` selects those classes by
