@@ -228,12 +228,12 @@ GC combat controller.
 With the authorized source configured as `OBP_GC_ISO`:
 
 ```powershell
-dotnet test tests/OBP.Tests/OBP.Tests.csproj -c Release --filter GcLancer
+dotnet test https://github.com/je55pr/one-big-package/blob/tests/tests/OBP.Tests/OBP.Tests.csproj -c Release --filter GcLancer
 $env:OBP_UPDATE_GC_LANCER_EVIDENCE = '1'
-dotnet test tests/OBP.Tests/OBP.Tests.csproj -c Release --filter GcLancerRetailTests
+dotnet test https://github.com/je55pr/one-big-package/blob/tests/tests/OBP.Tests/OBP.Tests.csproj -c Release --filter GcLancerRetailTests
 Remove-Item Env:OBP_UPDATE_GC_LANCER_EVIDENCE
-./tools/test.ps1 -Configuration Release
-./tools/test-retail.ps1
+./https://github.com/je55pr/one-big-package/blob/tests/tools/test.ps1 -Configuration Release
+./https://github.com/je55pr/one-big-package/blob/tests/tools/test-retail.ps1
 dotnet format OneBigPackage.sln --verify-no-changes --no-restore
 ```
 

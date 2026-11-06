@@ -24,6 +24,7 @@ public static class Rac2CrateAssets
     public static Catalogue Read(Rac2LevelCore.Core core)
     {
         byte[] bytes = Rac2MobyClasses.ClassBytes(core, 500);
+        if (bytes.Length < 0x48) throw new InvalidDataException("Truncated crate fragment class header.");
         int row = Enumerable.Range(0, core.Header.MobyClasses.Count).Single(index =>
             BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(core.Header.MobyClasses.Offset + index * 32 + 4)) == 500);
         int remap = core.Header.MobyClasses.Offset + row * 32 + 16;
@@ -61,7 +62,10 @@ public static class Rac2CrateAssets
             if (surfaces.Length == 0) throw new InvalidDataException("Original crate fragment is empty.");
             parts.Add(part, new(part, pivot, surfaces));
         }
-        return new(parts, Rac2LevelTextures.Read(core, Rac2LevelTextures.Table.Moby).Where(texture => textures.Contains(texture.Index))
-            .Select(texture => new RuntimeTexture("moby", texture.Index, texture.Width, texture.Height, texture.Rgba)).ToArray());
+        var decodedTextures = Rac2LevelTextures.Read(core, Rac2LevelTextures.Table.Moby).Where(texture => textures.Contains(texture.Index))
+            .Select(texture => new RuntimeTexture("moby", texture.Index, texture.Width, texture.Height, texture.Rgba)).ToArray();
+        if (textures.Any(id => id >= 0 && !decodedTextures.Any(texture => texture.TextureId == id)))
+            throw new InvalidDataException("An original R&C2 crate fragment texture is unavailable.");
+        return new(parts, decodedTextures);
     }
 }

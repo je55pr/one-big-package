@@ -5,6 +5,7 @@ public sealed class Rac2CrateBreakBudget
 {
     public int Recent { get; private set; }
     private long _lastTick;
+    public Rac2CrateBreakBudget Copy() => new() { Recent = Recent, _lastTick = _lastTick };
     public int Begin(long tick, int freeSlots)
     {
         long elapsed = Math.Max(0, tick - _lastTick);

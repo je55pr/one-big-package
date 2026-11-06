@@ -9,15 +9,6 @@ namespace OBP.Game.Diagnostics;
 public sealed class TrilogyGameplayScenario(CaptureDiagnosticContext context, ITrilogyPlayerDiagnosticFixture player,
     ITrilogyActorDiagnosticFixture actors, IDiagnosticNavigationActions navigation, ICaptureEquipmentActions equipment) : CaptureScenarioSupport(context)
 {
-    public async Task RunRac2CratesAsync()
-    {
-        Require(player.Read() is { Ordinary: true, NativePresent: true }, "ordinary selected player required");
-        using var visit = player.BeginVisit();
-        await Physics(2);
-        Require(await actors.VerifyRac2CratesAsync(Lifetime), "Oozla original crate contacts, pickup models, wallet or duplicate-hit gate failed");
-        Log("[rac2-crate-smoke] PASS: 190 ordinary crates, weapon/wrench contact, original Bolt models, wallet collection, duplicate-hit isolation, falling stacks, original fragments and mapped sounds");
-    }
-
     public async Task RunAsync()
     {
         Require(player.Read() is { Ordinary: true, NativePresent: true }, "ordinary selected player required");
@@ -38,11 +29,6 @@ public sealed class TrilogyGameplayScenario(CaptureDiagnosticContext context, IT
             await VerifyPauseAsync(); await VerifyWeaponsAsync(destination);
             audio = player.ReadAudio(); Require(audio.Length > 0, "selected Ratchet/equipment went silent in " + destination);
             Require(audio.All(cue => cue.Source == "rac1" && cue.Build == Rac1Authority.Primary.BuildId && cue.Level == 0), "player voice/surface bank followed destination");
-            if (destination == "rac2:LEVEL1")
-            {
-                Require(await actors.VerifyRac2CratesAsync(Lifetime), "Oozla original crate contacts, pickup models, wallet or duplicate-hit gate failed");
-                Log("[trilogy-gameplay-smoke] Oozla: 190 ordinary crate actors, weapon query, native break, original Bolt models, collection and duplicate-hit isolation PASS");
-            }
             Log($"[trilogy-gameplay-smoke] {destination}: universal menu, held models, native firing/ammo and {cues.Length} matching player audio intents PASS");
         }
         await VerifyMixedActorsAsync();

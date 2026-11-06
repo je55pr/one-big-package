@@ -236,7 +236,7 @@ canonical/alias pairs are accepted. PowerShell wrappers use `-Rac1Iso`,
 parameter aliases. The existing `OBP_RAC1_ISO`, `OBP_GC_ISO` and `OBP_UYA_ISO`
 environment variables keep working. Diagnostic options such as `--gc-level`
 retain their existing meaning. The retired `--compose*` and
-`--composition*` viewer options now fail as unknown arguments. Run `tools/test-cli.ps1` for
+`--composition*` viewer options now fail as unknown arguments. Run `https://github.com/je55pr/one-big-package/blob/tests/tools/test-cli.ps1` for
 headless startup and rejection checks.
 
 Remembered source paths use bounded atomic `sources.json` writes. The first save
@@ -260,7 +260,7 @@ source/parity harnesses and `--diagnostic-sources` can use partial sources witho
 changing the selected player provider. Headless/automation alone grants no
 exemption and a blocked automated entry exits 2. The ordinary reconciliation and
 `--source-setup-check` harnesses retain the full trilogy requirement.
-`tools/test-trilogy-setup.ps1` covers partial/complete setup, config repair,
+`https://github.com/je55pr/one-big-package/blob/tests/tools/test-trilogy-setup.ps1` covers partial/complete setup, config repair,
 diagnostic access and live detachment with profile preservation, always headless.
 Its source-loss check also verifies that repair cancels an uncommitted campaign
 transfer without advancing the campaign's current level.
@@ -270,7 +270,7 @@ disc metadata or setup links. World Select Back returns to the title; the Lab
 and ordinary pause pages describe gameplay availability. Detailed saved-profile
 and equipment provenance remains in explicit developer diagnostics. An invalid
 save shows a separate, player-facing read-only notice and retains the save; it
-does not send a valid trilogy back to setup. `tools/test-ordinary-ui.ps1` checks
+does not send a valid trilogy back to setup. `https://github.com/je55pr/one-big-package/blob/tests/tools/test-ordinary-ui.ps1` checks
 fresh startup, saved-game resume, invalid-save recovery, controller focus,
 title/World Select Back, Lab/pause and genuine source-loss repair headlessly.
 

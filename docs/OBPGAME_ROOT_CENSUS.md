@@ -1,5 +1,8 @@
 # OBPGame root census
 
+> Historical census: the ArchitectureTool and automated size guard were retired.
+> This snapshot is preserved for reference, not enforced on current dev.
+
 Final census for issue #376 (parent #333). Source: `dotnet run --project tools/OBP.ArchitectureTool -c Release -- census .`
 on `dev` after the final composition extractions, measured against the frozen origin commit
 `eea806399f864f30949d665701d39d510549a7ac`. The historical ledger tracks 121 `OBPGame*.cs` files plus one extra
@@ -163,7 +166,7 @@ File-by-file inventory. "Original owner ticket" is the original migration assign
 ## Remaining root members
 
 Every remaining `OBPGame` member is a reviewed composition member recorded in
-`tests/OBP.Tests/root-boundary-policy.json` with owner `#376`, disposition `permanent` and a one-sentence reason;
+`https://github.com/je55pr/one-big-package/blob/tests/tests/OBP.Tests/root-boundary-policy.json` with owner `#376`, disposition `permanent` and a one-sentence reason;
 `RootBoundaryArchitectureTests` pins that disposition and a ceiling of 150 that can only go down, and the guard fails
 on any new root member. The reviewed members fall into five kinds:
 

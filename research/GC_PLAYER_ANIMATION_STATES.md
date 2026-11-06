@@ -138,7 +138,7 @@ provenance.
 With `OBP_GC_ISO` pointing at the authorized v1.01 retail image:
 
 ```text
-dotnet test tests/OBP.Tests/OBP.Tests.csproj --filter GcRatchetSequenceSelectionTests
+dotnet test https://github.com/je55pr/one-big-package/blob/tests/tests/OBP.Tests/OBP.Tests.csproj --filter GcRatchetSequenceSelectionTests
 ```
 
 The retail-gated test reads `LEVEL1.WAD`, verifies the state-init and

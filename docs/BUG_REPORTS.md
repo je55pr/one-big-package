@@ -61,23 +61,14 @@ a second confirmation and removes that session's reports, snapshots and local
 capture files; active sessions cannot be deleted. Exported ZIPs remain separate
 and can be deleted in the opened folder.
 
-## Validation
+## Manual verification
 
-`tools/bug-report-smoke.ps1` exercises keyboard reporting, real text input,
-controller-only submission, continuing capture, shared storage, inbox selection,
-ZIP export and two separate-process same-build replays. `-Rendered` exercises
-the actual offscreen OpenGL UI and saves form/inbox PNGs locally. Neither mode
-injects player transforms, grants, objectives or recorded observations.
-The gate also replays the finalized canonical tape and verifies that an
-interactive replay retains its paused scene at the marker and closes cleanly.
-The asset-free `game/tests/bug_menu_smoke.gd` checks mouse selection/activation,
-controller navigation, focus return, busy/empty lists and scrolling. The ordinary
-CI bootstrap smoke runs it too.
-
-Unit regressions cover prefix integrity, continuing/abandoned writers, atomic
-publication failure, shared tapes, package round trips, bounded export, corrupt
-recordings, path traversal, interrupted captures and explicit deletion. The
-original `tools/playtest-smoke.ps1` remains a separate compatibility gate.
+Use the live bug-report UI and the maintained `tools/launch-bug-capture.ps1`,
+`tools/record-playtest.ps1` and `tools/replay-playtest.ps1` workflows to investigate
+reproduction steps, replay markers, exports and game behaviour. Check the actual
+rendering and controller experience manually. The old automatic bug-report,
+menu and playtest smoke runners are [archived](https://github.com/je55pr/one-big-package/tree/tests) and no longer run
+in CI or this branch.
 
 Follow-ups: richer controller text entry, an inbox usable before entering a
 recorded world, resumable crash recovery, and optional human-approved publication.

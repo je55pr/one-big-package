@@ -91,26 +91,43 @@ internal sealed partial class Rac2WorldModule : IDisposable
             return;
         }
 
-        foreach (var node in nodes.Where(node => node.Source.SourceGame == ObpSourceGame.Rac2 && node.Source.NativeClassId == 500))
+        try
         {
-            if (Rac2Class500Authority.Read(node.Source)?.PvarC8 != 0)
+            foreach (var node in nodes.Where(node => node.Source.SourceGame == ObpSourceGame.Rac2 && node.Source.NativeClassId == 500))
             {
-                GD.PrintErr($"[rac2-crates] {node.Source.InteractionId}: respawning/missing crate authority is not supported.");
-                continue;
+                if (Rac2Class500Authority.Read(node.Source)?.PvarC8 != 0)
+                {
+                    GD.PrintErr($"[rac2-crates] {node.Source.InteractionId}: respawning/missing crate authority is not supported.");
+                    continue;
+                }
+                _crates.Add(node);
+                // Host convex contact derived from the retail model; PS2 narrow
+                // phase is not reproduced by Godot's physics engine.
+                var body = new AnimatableBody3D { Name = $"Rac2CrateContact_{node.Source.InstanceIndex}", CollisionLayer = 1, CollisionMask = 1, SyncToPhysics = false };
+                _crateBodies.Add(node.Source.InstanceIndex, body);
+                foreach (var mesh in node.Root.GetChildren().OfType<MeshInstance3D>())
+                    body.AddChild(new CollisionShape3D { Shape = mesh.Mesh.CreateConvexShape(), Transform = mesh.Transform });
+                node.Root.AddChild(body);
             }
-            _crates.Add(node);
-            // Host convex contact derived from the retail model; PS2 narrow
-            // phase is not reproduced by Godot's physics engine.
-            var body = new AnimatableBody3D { Name = $"Rac2CrateContact_{node.Source.InstanceIndex}", CollisionLayer = 1, CollisionMask = 1, SyncToPhysics = false };
-            foreach (var mesh in node.Root.GetChildren().OfType<MeshInstance3D>())
-                body.AddChild(new CollisionShape3D { Shape = mesh.Mesh.CreateConvexShape(), Transform = mesh.Transform });
-            node.Root.AddChild(body);
-            _crateBodies.Add(node.Source.InstanceIndex, body);
+            if (_crates.Count > 0)
+            {
+                CrateBolts.Prepare();
+                CrateEffects.Configure(_crates);
+            }
         }
-        if (_crates.Count > 0)
+        catch (Exception ex) when (ex is InvalidDataException or IOException or NotSupportedException or InvalidOperationException)
         {
-            CrateBolts.Prepare();
-            CrateEffects.Configure(_crates);
+            CrateBolts.Dispose();
+            CrateEffects.Dispose();
+            foreach (var body in _crateBodies.Values)
+            {
+                body.CollisionLayer = body.CollisionMask = 0;
+                body.QueueFree();
+            }
+            _crateBodies.Clear();
+            _crates.Clear();
+            _resources.CrateDiagnostics.Probe.Status = $"crate admission unavailable: {ex.Message}";
+            GD.PrintErr($"[rac2-crates] LEVEL{_world.LevelId}: crate admission unavailable: {ex.Message}");
         }
 
         var openingLiftNode = nodes.FirstOrDefault(n =>
@@ -338,7 +355,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
         probe.ObserveStrike(target.Source.InstanceIndex, c8, route.ToString(), source);
 
         Rac2Class500Payout payout;
-        int fragmentMask = CrateEffects.BeginBreak();
+        var breakPlan = CrateEffects.PlanBreak();
         try
         {
             // Reward-session inputs are explicit deterministic choices within
@@ -346,7 +363,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
             // state. Multiplier zero is neutral via native max(1, byte).
             payout = resources.Rac2CrateBolts.PlanClass500Payout(
                 authored.Uid, authored.AuthoredBolts, rewardMultiplierByte: 0,
-                progressionLikeInput: CrateEffects.RecentBreakBudget, rngMod2: 1);
+                progressionLikeInput: breakPlan.Budget.Recent, rngMod2: 1);
         }
         catch (InvalidOperationException ex)
         {
@@ -356,7 +373,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
         }
 
         _ports.CrateReward(target.Root.GlobalPosition, payout);
-        CrateEffects.Break(target, fragmentMask);
+        CrateEffects.Break(target, breakPlan);
         probe.RewardStatus = $"fresh selector {payout.Selector}: centre {payout.RewardCentreValue} => " +
             $"{string.Join("+", payout.PhysicalPickups.Select(p => p.Denomination))} physical, {payout.DeferredValue} deferred";
 
@@ -382,6 +399,9 @@ internal sealed partial class Rac2WorldModule : IDisposable
         if (_world.Game == ObpSourceGame.Rac2)
         {
             ticks.Register(GameplayTickPhase.NativeWorld, "rac2-native", "Rac2WorldModule", 10, Tick);
+        }
+        if (_crates.Count > 0)
+        {
             ticks.Register(GameplayTickPhase.Physics, "rac2-bolts", "Rac2CrateBoltPresentation", 20, CrateBolts.Tick);
             ticks.Register(GameplayTickPhase.Physics, "rac2-crate-effects", "Rac2CrateEffects", 10, CrateEffects.Tick);
         }

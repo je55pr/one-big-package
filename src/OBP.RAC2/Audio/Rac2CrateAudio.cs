@@ -26,6 +26,7 @@ public static class Rac2CrateAudio
         foreach (int cls in new[] { 500, 13, 14, 15, 16, 17, 18, 19 })
         {
             var bytes = Rac2MobyClasses.ClassBytes(core, cls);
+            if (bytes.Length < 0x48) throw new InvalidDataException("Truncated crate sound class header.");
             if (bytes[0xd] == 0) continue; // Native class-sound dispatch returns -1 for this class.
             int definition = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(0x28));
             if (definition < 0x48 || definition > bytes.Length - 32) throw new InvalidDataException("Crate SoundDef is out of bounds.");

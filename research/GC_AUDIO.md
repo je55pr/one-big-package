@@ -365,7 +365,7 @@ selection, random pitch-bend/choice, rate conversion and ADSR. Twelve seeded
 variants cache the randomized arrival program; exact PS2 RNG ordering and SPU
 mixing are not claimed. Crate playback is positional with its two-tick throttle;
 Bolt arrival is flat, matching native flag 32. Neutral clips/intents go through
-the selected player's existing audio host. Retail witnesses and the ordinary
+the world's existing audio host. Retail witnesses and the ordinary
 engine trial cover this path; see [GC_CRATES.md](GC_CRATES.md).
 
 ## Deliberate exclusions

@@ -1,5 +1,9 @@
 # OBP architecture
 
+> Automated architecture and naming tests were retired. These layer boundaries
+> remain guidance for development, not executable CI gates. See the
+> [archived tests tag](https://github.com/je55pr/one-big-package/tree/tests) for former policies and checks.
+
 Production is Godot 4 + C#. Retail NTSC-U bytes and executable behaviour are
 authority; public tools are cross-checks. Source evidence and deliberate OBP
 design stay separate. Creative direction is in [PROJECT_VISION.md](PROJECT_VISION.md).
@@ -16,9 +20,9 @@ design stay separate. Creative direction is in [PROJECT_VISION.md](PROJECT_VISIO
 | `OBP.Godot` | Neutral data to Godot meshes, materials, collision, audio and presentation objects |
 | `game/` | Scene lifecycle, physics contacts, input, UI/camera presentation and composition-root adapter wiring |
 | `OBP.Fusion` | Engine-neutral source-qualified gameplay orchestration and player-session policy, world-entry contracts, composition/placement |
-| `tests/` and `tools/` | Deterministic imports, probes and contract verification |
+| `tools/` | Build helpers, research probes and optional manual gameplay diagnostics |
 
-`ArchitectureLayeringTests` guards project references/imports. Godot adapters
+Formerly, `ArchitectureLayeringTests` checked project references/imports. Godot adapters
 do not become native parsers; RAC modules do not depend on Godot; Runtime does
 not acquire source-game numeric state machines. Share low-level codecs only
 where retail evidence supports the common structure. Preserve unknown fields.
@@ -29,7 +33,7 @@ Destination origin chooses world content, not player-global services. Source-nat
 controllers stay in RAC modules; Fusion invokes neutral ports and applies explicitly
 labelled OBP policy. The Godot composition root wires those implementations without
 copying their rules. The reconciliation work (#264-#275) implemented these seams.
-Architecture tests reject new player gates keyed on world origin while allowing
+The architectural policy discourages player gates keyed on world origin while allowing
 narrow, fingerprinted world/campaign adapters; the former migration ledger entries
 are retired.
 
@@ -69,17 +73,17 @@ The v1/v2 `PlaytestWeaponConfiguration` source map is an explicit wire-only
 compatibility DTO; its keys stay strings and are formatted from typed runtime
 maps. This migration breaks the old free-string C# construction API deliberately,
 without changing profile/replay versions, native IDs, builds, destinations or
-Godot resources. `SourceIdentityArchitectureTests` prevent new string identity
+Godot resources. The former `SourceIdentityArchitectureTests` checked for new string identity
 contracts and raw source routing; the ownership guard also recognises identities
 passed separately from their world.
 
-`SourceNamingPolicyTests` checks public types, using aliases and source projects.
+The retired `SourceNamingPolicyTests` checked public types, using aliases and source projects.
 Nested source records inherit their enclosing type's context, so names such as
 `Rac2LancerSession.State` stay useful. Neutral `RuntimeWorld`, `Moby`, and shared
 PS2/ISA types do not need a game prefix. Existing noncanonical public declarations
-are exact entries in `tests/OBP.Tests/source-naming-legacy.json`; each entry must
+are exact entries in `https://github.com/je55pr/one-big-package/blob/tests/tests/OBP.Tests/source-naming-legacy.json`; each entry must
 disappear when its declaration is renamed. New legacy aliases or moving one
-into a different file fail the check. The census is a reviewed policy artifact;
+into a different file previously failed that check. The census is a reviewed policy artifact;
 changing it to admit new migration debt is prohibited and requires review just
 as changing the check does. A genuine historical/retail exception must
 name its exact declaration and reason, retain its layer ownership, and include

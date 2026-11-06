@@ -95,7 +95,7 @@ Use the same authorized retail ISO as the OBP source manager:
 ```powershell
 python tools/rac1-moby-updater-atlas.py --iso $env:OBP_RAC1_ISO --check
 python -m unittest discover -s tests/tooling -p test_rac1_moby_updater_atlas.py
-dotnet test tests/OBP.Tests/OBP.Tests.csproj -c Release --filter FullyQualifiedName~Rac1RedPlantSessionTests
+dotnet test https://github.com/je55pr/one-big-package/blob/tests/tests/OBP.Tests/OBP.Tests.csproj -c Release --filter FullyQualifiedName~Rac1RedPlantSessionTests
 ```
 
 The Python script verifies the full ISO SHA-256, independently bounds each

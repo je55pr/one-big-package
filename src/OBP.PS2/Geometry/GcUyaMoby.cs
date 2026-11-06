@@ -681,7 +681,7 @@ public static partial class GcUyaMoby
         if (source.Length < ClassHeaderSize) throw new InvalidDataException("Truncated Moby class.");
         int directory = source[0x2c] * 16;
         int at = directory + 4 + part * 4;
-        if (directory == 0 || at > source.Length - 4) throw new InvalidDataException("Moby has no bounded part directory.");
+        if (directory < ClassHeaderSize || at > source.Length - 4) throw new InvalidDataException("Moby has no bounded part directory.");
         int first = source[at], count = source[at + 1];
         long packets = BinaryPrimitives.ReadInt32LittleEndian(source) + first * 16L;
         if (count == 0 || packets < ClassHeaderSize || packets + count * 16L > source.Length)

@@ -65,7 +65,7 @@ to one million callback steps, 128 MiB compressed and 512 MiB expanded input;
 keep a diagnostic run focused. The background writer has a bounded queue and
 fails explicitly if storage cannot keep up.
 
-`./tools/playtest-smoke.ps1` checks fresh Veldin and Novalis record/replay, including
+The [archived playtest-smoke runner](https://github.com/je55pr/one-big-package/blob/tests/tools/playtest-smoke.ps1) previously checked fresh Veldin and Novalis record/replay, including
 analogue input, jump, camera, weapon use, wrench, Quick Select, resize, controller
 pause/menu navigation, marker/save, and deliberately invalid/divergent files.
 These use ordinary input at authored starts; they do not solve either level.

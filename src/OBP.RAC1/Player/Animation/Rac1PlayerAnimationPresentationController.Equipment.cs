@@ -16,6 +16,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
 
     private void RestoreEquipmentBasePose()
     {
+        JointEaseSkinChange = null;
         // The procedural joint layer is applied last, so it is undone first.
         if (_easeBase is not null)
         {

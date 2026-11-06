@@ -57,11 +57,6 @@ internal sealed class Rac2CrateBoltPresentation(
     private int _emittedRewardIndex;
     private bool _disposed;
 
-    internal int OutstandingNodes => _areas.Count(area => GodotObject.IsInstanceValid(area) && area.Visible && !area.IsQueuedForDeletion());
-    internal IReadOnlyList<Node3D> PickupNodes => _areas;
-    internal string DiagnosticState => string.Join("; ", _pickups.Select(pickup =>
-        $"{pickup.Pickup.PickupId}:state{pickup.Motion.NativeState}@{pickup.Node.GlobalPosition}"));
-
     internal void Prepare()
     {
         if (_assets is not null) return;

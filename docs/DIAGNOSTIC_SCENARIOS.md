@@ -1,5 +1,8 @@
 # Diagnostic scenario contracts (#335)
 
+> Historical test commands and scenarios linked below are preserved in the
+> [tests tag](https://github.com/je55pr/one-big-package/tree/tests); deleted automated runners are not available on dev.
+
 Standalone diagnostics live outside `OBPGame`. A scenario declares its stable,
 versioned ID, exact required source/build authorities, setup policy, destination
 when needed, timeout, maximum frame waits and nonzero failure exit code. Its
@@ -216,7 +219,7 @@ driver is `SourceFreeStartupProbe`; it owns its operation and observes scene
 retirement. The existing entry point and evidence remain:
 
 ```text
-godot --headless --path game --script res://tests/ci_bootstrap_smoke.gd -- --test-scene picker
+godot --headless --path game --script https://github.com/je55pr/one-big-package/blob/tests/game/tests/ci_bootstrap_smoke.gd -- --test-scene picker
 [godot-ci-smoke] PASS: OBPGame loads and Game Sources opens without retail data
 ```
 
@@ -456,7 +459,7 @@ changed sessions, missing bookmarks and invalid finished-recording state. For
 private before/after runs, use Python 3's standard library:
 
 ```text
-python tools/test-capture-parity.py
+python https://github.com/je55pr/one-big-package/blob/tests/tools/test-capture-parity.py
 python tools/compare-capture-parity.py <before-gate-directory> <after-gate-directory>
 ```
 
@@ -519,8 +522,8 @@ coverage paths. Engine tests use private artifacts and unfocusable offscreen
 captures; navigation and cancellation checks are headless. Reproduce them with:
 
 ```powershell
-./tools/test-diagnostic-cli.ps1
-./tools/test-diagnostic-cli.ps1 -Retail
+# Retired automated CLI runner (archived at https://github.com/je55pr/one-big-package/tree/tests)
+# Retired automated CLI runner (archived at https://github.com/je55pr/one-big-package/tree/tests)
 ```
 
 The retail option requires the existing authorised trilogy source environment

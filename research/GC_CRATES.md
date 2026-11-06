@@ -283,10 +283,10 @@ and 204. The constructor at loaded `0x00378270` selects those classes by
 denomination and loads seven scale factors of `0.5` at `0x001AEBB0..0x001AEBC8`.
 Its `lwc1` witnesses are `0x00378378/38C/3A0/3B4/3C8/3DC/3E8`; Oozla's `$gp`
 is `0x001AEFF0`. The decoder already applies the model's own class scale.
-`Rac2BoltAssetsTests` checks the geometry, texture availability and those original
-instruction/data values without retaining asset payloads.
-It also follows each original denomination comparison into its allocator call
-and pins Oozla texture IDs 0/23/24/25 with decoded-payload SHA-256 fingerprints.
+Local bounded reads verified geometry, texture availability and those original
+instruction/data values without retaining asset payloads. The recovery followed
+each original denomination comparison into its allocator call and checked
+Oozla texture IDs 0/23/24/25 using decoded-payload SHA-256 fingerprints.
 
 The gold placeholder spheres and fixed scatter ring are replaced with these
 models and a bounded source-owned motion session. Loaded pickup update
@@ -312,14 +312,12 @@ checks both writes and their count, and the motion regression enters range,
 leaves before landing and still attracts. The first hop also retains its final
 position sample at the state-3 transition; it does not borrow R&C1's anchor reset.
 
-`--destination rac2:LEVEL1 --rac2-crate-smoke --no-profile` exercises the ordinary
-actor/query route, absence of marker cubes, collision removal, duplicate-hit
-isolation, original pickup models and wallet collection. It requires the selected
-R&C1 player source and attached R&C2 source. `Rac2BoltMotionTests` independently
-checks launch/gravity, bounce/rest, attraction and dead-player admission.
-The engine fixture inspects the spawned 14/14/13 classes, 48/48/52-triangle
-ArrayMeshes and the actual material textures before accepting the 5/5/1 pickup
-and wallet trial.
+The local recovery trial exercised the ordinary actor/query route, absence of
+marker cubes, collision removal, duplicate-hit isolation, original pickup models
+and wallet collection with the selected R&C1 player and attached R&C2 source.
+It inspected spawned 14/14/13 classes, 48/48/52-triangle ArrayMeshes and actual
+material textures, then observed the 5/5/1 payout and wallet credit. The temporary
+automated fixture is removed in keeping with the project's gameplay-first policy.
 
 ### Falling stacks, original fragments and sounds
 
@@ -364,11 +362,20 @@ SoundDef pitch is 0 / -2540 and maximum gain 1 / 921/2048, respectively. Shared
 at 48 kHz. Twelve seeded variants cache the randomized arrival program.
 Zero-SoundDef classes remain silent, matching the native guard. This replaces
 the upgrade cue on the ordinary crate/pickup path; hostile audio is unchanged.
+Classes 18/19 (500/1000 Bolts) follow that same class-local guard: no sound is
+substituted from class 13 when their SoundDef is absent.
 
-`Rac2CrateEffectsRetailTests` checks original parts, sound programs and loaded
-instruction witnesses. The engine trial breaks a real stack support, checks a
-one-unit fall, settling, updated state/combat geometry, original textured parts,
-movement/spin/retirement and audio-host acceptance of both mapped cues.
+Crate setup is atomic at the lease's admission boundary. If original models,
+textures, audio programs or body setup are unavailable, the host logs an explicit
+crate-admission error, retires the partial effects/pickup owners and removes the
+new crate bodies and registrations. Other world gameplay may still activate;
+unsupported crates are not advertised as working actors.
+
+Local authorised-source inspection verified original parts, sound programs and
+loaded instruction witnesses. The recovery's engine trial broke a real stack
+support and observed a one-unit fall, settling, updated state/combat geometry,
+original textured parts, movement/spin/retirement and audio-host acceptance of
+both mapped cues.
 
 This remains a bounded improvement. Fresh-session selector/centre reward choices
 are explicit OBP initial conditions. Native RNG order, difficulty-dependent

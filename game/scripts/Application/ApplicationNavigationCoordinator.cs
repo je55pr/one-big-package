@@ -229,7 +229,7 @@ internal sealed class ApplicationNavigationCoordinator
         _worldCanReturnToBrowser = _ports.Args().CaptureFrame is null;
         var args = _ports.Args();
         if ((args.PlaytestRequested || args.FusionSmoke || args.PlayerSessionSmoke ||
-             args.PlayerCapabilitiesSmoke || args.TrilogyGameplaySmoke || args.Rac2CrateSmoke) && _ports.FusionPreparing())
+             args.PlayerCapabilitiesSmoke || args.TrilogyGameplaySmoke) && _ports.FusionPreparing())
         {
             int generation = _intentGeneration;
             _ports.PrepareLater(

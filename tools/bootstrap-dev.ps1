@@ -42,7 +42,7 @@ try {
   & $godot --headless --path (Join-Path $root 'game') --editor --import --quit
   if ($LASTEXITCODE -ne 0) { throw "Godot import failed." }
 
-  Write-Host "`nBootstrap complete. Next: ./tools/test.ps1 ; ./tools/capture.ps1 smoke"
+  Write-Host "`nBootstrap complete. Next: ./tools/build.ps1 ; ./tools/play.ps1"
 }
 finally {
   Pop-Location

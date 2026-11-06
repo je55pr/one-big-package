@@ -18,20 +18,14 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
     private readonly Dictionary<Rid, Falling> _supports = [];
     private readonly List<Fragment> _fragments = [];
     private readonly Dictionary<int, List<(ArrayMesh Mesh, StandardMaterial3D Material)>> _models = [];
-    private readonly Rac2CrateBreakBudget _budget = new();
+    private Rac2CrateBreakBudget _budget = new();
     private Rac2CrateAssets.Catalogue? _assets;
     private Rac2CrateAudio.Catalogue? _audio;
     private Random? _random;
     private double _accumulator;
     private long _tick, _lastBreakSound = -2;
     private bool _disposed;
-    internal int Fragments => _fragments.Count;
-    internal IReadOnlyList<Node3D> FragmentNodes => _fragments.Select(fragment => fragment.Node).ToArray();
-    internal int RecentBreakBudget => _budget.Recent;
-    internal int BreakSounds { get; private set; }
-    internal int PickupSounds { get; private set; }
-    internal int? LastBankSound { get; private set; }
-    internal float? HeightVelocity(int index) => _crates.FirstOrDefault(crate => crate.Node.Source.InstanceIndex == index)?.Motion.Velocity;
+    internal sealed record BreakPlan(int Mask, Rac2CrateBreakBudget Budget);
 
     internal void Configure(IEnumerable<RuntimeWorldScene.DynamicObjectNode> nodes)
     {
@@ -53,17 +47,22 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
     }
 
     // Host pool availability is explicit; it does not claim the retail global allocator's history.
-    internal int BeginBreak() => _budget.Begin(_tick, Math.Max(0, 256 - _fragments.Count));
+    internal BreakPlan PlanBreak()
+    {
+        var budget = _budget.Copy();
+        return new(budget.Begin(_tick, Math.Max(0, 256 - _fragments.Count)), budget);
+    }
 
-    internal void Break(RuntimeWorldScene.DynamicObjectNode crate, int mask)
+    internal void Break(RuntimeWorldScene.DynamicObjectNode crate, BreakPlan plan)
     {
         if (_disposed || !current() || _assets is null) return;
+        _budget = plan.Budget;
         if (_tick - _lastBreakSound >= 2)
         {
-            if (Play(500, crate.Root.GlobalPosition)) BreakSounds++;
+            Play(500, crate.Root.GlobalPosition);
             _lastBreakSound = _tick;
         }
-        foreach (var part in _assets.Parts.Values.Where(part => (mask & 1 << part.Index) != 0))
+        foreach (var part in _assets.Parts.Values.Where(part => (plan.Mask & 1 << part.Index) != 0))
         {
             var pivot = new Vector3(-part.Pivot.X, part.Pivot.Z, part.Pivot.Y);
             Vector3 position = crate.Root.GlobalTransform * pivot;
@@ -82,21 +81,18 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
     internal void PlayPickup(int nativeClass)
     {
         if (_disposed || !current()) return;
-        if (Play(nativeClass, null)) PickupSounds++;
+        Play(nativeClass, null);
     }
 
-    private bool Play(int nativeClass, Vector3? position)
+    private void Play(int nativeClass, Vector3? position)
     {
-        if (_audio is not { } bank || !bank.Cues.TryGetValue(nativeClass, out var cue)) return false;
+        if (_audio is not { } bank || !bank.Cues.TryGetValue(nativeClass, out var cue)) return;
         var clip = cue.Variants[_random!.Next(cue.Variants.Count)];
         RuntimeAudioPosition? point = position is { } p ? new(-p.X, p.Y, p.Z) : null;
         if (ports.PlayEffect(new(clip, RuntimeAudioCategory.SoundEffect, gain: cue.Gain, position: point)))
         {
-            LastBankSound = cue.BankSound;
             GD.Print($"[rac2-crate-audio] class={nativeClass} sound=0 bank={cue.BankSound} gain={cue.Gain:0.###}");
-            return true;
         }
-        return false;
     }
 
     internal void Tick(double delta)

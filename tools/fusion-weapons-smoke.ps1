@@ -16,6 +16,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'obp-smoke-process.ps1')
 foreach ($sourcePath in @($Rac1Iso, $Rac2Iso, $Rac3Iso)) {
     if (-not $sourcePath -or -not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) { throw 'All three authorised NTSC-U sources are required.' }
 }
@@ -36,8 +37,9 @@ $previousCapture = $env:OBP_FUSION_CAPTURE_DIR
 try {
     if ($Rendered) { $env:OBP_FUSION_CAPTURE_DIR = $Out }
     $integrationLog = Join-Path $Out 'integration.log'
-    & $godot @windowArgs --fixed-fps 60 --path (Join-Path $root 'game') --rendering-method gl_compatibility --log-file $integrationLog -- --fusion-smoke --fixed-seed 1440 --rac1-iso $Rac1Iso --rac2-iso $Rac2Iso --rac3-iso $Rac3Iso
-    if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $integrationLog -SimpleMatch '[fusion-smoke] PASS:')) { throw "Fusion fixtures failed. Inspect $integrationLog" }
+    $code = Invoke-ObpSmokeProcess -FilePath $godot -ArgumentList (@($windowArgs) + @('--fixed-fps', '60', '--path', (Join-Path $root 'game'), '--rendering-method', 'gl_compatibility', '--log-file', $integrationLog, '--', '--fusion-smoke', '--fixed-seed', '1440', '--rac1-iso', $Rac1Iso, '--rac2-iso', $Rac2Iso, '--rac3-iso', $Rac3Iso)) `
+        -CompletionMarker '[fusion-smoke] PASS:' -WorkingDirectory $root
+    if ($code -ne 0) { throw "Fusion fixtures failed. Inspect $integrationLog" }
     $run = Join-Path $Out 'ordinary.run.jsonl.gz'
     & (Join-Path $PSScriptRoot 'record-playtest.ps1') -Destination rac1:LEVEL0 -FusionTest -Smoke -Out $run -Rac1Iso $Rac1Iso -Rac2Iso $Rac2Iso -Rac3Iso $Rac3Iso -Headless:(-not $Rendered) -Offscreen:$Rendered -SkipBuild
     if ($LASTEXITCODE -ne 0) { throw 'Ordinary fusion recording failed.' }
@@ -68,7 +70,15 @@ try {
 }
 finally { $env:OBP_FUSION_CAPTURE_DIR = $previousCapture }
 foreach ($log in Get-ChildItem -LiteralPath $Out -Filter '*.log') {
-    if (Select-String -LiteralPath $log.FullName -Pattern 'ObjectDB instances leaked|resources still in use|SCRIPT ERROR:') { throw "Godot lifecycle error in $($log.Name)" }
+    $text = [IO.File]::ReadAllText($log.FullName)
+    if ($log.Name -ceq ([IO.Path]::GetFileName($invalidReport) + '.stderr.log') -or
+        $log.Name -ceq ([IO.Path]::GetFileName($invalidReport) + '.log')) {
+        # The report and exit code above already establish this exact expected
+        # rejection. Every other line, including leaks, still goes through the gate.
+        $expectedLine = '[playtest] FAIL: ' + $expectedError
+        $text = ($text -split '\r?\n' | Where-Object { $_ -cne $expectedLine }) -join "`n"
+    }
+    if (Test-ObpSmokeFailure -Log $text) { throw "Godot lifecycle error in $($log.Name)" }
 }
 Write-Host "[fusion-weapons] PASS. Local captures, recording and reports: $Out" -ForegroundColor Green
 exit 0
