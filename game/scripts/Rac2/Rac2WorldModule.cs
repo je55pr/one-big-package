@@ -374,7 +374,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
         if (_world.Game == ObpSourceGame.Rac2)
         {
             ticks.Register(GameplayTickPhase.NativeWorld, "rac2-native", "Rac2WorldModule", 10, Tick);
-            ticks.Register(GameplayTickPhase.NativeWorld, "rac2-bolts", "Rac2CrateBoltPresentation", 20, CrateBolts.Tick);
+            ticks.Register(GameplayTickPhase.Physics, "rac2-bolts", "Rac2CrateBoltPresentation", 20, CrateBolts.Tick);
         }
     }
 

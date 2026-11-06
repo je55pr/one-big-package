@@ -300,6 +300,11 @@ credits each denomination through the existing player-session receipt port.
 The host ray-to-centre clearance uses the contacted unit normal, including on
 slopes. The catch-up limit is 12 native ticks per host frame, and ordinary launch
 randomness uses a runtime seed unless a diagnostic/replay fixed seed is supplied.
+The Godot owner runs in the Physics phase and uses the existing actor-body ray
+exclusions. Wallet-capacity overflow retains the exact receipt with hidden
+presentation and retries only when the wallet balance changes. There is no
+invented pickup expiry: this lease admits only 190 non-respawning crates, at most
+three pieces each, and teardown retires their nodes and receipts.
 Falling and first-hop states latch PVar `+0x42` when the player enters the pickup
 volume; leaving the volume does not clear it. Oozla reads it at `0x37703C` and
 `0x37737C`, then writes one at `0x377080/84` and `0x3773C0/C4`. The retail witness

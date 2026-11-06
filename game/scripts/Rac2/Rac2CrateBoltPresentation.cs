@@ -22,7 +22,8 @@ internal sealed record Rac2CrateBoltPorts(
     Action PickupAudio,
     Func<string?> SourcePath,
     Func<int> Seed,
-    Func<(float Radius, float Height)> AttractionProfile);
+    Func<(float Radius, float Height)> AttractionProfile,
+    Action<global::Godot.Collections.Array<Rid>> ActorExclusions);
 
 /// <summary>
 /// One R&C2 scene lease owns its physical class-500 pickup areas. The native
@@ -40,7 +41,10 @@ internal sealed class Rac2CrateBoltPresentation(
         internal bool Collected;
     }
 
-    private sealed record HostedPickup(Node3D Node, Rac2BoltPickup Pickup, PlayerBoltReceipt? Receipt, Rac2BoltMotionSession Motion);
+    private sealed record HostedPickup(Node3D Node, Rac2BoltPickup Pickup, PlayerBoltReceipt? Receipt, Rac2BoltMotionSession Motion)
+    {
+        internal int? CapacityBlockedAt { get; set; }
+    }
     private readonly List<Node3D> _areas = [];
     private readonly List<HostedPickup> _pickups = [];
     private readonly Dictionary<int, List<(ArrayMesh Mesh, Material Material)>> _models = [];
@@ -51,7 +55,7 @@ internal sealed class Rac2CrateBoltPresentation(
     private int _emittedRewardIndex;
     private bool _disposed;
 
-    internal int OutstandingNodes => _areas.Count(area => GodotObject.IsInstanceValid(area) && !area.IsQueuedForDeletion());
+    internal int OutstandingNodes => _areas.Count(area => GodotObject.IsInstanceValid(area) && area.Visible && !area.IsQueuedForDeletion());
     internal IReadOnlyList<Node3D> PickupNodes => _areas;
     internal string DiagnosticState => string.Join("; ", _pickups.Select(pickup =>
         $"{pickup.Pickup.PickupId}:state{pickup.Motion.NativeState}@{pickup.Node.GlobalPosition}"));
@@ -135,12 +139,14 @@ internal sealed class Rac2CrateBoltPresentation(
         _accumulator -= ticks / 60d;
         var space = player.GetWorld3D().DirectSpaceState;
         var excluded = new global::Godot.Collections.Array<Rid> { player.GetRid() };
+        ports.ActorExclusions(excluded);
         for (int tick = 0; tick < ticks; tick++)
         {
             var profile = ports.AttractionProfile();
             for (int index = _pickups.Count - 1; index >= 0; index--)
             {
                 var pickup = _pickups[index];
+                if (pickup.CapacityBlockedAt == ports.WalletBalance()) continue;
                 var motion = pickup.Motion;
                 // The selected player's dimensions own attraction admission.
                 // Feet-to-socket mapping is an explicit host adapter.
@@ -149,10 +155,25 @@ internal sealed class Rac2CrateBoltPresentation(
                 pickup.Node.GlobalPosition = FromNative(motion.Position);
                 pickup.Node.Rotation = new(motion.Spin, motion.Spin * .5f, 0);
                 if (!motion.Collected) continue;
-                OnPickupEntered(player, pickup.Node, pickup.Pickup, pickup.Receipt);
+                CollectArrivedPickup(player, pickup);
                 if (pickup.Node.IsQueuedForDeletion()) _pickups.RemoveAt(index);
             }
         }
+    }
+
+    private void CollectArrivedPickup(PlayerHost player, HostedPickup pickup)
+    {
+        int balance = ports.WalletBalance();
+        if (ports.HasNativePlayer() && (long)balance + pickup.Pickup.Denomination > int.MaxValue)
+        {
+            // Keep the exact receipt, but retire its physical presentation and
+            // retry only after capacity changes. Never probe or recollect it.
+            pickup.CapacityBlockedAt = balance;
+            pickup.Node.Visible = false;
+            resources.CrateDiagnostics.Probe.RewardStatus = "pickup receipt waiting for wallet capacity";
+            return;
+        }
+        OnPickupEntered(player, pickup.Node, pickup.Pickup, pickup.Receipt);
     }
 
     private static Rac2BoltContact? ProbeContact(PhysicsDirectSpaceState3D space,

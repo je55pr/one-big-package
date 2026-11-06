@@ -158,8 +158,8 @@
   {
     "Key": "game/scripts/Rac2/Rac2WorldModule.cs::Rac2WorldModule.RegisterTicks(GameplayTickScheduler<InputEvent>)",
     "Kind": "adapter",
-    "Reason": "#375: register the source-matching R&C2 world adapter once per scene lease, retaining its existing Rac2WorldLeaseClock fractional native tick without choosing avatar or player services from the source identity. Also schedules the world-owned Bolt pickup clock; Rac2BoltMotionTests and the rac2-crate-smoke engine trial cover motion and collection through the existing player grant port. No player-global configuration is selected or mutated here.",
-    "Hash": "a14209cc4294417cb828a22af8ee29c2335689f888834e968fd6006cc5a79d79"
+    "Reason": "#375: register the source-matching R&C2 world adapter once per scene lease, retaining its existing Rac2WorldLeaseClock fractional native tick without choosing avatar or player services from the source identity. Schedules the world-owned Bolt pickup clock in the Physics phase so contact queries use the physics-space snapshot; Rac2BoltMotionTests and the rac2-crate-smoke engine trial cover motion and collection through the existing player grant port. No player-global configuration is selected or mutated here.",
+    "Hash": "831ec1e3e1fb93646ecba3d38ac942d70c23db6bb95ec9775249de79840dbb42"
   },
   {
     "Key": "game/scripts/World/WorldEntryPreparationPolicy.cs::WorldEntryPreparationPolicy.WorldOptions(RuntimeWorld,CommandLineArgs)",
