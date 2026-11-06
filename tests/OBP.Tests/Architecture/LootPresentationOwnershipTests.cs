@@ -40,6 +40,11 @@ public class LootPresentationOwnershipTests
         Assert.Contains("ports.Credit(receipt.Actor, pickup.PickupId, denomination)", rac2, StringComparison.Ordinal);
         Assert.Contains("!ports.Current()", rac2, StringComparison.Ordinal);
         Assert.Contains("CrateBolts.Dispose();", rac2Module, StringComparison.Ordinal);
+        Assert.Contains("CrateEffects = new(world, scene, boltPorts, () => _clock.CanSpawnCrateBolts(_activatingCrateStrike))", rac2Module, StringComparison.Ordinal);
+        Assert.Contains("CrateEffects.Dispose();", rac2Module, StringComparison.Ordinal);
+        string effects = Script("Rac2/Rac2CrateEffects.cs");
+        Assert.Contains("_disposed || !current()", effects, StringComparison.Ordinal);
+        Assert.Contains("ports.PlayEffect(", effects, StringComparison.Ordinal);
         Assert.DoesNotContain("Rac1BoltCrateSession", rac2, StringComparison.Ordinal);
     }
 }

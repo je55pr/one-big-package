@@ -20,7 +20,7 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
     private readonly Dictionary<int, List<(ArrayMesh Mesh, StandardMaterial3D Material)>> _models = [];
     private readonly Rac2CrateBreakBudget _budget = new();
     private Rac2CrateAssets.Catalogue? _assets;
-    private Rac2CrateAudio? _audio;
+    private Rac2CrateAudio.Catalogue? _audio;
     private Random? _random;
     private double _accumulator;
     private long _tick, _lastBreakSound = -2;

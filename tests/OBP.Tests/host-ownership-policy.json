@@ -134,8 +134,8 @@
   {
     "Key": "game/scripts/Rac2/Rac2WorldModule.cs::Rac2WorldModule.Rac2WorldModule(RuntimeWorld,RuntimeWorldScene.Result,GodotWorldResources,Rac2WorldPorts,Rac2CrateBoltPorts)",
     "Kind": "adapter",
-    "Reason": "Constructor qualifies authored R&C2 objects to own native opening context only. The player provider and inventory remain independent of world origin. #373 source-world lease tests protect this boundary. #365 also composes the separate R&C2 class-500 receipt/visual owner without selecting a player capability.",
-    "Hash": "87974ac1d1df25ccd128203ba55a8d659de189ec9ab56ee0c6b658e944e01210"
+    "Reason": "Constructor qualifies authored R&C2 objects to own native opening context only. The player provider and inventory remain independent of world origin. #373 source-world lease tests protect this boundary. #365 composes the separate R&C2 class-500 receipt/visual owner; original crate audio, falling and fragments share its lease/source gate and neutral player ports. LootPresentationOwnershipTests and Rac2WorldLeaseClockTests guard retirement and admission without selecting a player capability.",
+    "Hash": "944d2d0db29ba9895d310fae075d9cd176bb62c0aa552170823078bf635e0a9c"
   },
   {
     "Key": "game/scripts/Rac1/Campaign/Rac1LifecycleWorldHost.cs::Rac1LifecycleWorldHost.ResolveEnvironmentalRestart()",

@@ -8,19 +8,18 @@ using OBP.Runtime.Audio;
 namespace OBP.RAC2.Audio;
 
 /// <summary>Source-local class SoundDef 0 dispatch for crate break and Bolt arrival. Pitch, gain and program selection come from the active level.</summary>
-public sealed class Rac2CrateAudio
+public static class Rac2CrateAudio
 {
     public sealed record Cue(int NativeClass, int BankSound, double Gain, IReadOnlyList<RuntimeAudioClip> Variants);
-    public IReadOnlyDictionary<int, Cue> Cues { get; }
-    private Rac2CrateAudio(IReadOnlyDictionary<int, Cue> cues) => Cues = cues;
-    public static Rac2CrateAudio Load(string path, int level)
+    public sealed record Catalogue(IReadOnlyDictionary<int, Cue> Cues);
+    public static Catalogue Load(string path, int level)
     {
         using var reader = new FileRandomAccessReader(path);
         var wad = Iso9660Filesystem.Open(reader).OpenFile($"/G/LEVEL{level}.WAD") ?? throw new InvalidDataException("Crate audio level is unavailable.");
         var header = Rac2LevelWad.ReadHeader(wad);
         return Read(Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0)), Rac2SoundBank.Open(Rac2LevelWad.RequireLump(wad, header, 1)));
     }
-    public static Rac2CrateAudio Read(Rac2LevelCore.Core core, Rac2SoundBank bank)
+    public static Catalogue Read(Rac2LevelCore.Core core, Rac2SoundBank bank)
     {
         var result = new Dictionary<int, Cue>();
         int directory = core.Header.SoundRemapOffset;
