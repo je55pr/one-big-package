@@ -60,6 +60,15 @@ public sealed class Rac1NanotechOrbTests
     }
 
     [Fact]
+    public void SparklesWithVeryLongLivesStillFadeAndExpire()
+    {
+        var session = Session();
+        var sparkle = session.Sparkle(Vector3.Zero, 500, 0, 10000)!;
+        for (int tick = 0; tick < 130; tick++) session.Step(Vector3.Zero, enforceLevelBounds: false);
+        Assert.False(session.IsLive(sparkle)); // 127 / 500 truncates to 0 in retail; here it fades at least one step a frame
+    }
+
+    [Fact]
     public void PersistentOrbSpritesAreActuallyDrawnByTheSharedSpriteCapture()
     {
         // Regression: orbs carry no native life counter, and the capture skips particles with no life left.

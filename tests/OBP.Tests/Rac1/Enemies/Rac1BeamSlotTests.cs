@@ -46,6 +46,19 @@ public sealed class Rac1BeamSlotTests
     }
 
     [Fact]
+    public void PointNineteenKeepsItsFirstTickPositionWhenTheEndpointChangesLaterRecoveredBehaviour()
+    {
+        var slot = Started(); // span 5 -> step .25 -> point 19 at x 4.75
+        slot.Step(Muzzle, Muzzle + new Vector3(10, 0, 0), Rac1PickupRandom.FromSeed(8)); // span 10 -> step .5
+        foreach (var strand in slot.Strands)
+        {
+            Assert.Equal(new Vector3(4.75f, 0, 0), strand[19]);   // 0x2e2250 only lays point 19 on the slot's first tick
+            Assert.Equal(.5f * 18, strand[18].X, 4);              // every other point follows the new step
+        }
+        Assert.All(slot.Build(Eye, Rac1PickupRandom.FromSeed(3)), q => Assert.All(q.Positions, p => Assert.True(float.IsFinite(p.X + p.Y + p.Z))));
+    }
+
+    [Fact]
     public void TextureScrollsPointTwoPerTickAndWrapsAtEight()
     {
         var slot = Started();

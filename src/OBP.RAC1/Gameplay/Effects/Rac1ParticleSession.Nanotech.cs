@@ -31,7 +31,8 @@ public sealed partial class Rac1ParticleSession
         p.Color = color; p.RawSize = rawSize; p.Stage = mode;
         // A persistent orb (mode 1) has no native life counter; the shared capture only draws particles with life left.
         p.Remaining = p.Total = life > 0 ? life : 1;
-        p.MiddleLife = life > 0 ? (int)(127f / life) : 0;
+        // Retail truncates 127 / life, which is 0 (never fades) beyond 127 frames; callers use at most 40, and a particle must always expire, so fade at least 1 a frame.
+        p.MiddleLife = life > 0 ? Math.Max(1, (int)(127f / life)) : 0;
         return p;
     }
 
