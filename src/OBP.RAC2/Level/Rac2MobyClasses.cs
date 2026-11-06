@@ -21,16 +21,21 @@ public static class Rac2MobyClasses
     /// <summary>Validate the complete class table before enumerating rows in native order, preserving duplicates.</summary>
     public static IReadOnlyList<ClassRow> ClassRows(Rac2LevelCore.Core core)
     {
-        var table = core.Header.MobyClasses;
-        if (table.Count < 0 || table.Offset < 0 ||
-            (long)table.Offset + (long)table.Count * GcUyaMoby.ClassEntrySize > core.Index.Length)
-            throw new InvalidDataException("Invalid native Moby class table bounds.");
-
+        var table = ValidatedClassTable(core);
         return Enumerable.Range(0, table.Count).Select(index =>
         {
             int offset = table.Offset + index * GcUyaMoby.ClassEntrySize;
             return new ClassRow(index, offset, BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(offset + 4)));
         }).ToArray();
+    }
+
+    private static Rac2LevelCore.ArrayRange ValidatedClassTable(Rac2LevelCore.Core core)
+    {
+        var table = core.Header.MobyClasses;
+        if (table.Count < 0 || table.Offset < 0 ||
+            (long)table.Offset + (long)table.Count * GcUyaMoby.ClassEntrySize > core.Index.Length)
+            throw new InvalidDataException("Invalid native Moby class table bounds.");
+        return table;
     }
 
     /// <summary>Extract the bounded asset bytes for exactly one native Moby class; duplicates remain invalid.</summary>
@@ -55,7 +60,7 @@ public static class Rac2MobyClasses
     public static Dictionary<int, GcUyaMoby.MobyClass> Read(
         Rac2LevelCore.Core core, int level, bool? nativePoseOverride)
     {
-        var table = core.Header.MobyClasses;
+        var table = ValidatedClassTable(core);
         bool nativePose = level >= 0 && (nativePoseOverride ?? NativePoseEnabledForLevel(level));
         return GcUyaMoby.ReadClasses(
             core.Index,

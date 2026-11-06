@@ -608,9 +608,10 @@ crate families and world gameplay may still activate; unsupported crates are not
 advertised as working actors. This isolation is OBP host policy, not a recovered
 retail failure path.
 
-Class-table consumers validate count, offset and the complete 64-bit table extent
-before scanning native rows. Physical Bolt collection offers the outstanding
-denomination to player reward intake before committing source-session accounting.
+The crate readers and both single-class and bulk `Rac2MobyClasses` paths validate
+count, offset and the complete 64-bit table extent before scanning native rows.
+Physical Bolt collection offers the outstanding denomination to player reward
+intake before committing source-session accounting.
 The host provisionally marks collection for reward admission and restores that
 flag on rejection or exception, leaving the pickup outstanding for a later retry.
 The audio variant generator is deliberately seeded and non-cryptographic: its

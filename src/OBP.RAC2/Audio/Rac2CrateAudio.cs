@@ -82,5 +82,6 @@ public static class Rac2CrateAudio
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "S2245", Justification = "Seeded cosmetic audio pitch variation has no security role; deterministic variants are intentional.")]
-    private static int SamplePitch(int seed, int minimum, int maximum) => new Random(seed).Next(minimum, maximum + 1);
+    // Cosmetic audio only; retain deterministic variants, never security randomness.
+    private static int SamplePitch(int seed, int minimum, int maximum) => new Random(seed).Next(minimum, maximum + 1); // nosemgrep: csharp.crypto.rule-WeakRNG
 }
