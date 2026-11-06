@@ -22,4 +22,4 @@ dotnet build "$root/OneBigPackage.sln" -c Debug --nologo
 "$godot" --headless --path "$root/game" --import
 
 echo
-echo "Bootstrap complete. Next: ./tools/test.sh ; ./tools/capture.sh smoke"
+echo "Bootstrap complete. Next: ./tools/build.sh ; ./tools/play.sh"

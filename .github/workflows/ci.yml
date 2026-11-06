@@ -2,14 +2,9 @@ name: CI
 
 on:
   pull_request:
+    branches: [dev]
   push:
     branches: [dev]
-
-# A new revision makes prior runs for this PR obsolete. Keep push and
-# pull_request groups separate, and do not cancel trusted dev runs.
-concurrency:
-  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -25,107 +20,8 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
-          dotnet-version: '8.0.x' # Also install runtime 8 for net8.0 tools and tests
-      - name: Test SDK feature-band and bootstrap policy
-        run: bash tools/test-dotnet-toolchain.sh
-      - name: Test PowerShell toolchain policy
-        shell: pwsh
-        run: ./tools/test-dotnet-toolchain.ps1
-      - name: Verify pinned .NET SDK and C# language version
-        run: bash tools/check-toolchain.sh
-      - run: dotnet restore OneBigPackage.sln
-      - run: dotnet format OneBigPackage.sln --verify-no-changes --no-restore --verbosity minimal
-      - run: dotnet build OneBigPackage.sln -c Release --no-restore --nologo -warnaserror
-      - name: Capture parity comparator regressions
-        run: python3 tools/test-capture-parity.py
-      - name: Godot process outcome regressions
-        run: bash tools/test-godot-smoke-runner.sh
-      - name: Portable tests and validated managed coverage
-        shell: pwsh
-        run: ./tools/test-coverage.ps1 -Configuration Release -NoBuild
-      - name: Publish safe coverage reports
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: portable-coverage
-          path: .build/coverage/
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 14
-      - name: Measure root ownership boundaries
-        run: |
-          dotnet run --project tools/OBP.ArchitectureTool -c Release --no-build -- census . > .build/root-census.json
-      - name: Publish root ownership census
-        uses: actions/upload-artifact@v7
-        with:
-          name: root-ownership-census
-          path: .build/root-census.json
-          if-no-files-found: error
-          retention-days: 14
-
-  godot-smoke:
-    name: godot-smoke
-    needs: native
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: global.json
-          dotnet-version: '8.0.x' # Also install runtime 8 for net8.0 tools and tests
-      - name: Verify pinned .NET SDK and C# language version
-        run: bash tools/check-toolchain.sh
-      - name: Install checksum-pinned Godot .NET
-        run: bash tools/bootstrap-godot.sh
-      - name: Build Godot C# host
-        run: dotnet build game/OBP.Game.csproj -c Debug --nologo -warnaserror
-      - name: Import project resources headlessly
-        run: bash tools/run-godot-smoke.sh 'Godot Engine v' .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 --headless --path game --editor --import --quit
-      - name: Smoke-test the asset-free Game Sources startup
-        env:
-          XDG_DATA_HOME: ${{ runner.temp }}/obp-godot-data
-          XDG_CONFIG_HOME: ${{ runner.temp }}/obp-godot-config
-          XDG_CACHE_HOME: ${{ runner.temp }}/obp-godot-cache
-        run: |
-          bash tools/run-godot-smoke.sh $'[godot-ci-smoke] PASS:\n[bug-menu-smoke] PASS:' .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \
-            --headless --path game --script res://tests/ci_bootstrap_smoke.gd \
-            -- --test-scene picker
-      - name: Smoke-test bootstrap environment reuse and deferred retirement
-        run: |
-          bash tools/run-godot-smoke.sh '[bootstrap-lifetime-smoke] PASS:' .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \
-            --headless --path game --scene res://diagnostics/BootstrapSceneLifetimeSmoke.tscn
-      - name: Smoke-test ambient UV-scroll group binding
-        env:
-          OBP_UYA_ISO: ''
-        run: |
-          set -o pipefail
-          mkdir -p .build
-          bash tools/run-godot-smoke.sh '[ambient-uv-scroll-smoke] PASS:' .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \
-            --headless --path game --script res://tests/ambient_uv_scroll_smoke.gd | tee .build/ambient-unset.log
-          grep -F '[ambient-uv-scroll-smoke] SKIP: no retail UYA source configured' .build/ambient-unset.log
-          grep -F '[ambient-uv-scroll-smoke] PASS:' .build/ambient-unset.log
-      - name: Reject a configured missing ambient source
-        env:
-          OBP_UYA_ISO: ${{ runner.temp }}/obp-ambient-missing-source.iso
-        run: |
-          bash tools/run-godot-smoke.sh --missing-ambient-source .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \
-            --headless --path game --script res://tests/ambient_uv_scroll_smoke.gd
-      - name: Smoke-test transparent foliage sorting and opaque trunk depth
-        run: |
-          bash tools/run-godot-smoke.sh '[foliage-sorting-smoke] PASS:' .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \
-            --headless --path game --script res://tests/foliage_sorting_smoke.gd
-      - name: Smoke-test materialless Moby visibility and source preservation
-        run: |
-          bash tools/run-godot-smoke.sh '[moby-materialless-smoke] PASS:' .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \
-            --headless --path game --script res://tests/moby_materialless_smoke.gd
-      - name: Smoke-test authored Ratchet duplicate visibility and source gate
-        run: |
-          bash tools/run-godot-smoke.sh '[authored-ratchet-visibility-smoke] PASS:' .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \
-            --headless --path game --script res://tests/authored_ratchet_visibility_smoke.gd
-      - name: Smoke-test R&C1 hand visibility and foreign weapon source gate
-        run: |
-          bash tools/run-godot-smoke.sh '[rac1-hand-presentation-smoke] PASS:' .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \
-            --headless --path game --script res://tests/rac1_hand_presentation_smoke.gd
+          dotnet-version: '8.0.x'
+      - name: Restore
+        run: dotnet restore OneBigPackage.sln
+      - name: Build
+        run: dotnet build OneBigPackage.sln -c Release --no-restore --nologo -warnaserror

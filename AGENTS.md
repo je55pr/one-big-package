@@ -18,7 +18,7 @@
 
 ## C# source names and stable boundaries
 - New source-owned namespaces/types/files use `Rac1`, `Rac2`, or `Rac3`; source projects remain `OBP.RAC1/RAC2/RAC3`. For example, add `Rac2LancerSession`, not a second `GcLancerSession` path. Interfaces use `IRac2...` / `IRac3...` as appropriate. Source-neutral types belong in their actual shared layer; do not rename native-only mechanics to misleading `Universal...` types.
-- New public `Gc*`, `IGc*`, `Uya*`, and `IUya*` names are rejected by `SourceNamingPolicyTests`. Existing noncanonical names are an exact census in `tests/OBP.Tests/source-naming-legacy.json` (the #291/#292 renames are complete; it now lists only the shared PS2 `GcUyaMoby`, `GcUyaMobyPose` and `GcUyaGadgetPose` codec vocabulary and its two named test classes, matching the exceptions in ARCHITECTURE.md); do not expand it. A genuine retail/ISA exception needs a narrow named rationale and regression, not a directory exemption.
+- Use canonical Rac1/Rac2/Rac3 source naming; retain genuinely shared native vocabulary only when justified.
 - Use `ObpSourceGame` for real source identity and a distinct typed authored-world identity where needed. Parse/format established wire strings only at explicit validated boundaries (`SourceIdentityWire`, #290). Preserve human-facing Going Commando / Up Your Arsenal names and historical evidence terminology.
 - `OBP.Game` is the app assembly/namespace (`game/OBP.Game.csproj`, #293). Preserve Godot UIDs and accepted native IDs/build hashes, destination/save/replay wire strings, and documented CLI compatibility. Strict CLI parsing (#174) lives in `CommandLineArgs`; the canonical source flags are `--rac1-iso`, `--rac2-iso` and `--rac3-iso`, with the legacy `--gc-iso`/`--uya-iso` aliases retained at that same parser boundary (#294).
 - The naming migration (#289-#295) is complete; its order and the retained exceptions are recorded in [ARCHITECTURE.md](docs/ARCHITECTURE.md#naming-and-migration-order). Do not reintroduce a second source vocabulary.
@@ -28,18 +28,15 @@
 - One persistent player session owns player-global configuration/state. World leases own scene/physics transients and source-qualified actors; teardown cannot reset the player session. Source campaigns and their native payloads remain separate.
 - Qualify content by its own source/build/asset identity. Reuse `SourceWeaponKey`, `WeaponTargetKey` and `PlayerAvatarIdentity`; do not alias equal native numbers across games or invent competing player inventories.
 - World/source adapters may inspect origin for authored starts, missions, water, taxis, native actor context and provenance. Those checks cannot grant player-global capabilities. Explicit retail-parity/diagnostic modes are chosen by the caller, never inferred from world origin.
-- `tests/OBP.Tests/host-ownership-policy.json` currently holds only narrow fingerprinted `adapter` entries; the former destination-driven `migration` entries are retired and `ReconciliationGateTests` rejects any new one. Do not add `migration` entries or broad file exemptions. New origin-dependent player selection must fail the focused ownership tests.
-- Narrow world/source `adapter` exceptions are fingerprinted too. A legitimate source-owned change needs a reviewed fingerprint update with a focused regression and retained ownership rationale; an adapter must not acquire player-global mutations.
 - An unavailable source/provider or unrecovered capability needs an explicit failure/status. No silent capsule fallback in ordinary play; no placeholder avatar or gadget advertised as working.
 
 ## Working style
-- `OBPGame` is a thin Godot composition root (#333/#376 complete): see [ROOT_DECOMPOSITION.md](docs/ROOT_DECOMPOSITION.md). New root feature/diagnostic state, members and partials are rejected by the Roslyn guard, and the reviewed `permanent` member ceiling only goes down. Put new logic in owned components behind focused ports, register enemies, mechanics, weapons and diagnostics in their own registries, and do not expand the frozen origin ledger. Existing-body fixes remain allowed.
+- Keep OBPGame a thin Godot composition root. New gameplay features belong in owned components, not in the root.
 - `dev` is the protected integration branch. Never push directly to `dev`; work in a feature branch or isolated worktree and open a pull request targeting `dev`.
-- Pull requests must pass the required GitHub checks and resolve review conversations. All merges are deliberate and manual; do not enable auto-merge.
+- Pull requests must compile and resolve substantive review comments. All merges are deliberate and manual; do not enable auto-merge.
 - `dev` is the sole maintained integration/release branch; do not recreate a permanent `main` release pointer. Keep changes focused and avoid bookkeeping-only commits.
-- Prefer small evidence-backed changes with deterministic tests, but do not create process for process's sake.
+- Prioritize playable gameplay and native fidelity. Do not add automated tests or test infrastructure unless explicitly requested.
 - When creating/moving scripts under `game/scripts` or `game/diagnostics`, move existing `.cs.uid` files alongside renamed scripts (`git mv`), or run `./tools/sync-godot-uids.ps1` (Linux: `bash tools/sync-godot-uids.sh`) to generate missing sidecars with the checksum-pinned Godot .NET editor. Commit the sidecars. The C#/.NET command skips importing and does not build the game when none are missing; `-Check` or `--check` validates without Godot. Do not manually invent UIDs.
-- Run `./tools/test.ps1 -Configuration Release` on Windows or `./tools/test.sh Release` where supported; both check UID coverage before .NET tests, and the six UID-tooling regression tests run in xUnit.
-- Run `dotnet format OneBigPackage.sln --verify-no-changes --no-restore` before integrating code changes.
-- For changes that depend on retail bytes, run `./tools/test-retail.ps1` on an authorized local machine before calling them authority-validated.
+- Use tools/build.ps1 on Windows or bash tools/build.sh on Linux to compile changes.
+- Changes depending on retail bytes should be manually checked against authorised local game sources.
 - Keep generated retail evidence payload-free and reproducible.

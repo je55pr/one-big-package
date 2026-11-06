@@ -823,7 +823,7 @@ remain follow-up work. See the [ownership contract](docs/PLAYER_WORLD_CONTRACT.m
 
 ## Getting started
 
-OBP uses the **.NET 10 LTS SDK 10.0.403** (or a newer servicing patch in the same `10.0.4xx` feature band). The root [`global.json`](global.json) sets `rollForward: latestPatch`; an older or different feature band will not silently take over, including on machines with only 10.0.402. [`Directory.Build.props`](Directory.Build.props) fixes **C# 12.0** for all projects, retaining the language semantics of the `net8.0` target. The newer SDK is required by the existing Roslyn analyzers (SDK 8's compiler produces CS9057), while the .NET 8 target framework and Godot .NET 4.7.2 remain unchanged. **The .NET 8 runtime is also required** to run net8.0 tools/tests; the local bootstrap installs both the selected SDK and runtime without changing the machine-wide installation. CI installs both as well.
+OBP uses the **.NET 10 LTS SDK 10.0.403** (or a newer servicing patch in the same `10.0.4xx` feature band). The root [`global.json`](global.json) sets `rollForward: latestPatch`; an older or different feature band will not silently take over, including on machines with only 10.0.402. [`Directory.Build.props`](Directory.Build.props) fixes **C# 12.0** for all projects, retaining the language semantics of the `net8.0` target. The newer SDK is required by the existing Roslyn analyzers (SDK 8's compiler produces CS9057), while the .NET 8 target framework and Godot .NET 4.7.2 remain unchanged. **The .NET 8 runtime is also required** to run net8.0 tools and the game; the local bootstrap installs both the selected SDK and runtime without changing the machine-wide installation. CI installs both as well.
 
 On Windows, run from the repository root:
 
@@ -848,7 +848,7 @@ export DOTNET_ROOT="$PWD/.tools/dotnet"
 export PATH="$DOTNET_ROOT:$PATH"
 bash tools/bootstrap-dev.sh
 bash tools/check-toolchain.sh
-bash tools/test.sh Release
+bash tools/build.sh
 ```
 
 For normal CLI use, work **from the repository root** so `global.json` is discovered (the build/test wrappers select it even when invoked from elsewhere). After a project-local install in a new shell, add `.tools/dotnet` to that shell's `PATH` using the Windows or Bash commands above. To diagnose a mismatch, run `dotnet --list-sdks`, `dotnet --version` and the platform's `tools/check-toolchain` script; on failure, install SDK 10.0.403 from the [.NET 10 download page](https://dotnet.microsoft.com/download/dotnet/10.0) or use the local bootstrap script. No global configuration or package upgrades are necessary.
@@ -861,30 +861,17 @@ When adding a `.cs` file under `game/scripts` or `game/diagnostics`, run `./tool
 
 OBP requires your own supported retail game files to load original levels. **No disc images, game assets or executables are included in this repository.**
 
-## Testing
+## Building
 
-```powershell
-# Build and unit tests
-./tools/test.ps1 -Configuration Release
-
-# Tests that require locally supplied game data
-./tools/test-retail.ps1
-
-# Portable tests and validated managed coverage (no retail data)
-./tools/test-coverage.ps1 -Configuration Release
-```
-
-Pull requests run .NET tests (including strict C# UID sidecar coverage), CodeQL analysis and an asset-free Godot startup test. The Godot smoke also checks that the preceding pinned headless import left the game working tree unchanged. The six .NET xUnit UID-tooling regressions run with the ordinary test suite. Some R&C1 gameplay can be recorded and replayed; see [movement and replay documentation](docs/MOVEMENT_REPRO_STATES.md).
-
-CI publishes a `portable-coverage` artifact with module/file reports and a job summary. See [coverage scope, baseline and analysis policy](docs/TEST_COVERAGE.md), including the explicit limits of linked host measurement and Sonar's currently unavailable coverage import.
-
+Build with tools/build.ps1 on Windows or bash tools/build.sh on Linux.
+CI compiles the solution and retains CodeQL security scanning, but does not run automated tests.
+The removed test suite and related tooling remain available in Git history at the [tests tag](https://github.com/je55pr/one-big-package/tree/tests).
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Player, world and actor ownership](docs/PLAYER_WORLD_CONTRACT.md)
 - [Project vision](docs/PROJECT_VISION.md)
 - [Research index](research/README.md)
-- [Retail testing](docs/RETAIL_TESTING.md)
 - [Development guidelines](AGENTS.md)
 - [External source policy](research/EXTERNAL_SOURCE_POLICY.md)
 

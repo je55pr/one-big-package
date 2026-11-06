@@ -1,5 +1,5 @@
 <Project>
-  <!-- Shared MSBuild settings for the OBP C# projects under src/, game/ and tests/. -->
+  <!-- Shared MSBuild settings for the OBP C# projects under src/ and game/. -->
   <PropertyGroup>
     <!-- Keep the net8.0 project's C# grammar stable under the newer tooling SDK. -->
     <LangVersion>12.0</LangVersion>
