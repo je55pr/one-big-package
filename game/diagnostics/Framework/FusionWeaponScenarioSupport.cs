@@ -59,7 +59,7 @@ public abstract class FusionWeaponScenarioSupport(MovementDiagnosticContext cont
     }
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "S1244", Justification = "The exact zero blend reset is an original native animation transition witness.")]
     protected void RequireFusionTransitionContinuity(DiagnosticWeaponTransform previous, ImmutableArray<double>? previousSkin, ref int boundaries,
-        ImmutableArray<double>? previousJointEaseDelta = null)
+        ImmutableArray<double>? previousJointEaseDelta)
     {
         var animation = Fusion.ReadAnimation();
         if (!animation.Blending || animation.BlendFraction != 0 || previousSkin is null) return;
