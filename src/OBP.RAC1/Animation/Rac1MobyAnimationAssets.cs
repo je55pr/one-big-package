@@ -17,17 +17,20 @@ public static class Rac1MobyAnimationAssets
     public static Asset Bake(Rac1StaticClasses.MobyClass cls, IReadOnlyList<RuntimeObjectMesh> surfaces,
         ReadOnlySpan<byte> classPayload, bool skipUnsupportedTiming = false)
     {
-        int joint;
+        int joint; bool usedRootFallback = false;
         try { joint = Rac1MobyAttachment.ReadJoint(classPayload, 0); }
         catch (InvalidDataException) when (skipUnsupportedTiming && cls.Joints.Count > 0)
         {
             // LEVEL2 models may have no semantic socket0. Use the root joint for
             // animation contact presentation only, not native attack geometry.
-            joint = 0;
+            joint = 0; usedRootFallback = true;
         }
-        // Semantic socket 1 (e.g. the Veldin robot's lamp) is optional and presentation-only.
-        // Absent (the class declares a single semantic joint) is expected; malformed attachment data still throws.
-        int? secondJoint = Rac1MobyAttachment.HasJoint(classPayload, 1) ? Rac1MobyAttachment.ReadJoint(classPayload, 1) : null;
+        // Semantic socket 1 (e.g. the Veldin robot's lamp) is optional and presentation-only. Absent (the class declares
+        // a single semantic joint) is expected. Malformed attachment data throws, except for a class already on the
+        // root-joint fallback, whose attachment table is known to be unusable: it simply has no second socket.
+        int? secondJoint = null;
+        try { secondJoint = Rac1MobyAttachment.HasJoint(classPayload, 1) ? Rac1MobyAttachment.ReadJoint(classPayload, 1) : null; }
+        catch (InvalidDataException) when (usedRootFallback) { }
         var maps = new List<int[]>();
         foreach (var surface in surfaces)
         {

@@ -14,8 +14,8 @@ namespace OBP.RAC1.Gameplay;
 /// </summary>
 public sealed class Rac1NanotechOrbAssets
 {
-    public const int ParticleTextureTable = 62, GlintTextureTable = 53;
-    public const int ClusterPointCount = 290, RingVertexCount = 96, RingQuadCount = 32, ChromeQuadCount = 4;
+    public static readonly int ParticleTextureTable = 62, GlintTextureTable = 53;
+    public static readonly int ClusterPointCount = 290, RingVertexCount = 96, RingQuadCount = 32, ChromeQuadCount = 4;
 
     /// <summary>Named $gp-relative floats/words of the orb code; the comment gives their offset below $gp.</summary>
     public sealed record Constants(
@@ -58,7 +58,7 @@ public sealed class Rac1NanotechOrbAssets
     public IReadOnlyList<Vector3> RingVertices { get; }
     public IReadOnlyList<short[]> RingQuads { get; }
     public IReadOnlyList<float> PhaseSpeeds { get; }
-    /// <summary>The 290-point mesh as its three overlapping GS triangle strips (146/109/36 vertices after the first), cached once.</summary>
+    /// <summary>The 290-point mesh as its three GS triangle strips, cached once: 148, 109 and 36 vertices starting at points 0, 146 and 254, so neighbouring strips share two vertices.</summary>
     public IReadOnlyList<Strip> Strips { get; }
     public sealed record Strip(int Start, int Count, Vector3[] Points, Vector2[] Uv, uint[] Colors);
     private static readonly (int Start, int Count)[] StripRanges = [(0, 148), (146, 109), (254, 36)];
@@ -66,14 +66,17 @@ public sealed class Rac1NanotechOrbAssets
     public Rac1EffectAssets Particles { get; }
 
     /// <summary>Retail loading goes through <see cref="Decode"/>; tests build synthetic instances through this constructor.</summary>
-    internal Rac1NanotechOrbAssets(Constants k, Vector3[] points, Vector2[] uvs, uint[] colors, Vector3[] ring, short[][] ringQuads,
-        float[] speeds, IReadOnlyDictionary<int, RuntimeTexture> fx, Rac1EffectAssets particles)
+    internal Rac1NanotechOrbAssets(Constants k, Tables tables, IReadOnlyDictionary<int, RuntimeTexture> fx, Rac1EffectAssets particles)
     {
-        K = k; ClusterPoints = points; ClusterUv = uvs; ClusterColors = colors; RingVertices = ring; RingQuads = ringQuads;
-        PhaseSpeeds = speeds; FxTextures = fx; Particles = particles;
-        Strips = StripRanges.Select(range => new Strip(range.Start, range.Count, points[range.Start..(range.Start + range.Count)],
-            uvs[range.Start..(range.Start + range.Count)], colors[range.Start..(range.Start + range.Count)])).ToArray();
+        K = k; ClusterPoints = tables.Points; ClusterUv = tables.Uvs; ClusterColors = tables.Colors;
+        RingVertices = tables.RingVertices; RingQuads = tables.RingQuads; PhaseSpeeds = tables.PhaseSpeeds;
+        FxTextures = fx; Particles = particles;
+        Strips = StripRanges.Select(range => new Strip(range.Start, range.Count, tables.Points[range.Start..(range.Start + range.Count)],
+            tables.Uvs[range.Start..(range.Start + range.Count)], tables.Colors[range.Start..(range.Start + range.Count)])).ToArray();
     }
+
+    /// <summary>The decoded or synthetic geometry tables, kept together so the constructor stays small.</summary>
+    public sealed record Tables(Vector3[] Points, Vector2[] Uvs, uint[] Colors, Vector3[] RingVertices, short[][] RingQuads, float[] PhaseSpeeds);
 
     // Bit patterns of the eight orbit phase speeds (2.5 / 4.5 / 1 .. 6 degrees per tick): the locating key.
     private static readonly uint[] SpeedWords =
@@ -154,7 +157,7 @@ public sealed class Rac1NanotechOrbAssets
             KF(0x5124), KU(0x5120), KF(0x5114));
         if (KI(0x512c) != KI(0x511c)) throw new InvalidDataException("Orb cluster mesh and chrome pass no longer share one texture.");
         var fx = Rac1FxTextures.Read(core, new HashSet<int> { constantsRecord.GlowTexture, Rac1BeamSlot.EndpointTexture });
-        return new(constantsRecord, clusterPoints, clusterUv, clusterColors, ringVertices, ringQuads, speedValues, fx,
+        return new(constantsRecord, new(clusterPoints, clusterUv, clusterColors, ringVertices, ringQuads, speedValues), fx,
             Rac1EffectAssets.DecodeNanotech(core));
     }
 }

@@ -15,11 +15,11 @@ namespace OBP.RAC1.Gameplay;
 /// </summary>
 public sealed class Rac1BeamSlot
 {
-    public const int PointCount = 20;
+    public static readonly int PointCount = 20;
     /// <summary>The manager's authored pvars select Fx textures 0 (glow) and 1 (beam) plus 0x28.</summary>
-    public const int GlowTexture = 0x28, BeamTexture = 0x29;
+    public static readonly int GlowTexture = 0x28, BeamTexture = 0x29;
     /// <summary>Literal Fx texture used by the end quads (0x2e3388) and by the robot's glow.</summary>
-    public const int EndpointTexture = 0xb;
+    public static readonly int EndpointTexture = 0xb;
 
     // Quads are returned as Rac1FxSurface triangle pairs (GS strip order 0,1,2,3).
 

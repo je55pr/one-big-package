@@ -106,7 +106,7 @@ internal static class DiagnosticCaptureOffsets
                     System.Globalization.CultureInfo.InvariantCulture, out values[i]) || !float.IsFinite(values[i])).Any())
                 throw new InvalidOperationException($"{variable} entry \"{tuple}\" must be three finite numbers \"x,y,z\".");
             // LookAt toward the focus is undefined when the camera sits exactly above or below it.
-            if (values[0] == 0 && values[2] == 0)
+            if (MathF.Abs(values[0]) < 1e-6f && MathF.Abs(values[2]) < 1e-6f)
                 throw new InvalidOperationException($"{variable} entry \"{tuple}\" is directly above or below the focus; give it a horizontal component.");
             return new Vector3(values[0], values[1], values[2]);
         })];

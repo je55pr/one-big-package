@@ -3,6 +3,7 @@ using System.Numerics;
 using OBP.IO;
 using OBP.RAC1.Animation;
 using OBP.RAC1.Gameplay;
+using OBP.RAC1.Geometry;
 using OBP.RAC1.Level;
 using OBP.Runtime;
 
@@ -27,10 +28,10 @@ public sealed class Rac1NanotechClusterPortableTests
             [Rac1NanotechOrbAssets.GlintTextureTable] = [3],
             [Rac1ParticleSession.SparkTextureTable] = [4],
         }, textures, new Dictionary<int, RuntimeTexture>());
-        return new(k, new Vector3[Rac1NanotechOrbAssets.ClusterPointCount], new Vector2[Rac1NanotechOrbAssets.ClusterPointCount],
+        return new(k, new(new Vector3[Rac1NanotechOrbAssets.ClusterPointCount], new Vector2[Rac1NanotechOrbAssets.ClusterPointCount],
             new uint[Rac1NanotechOrbAssets.ClusterPointCount], new Vector3[Rac1NanotechOrbAssets.RingVertexCount],
             Enumerable.Range(0, Rac1NanotechOrbAssets.RingQuadCount).Select(_ => new short[] { 0, 1, 2, 3 }).ToArray(),
-            [.06981317f, .03490658f, .1047198f, .05235988f, .01745329f, .08726646f, .04363323f, .07853982f],
+            [.06981317f, .03490658f, .1047198f, .05235988f, .01745329f, .08726646f, .04363323f, .07853982f]),
             new Dictionary<int, RuntimeTexture>(), particles);
     }
 
@@ -109,19 +110,42 @@ public sealed class Rac1NanotechClusterPortableTests
     }
 
     [Fact]
-    public void ForkedPresentationStreamsAreDeterministicAndConsumeExactlyTwoDraws()
+    public void ForkedPresentationStreamsAreDeterministicDistinctAndDrawNothingFromASeededParent()
     {
         var a = Rac1PickupRandom.FromSeed(5); var b = Rac1PickupRandom.FromSeed(5);
-        var fork = a.Fork();
-        b.Below(32768); b.Below(32768);
-        Assert.Equal(b.Below(1000), a.Below(1000)); // the parent advanced by two draws only
-        var again = Rac1PickupRandom.FromSeed(5).Fork();
-        Assert.Equal(fork.Below(1000), again.Below(1000));
+        var first = a.Fork(); var second = a.Fork();
+        Assert.Equal(b.Below(1000), a.Below(1000)); // forking consumed no gameplay draws
+        Assert.Equal(b.Below(1000), a.Below(1000));
+        var again = Rac1PickupRandom.FromSeed(5);
+        Assert.Equal(first.Below(1000), again.Fork().Below(1000)); // same seed, same fork order: same stream
+        Assert.NotEqual(Enumerable.Range(0, 8).Select(_ => first.Below(32768)).ToArray(), Enumerable.Range(0, 8).Select(_ => second.Below(32768)).ToArray());
+    }
+
+    [Fact]
+    public void ForkOfAStreamWithoutASeedFallsBackToTwoDraws()
+    {
+        int draws = 0;
+        var custom = new Rac1PickupRandom(() => { draws++; return 7; });
+        custom.Fork();
+        Assert.Equal(2, draws);
+    }
+
+    [Fact]
+    public void ZeroSecondSocketLookupRejectsATruncatedPointerArray()
+    {
+        // Header declares a 4-entry table whose pointer array runs past the payload: malformed, not "no second socket".
+        var payload = new byte[Rac1Moby.ClassHeaderSize + 8];
+        BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(0x1c), Rac1Moby.ClassHeaderSize);
+        BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(Rac1Moby.ClassHeaderSize), 4);
+        Assert.Throws<InvalidDataException>(() => Rac1MobyAttachment.HasJoint(payload, 1));
+        BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(Rac1Moby.ClassHeaderSize), 1);
+        Assert.False(Rac1MobyAttachment.HasJoint(payload, 1)); // a one-entry table simply has no second socket
     }
 
     [SkippableFact]
     public void NarrowedSecondSocketLookupNeverRejectsAnyClassOfAnyRetailLevel()
     {
+        _ = Rac1AirborneNativeSourceTests.ReadOverlay(); // authenticates the NTSC-U original (Veldin overlay SHA-256) before any retail assertion
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO not set");
         using var disc = new FileRandomAccessReader(iso!);

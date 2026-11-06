@@ -31,6 +31,7 @@ public static class Rac1MobyAttachment
         RequireRange(classPayload, table, 4);
         int count = BinaryPrimitives.ReadInt32LittleEndian(classPayload[table..]);
         if (count is < 1 or > 256) throw new InvalidDataException("Attachment semantic joint table has an invalid length.");
+        RequireRange(classPayload, table + 4, count * 4); // a truncated pointer array is malformed, not "absent"
         return semanticJoint < count;
     }
 

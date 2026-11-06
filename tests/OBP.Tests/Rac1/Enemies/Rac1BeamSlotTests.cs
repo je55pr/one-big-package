@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Numerics;
 using OBP.IO;
 using OBP.RAC1.Gameplay;
@@ -72,7 +73,7 @@ public sealed class Rac1BeamSlotTests
             quads.Take(4).Select(q => q.Blend));
         Assert.All(quads.Take(4), q => Assert.Equal(Rac1BeamSlot.EndpointTexture, q.Texture));
         Assert.All(quads.Skip(4).Where((_, i) => i % 2 == 0), q => Assert.Equal(Rac1BeamSlot.BeamTexture, q.Texture));
-        Assert.All(quads.Skip(4).Where((_, i) => i % 2 == 1), q => Assert.Equal(Rac1BeamSlot.GlowTexture, q.Texture));
+        Assert.All(quads.Skip(4).Where((_, i) => (i & 1) == 1), q => Assert.Equal(Rac1BeamSlot.GlowTexture, q.Texture));
         Assert.All(quads.Skip(4), q => Assert.Equal(Rac1FxBlend.Additive, q.Blend));
         Assert.All(quads, q => Assert.All(q.Positions, p => Assert.True(float.IsFinite(p.X + p.Y + p.Z))));
         Assert.Equal(0xFFFFFFFFu, quads[0].Colors[0]);   // white core, alpha 0xFF
@@ -129,6 +130,22 @@ public sealed class Rac1BeamSlotTests
     }
 
     [SkippableFact]
+    public void RobotClaimsItsBeamSlotWithEndpointFlagsAndSparkTagModeZero()
+    {
+        var read = Rac1AirborneNativeSourceTests.ReadOverlay(); // authenticates the Veldin overlay (SHA-256) first
+        uint Word(int address) => BinaryPrimitives.ReadUInt32LittleEndian(read(address, 4));
+        const int claim = 0x2e1f28, site = 0x2e10d4; // fx1471_claim, and its call inside the robot update 0x2e0b88
+        uint jal = 0x0c000000u | (uint)(claim >> 2);
+        Assert.Equal(jal, Word(site));
+        Assert.Equal(0x0260202du, Word(site - 8)); // a0 = the robot moby
+        Assert.Equal(0x0000282du, Word(site - 4)); // a1 = 0: endpoint effect flags (no point lights)
+        Assert.Equal(0x0000302du, Word(site + 4)); // a2 = 0, in the delay slot: spark tag mode (sparks just drift)
+        // It is the robot update's only claim of a beam slot.
+        var sites = Enumerable.Range(0x2e0b88 / 4, (0x2e1678 - 0x2e0b88) / 4).Select(i => i * 4).Where(address => Word(address) == jal).ToArray();
+        Assert.Equal([site], sites);
+    }
+
+    [SkippableFact]
     public void VeldinBankDecodesTheBeamGlowAndEndpointTexturesTheManagerPvarsSelect()
     {
         string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
@@ -147,7 +164,7 @@ public sealed class Rac1BeamSlotTests
         Assert.All(textures.Values, texture =>
         {
             Assert.Equal(texture.Width * texture.Height * 4, texture.Rgba.Length);
-            Assert.Contains(texture.Rgba.Where((_, i) => i % 4 == 3), alpha => alpha != 0);
+            Assert.Contains(texture.Rgba.Where((_, i) => (i & 3) == 3), alpha => alpha != 0);
         });
     }
 }

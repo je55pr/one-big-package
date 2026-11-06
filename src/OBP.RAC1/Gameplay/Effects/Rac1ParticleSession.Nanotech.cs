@@ -9,9 +9,10 @@ namespace OBP.RAC1.Gameplay;
 /// </summary>
 public sealed partial class Rac1ParticleSession
 {
-    public const int SparkleType = 0x3e, HeroGlowType = 0x3b, GlintType = 0x3c;
+    private const int SparkleKind = 0x3e, HeroGlowKind = 0x3b, GlintKind = 0x3c;
+    public static readonly int SparkleType = SparkleKind, HeroGlowType = HeroGlowKind, GlintType = GlintKind;
     private const byte SparkleDepth = 0x44, GlowDepth = 0x21;
-    public const uint SparkleColor = 0x7f7f4040;
+    public static readonly uint SparkleColor = 0x7f7f4040;
 
     /// <summary>The hero's native position, for particles that stay relative to Ratchet.</summary>
     public Vector3 Hero { get; set; }
@@ -20,7 +21,10 @@ public sealed partial class Rac1ParticleSession
     public int OrbSpriteCount => Live.Count(p => p.Type == SparkleType && p.Stage == 1);
 
     /// <summary>0x273708. Mode 1 is a persistent orb (caller moves and removes it); modes 0/2 fade over <paramref name="life"/> frames.</summary>
-    public Particle? Sparkle(Vector3 position, int life, int mode, float rawSize, uint color = SparkleColor)
+    public Particle? Sparkle(Vector3 position, int life, int mode, float rawSize) => Sparkle(position, life, mode, rawSize, SparkleColor);
+
+    /// <summary>As above with an explicit colour word.</summary>
+    public Particle? Sparkle(Vector3 position, int life, int mode, float rawSize, uint color)
     {
         var p = Allocate(SparkleType, Rac1NanotechOrbAssets.ParticleTextureTable, mode < 2 ? mode : 0, Blend.Additive, position, SparkleDepth);
         if (p is null) return null;

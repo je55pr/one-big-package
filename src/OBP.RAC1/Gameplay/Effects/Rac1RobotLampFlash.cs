@@ -9,7 +9,7 @@ namespace OBP.RAC1.Gameplay;
 /// </summary>
 public static class Rac1RobotLampFlash
 {
-    public const float Lowering = 0.333f;
+    public static readonly float Lowering = 0.333f;
 
     public static void Emit(Rac1ParticleSession particles, Rac1PickupRandom random, Vector3 lampSocket)
     {

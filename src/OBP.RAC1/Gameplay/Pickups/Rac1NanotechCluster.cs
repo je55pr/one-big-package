@@ -42,9 +42,9 @@ public sealed class Rac1NanotechOrbSpin
 /// health point (the host applies it through <see cref="Rac1NanotechCloudSession"/>); native trail glows and
 /// glints then play on Ratchet. Positions are native Z-up. Draw geometry is produced by <see cref="Build"/>.
 /// </summary>
-public sealed class Rac1NanotechCluster
+public sealed class Rac1NanotechCluster : IDisposable
 {
-    public const int OrbCount = 8;
+    public static readonly int OrbCount = 8;
     public enum Phase { Riding = 1, Resting = 2, Flying = 3, Done = 4 }
 
     private sealed class Orb

@@ -50,6 +50,7 @@ internal sealed partial class Rac1LootPresentation
             ? _equipmentPresentation.SelectedAssets : Rac1PickupAssets.Load(sourcePath, world.LevelId);
         _rac1PickupMaterials = new WorldMaterialFactory(world with { Textures = _rac1PickupAssets.Textures });
         GD.Print($"[rac1-pickups] loaded {_rac1PickupAssets.Models.Count} retail bolt/debris models");
+        PreloadRac1NanotechOrbs(world);
     }
 
     internal Node3D CreateRac1EffectNode(int nativeClass, string name, bool playerEquipment = false)

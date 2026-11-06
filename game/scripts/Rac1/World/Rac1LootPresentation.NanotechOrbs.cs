@@ -3,6 +3,7 @@ using OBP.Godot;
 using OBP.IO;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Level;
+using OBP.Runtime;
 using NVector3 = System.Numerics.Vector3;
 
 namespace OBP.Game;
@@ -45,17 +46,25 @@ internal sealed partial class Rac1LootPresentation
     internal int NanotechHealingCount => _rac1HealingClusters.Count;
     internal Rac1ParticleSession? NanotechParticles => _orbParticles;
 
-    private bool EnsureNanotechOrbs()
+    private bool EnsureNanotechOrbs() => _world is { } world && EnsureNanotechOrbs(world);
+
+    /// <summary>Loads the retail orb tables during world activation (when the level has Nanotech crates) so the first crate break does not stall a gameplay tick.</summary>
+    internal void PreloadRac1NanotechOrbs(RuntimeWorld world)
+    {
+        if ((world.DynamicObjects ?? []).Any(item => item.NativeClassId == Rac1ClassIds.NanotechCrate)) EnsureNanotechOrbs(world);
+    }
+
+    private bool EnsureNanotechOrbs(RuntimeWorld world)
     {
         if (_orbAssets is not null) return true;
-        if (_orbAssetsFailed || _sceneResult is null || _world is not { } world || _ports.SourcePath() is not { } path) return false;
+        if (_orbAssetsFailed || _sceneResult is null || _ports.SourcePath() is not { } path) return false;
         try
         {
             using var reader = new FileRandomAccessReader(path);
             var level = Rac1DiscIndex.Read(reader).Levels.Single(candidate => candidate.LevelId == world.LevelId);
             _orbAssets = Rac1NanotechOrbAssets.Decode(Rac1ExecutableOverlay.Read(reader, level), Rac1LevelCore.Open(reader, level));
         }
-        catch (Exception exception) when (exception is InvalidDataException or IOException or InvalidOperationException)
+        catch (Exception exception) when (exception is InvalidDataException or IOException or InvalidOperationException or OverflowException)
         {
             _orbAssetsFailed = true;
             GD.PrintErr($"[rac1-crates] Nanotech orb retail tables unavailable for level {world.LevelId}; clouds are invisible: {exception.Message}");

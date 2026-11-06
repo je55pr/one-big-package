@@ -15,7 +15,7 @@ internal sealed partial class Rac1EnemyHost
     private uint _robotParticleFrame = uint.MaxValue;
     /// <summary>Presentation-only stream, forked once from the shared effect stream so robot visuals cannot shift crate or pickup rolls.</summary>
     private Rac1PickupRandom? _robotEffectRandom;
-    private Rac1PickupRandom RobotRandom => _robotEffectRandom ??= Random.Fork();
+    private Rac1PickupRandom RobotRandom => _robotEffectRandom ??= Rac1EffectRandom.Fork();
 
     /// <summary>Fx textures the class-1471 beam draws (glow 0x28, beam 0x29, end/robot glow 0xb) and the Part texture of its sparks; read from the active level's own banks.</summary>
     internal void ConfigureRac1RobotEffects(Rac1LevelCore.Core core)

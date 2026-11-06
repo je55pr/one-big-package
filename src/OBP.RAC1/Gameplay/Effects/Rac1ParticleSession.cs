@@ -179,10 +179,10 @@ public sealed partial class Rac1ParticleSession(Rac1EffectAssets assets, Rac1Pic
                 case 8: StepGlow(p); break;
                 case 15: StepSpark(p); break;
                 case 16: StepSteam(p, camera); break;
-                case SparkType: StepDriftSpark(p); break;
-                case SparkleType: StepSparkle(p); break;
-                case HeroGlowType: StepHeroGlow(p); break;
-                case GlintType: StepGlint(p); break;
+                case SparkKind: StepDriftSpark(p); break;
+                case SparkleKind: StepSparkle(p); break;
+                case HeroGlowKind: StepHeroGlow(p); break;
+                case GlintKind: StepGlint(p); break;
             }
         }
         while (_highest >= 0 && _slots[_highest] is null) _highest--;

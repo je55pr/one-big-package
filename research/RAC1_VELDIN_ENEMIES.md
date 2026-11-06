@@ -234,9 +234,11 @@ electric beam from socket 0 along the robot heading (`ContactLength` 5, shortene
   (alpha 0xff, scale .3-.325 / .2-.225) and a 3x additive 0x607f4040 halo.
 - The robot also draws, every update, a camera-facing additive glow (half size .2, colour 0x80ffffff) at its
   second semantic socket lowered by .333 (`0x2e1c78`).
-- The slot is claimed as `fx1471_claim(m, 0, 0)` in the public decomp's `e1440_update` (state 3), i.e. endpoint
-  flags 0 and spark mode 0. That is read from the decomp, not witnessed by an OBP retail test; "the retail beam
-  has **no point lights**" and "every spark drifts" are inferences from those two arguments.
+- The slot is claimed once, in state 3 of the robot update, by `jal 0x2e1f28` (fx1471_claim) at overlay `0x2e10d4`
+  with `a0` = the robot, `a1` = 0 (endpoint effect flags) and `a2` = 0 (spark tag mode, in the delay slot). That call
+  site and those arguments are witnessed against the retail overlay by `Rac1BeamSlotTests`. "The retail beam has
+  **no point lights**" and "every spark drifts" are inferences from those two zero arguments and the public
+  decomp of the slot manager (flag bits 1/2 gate its lights; tag mode 1 gates the attached sparks).
 - Sparks (kind 0x45, spawn `0x274948`, update `0x274a70`): grey additive, 8000..50000 raw, 10..29 frames, random
   turn, linear fade. The texture is Part lookup entry 69 (the word at `0x1b2194` is entry (0x1b2194-0x1b2080)/4);
   on Veldin its offset is 0, so it points at the identity block start and resolves to Part texture 0.

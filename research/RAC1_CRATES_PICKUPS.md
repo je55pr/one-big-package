@@ -106,7 +106,7 @@ Nothing from the disc is committed.
   launches (state 3). Orb radius .25, bob .06 at 2 degrees a tick, shared orbit directions spun 4 degrees a
   tick, a random per-cloud spin axis/angle, resting orbs breathing .25 +- .15.
 - **Draw** (states 1 and 2 only): a 290-point mesh through a camera-facing basis as three triangle strips
-  (146/109/36 overlapping vertices, gouraud, Fx texture 21, alpha blend) and 32 additive Fx-0xb ring quads
+  (148/109/36 vertices starting at points 0/146/254, so neighbouring strips share two; gouraud, Fx texture 21, alpha blend) and 32 additive Fx-0xb ring quads
   whose alpha pulses with the bob (halo to alpha 0 at the outer pair). Colours/ST come from retail tables.
 - **Particles**: kind 0x3e sprites (persistent orb 60000 raw, sparkle 10000, colour 0x7f7f4040, fade 127/life),
   textures from Part table entry 62; hero-relative kind 0x3b glows and 0x3c glints (entry 53). A resting cloud
