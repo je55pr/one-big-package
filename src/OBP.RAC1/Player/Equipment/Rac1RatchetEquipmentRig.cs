@@ -288,7 +288,7 @@ public sealed class Rac1RatchetEquipmentRig
         var after = _sampler.Skin(null, changed.Distinct().ToArray());
         // Retain the independently evaluated deformation, not a difference derived
         // from the final presented vertices. These arrays are never mutated again.
-        JointEaseSkinChange = (before, after);
+        JointEaseSkinChange = (Array.AsReadOnly(before), Array.AsReadOnly(after));
         var result = (double[])current.Clone();
         for (int i = 0; i < result.Length; i++) result[i] += after[i] - before[i];
         var deltas = new Dictionary<int, Matrix4x4>();

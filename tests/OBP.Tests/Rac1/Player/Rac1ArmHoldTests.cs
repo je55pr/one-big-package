@@ -149,11 +149,15 @@ public sealed class Rac1ArmHoldTests
         var rig = Controller(iso!).EquipmentRig!;
         var basis = new Rac1AnimationFrameClock.Sample(0, 0, 1, 0, false);
         var body = rig.BasePose(basis);
-        var offsets = new[] { new Rac1RatchetJointEases.Offset(rig.Asset.Skeleton.Attachments.Keys.First(),
+        const int rootAttachment = 9; // Native hero-ease root chain, not dictionary enumeration order.
+        Assert.Equal(0, rig.Asset.Skeleton.Attachments[rootAttachment].Joint);
+        var offsets = new[] { new Rac1RatchetJointEases.Offset(rootAttachment,
             System.Numerics.Quaternion.CreateFromAxisAngle(System.Numerics.Vector3.UnitZ, .2f)) };
         var current = Enumerable.Repeat(12d, rig.Asset.Skin!.Positions.Length).ToArray();
         var result = rig.ApplyJointOffsets(basis, current, offsets, [], body).Positions;
         var witness = rig.JointEaseSkinChange!.Value;
+        Assert.IsNotType<double[]>(witness.Before);
+        Assert.IsNotType<double[]>(witness.After);
         Assert.Equal(current.Length, witness.Before.Count);
         Assert.Equal(current.Length, witness.After.Count);
         var delta = witness.After.Zip(witness.Before, (after, before) => after - before).ToArray();

@@ -83,6 +83,18 @@ public sealed class FusionTransitionDiagnosticTests
         Assert.Contains("rendered source pose", Assert.Throws<InvalidOperationException>(() => probe.Check([0, 1, 2, 3, 4, 5])).Message);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DefaultProceduralCohortsFailExplicitlyRatherThanDereferencingAnUninitializedArray(bool prior)
+    {
+        ImmutableArray<double> skin = [0, 1, 2, 3, 4, 5];
+        ImmutableArray<double> missing = default;
+        var probe = new TransitionProbe(new FusionFixture(skin, prior ? null : missing));
+        var error = Assert.Throws<InvalidOperationException>(() => probe.Check(skin, prior ? missing : null));
+        Assert.Contains(prior ? "previous procedural pose" : "current procedural pose", error.Message);
+    }
+
     private sealed class TransitionProbe(IFusionWeaponDiagnosticFixture fusion) : FusionWeaponScenarioSupport(null!, null!, fusion)
     {
         public int Check(ImmutableArray<double> previous, ImmutableArray<double>? previousDelta = null)

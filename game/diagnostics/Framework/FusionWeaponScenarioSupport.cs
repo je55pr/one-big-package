@@ -68,9 +68,9 @@ public abstract class FusionWeaponScenarioSupport(MovementDiagnosticContext cont
             actual.Y.DistanceTo(previous.Y) < .00001f && actual.Z.DistanceTo(previous.Z) < .00001f, $"{Selected} gun snapped at a transition boundary");
         var skin = animation.Skin ?? throw new DiagnosticUnavailableException("The source skin pose is unavailable.");
         Require(skin.Length > 0 && skin.Length == previousSkin.Value.Length, $"{Selected} source pose coordinate count changed at a transition boundary");
-        foreach (var delta in new[] { previousJointEaseDelta, animation.JointEaseDelta })
+        foreach (var (label, delta) in new[] { ("previous", previousJointEaseDelta), ("current", animation.JointEaseDelta) })
             Require(delta is null || !delta.Value.IsDefault && delta.Value.Length == skin.Length && delta.Value.All(double.IsFinite),
-                $"{Selected} procedural pose coordinate count or values are invalid");
+                $"{Selected} {label} procedural pose coordinate count or values are invalid");
         // A zero-fraction transition freezes animation channels, not the native
         // procedural springs applied afterward. Compare every final rendered
         // coordinate with the prior pose plus that independently skinned change.
