@@ -60,9 +60,16 @@ internal sealed class GodotFusionWeaponDiagnosticFixture(Node owner, GodotFusion
     {
         var controller = Controller;
         var pose = controller?.Current.SampledPose;
+        ImmutableArray<double>? jointDelta = null;
+        if (controller?.JointEaseSkinChange is { } change)
+        {
+            if (change.Before.Count != change.After.Count)
+                throw new DiagnosticUnavailableException("The procedural skin deformation is incomplete.");
+            jointDelta = ImmutableArray.CreateRange(change.After.Zip(change.Before, (after, before) => after - before));
+        }
         return new(controller?.SourceEquipmentUseSequence, controller?.SourceEquipmentUseWeight,
             controller?.SourceEquipmentIsBlending ?? false, controller?.SourceEquipmentBlendFraction ?? 1,
-            controller?.TraversalSample?.Sequence, pose is null ? null : ImmutableArray.CreateRange(pose.LocalPositions));
+            controller?.TraversalSample?.Sequence, pose is null ? null : ImmutableArray.CreateRange(pose.LocalPositions), jointDelta);
     }
     public FusionWeaponHeldDiagnostic ReadHeld(SourceWeaponKey weapon)
     {

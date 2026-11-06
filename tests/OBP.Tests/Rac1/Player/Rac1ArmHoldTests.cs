@@ -142,6 +142,33 @@ public sealed class Rac1ArmHoldTests
     }
 
     [SkippableFact]
+    public void ProceduralDeformationWitnessIsIndependentOfThePresentedVertices()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        var rig = Controller(iso!).EquipmentRig!;
+        var basis = new Rac1AnimationFrameClock.Sample(0, 0, 1, 0, false);
+        var body = rig.BasePose(basis);
+        var offsets = new[] { new Rac1RatchetJointEases.Offset(rig.Asset.Skeleton.Attachments.Keys.First(),
+            System.Numerics.Quaternion.CreateFromAxisAngle(System.Numerics.Vector3.UnitZ, .2f)) };
+        var current = Enumerable.Repeat(12d, rig.Asset.Skin!.Positions.Length).ToArray();
+        var result = rig.ApplyJointOffsets(basis, current, offsets, [], body).Positions;
+        var witness = rig.JointEaseSkinChange!.Value;
+        Assert.Equal(current.Length, witness.Before.Count);
+        Assert.Equal(current.Length, witness.After.Count);
+        var delta = witness.After.Zip(witness.Before, (after, before) => after - before).ToArray();
+        Assert.Contains(delta, value => Math.Abs(value) > .00001);
+        for (int i = 0; i < current.Length; i++) Assert.Equal(current[i] + delta[i], result[i]);
+        // An arbitrary presentation change cannot be folded into the independent witness.
+        result[0] += 1;
+        Assert.NotEqual(result[0], current[0] + witness.After[0] - witness.Before[0]);
+        var other = rig.ApplyJointOffsets(basis, Enumerable.Repeat(100d, current.Length).ToArray(), offsets, [], body).Positions;
+        var repeated = rig.JointEaseSkinChange!.Value;
+        Assert.Equal(delta, repeated.After.Zip(repeated.Before, (after, before) => after - before));
+        for (int i = 0; i < current.Length; i++) Assert.Equal(100 + delta[i], other[i]);
+    }
+
+    [SkippableFact]
     public void TheWholeBodyUsePoseFadesInsteadOfSwitchingTheLegsAndTorsoAtOnce()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");

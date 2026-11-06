@@ -16,7 +16,7 @@ public sealed record FusionWeaponMenuDiagnostic(bool Open, ImmutableArray<Source
 public sealed record FusionWeaponHeldDiagnostic(SourceWeaponKey Weapon, bool Visible, bool HasMeshes,
     DiagnosticWeaponTransform Local, DiagnosticWeaponTransform Global, DiagnosticWeaponTransform? ExpectedHand);
 public sealed record FusionWeaponAnimationDiagnostic(int? UseSequence, double? UseWeight, bool Blending, double BlendFraction,
-    int? TraversalSequence, ImmutableArray<double>? Skin);
+    int? TraversalSequence, ImmutableArray<double>? Skin, ImmutableArray<double>? JointEaseDelta = null);
 public interface IFusionAssetDiagnosticWitness { bool IsCurrent { get; } }
 public interface IFusionPreparationDiagnosticWitness
 {
