@@ -92,6 +92,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
         void Current(Action reset) { if (active) reset(); }
         OBP.Game.Diagnostics.DiagnosticCleanup.Run("R&C1 enemy reset",
             () => Current(Frogs.Reset),
+            ResetRac1RobotEffects,
             Roster.Clear,
             () => { _robots.Session = null; _peckbots.Session = null; _birdbots.Session = null; _seekers.Session = null; },
             Aridia.Reset,
@@ -103,7 +104,12 @@ internal sealed partial class Rac1EnemyHost : IDisposable
     {
         enemy.Retired = true;
         try { if (IsInstanceValid(enemy.Body) && !enemy.Body.IsQueuedForDeletion()) enemy.Body.QueueFree(); }
-        finally { if (enemy.Flame is { } flame && IsInstanceValid(flame) && !flame.IsQueuedForDeletion()) flame.QueueFree(); }
+        finally
+        {
+            if (enemy.Flame is { } flame && IsInstanceValid(flame) && !flame.IsQueuedForDeletion()) flame.QueueFree();
+            enemy.Beam?.Dispose();
+            enemy.Beam = null;
+        }
     }
 
     public void Dispose()
@@ -126,6 +132,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
         if (world.LevelId == 0)
         {
             _robots.Register(world, result, Rac1LevelSettings.ReadGameplay(reader, level), nodes);
+            ConfigureRac1RobotEffects(core);
         }
         else if (world.LevelId == Rac1AridiaEnemies.LevelId)
             Aridia.Configure(world, result, Rac1LevelSettings.ReadGameplay(reader, level), nodes);
@@ -244,6 +251,8 @@ internal sealed partial class Rac1EnemyHost : IDisposable
     {
         if (_disposed || !_ports.Neighbors.Current() || _player is null) return;
         _clock.Advance(delta, TickNativeActors, _birdbots.TickProjectiles);
+        AgeRac1RobotParticles(); // covers frames in which no robot updated
+        PresentRac1RobotParticles();
     }
 
     private bool TickNativeActors()
@@ -433,7 +442,13 @@ internal sealed partial class Rac1EnemyHost : IDisposable
 
     internal void SetRac1EnemyFlame(Rac1HostedEnemy enemy, bool emitting)
     {
-        if (enemy.Node.Source.NativeClassId is not (Rac1ClassIds.VeldinFlameRobot or Rac1AridiaEnemies.Constructorbot) || _sceneResult is null) return;
+        if (enemy.Node.Source.NativeClassId == Rac1ClassIds.VeldinFlameRobot)
+        {
+            // The Veldin robot's attack is a class-1471 plasma beam, not fire (see Rac1EnemyHost.RobotEffects).
+            if (!emitting) ClearRac1RobotEffects(enemy);
+            return;
+        }
+        if (enemy.Node.Source.NativeClassId != Rac1AridiaEnemies.Constructorbot || _sceneResult is null) return;
         if (emitting && enemy.Flame is null)
         {
             // Host particle presentation, not a recovered retail particle/texture program.

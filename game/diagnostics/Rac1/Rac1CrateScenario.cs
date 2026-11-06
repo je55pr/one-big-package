@@ -73,12 +73,27 @@ public sealed class Rac1CrateScenario(MovementDiagnosticContext context, Rac1Loo
                 string.Join(';', Loot.Read().Ammo.Select(pickup => $"item{pickup.Item} pos={pickup.Position} vel={pickup.Velocity} delay={pickup.DelayTicks} ammo={pickup.CurrentAmmo}")));
             Require(Loot.Read().BombAmmo == Math.Min(40, ammoBefore + ammoAmount), "ammo grant changed the wrong resource");
             var health = Targets.ReadCrates().First(node => node.Active && node.Key.Target.NativeClassId == 501);
-            Targets.StageCrate(health.Key, origin + new Vector3(-5, 0, 3)); Require(Loot.StrikeCrate(health.Key), "Nanotech crate failed to break");
+            Targets.StageCrate(health.Key, origin + new Vector3(-5, 0, 3));
+            await PhysicsFramesAsync(40);
+            // The intact crate already hosts its orb cluster (class 806 state 1): eight orb sprites ride inside it.
+            // Keyed by the staged crate itself: another intact class-501 crate cannot satisfy this.
+            Require(Loot.Read().NanotechRiderOrbs is { } riders && riders.TryGetValue(health.Key.Target.InstanceIndex, out int stagedOrbs) && stagedOrbs >= 8,
+                "the staged intact Nanotech crate shows no eight-orb cluster");
+            await CaptureAsync("nanotech-intact", origin + new Vector3(-5, 1.0f, 3));
+            Require(Loot.StrikeCrate(health.Key), "Nanotech crate failed to break");
             await PhysicsFramesAsync(60);
             Require(Loot.Read().HealthCloudAttraction is { Length: 1 } clouds && !clouds[0], "full health wasted the cloud");
+            await CaptureAsync("nanotech-resting", origin + new Vector3(-5, .7f, 3));
             Loot.InjectRetainedClass749Damage(); int beforeArrivalSound = Loot.Read().Sounds;
+            await PhysicsFramesAsync(12);
+            Require(Loot.Read().HealthCloudAttraction is { Length: 1 } flying && flying[0], "hurt Ratchet did not launch the orbs");
+            await CaptureAsync("nanotech-flight", origin + new Vector3(-5, .9f, 3));
             await WaitAsync(() => Loot.Read().HealthCloudAttraction.Length == 0, 120, "Nanotech cloud arrival");
             Require(Loot.Read().Health == 4, "cloud did not grant exactly one health point");
+            Require(Loot.Read().NanotechHealing >= 1, "healed cloud did not keep its glow on Ratchet");
+            await CaptureAsync("nanotech-heal", Player.Read().GlobalPosition + Vector3.UnitY * .7f);
+            await PhysicsFramesAsync(330);
+            Require(Loot.Read().NanotechHealing == 0, "healing cluster lingered past its native 300-frame lifetime");
             Require(Loot.Read().Sounds > beforeArrivalSound, "Nanotech arrival did not play class501 sound1");
             Log("[crate-smoke] ammo grant and full-health Nanotech retention/arrival PASS");
             var metal = Targets.ReadCrates().FirstOrDefault(node => node.Active && node.Key.Target.NativeClassId == 502);

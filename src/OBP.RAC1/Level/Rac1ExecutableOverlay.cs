@@ -62,6 +62,25 @@ public sealed class Rac1ExecutableOverlay
         throw new InvalidDataException($"R&C1 virtual range 0x{address:x}+{size} is not in one executable section.");
     }
 
+    /// <summary>
+    /// Virtual addresses (4-byte aligned, ascending) at which a section holds exactly this byte block.
+    /// Level overlays link the same compiled objects at different bases; a retail-authenticated
+    /// block is how shared tables are located without trusting another level's addresses.
+    /// </summary>
+    public IReadOnlyList<int> FindBlock(ReadOnlySpan<byte> block)
+    {
+        var found = new List<int>();
+        if (block.Length == 0 || block.Length % 4 != 0) return found;
+        foreach (var section in _sections)
+        {
+            var data = _payload.AsSpan(section.Offset, section.Size);
+            for (int at = 0; at <= data.Length - block.Length; at += 4)
+                if (data.Slice(at, block.Length).SequenceEqual(block)) found.Add(section.Address + at);
+        }
+        found.Sort(); // sections may be serialized in any order; callers rely on ascending addresses
+        return found;
+    }
+
     /// <summary>Research replay adapter; unmapped memory remains owned by the caller.</summary>
     public void CopyLoadedSections(Span<byte> eeMemory)
     {

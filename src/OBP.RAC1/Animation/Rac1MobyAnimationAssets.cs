@@ -9,21 +9,28 @@ namespace OBP.RAC1.Animation;
 public static class Rac1MobyAnimationAssets
 {
     public sealed record Clip(int Sequence, string Id, float[] Rates, float[] Positions,
-        int? DirectSound, IReadOnlyList<Rac1MobyAnimation.TimedSoundCue> Sounds, Vector3[] ContactSocket);
+        int? DirectSound, IReadOnlyList<Rac1MobyAnimation.TimedSoundCue> Sounds, Vector3[] ContactSocket,
+        Vector3[]? SecondSocket = null);
     public sealed record Asset(RuntimeObjectAnimationSet Presentation, IReadOnlyDictionary<int, Clip> Clips,
         float MinimumHeight, float MaximumHeight);
 
     public static Asset Bake(Rac1StaticClasses.MobyClass cls, IReadOnlyList<RuntimeObjectMesh> surfaces,
         ReadOnlySpan<byte> classPayload, bool skipUnsupportedTiming = false)
     {
-        int joint;
+        int joint; bool usedRootFallback = false;
         try { joint = Rac1MobyAttachment.ReadJoint(classPayload, 0); }
         catch (InvalidDataException) when (skipUnsupportedTiming && cls.Joints.Count > 0)
         {
             // LEVEL2 models may have no semantic socket0. Use the root joint for
             // animation contact presentation only, not native attack geometry.
-            joint = 0;
+            joint = 0; usedRootFallback = true;
         }
+        // Semantic socket 1 (e.g. the Veldin robot's lamp) is optional and presentation-only. Absent (the class declares
+        // a single semantic joint) is expected. Malformed attachment data throws, except for a class already on the
+        // root-joint fallback, whose attachment table is known to be unusable: it simply has no second socket.
+        int? secondJoint = null;
+        try { secondJoint = Rac1MobyAttachment.HasJoint(classPayload, 1) ? Rac1MobyAttachment.ReadJoint(classPayload, 1) : null; }
+        catch (InvalidDataException) when (usedRootFallback) { }
         var maps = new List<int[]>();
         foreach (var surface in surfaces)
         {
@@ -58,11 +65,14 @@ public static class Rac1MobyAnimationAssets
         {
             var sequence = slot.Value!;
             var posed = sequence.Frames.Select(frame => Rac1MobyPose.PoseLocalHierarchy(cls.Mesh, cls.Joints, frame)).ToArray();
-            var sockets = sequence.Frames.Select(frame =>
+            var poses = sequence.Frames.Select(frame => Rac1MobyPose.PoseLocalJoints(cls.Mesh, cls.Joints, frame)).ToArray();
+            Vector3[] Socket(int index) => poses.Select(pose =>
             {
-                var point = Rac1MobyPose.PoseLocalJoints(cls.Mesh, cls.Joints, frame)[joint].Position;
+                var point = pose[index].Position;
                 return new Vector3((float)point[0], (float)point[1], (float)point[2]);
             }).ToArray();
+            var sockets = Socket(joint);
+            var secondSockets = secondJoint is int second && second < cls.Joints.Count ? Socket(second) : null;
             var rates = sequence.Frames.Select(frame => sequence.Frames.Count == 1 ? 1f :
                 sequence.ConstantTransitionRate > 0 ? sequence.ConstantTransitionRate : frame.TransitionRate).ToArray();
             if (rates.Any(rate => !float.IsFinite(rate) || rate <= 0 || rate > 1))
@@ -89,7 +99,7 @@ public static class Rac1MobyAnimationAssets
             }).ToArray())).ToArray();
             rendered.Add(new(name, RuntimeObjectAnimationRole.Reaction, animated, rates.Select(rate => 1d / (60 * rate)).ToArray()));
             clips.Add(slot.Index, new(slot.Index, name, rates, sequence.Frames.Select(frame => frame.TimestampUnits / 16f).ToArray(),
-                sequence.HasDirectSound ? sequence.SoundId : null, sequence.TimedSoundCues, sockets));
+                sequence.HasDirectSound ? sequence.SoundId : null, sequence.TimedSoundCues, sockets, secondSockets));
             if (slot.Index == 1)
                 foreach (var frame in posed)
                     for (int v = 2; v < frame.Length; v += 3)

@@ -133,9 +133,10 @@ public sealed class Rac1EnemyScenario(MovementDiagnosticContext context, IRac1En
 
             // A short staged stand in front of the completed entrance tests the
             // socket-directed attack through actual Godot world/player contact.
-            player.ResetAt(entrance.Read().Position + entrance.Read().Forward * 2.5f + Vector3.UnitY * .05f);
+            player.ResetAt(entrance.Read().Position + entrance.Read().Forward * 4f + Vector3.UnitY * .05f);
             int healthBefore = lifecycle.ReadNanotech().Nanotech;
             await Rac1SmokeWaitAsync(() => Enemies.ReadRobot(Enemy(189).Key).NativeState == 5, 220, "robot wind-up/fire");
+            Require(entrance.Read().BeamFiring, "robot firing state did not present its class-1471 plasma beam");
             await CaptureRac1EnemiesAsync("fire", entrance.Read().Position + Vector3.UnitY);
             if (lifecycle.ReadNanotech().Nanotech == healthBefore)
             {
@@ -143,7 +144,7 @@ public sealed class Rac1EnemyScenario(MovementDiagnosticContext context, IRac1En
                 player.ResetAt(entrance.Read().Socket + entrance.Read().Forward * 1.2f - Vector3.UnitY * .7f);
                 await Rac1SmokeWaitAsync(() => lifecycle.ReadNanotech().Nanotech < healthBefore, 60, "robot socket/player contact");
             }
-            Require(entrance.Read().FlamePresent && Enemies.ReadRobot(Enemy(189).Key).NativeState == 6, "robot contact did not release its attack and recover");
+            Require(entrance.Read().BeamPresent && !entrance.Read().BeamFiring && Enemies.ReadRobot(Enemy(189).Key).NativeState == 6, "robot contact did not release its attack and recover");
             Log("[enemy-smoke] wind-up/fire/socket/occlusion query/player damage/recovery PASS");
 
             player.ResetAt(origin + new Vector3(-8, .05f, 0));

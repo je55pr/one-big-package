@@ -11,7 +11,7 @@ namespace OBP.Game.Diagnostics;
 /// <summary>Copied facts about a source-qualified actor in one live world generation.</summary>
 public sealed record Rac1EnemyDiagnosticSnapshot(ActorInstanceKey Key, Vector3 Position, Vector3 BodyPosition,
     Vector3 AuthoredHome, Vector3 Forward, Vector3 Socket, bool Visible, uint CollisionLayer, uint CollisionMask,
-    bool Grounded, bool GodotFloor, bool NeedsGroundPlacement, bool Buried, bool DeathPresented, bool FlamePresent,
+    bool Grounded, bool GodotFloor, bool NeedsGroundPlacement, bool Buried, bool DeathPresented, bool FlamePresent, bool BeamPresent, bool BeamFiring,
     RuntimeObjectAnimationSample? AnimationSample, int AnimationSequence, float AnimationPosition, bool AnimationBlending);
 public sealed record Rac1EnemyPopulationSnapshot(int Enemies, int Class1440, int Peckbots, int Birdbots,
     long BirdbotShots, int Nanotech, int WorldSwitches, bool RetryVisible);
