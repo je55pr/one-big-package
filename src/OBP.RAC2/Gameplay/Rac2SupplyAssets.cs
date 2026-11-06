@@ -37,7 +37,8 @@ public static class Rac2SupplyAssets
         if (capacity != Rac2LancerProfile.AmmoCapacity || amount <= 0 || amount > capacity ||
             BinaryPrimitives.ReadInt32LittleEndian(descriptor.AsSpan(0x14)) != Rac2LancerProfile.HeldMobyClass)
             throw new InvalidDataException("R&C2 Lancer supply descriptor does not match its native identity.");
-        var cls = Rac2MobyClasses.Read(core, level)[Rac2CrateSupply.AmmoPickupClass];
+        if (!Rac2MobyClasses.Read(core, level).TryGetValue(Rac2CrateSupply.AmmoPickupClass, out var cls))
+            throw new InvalidDataException("Original R&C2 ammo pickup model is unavailable.");
         var mesh = cls.Mesh;
         if (mesh.Indices.Length == 0) throw new InvalidDataException("Original indexed ammo pickup model is empty.");
         var positions = new double[mesh.Positions.Length];

@@ -1,7 +1,7 @@
 using Godot;
-using OBP.Core;
 using OBP.Fusion;
 using OBP.Godot;
+using OBP.RAC1.Gameplay;
 using OBP.RAC2.Gameplay;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
@@ -12,33 +12,33 @@ internal sealed record Rac2CrateSupplyPorts(
     Func<(int Current, int Capacity)> Health,
     Func<int, int> Heal,
     Func<int, IReadOnlyList<PlayerAmmoSupply>> Ammo,
-    Func<SourceWeaponKey, int, int> GrantAmmo);
+    Func<SourceWeaponKey, int, int> GrantAmmo,
+    Func<string?> NanotechPresentationSource);
 
 /// <summary>Lease-owned supply pickups, using original ammo geometry and shared crate effect ownership.</summary>
 internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWorldScene.Result scene,
     Rac2CrateBoltPorts ports, Rac2CrateSupplyPorts supply, Rac2CrateEffects effects, Func<bool> current) : IDisposable
 {
-    private sealed record Ammo(Node3D Node, SourceWeaponKey Weapon, int Amount, Rac2AmmoPickup Motion);
-    private sealed class Cloud(Node3D node, Rac2NanotechCloud motion)
-    {
-        internal Node3D Node { get; } = node;
-        internal Rac2NanotechCloud Motion { get; } = motion;
-        internal int Travel;
-        internal int Age;
-    }
+    private sealed record Ammo(Node3D Node, Rac2AmmoPickup Motion);
+    private sealed record Cloud(Rac2NanotechCloud Motion, Rac1NanotechCluster Cluster);
     private readonly List<Ammo> _ammo = [];
     private readonly List<Cloud> _clouds = [];
     private readonly List<(ArrayMesh Mesh, Material Material)> _ammoModel = [];
     private Rac2SupplyAssets.Catalogue? _assets;
     private WorldMaterialFactory? _materials;
     private Random? _random;
+    private Rac1NanotechSpherePresentation? _orbs;
     private double _accumulator;
+    private float _ammoGroundOffset;
     private bool _disposed;
 
-    internal void Prepare()
+    internal void Prepare(IEnumerable<RuntimeWorldScene.DynamicObjectNode> crates)
     {
         var path = ports.SourcePath() ?? throw new InvalidDataException("R&C2 supply source is unavailable.");
         _assets = Rac2SupplyAssets.Load(path, world.LevelId);
+        // Keep the original model's bottom above the host contact plane.
+        _ammoGroundOffset = Math.Max(0, -(float)_assets.Surfaces.SelectMany(surface =>
+            Enumerable.Range(0, surface.Positions.Length / 3).Select(index => surface.Positions[index * 3 + 1])).Min());
         _random = new(ports.Seed());
         _materials = new(world with { Textures = _assets.Textures });
         foreach (var surface in _assets.Surfaces)
@@ -56,6 +56,10 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
             mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
             _ammoModel.Add((mesh, _materials.Instanced("moby", surface.TextureId, false, surface.MaterialPresentation)));
         }
+        var nanotech = crates.Where(crate => crate.Source.NativeClassId == Rac2CrateSupply.NanotechClass).ToArray();
+        if (nanotech.Length > 0)
+            _orbs = new(scene, supply.NanotechPresentationSource()
+                ?? throw new InvalidDataException("The selected RAC1 nanotech sphere presentation source is unavailable."), ports.Seed(), nanotech);
     }
 
     internal void Spawn(RuntimeWorldScene.DynamicObjectNode crate)
@@ -64,47 +68,21 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
         var origin = crate.Root.GlobalPosition + Vector3.Up * .5f;
         if (crate.Source.NativeClassId == Rac2CrateSupply.NanotechClass)
         {
-            var node = new Node3D { Name = $"Rac2NanotechCloud_{crate.Source.InstanceIndex}" };
-            // Eight native cloud particles represent one health credit. Sprite
-            // splines/GS blending are not recovered; these wisps are host display.
-            var material = new StandardMaterial3D
-            {
-                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-                AlbedoColor = new(.25f, .65f, 1),
-                EmissionEnabled = true,
-                Emission = new(.25f, .55f, 1),
-            };
-            for (int i = 0; i < Rac2CrateSupply.ParticleCount; i++)
-                node.AddChild(new MeshInstance3D { Mesh = new SphereMesh { Radius = .035f, Height = .07f }, MaterialOverride = material });
-            scene.Root.AddChild(node);
-            node.GlobalPosition = origin;
-            _clouds.Add(new(node, new(ToNative(origin))));
-            GD.Print($"[rac2-supply] crate={crate.Source.InstanceIndex} nanotech cloud=1 particles=8");
-            return;
-        }
-        var owned = supply.Ammo(_assets.Lancer.Amount);
-        PlayerAmmoSupply? selected;
-        if (owned.All(item => item.Weapon.SourceGame == ObpSourceGame.Rac2))
-        {
-            int index = Rac2CrateSupply.SelectAmmo(owned.Select(item => (item.Weapon.NativeItemId, item.Count, item.Capacity)).ToArray(), _random!.Next);
-            selected = owned.FirstOrDefault(item => item.Weapon.NativeItemId == index);
-        }
-        else selected = PlayerAmmoSupplyPolicy.Select(owned, _random!.Next);
-        if (selected is null)
-        {
-            GD.Print("[rac2-supply] no owned implemented ammo recipient; no item-number substitution");
+            var cluster = _orbs?.Break(crate) ?? throw new InvalidOperationException("Nanotech sphere presentation was not prepared.");
+            _clouds.Add(new(new(ToNative(origin)), cluster));
+            GD.Print($"[rac2-supply] crate={crate.Source.InstanceIndex} nanotech cloud=1 presentation=rac1-sphere");
             return;
         }
         int count = Rac2CrateSupply.AmmoPieceCount(_random!.Next(5));
         for (int i = 0; i < count; i++)
         {
-            var node = new Node3D { Name = $"Rac2Ammo_{crate.Source.InstanceIndex}_{i}_{selected.Weapon.SourceGame}_{selected.Weapon.NativeItemId}" };
+            var node = new Node3D { Name = $"Rac2Ammo_{crate.Source.InstanceIndex}_{i}" };
             foreach (var model in _ammoModel) node.AddChild(new MeshInstance3D { Mesh = model.Mesh, MaterialOverride = model.Material });
             scene.Root.AddChild(node);
             node.GlobalPosition = origin;
-            _ammo.Add(new(node, selected.Weapon, selected.Amount, new(ToNative(origin), Sample)));
+            _ammo.Add(new(node, new(ToNative(origin), Sample, PlayerAmmoSupplyPolicy.DropGraceTicks)));
         }
-        GD.Print($"[rac2-supply] crate={crate.Source.InstanceIndex} ammo recipient={selected.Weapon} pieces={count} amount={selected.Amount}");
+        GD.Print($"[rac2-supply] crate={crate.Source.InstanceIndex} ammo pieces={count} recipient=pending-collection");
     }
 
     internal void Tick(double delta)
@@ -120,27 +98,33 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
         {
             var root = ToNative(player.GlobalPosition);
             var socket = ToNative(player.GlobalPosition + Vector3.Up * .7f);
+            _orbs?.BeginTick(root, socket);
             foreach (var pickup in _ammo.ToArray())
             {
-                var profile = ports.AttractionProfile();
-                var available = supply.Ammo(_assets!.Lancer.Amount).FirstOrDefault(entry => entry.Weapon == pickup.Weapon);
-                if (ports.Alive() && available is not null && available.Count < available.Capacity && pickup.Motion.CanCollect(root, profile.Radius, profile.Height))
+                if (ports.Alive() && pickup.Motion.CanCollect(root, PlayerAmmoSupplyPolicy.PickupRadius, PlayerAmmoSupplyPolicy.PickupHeight))
                 {
-                    int granted = supply.GrantAmmo(pickup.Weapon, pickup.Amount);
-                    if (granted > 0)
+                    var query = PhysicsRayQueryParameters3D.Create(FromNative(pickup.Motion.Position) + Vector3.Up * .1f, FromNative(socket));
+                    query.Exclude = excluded;
+                    if (space.IntersectRay(query).Count == 0 &&
+                        PlayerAmmoSupplyPolicy.Select(supply.Ammo(_assets!.Lancer.Amount), _random!.Next) is { } selected)
                     {
-                        pickup.Motion.Claim();
-                        effects.PlayPickup(Rac2CrateSupply.AmmoPickupClass);
-                        ports.RefreshHud();
-                        GD.Print($"[rac2-supply] ammo collected recipient={pickup.Weapon} delta={granted}");
+                        int granted = supply.GrantAmmo(selected.Weapon, selected.Amount);
+                        if (granted > 0)
+                        {
+                            pickup.Motion.Claim();
+                            effects.PlayPickup(Rac2CrateSupply.AmmoPickupClass);
+                            ports.RefreshHud();
+                            GD.Print($"[rac2-supply] ammo collected recipient={selected.Weapon} delta={granted}");
+                        }
                     }
                 }
                 pickup.Motion.Step(socket, (from, to) =>
                 {
-                    var query = PhysicsRayQueryParameters3D.Create(FromNative(from) + Vector3.Up * .1f, FromNative(to));
+                    var bottom = Vector3.Up * _ammoGroundOffset;
+                    var query = PhysicsRayQueryParameters3D.Create(FromNative(from) - bottom + Vector3.Up * .1f, FromNative(to) - bottom);
                     query.Exclude = excluded;
                     var hit = space.IntersectRay(query);
-                    return hit.TryGetValue("position", out var point) ? ToNative(point.AsVector3()) : null;
+                    return hit.TryGetValue("position", out var point) ? ToNative(point.AsVector3() + bottom) : null;
                 });
                 pickup.Node.GlobalPosition = FromNative(pickup.Motion.Position);
                 pickup.Node.Rotation = new(0, pickup.Motion.Spin, 0);
@@ -155,19 +139,16 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
                 var query = PhysicsRayQueryParameters3D.Create(FromNative(cloud.Motion.Origin), FromNative(socket));
                 query.Exclude = excluded;
                 bool visible = cloud.Motion.Attracting || space.IntersectRay(query).Count == 0;
-                cloud.Motion.TryAttract(root, ports.Alive() ? health.Current : 0, health.Capacity, pending, visible);
-                cloud.Age++;
-                // Host travel duration; native particle interpolation remains a separate recovery task.
-                if (cloud.Motion.Attracting && ports.Alive()) cloud.Travel = Math.Min(45, cloud.Travel + 1);
-                float travel = cloud.Travel / 45f;
-                cloud.Node.GlobalPosition = FromNative(System.Numerics.Vector3.Lerp(cloud.Motion.Origin, socket, travel));
-                int i = 0;
-                foreach (var particle in cloud.Node.GetChildren().OfType<MeshInstance3D>())
+                if (cloud.Motion.TryAttract(root, ports.Alive() ? health.Current : 0, health.Capacity, pending, visible))
+                    cloud.Cluster.Launch(socket, System.Numerics.Vector3.UnitZ);
+                var result = _orbs!.Step(cloud.Cluster, root, socket);
+                if (result.Finished && !result.FirstArrival)
                 {
-                    float phase = cloud.Age / 15f + i++ * MathF.Tau / Rac2CrateSupply.ParticleCount;
-                    particle.Position = new Vector3(MathF.Cos(phase), MathF.Sin(phase * .7f), MathF.Sin(phase)) * .22f * (1 - travel);
+                    cloud.Cluster.Dispose();
+                    _clouds.Remove(cloud);
+                    continue;
                 }
-                if (cloud.Travel < 45 || !cloud.Motion.Arrive()) continue;
+                if (!result.FirstArrival || !cloud.Motion.Arrive()) continue;
                 int granted = supply.Heal(Rac2CrateSupply.NanotechPerCloud);
                 if (granted > 0)
                 {
@@ -175,11 +156,14 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
                     ports.RefreshHud();
                     GD.Print($"[rac2-supply] nanotech collected delta={granted}");
                 }
-                cloud.Node.QueueFree();
+                _orbs.Healing(cloud.Cluster);
                 _clouds.Remove(cloud);
             }
+            _orbs?.EndTick(root);
         }
     }
+
+    internal void Present() { if (!_disposed && current()) _orbs?.Present(); }
 
     private float Sample(float min, float max) => min + _random!.NextSingle() * (max - min);
     private static System.Numerics.Vector3 ToNative(Vector3 point) => new(-point.X, point.Z, point.Y);
@@ -187,8 +171,10 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
     public void Dispose()
     {
         _disposed = true;
-        foreach (var node in _ammo.Select(pickup => pickup.Node).Concat(_clouds.Select(cloud => cloud.Node)))
+        foreach (var node in _ammo.Select(pickup => pickup.Node))
             if (GodotObject.IsInstanceValid(node)) node.QueueFree();
+        foreach (var cloud in _clouds) cloud.Cluster.Dispose();
+        _orbs?.Dispose(); _orbs = null;
         _ammo.Clear(); _clouds.Clear(); _ammoModel.Clear();
         _assets = null; _materials = null;
     }

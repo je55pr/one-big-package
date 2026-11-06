@@ -12,6 +12,7 @@ namespace OBP.Game;
 public sealed partial class Rac1ParticleView : Node3D
 {
     private static readonly ObpSourceRef Bank = new(ObpSourceGame.Rac1, Rac1Authority.Primary.BuildId, "LEVEL0");
+    public ObpSourceRef SourceBank { get; set; } = Bank;
     private EffectSceneView? _view;
     public int RenderedCount => _view?.RenderedCount ?? 0;
     public int DrawCalls => _view?.DrawCalls ?? 0;
@@ -19,9 +20,9 @@ public sealed partial class Rac1ParticleView : Node3D
     {
         if (session.Count == 0) { if (_view?.TextureCount > 0) _view.Clear(); return; }
         _view ??= new(this);
-        var bindings = textures.Values.Select(t => new RuntimeEffectTexture(Bank with
+        var bindings = textures.Values.Select(t => new RuntimeEffectTexture(SourceBank with
         { AssetKind = t.AssetKind, OriginalId = t.TextureId.ToString(System.Globalization.CultureInfo.InvariantCulture) }, t)).ToArray();
-        _view.Render([Rac1ParticlePresentation.Capture(session, Bank, textures)], bindings);
+        _view.Render([Rac1ParticlePresentation.Capture(session, SourceBank, textures)], bindings);
     }
     public override void _ExitTree() { _view?.Dispose(); _view = null; }
 }

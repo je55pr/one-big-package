@@ -66,5 +66,7 @@ internal sealed class Rac2WorldComposition(ApplicationComponents components) : C
                 return (int)native.Life.Capture().Current - before;
             },
             amount => PlayerCrateSupplyAdapter.Read(_playerNative, ReadPlayerEquipment(), amount),
-            (weapon, amount) => PlayerCrateSupplyAdapter.Grant(_playerNative, weapon, amount)));
+            (weapon, amount) => PlayerCrateSupplyAdapter.Grant(_playerNative, weapon, amount),
+            () => Sources.Setup.Library.Get(ObpSourceGame.Rac1) is { } source && source.Identity.BuildId == OBP.RAC1.Rac1Authority.Primary.BuildId
+                ? source.Path : null));
 }

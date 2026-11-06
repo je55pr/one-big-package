@@ -117,7 +117,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
             {
                 CrateBolts.Prepare();
                 CrateEffects.Configure(_crates);
-                if (_crates.Any(crate => Rac2CrateSupply.IsSupply(crate.Source.NativeClassId))) CrateSupply.Prepare();
+                if (_crates.Any(crate => Rac2CrateSupply.IsSupply(crate.Source.NativeClassId))) CrateSupply.Prepare(_crates);
             }
         }
         catch (Exception ex) when (ex is InvalidDataException or IOException or NotSupportedException or InvalidOperationException)
@@ -424,6 +424,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
             ticks.Register(GameplayTickPhase.Physics, "rac2-bolts", "Rac2CrateBoltPresentation", 20, CrateBolts.Tick);
             ticks.Register(GameplayTickPhase.Physics, "rac2-crate-effects", "Rac2CrateEffects", 10, CrateEffects.Tick);
             ticks.Register(GameplayTickPhase.Physics, "rac2-crate-supply", "Rac2CrateSupplyPresentation", 20, CrateSupply.Tick);
+            ticks.Register(GameplayTickPhase.Presentation, "rac2-crate-supply-render", "Rac2CrateSupplyPresentation", 20, _ => CrateSupply.Present());
         }
     }
 

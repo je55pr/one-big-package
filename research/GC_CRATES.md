@@ -64,24 +64,45 @@ and bounded pitch-bend ranges. It retains the corrected PB versus PM semantics.
 
 **Explicit OBP adapters:** the normal persistent player's controller receives
 one unit per ordinary Nanotech cloud; the world never selects a health provider
-or capacity. Pure RAC2 ammo recipients use the recovered indexed selector.
-For the mixed arsenal, Fusion's `PlayerAmmoSupplyPolicy` chooses an owned,
-implemented, attached-source recipient, preferring non-full weapons, and each
+or capacity. At the user's request, ordinary ammo drops are **unassigned until
+collection**, including drops created while the arsenal is full. Fusion's
+`PlayerAmmoSupplyPolicy` chooses an owned, implemented, attached-source
+recipient that is missing ammo at that moment, and each
 source supplies its own native grant amount (RAC1 crate ammo definitions, the
 RAC2 Lancer descriptor, RAC3 Shock Cannon's four-round profile). This is an
 OBP cross-game conversion, not a claim that retail RAC2 knows foreign items.
 Pickup identities retain `SourceWeaponKey`; no native item-number aliases or
-second player inventory are created. Full pickups wait for capacity, and
+second player inventory are created. If every weapon is full, pickups remain
+on the ground. Pickup admission uses an explicit OBP radius/height of 1.25 units,
+a twelve-tick drop grace period and a world visibility ray, independently of
+the Bolt Grabber's twelve-unit magnet. A successful collection credits one
+recipient's clamped native pickup amount, then consumes that object's receipt;
+other drops reevaluate the updated inventory. This collection-time policy is
+an intentional departure from retail's constructor-owned resource index, not
+a new claim about `0x30F570`. Full pickups wait for capacity, and
 dead/retired player/world leases cannot receive grants.
 
-The cloud's eight blue wisps, 45-tick travel, socket placement and mesh blending
-are host presentation pending the original particle/GS programme. The ammo
+**Requested RAC1 sphere donor:** Nanotech presentation reuses
+`Rac1NanotechOrbAssets`, `Rac1NanotechCluster`, `Rac1ParticleSession`,
+`Rac1FxMaterials` and the existing particle renderer. Assets are authenticated
+against the attached **RAC1 NTSC-U Veldin (level 1)** tables; the RAC2 destination
+ID never selects the donor. The intact crate hosts the glowing sphere/halo and
+orbiting sprites; breaking transfers that same cluster into its resting state.
+Collection uses the donor's curved eight-orb flight and healing trail, with the
+first orb arrival applying the RAC2-owned single health credit and arrival sound.
+This is deliberate cross-game presentation as requested, not recovered RAC2
+particle/GS parity. The former blue host spheres and fixed 45-tick flight are
+removed. World retirement disposes riders, waiting clouds, flights, materials
+and particles together.
+
+The ammo
 pickup uses the original class-3291 model with a bounded scatter/homing host
 projection and world sweeps; its stopped-on-contact translation is explicitly
-not the complete native generic contact manifold. The exact PS2 RNG history,
+not the complete native generic contact manifold. Ground sweeps retain the
+model's decoded bottom clearance rather than placing its centre on the floor.
+The exact PS2 RNG history,
 upgrade/challenge state, arena respawn and cross-world pickup persistence remain
-outside this slice. The host creates the cloud at break instead of presenting
-the native attached state while its crate is intact.
+outside this slice.
 
 Manual ordinary Oozla observations used temporary external SceneTree observers
 and normal input, with no committed observer or automated tests: wrench hits
@@ -93,6 +114,17 @@ crediting health. Two ordinary Bomb Glove throws from beside ammo crate 235
 broke ammo 235/236 and Nanotech 222, with the same one-time supply receipts.
 Repeated contacts did not duplicate rewards. The original
 seven-crate bolt-cluster Bomb Glove observation still completed successfully.
+
+Follow-up manual observations with the RAC1 donor recorded the actual two-pass
+sphere/halo mesh (1,053 submitted triangle vertices) and its orb/sparkle sprites
+on intact and resting RAC2 crates. The injured profile again healed **2/4 -> 3/4**
+once using the curved first-arrival event; at full health the sphere remained.
+An all-full arsenal broke two ammo crates and retained three physical pickups;
+firing one Bomb Glove round **40 -> 39** while five units away left all three
+available. Approaching one then credited **+1** to Bomb Glove (clamped to 40),
+retired that pickup and left the other two on the ground. The recipient therefore
+depends on inventory at collection, not on what was missing when the crate broke.
+Observers and temporary profiles remain outside the repository.
 
 ## Identity and authored structural family
 

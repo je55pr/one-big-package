@@ -37,10 +37,12 @@ public sealed class Rac2AmmoPickup
     public bool Arrived { get; private set; }
     public float Spin { get; private set; }
     private readonly float _gravity;
-    private int _admissionDelay = 3;
+    private int _admissionDelay;
     private float _speed = .13333334f;
-    public Rac2AmmoPickup(Vector3 origin, Func<float, float, float> sample)
+    public Rac2AmmoPickup(Vector3 origin, Func<float, float, float> sample, int admissionDelay = 0)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(admissionDelay);
+        _admissionDelay = admissionDelay;
         Position = origin;
         float angle = sample(-MathF.PI, MathF.PI), speed = sample(2, 4) / 60;
         Velocity = new(MathF.Cos(angle) * speed, MathF.Sin(angle) * speed, sample(4, 8) / 60);
