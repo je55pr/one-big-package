@@ -11,8 +11,8 @@ namespace OBP.RAC2.Gameplay;
 /// </summary>
 public sealed class Rac2BoltMotionSession
 {
-    public const float GravityPerTick = .003f;
-    public const float ContactRadius = .25f;
+    public static float GravityPerTick => .003f;
+    public static float ContactRadius => .25f;
     public Vector3 Position { get; private set; }
     public Vector3 Velocity { get; private set; }
     public int NativeState { get; private set; } = 1;
@@ -38,8 +38,11 @@ public sealed class Rac2BoltMotionSession
         _spinStep = sample(0, 720) * MathF.PI / 180 / 60;
     }
 
+    public void Step(Vector3 player, Vector3 socket, float radius, float height, bool attractEnabled) =>
+        Step(player, socket, radius, height, attractEnabled, null);
+
     public void Step(Vector3 player, Vector3 socket, float radius, float height, bool attractEnabled,
-        Rac2BoltContact? contact = null)
+        Rac2BoltContact? contact)
     {
         if (Collected) return;
         var delta = player - Position;

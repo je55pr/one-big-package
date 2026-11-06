@@ -26,7 +26,7 @@ public static class Rac2BoltAssets
 
     // Oozla constructor 0x378270 loads the seven 0.5 factors from
     // 0x1AEBB0..0x1AEBC8. The mesh decoder already applies class +0x24.
-    public const float VisualScale = .5f;
+    public static float VisualScale => .5f;
 
     public static Catalogue Load(string path, int level)
     {
