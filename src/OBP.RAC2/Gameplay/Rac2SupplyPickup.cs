@@ -48,7 +48,8 @@ public sealed class Rac2AmmoPickup
         Velocity = new(MathF.Cos(angle) * speed, MathF.Sin(angle) * speed, sample(4, 8) / 60);
         _gravity = sample(10, 15) / 3600;
     }
-    public bool CanCollect(Vector3 player, float radius, float height) => !Claimed && _admissionDelay == 0 &&
+    public bool CanCollect(Vector3 player, float radius = Rac2CrateSupply.AmmoPickupRadius,
+        float height = Rac2CrateSupply.AmmoPickupHeight) => !Claimed && _admissionDelay == 0 &&
         MathF.Abs(Position.Z - player.Z) <= height && Vector2.Distance(new(Position.X, Position.Y), new(player.X, player.Y)) <= radius;
     public void Claim() => Claimed = true;
     public void Step(Vector3 socket, Func<Vector3, Vector3, Vector3?> ground)

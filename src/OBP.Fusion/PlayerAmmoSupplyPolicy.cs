@@ -11,8 +11,7 @@ public sealed record PlayerAmmoSupply(SourceWeaponKey Weapon, int Count, int Cap
 /// </summary>
 public static class PlayerAmmoSupplyPolicy
 {
-    // OBP pickup admission: nearby physical supplies, independent of Bolt Grabber.
-    public const float PickupRadius = 1.25f, PickupHeight = 1.25f;
+    // OBP presentation allowance so the crate has time to emit a visible drop.
     public const int DropGraceTicks = 12;
 
     public static PlayerAmmoSupply? Select(IReadOnlyList<PlayerAmmoSupply> owned, Func<int, int> below)

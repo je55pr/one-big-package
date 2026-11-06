@@ -101,7 +101,7 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
             _orbs?.BeginTick(root, socket);
             foreach (var pickup in _ammo.ToArray())
             {
-                if (ports.Alive() && pickup.Motion.CanCollect(root, PlayerAmmoSupplyPolicy.PickupRadius, PlayerAmmoSupplyPolicy.PickupHeight))
+                if (ports.Alive() && pickup.Motion.CanCollect(root))
                 {
                     var query = PhysicsRayQueryParameters3D.Create(FromNative(pickup.Motion.Position) + Vector3.Up * .1f, FromNative(socket));
                     query.Exclude = excluded;

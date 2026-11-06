@@ -10,6 +10,10 @@ public static class Rac2CrateSupply
     public const int NanotechClass = 501, AmmoClass = 511, AmmoPickupClass = 3291;
     public const int NanotechPerCloud = 1, ParticleCount = 8;
     public const float NanotechAttractionDistance = 10;
+    // Loaded Oozla 0x2BE700..0x2BE714 writes ordinary player reach.
+    // Class3291 reads it at 0x3D3944..0x3D3990 as planar distance
+    // and absolute vertical separation, not a spherical or squared radius.
+    public const float AmmoPickupRadius = 4.25f, AmmoPickupHeight = 2.25f;
     public static bool IsCrate(int nativeClass) => nativeClass is 500 or NanotechClass or AmmoClass;
     public static bool IsSupply(int nativeClass) => nativeClass is NanotechClass or AmmoClass;
 

@@ -87,14 +87,30 @@ RAC2 Lancer descriptor, RAC3 Shock Cannon's four-round profile). This is an
 OBP cross-game conversion, not a claim that retail RAC2 knows foreign items.
 Pickup identities retain `SourceWeaponKey`; no native item-number aliases or
 second player inventory are created. If every weapon is full, pickups remain
-on the ground. Pickup admission uses an explicit OBP radius/height of 1.25 units,
-a twelve-tick drop grace period and a world visibility ray, independently of
-the Bolt Grabber's twelve-unit magnet. A successful collection credits one
+on the ground. Pickup admission uses RAC2's recovered ordinary reach: a
+**4.25-unit horizontal radius** and **2.25-unit absolute vertical allowance**,
+plus an OBP twelve-tick drop grace period and world visibility ray. The former
+1.25/1.25 host limits were too short and are removed. A successful collection credits one
 recipient's clamped native pickup amount, then consumes that object's receipt;
 other drops reevaluate the updated inventory. This collection-time policy is
 an intentional departure from retail's constructor-owned resource index, not
 a new claim about `0x30F570`. Full pickups wait for capacity, and
 dead/retired player/world leases cannot receive grants.
+
+**Range authority:** Oozla's class-3291 update at `0x3D3944..0x3D3990` compares
+absolute height difference with player `+0x24A8` and planar distance with
+`+0x24A4`. The planar helper `0x2E3650` ends with a VU square root, so its
+threshold is a linear radius, not a squared distance. Player initialization
+at `0x2A7024..0x2A7048` temporarily writes 2.125/1.25; the ordinary update at
+`0x2BE700..0x2BE714` writes **4.25/2.25**. A separate availability-byte branch
+at `0x2BE6D8..0x2BE6FC` writes 14/4.5; that upgrade/context branch is not
+silently granted by the ordinary OBP ammo item. These constants stay in RAC2,
+and do not mutate the persistent player's equipment or pickup capabilities.
+An ordinary Oozla observation held the player 4.35 units horizontally from
+the leftmost settled pickup while Bomb Glove was missing one round: all three
+drops remained. Moving to 4.15 units collected that pickup once, credited +1
+and left the other two drops available. The temporary observer/profile stays
+outside the repository; no automated tests were added.
 
 **Requested RAC1 sphere donor:** Nanotech presentation reuses
 `Rac1NanotechOrbAssets`, `Rac1NanotechCluster`, `Rac1ParticleSession`,
