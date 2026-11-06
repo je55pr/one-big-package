@@ -132,6 +132,7 @@ public sealed class Rac1BeamSlotTests
     [SkippableFact]
     public void RobotClaimsItsBeamSlotWithEndpointFlagsAndSparkTagModeZero()
     {
+        Skip.If(string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OBP_RAC1_ISO")), "OBP_RAC1_ISO not set");
         var read = Rac1AirborneNativeSourceTests.ReadOverlay(); // authenticates the Veldin overlay (SHA-256) first
         uint Word(int address) => BinaryPrimitives.ReadUInt32LittleEndian(read(address, 4));
         const int claim = 0x2e1f28, site = 0x2e10d4; // fx1471_claim, and its call inside the robot update 0x2e0b88

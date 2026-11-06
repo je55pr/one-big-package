@@ -18,13 +18,15 @@ public sealed partial class Rac1ParticleSession
     private const byte SparkAlpha = 0x7f;
 
     /// <summary>
-    /// <paramref name="rawSize"/> null draws the native 8000..50000; <paramref name="life"/> null draws 10..29 frames.
-    /// Alpha starts at <paramref name="alpha"/> (0x7f) and falls to zero over the life.
+    /// A spark with the native size (8000..50000) and life (10..29 frames) draws. Alpha always starts at 0x7f and falls
+    /// linearly to zero over the life.
     /// </summary>
     public Particle? Spark(Vector3 position, Vector3 velocity) => SparkCore(position, velocity, null, null);
 
+    /// <summary>A spark of the given raw size with the native life draw (10..29 frames).</summary>
     public Particle? Spark(Vector3 position, Vector3 velocity, float rawSize) => SparkCore(position, velocity, rawSize, null);
 
+    /// <summary>A spark of the given raw size living <paramref name="life"/> frames.</summary>
     public Particle? Spark(Vector3 position, Vector3 velocity, float rawSize, int life) => SparkCore(position, velocity, rawSize, life);
 
     private Particle? SparkCore(Vector3 position, Vector3 velocity, float? rawSize, int? life)

@@ -94,9 +94,9 @@ public sealed class Rac1NanotechOrbTests
 
     private static (Rac1ExecutableOverlay Overlay, Rac1LevelCore.Core Core) Level(int id)
     {
-        _ = Rac1AirborneNativeSourceTests.ReadOverlay(); // authenticates the NTSC-U original (Veldin overlay SHA-256) before any retail assertion
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO not set");
+        _ = Rac1AirborneNativeSourceTests.ReadOverlay(); // authenticates the NTSC-U original (Veldin overlay SHA-256) before any retail assertion
         using var disc = new FileRandomAccessReader(iso!);
         var level = Rac1DiscIndex.Read(disc).Levels.Single(l => l.LevelId == id);
         return (Rac1ExecutableOverlay.Read(disc, level), Rac1LevelCore.Open(disc, level));
@@ -147,9 +147,9 @@ public sealed class Rac1NanotechOrbTests
     [SkippableFact]
     public void EveryLevelCarriesTheAuthenticatedOrbTablesAtItsOwnAddresses()
     {
-        _ = Rac1AirborneNativeSourceTests.ReadOverlay(); // authenticates the NTSC-U original (Veldin overlay SHA-256) before any retail assertion
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO not set");
+        _ = Rac1AirborneNativeSourceTests.ReadOverlay(); // authenticates the NTSC-U original (Veldin overlay SHA-256) before any retail assertion
         using var disc = new FileRandomAccessReader(iso!);
         foreach (var level in Rac1DiscIndex.Read(disc).Levels)
         {

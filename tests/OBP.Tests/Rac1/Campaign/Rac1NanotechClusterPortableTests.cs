@@ -145,9 +145,9 @@ public sealed class Rac1NanotechClusterPortableTests
     [SkippableFact]
     public void NarrowedSecondSocketLookupNeverRejectsAnyClassOfAnyRetailLevel()
     {
-        _ = Rac1AirborneNativeSourceTests.ReadOverlay(); // authenticates the NTSC-U original (Veldin overlay SHA-256) before any retail assertion
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO not set");
+        _ = Rac1AirborneNativeSourceTests.ReadOverlay(); // authenticates the NTSC-U original (Veldin overlay SHA-256) before any retail assertion
         using var disc = new FileRandomAccessReader(iso!);
         int withSecond = 0;
         foreach (var level in Rac1DiscIndex.Read(disc).Levels)
