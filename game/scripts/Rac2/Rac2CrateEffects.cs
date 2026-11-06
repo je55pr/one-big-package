@@ -19,7 +19,7 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
     private readonly List<Fragment> _fragments = [];
     private WorldMaterialFactory? _materials;
     private Rac2CrateBreakBudget _budget = new();
-    private Rac2CrateAssets.Catalogue? _assets;
+    private readonly Dictionary<int, Rac2CrateAssets.Catalogue> _assets = [];
     private Rac2CrateAudio.Catalogue? _audio;
     private Random? _random;
     private double _accumulator;
@@ -30,13 +30,15 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
     internal void Configure(IEnumerable<RuntimeWorldScene.DynamicObjectNode> nodes)
     {
         string path = ports.SourcePath() ?? throw new InvalidDataException("Original R&C2 crate effects source is unavailable.");
-        _assets = Rac2CrateAssets.Load(path, world.LevelId);
+        var crates = nodes.ToArray();
+        foreach (int nativeClass in crates.Select(node => node.Source.NativeClassId).Distinct())
+            _assets.Add(nativeClass, Rac2CrateAssets.Load(path, world.LevelId, nativeClass));
         _audio = Rac2CrateAudio.Load(path, world.LevelId);
         _random = new(ports.Seed());
-        _materials = new WorldMaterialFactory(world with { Textures = _assets.Textures });
-        foreach (var node in nodes)
+        _materials = new WorldMaterialFactory(world with { Textures = _assets.Values.SelectMany(asset => asset.Textures).DistinctBy(texture => texture.TextureId).ToArray() });
+        foreach (var node in crates)
         {
-            if (!_assets.LitInstances.ContainsKey(node.Source.InstanceIndex))
+            if (!_assets[node.Source.NativeClassId].LitInstances.ContainsKey(node.Source.InstanceIndex))
                 throw new InvalidDataException($"Crate {node.Source.InstanceIndex} has no original instance lighting.");
             var body = node.Root.GetChildren().OfType<StaticBody3D>().Single();
             var falling = new Falling(node, body, new(node.Root.GlobalPosition.Y));
@@ -46,22 +48,22 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
     }
 
     // Host pool availability is explicit; it does not claim the retail global allocator's history.
-    internal BreakPlan PlanBreak()
+    internal BreakPlan PlanBreak(int nativeClass = 500)
     {
         var budget = _budget.Copy();
-        return new(budget.Begin(_tick, Math.Max(0, 256 - _fragments.Count)), budget);
+        return new(budget.Begin(_tick, Math.Max(0, 256 - _fragments.Count), nativeClass), budget);
     }
 
     internal void Break(RuntimeWorldScene.DynamicObjectNode crate, BreakPlan plan)
     {
-        if (_disposed || !current() || _assets is null) return;
+        if (_disposed || !current() || !_assets.TryGetValue(crate.Source.NativeClassId, out var assets)) return;
         _budget = plan.Budget;
         if (_tick - _lastBreakSound >= 2)
         {
-            Play(500, crate.Root.GlobalPosition);
+            Play(crate.Source.NativeClassId, crate.Root.GlobalPosition, crate.Source.NativeClassId == Rac2CrateSupply.AmmoClass ? 1 : 0);
             _lastBreakSound = _tick;
         }
-        foreach (var part in _assets.LitInstances[crate.Source.InstanceIndex].Values.Where(part => (plan.Mask & 1 << part.Index) != 0))
+        foreach (var part in assets.LitInstances[crate.Source.InstanceIndex].Values.Where(part => (plan.Mask & 1 << part.Index) != 0))
         {
             var pivot = new Vector3(-part.Pivot.X, part.Pivot.Z, part.Pivot.Y);
             Vector3 position = crate.Root.GlobalTransform * pivot;
@@ -83,20 +85,20 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
         }
     }
 
-    internal void PlayPickup(int nativeClass)
+    internal void PlayPickup(int nativeClass, int localSound = 0)
     {
         if (_disposed || !current()) return;
-        Play(nativeClass, null);
+        Play(nativeClass, null, localSound);
     }
 
-    private void Play(int nativeClass, Vector3? position)
+    private void Play(int nativeClass, Vector3? position, int localSound = 0)
     {
-        if (_audio is not { } bank || !bank.Cues.TryGetValue(nativeClass, out var cue)) return;
+        if (_audio is not { } bank || !bank.Cues.TryGetValue((nativeClass, localSound), out var cue)) return;
         var clip = cue.Variants[_random!.Next(cue.Variants.Count)];
         RuntimeAudioPosition? point = position is { } p ? new(-p.X, p.Y, p.Z) : null;
         if (ports.PlayEffect(new(clip, RuntimeAudioCategory.SoundEffect, gain: cue.Gain, position: point)))
         {
-            GD.Print($"[rac2-crate-audio] class={nativeClass} sound=0 bank={cue.BankSound} gain={cue.Gain:0.###}");
+            GD.Print($"[rac2-crate-audio] class={nativeClass} sound={localSound} bank={cue.BankSound} gain={cue.Gain:0.###}");
         }
     }
 
@@ -192,6 +194,6 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
         _disposed = true;
         foreach (var fragment in _fragments) if (GodotObject.IsInstanceValid(fragment.Node)) fragment.Node.QueueFree();
         _fragments.Clear(); _crates.Clear(); _supports.Clear();
-        _audio = null; _assets = null; _materials = null;
+        _audio = null; _assets.Clear(); _materials = null;
     }
 }

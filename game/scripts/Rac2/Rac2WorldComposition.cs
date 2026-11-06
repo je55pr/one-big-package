@@ -49,5 +49,22 @@ internal sealed class Rac2WorldComposition(ApplicationComponents components) : C
             // Selected-player attraction adapter; see research/GC_CRATES.md.
             () => OBP.RAC1.Gameplay.Rac1BoltMotionSession.AttractionProfile(DefaultRac1PickupState,
                 _playerNative?.Inventory.OwnsNativeItem(Rac1BoltGrabberItem) == true),
-            ActorHost.AddRayExclusions, _worldHost.PlayEffect));
+            ActorHost.AddRayExclusions, _worldHost.PlayEffect),
+        new Rac2CrateSupplyPorts(
+            () =>
+            {
+                var health = _playerNative?.Life.Capture();
+                return health is null ? (0, 0) : ((int)health.Current, (int)health.Capacity);
+            },
+            amount =>
+            {
+                if (_playerNative is not { } native || !PlayerLife.Alive) return 0;
+                int before = (int)native.Life.Capture().Current;
+                // Explicit OBP supply conversion: one recovered RAC2 unit heals
+                // one unit in the selected player's health controller.
+                native.Life.Heal(amount);
+                return (int)native.Life.Capture().Current - before;
+            },
+            amount => PlayerCrateSupplyAdapter.Read(_playerNative, ReadPlayerEquipment(), amount),
+            (weapon, amount) => PlayerCrateSupplyAdapter.Grant(_playerNative, weapon, amount)));
 }

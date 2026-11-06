@@ -9,33 +9,34 @@ using OBP.Runtime;
 
 namespace OBP.RAC2.Gameplay;
 
-/// <summary>Original class-500 detachable meshes and their native corncob pivots, not fragments cut from the intact box.</summary>
+/// <summary>Original crate-family detachable meshes, contact points and native corncob pivots.</summary>
 public static class Rac2CrateAssets
 {
     public sealed record Part(int Index, Vector3 Pivot, IReadOnlyList<RuntimeObjectMesh> Surfaces, IReadOnlyList<Vector3> ContactVertices);
     public sealed record Catalogue(IReadOnlyDictionary<int, Part> Parts, IReadOnlyList<RuntimeTexture> Textures,
         IReadOnlyDictionary<int, IReadOnlyDictionary<int, Part>> LitInstances);
-    public static Catalogue Load(string path, int level)
+    public static Catalogue Load(string path, int level, int nativeClass = 500)
     {
         using var reader = new FileRandomAccessReader(path);
         var wad = Iso9660Filesystem.Open(reader).OpenFile($"/G/LEVEL{level}.WAD") ?? throw new InvalidDataException("Crate level is unavailable.");
         var header = Rac2LevelWad.ReadHeader(wad);
         return Read(Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0)),
-            Rac2Instances.Read(Rac2LevelWad.RequireLump(wad, header, 2)));
+            Rac2Instances.Read(Rac2LevelWad.RequireLump(wad, header, 2)), nativeClass);
     }
-    public static Catalogue Read(Rac2LevelCore.Core core, Rac2Instances.Gameplay gameplay)
+    public static Catalogue Read(Rac2LevelCore.Core core, Rac2Instances.Gameplay gameplay, int nativeClass = 500)
     {
-        byte[] bytes = Rac2MobyClasses.ClassBytes(core, 500);
+        if (!Rac2CrateSupply.IsCrate(nativeClass)) throw new ArgumentOutOfRangeException(nameof(nativeClass));
+        byte[] bytes = Rac2MobyClasses.ClassBytes(core, nativeClass);
         if (bytes.Length < 0x48) throw new InvalidDataException("Truncated crate fragment class header.");
         int row = Enumerable.Range(0, core.Header.MobyClasses.Count).Single(index =>
-            BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(core.Header.MobyClasses.Offset + index * 32 + 4)) == 500);
+            BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(core.Header.MobyClasses.Offset + index * 32 + 4)) == nativeClass);
         int remap = core.Header.MobyClasses.Offset + row * 32 + 16;
         int corn = BinaryPrimitives.ReadInt16LittleEndian(bytes.AsSpan(0x2e)) * 16;
         float scale = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(0x24)) / 1024;
         var parts = new Dictionary<int, Part>();
         var nativeMeshes = new Dictionary<int, GcUyaMoby.Mesh>();
         var textures = new HashSet<int>();
-        foreach (int part in new[] { 0, 2, 5 })
+        foreach (int part in nativeClass == Rac2CrateSupply.NanotechClass ? new[] { 0, 1, 2 } : new[] { 0, 2, 5 })
         {
             if (corn < 0x48 || corn > bytes.Length - 16 || bytes[corn + part + 1] == 255)
                 throw new InvalidDataException("Crate fragment has no original pivot.");
@@ -83,7 +84,7 @@ public static class Rac2CrateAssets
         if (textures.Any(id => id >= 0 && !decodedTextures.Any(texture => texture.TextureId == id)))
             throw new InvalidDataException("An original R&C2 crate fragment texture is unavailable.");
         var litInstances = new Dictionary<int, IReadOnlyDictionary<int, Part>>();
-        foreach (var instance in gameplay.MobyInstances.Where(instance => instance.OClass == 500))
+        foreach (var instance in gameplay.MobyInstances.Where(instance => instance.OClass == nativeClass))
         {
             var matrix = Rac2Instances.MatrixFromPosRotScale(instance.Position, instance.Rotation, instance.Scale == 0 ? 1 : instance.Scale);
             litInstances.Add(instance.Index, parts.ToDictionary(entry => entry.Key, entry =>

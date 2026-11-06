@@ -188,7 +188,7 @@ public static partial class Rac2WorldImport
 
         CollectTextures("moby", Rac2LevelTextures.Table.Moby);
         var animatedMeshes = BuildAnimatedMeshes(gameplay, mobyClasses, Core(), out var animatedInstances);
-        var dynamicClasses = new HashSet<int> { 500 };
+        var dynamicClasses = new HashSet<int> { 500, Rac2CrateSupply.NanotechClass, Rac2CrateSupply.AmmoClass };
         if (level == 0)
         {
             // Aranos opening lift, first progression door and MSR I family need

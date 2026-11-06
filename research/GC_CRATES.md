@@ -12,6 +12,88 @@ This document narrows the first interactive-object milestone to the native crate
 - **INFERRED** — strong interpretation, not yet behaviour-proved or symbol-named.
 - **UNKNOWN** — unresolved.
 
+## Nanotech and ammunition crates: playable shared family
+
+The current authority pass closes the Oozla identities and first-break paths:
+
+- **501 = Nanotech crate:** 13 authored Oozla instances. The common initializer
+  at `0x3911FC..0x391224` creates class **806** through `0x394E90` with the
+  ordinary-health flag zero. The cloud starts attached to its owning crate;
+  collection becomes available after the owner breaks. Class 512 uses the
+  alternate flag and is outside this implementation.
+- **511 = ammo crate:** 26 authored Oozla instances. Initialization writes
+  PVar `+0xC6 = 100`; the reward helper takes the indexed-resource branch.
+- **Shared damage/lifetime:** `0x3912DC..0x391394` admits both through the
+  common queried flags and positive damage magnitude. Neither gets a new HP
+  threshold. State 3 with `+0xC8=0` reaches `0x306250` at `0x391544`.
+  Nonzero respawn fields remain explicitly unsupported.
+- **Own fragments:** `0x392628..0x3926C4` gives class 511 the wood crate's
+  masks `1/5/0x25`. Class 501 instead uses contiguous masks
+  `(1 << (budget-1))-1`, yielding parts `0/1/2` at the highest budget.
+  Each type loads its own original meshes, pivots, contact vertices, textures
+  and authored-instance lighting. Falling, support removal and generic fragment
+  contact/settling use the existing crate machinery.
+
+**Ammo amount/selection:** `0x30F570` prefers enabled indexed resources with
+remaining capacity, otherwise chooses among enabled ammo resources. It returns
+two physical objects when `RNG(5)==0`, one otherwise (`0x30F77C..0x30F798`).
+The class-3291 constructor reads per-object amount from mapped descriptor
+`+0x8C` (`0x3D3FC0..0x3D3FE4`), while collection caps at `+0x8E` and reports
+the actual increase (`0x3D3A68..0x3D3AE4`). Oozla's slot 30 maps to base
+Lancer class 1490, **25 rounds per object**, **200 capacity**. The existing
+base Lancer profile and this descriptor are authority for that implemented
+recipient; upgraded weapons/runtime remapping are not claimed. Other level
+overlays relocate their descriptor tables, so the reader deliberately uses
+the recovered Oozla descriptor and the *active level's* class-3291 visuals.
+Local extraction confirmed the model/descriptor combination for levels 0/1/2/8.
+
+**Nanotech admission/credit:** `0x395BD0..0x395D04` requires living health,
+room after accounting for pending clouds, distance below **10** and an
+unobstructed world query through `0x3956E8`. Eight particle slots are
+initialized at `0x3958A4..0x3958C8`; the first arriving particle performs
+the one-time health credit and sets `+0x56` so the others cannot credit again
+(`0x396374..0x396454`). Ordinary flag zero grants **one** health unit and
+clamps to current capacity. The alternate/challenge-mode paths are not
+implemented by this ordinary slice.
+
+**Original audio:** Oozla Nanotech class 501 local SoundDefs 0/1 map to
+bank sounds **70/71** (break/arrival); ammo class 511 uses local **1**,
+bank **73**, for its break; class 3291 local 0 maps to bank **151** for
+collection. The shared SoundDef reader now handles multiple local definitions
+and bounded pitch-bend ranges. It retains the corrected PB versus PM semantics.
+
+**Explicit OBP adapters:** the normal persistent player's controller receives
+one unit per ordinary Nanotech cloud; the world never selects a health provider
+or capacity. Pure RAC2 ammo recipients use the recovered indexed selector.
+For the mixed arsenal, Fusion's `PlayerAmmoSupplyPolicy` chooses an owned,
+implemented, attached-source recipient, preferring non-full weapons, and each
+source supplies its own native grant amount (RAC1 crate ammo definitions, the
+RAC2 Lancer descriptor, RAC3 Shock Cannon's four-round profile). This is an
+OBP cross-game conversion, not a claim that retail RAC2 knows foreign items.
+Pickup identities retain `SourceWeaponKey`; no native item-number aliases or
+second player inventory are created. Full pickups wait for capacity, and
+dead/retired player/world leases cannot receive grants.
+
+The cloud's eight blue wisps, 45-tick travel, socket placement and mesh blending
+are host presentation pending the original particle/GS programme. The ammo
+pickup uses the original class-3291 model with a bounded scatter/homing host
+projection and world sweeps; its stopped-on-contact translation is explicitly
+not the complete native generic contact manifold. The exact PS2 RNG history,
+upgrade/challenge state, arena respawn and cross-world pickup persistence remain
+outside this slice. The host creates the cloud at break instead of presenting
+the native attached state while its crate is intact.
+
+Manual ordinary Oozla observations used temporary external SceneTree observers
+and normal input, with no committed observer or automated tests: wrench hits
+broke ammo crates 235/236 and credited actual recipient amounts (Bomb Glove
+three rounds and Blaster twenty); breaking Nanotech crate 222 from a temporary
+injured player profile raised health **2/4 -> 3/4**, with one arrival cue and
+no remaining cloud; the same break at full **4/4** retained its cloud without
+crediting health. Two ordinary Bomb Glove throws from beside ammo crate 235
+broke ammo 235/236 and Nanotech 222, with the same one-time supply receipts.
+Repeated contacts did not duplicate rewards. The original
+seven-crate bolt-cluster Bomb Glove observation still completed successfully.
+
 ## Identity and authored structural family
 
 `oClass 500 = Bolt Crate` is **CORROBORATED** by pinned Wrench commit `e67ea46e5e60ec52a0c31fcde1e3f46b20aa4cfb` (`docs/asset_system.md`) and the retail footprint.
@@ -222,7 +304,7 @@ This correction supersedes all earlier adjacency-based `-1 = bolts` speculation.
 
 Loaded `0x0030F570` scans the 56-slot system described above, chooses among enabled entries with remaining capacity, and writes a selected index to the caller-provided output. It also uses loaded RNG helper `0x003104E8` while choosing among candidates.
 
-The selection mechanics are **CONFIRMED**. Calling the table an ammo table is **CORROBORATED/INFERRED**, while individual resource names and the crate-family rules that feed this selector remain UNKNOWN.
+The selection mechanics are **CONFIRMED**. Calling the table an ammo table is **CORROBORATED/INFERRED**, while other resource names and broader crate-family selector rules remain UNKNOWN; the playable supply section above closes base Lancer slot 30.
 
 ## Critical boot-ELF correction retained
 
@@ -473,4 +555,4 @@ unrecovered.
 
 **INFERRED:** `0x003922B0` is a break/destruction transition helper; selectors `13..19` are Bolt-denomination pickup identities; `0x001A7A32/+0x33` are the Challenge Mode bolt multiplier/sublevel; class 3291 is a generic indexed collectible/resource object; the 56-slot counter system is ammo/inventory-resource state.
 
-Still **UNKNOWN:** exact names of states `0..6`; exact `+0xCC/+0xC6/+0xCA/+0xCB` semantics; broader meaning of `+0xC8` outside the proved Oozla deactivation branch; exact runtime population/history of the packed reward-selector blocks and semantic identity of the active `contextIndex`; exact 56-slot resource names; full native fragment collision/angular behavior and sparkle effects; save/reload/persistence/respawn rules; exact GC identities of classes 501/505/511/512.
+Still **UNKNOWN:** exact names of states `0..6`; exact `+0xCC/+0xC6/+0xCA/+0xCB` semantics; broader meaning of `+0xC8` outside the proved Oozla deactivation branch; exact runtime population/history of the packed reward-selector blocks and semantic identity of the active `contextIndex`; exact 56-slot resource names; full native fragment collision/angular behavior and sparkle effects; save/reload/persistence/respawn rules; exact GC identities/alternate semantics of classes 505/512.
