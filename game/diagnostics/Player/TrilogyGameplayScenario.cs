@@ -15,7 +15,7 @@ public sealed class TrilogyGameplayScenario(CaptureDiagnosticContext context, IT
         using var visit = player.BeginVisit();
         await Physics(2);
         Require(await actors.VerifyRac2CratesAsync(Lifetime), "Oozla original crate contacts, pickup models, wallet or duplicate-hit gate failed");
-        Log("[rac2-crate-smoke] PASS: 190 ordinary crates, weapon contact, deactivation, original Bolt models, wallet collection and duplicate-hit isolation");
+        Log("[rac2-crate-smoke] PASS: 190 ordinary crates, weapon/wrench contact, original Bolt models, wallet collection, duplicate-hit isolation, falling stacks, original fragments and mapped sounds");
     }
 
     public async Task RunAsync()

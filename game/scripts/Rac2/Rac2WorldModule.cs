@@ -37,9 +37,11 @@ internal sealed partial class Rac2WorldModule : IDisposable
         _clock = new(ports.Current, ports.SourceValid, world.Game == ObpSourceGame.Rac2 ||
             scene.DynamicObjectNodes?.Any(node => node.Source.SourceGame == ObpSourceGame.Rac2) == true);
         CrateBolts = new(world, scene, resources, boltPorts, () => _clock.CanSpawnCrateBolts(_activatingCrateStrike));
+        CrateEffects = new(world, scene, boltPorts, () => _clock.CanSpawnCrateBolts(_activatingCrateStrike));
     }
 
     internal Rac2CrateBoltPresentation CrateBolts { get; }
+    internal Rac2CrateEffects CrateEffects { get; }
     internal bool Current => _clock.Current;
     internal IReadOnlyList<RuntimeWorldScene.DynamicObjectNode> Crates => _crates;
 
@@ -64,6 +66,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
         _disposed = true;
         _clock.Retire();
         CrateBolts.Dispose();
+        CrateEffects.Dispose();
         foreach (var body in _crateBodies.Values)
             if (GodotObject.IsInstanceValid(body)) body.CollisionLayer = body.CollisionMask = 0;
         _crateBodies.Clear();
@@ -98,13 +101,17 @@ internal sealed partial class Rac2WorldModule : IDisposable
             _crates.Add(node);
             // Host convex contact derived from the retail model; PS2 narrow
             // phase is not reproduced by Godot's physics engine.
-            var body = new StaticBody3D { Name = $"Rac2CrateContact_{node.Source.InstanceIndex}", CollisionLayer = 1, CollisionMask = 1 };
+            var body = new AnimatableBody3D { Name = $"Rac2CrateContact_{node.Source.InstanceIndex}", CollisionLayer = 1, CollisionMask = 1, SyncToPhysics = false };
             foreach (var mesh in node.Root.GetChildren().OfType<MeshInstance3D>())
                 body.AddChild(new CollisionShape3D { Shape = mesh.Mesh.CreateConvexShape(), Transform = mesh.Transform });
             node.Root.AddChild(body);
             _crateBodies.Add(node.Source.InstanceIndex, body);
         }
-        if (_crates.Count > 0) CrateBolts.Prepare();
+        if (_crates.Count > 0)
+        {
+            CrateBolts.Prepare();
+            CrateEffects.Configure(_crates);
+        }
 
         var openingLiftNode = nodes.FirstOrDefault(n =>
             n.Source.SourceGame == ObpSourceGame.Rac2 &&
@@ -331,6 +338,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
         probe.ObserveStrike(target.Source.InstanceIndex, c8, route.ToString(), source);
 
         Rac2Class500Payout payout;
+        int fragmentMask = CrateEffects.BeginBreak();
         try
         {
             // Reward-session inputs are explicit deterministic choices within
@@ -338,7 +346,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
             // state. Multiplier zero is neutral via native max(1, byte).
             payout = resources.Rac2CrateBolts.PlanClass500Payout(
                 authored.Uid, authored.AuthoredBolts, rewardMultiplierByte: 0,
-                progressionLikeInput: 0, rngMod2: 1);
+                progressionLikeInput: CrateEffects.RecentBreakBudget, rngMod2: 1);
         }
         catch (InvalidOperationException ex)
         {
@@ -348,7 +356,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
         }
 
         _ports.CrateReward(target.Root.GlobalPosition, payout);
-        _ports.Audio(target);
+        CrateEffects.Break(target, fragmentMask);
         probe.RewardStatus = $"fresh selector {payout.Selector}: centre {payout.RewardCentreValue} => " +
             $"{string.Join("+", payout.PhysicalPickups.Select(p => p.Denomination))} physical, {payout.DeferredValue} deferred";
 
@@ -375,6 +383,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
         {
             ticks.Register(GameplayTickPhase.NativeWorld, "rac2-native", "Rac2WorldModule", 10, Tick);
             ticks.Register(GameplayTickPhase.Physics, "rac2-bolts", "Rac2CrateBoltPresentation", 20, CrateBolts.Tick);
+            ticks.Register(GameplayTickPhase.Physics, "rac2-crate-effects", "Rac2CrateEffects", 10, CrateEffects.Tick);
         }
     }
 

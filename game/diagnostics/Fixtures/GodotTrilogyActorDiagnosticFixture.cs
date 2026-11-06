@@ -71,7 +71,64 @@ internal sealed class GodotTrilogyActorDiagnosticFixture(GodotTrilogyActorDiagno
         await CollectCrateAsync(world, player, crate, before + 11, token);
         var wrenchCrate = VerifyCrateWrench(world, host);
         await CollectCrateAsync(world, player, wrenchCrate, before + 22, token);
+        if (world.CrateEffects.PickupSounds != 6 || world.CrateEffects.LastBankSound != 53)
+            throw new InvalidOperationException("native Bolt arrival sound was not accepted by the audio host");
+        await VerifyCrateStackAsync(world, host, player, token);
         return true;
+    }
+
+    private static async Task VerifyCrateStackAsync(Rac2WorldModule world, ActorWorldHost host, PlayerHost player, CancellationToken token)
+    {
+        var live = world.Crates.Where(node => world.ObserveCrate(node).Alive).ToArray();
+        var pair = (from lower in live
+                    from upper in live
+                    let offset = upper.Root.GlobalPosition - lower.Root.GlobalPosition
+                    where MathF.Abs(offset.X) < .1f && MathF.Abs(offset.Z) < .1f && MathF.Abs(offset.Y - 1) < .05f
+                    orderby lower.Root.GlobalPosition.Y
+                    select (lower, upper)).First();
+        float floor = pair.lower.Root.GlobalPosition.Y;
+        float start = pair.upper.Root.GlobalPosition.Y;
+        int sounds = world.CrateEffects.BreakSounds;
+        var shot = new WeaponShotKey(FusionWeaponSession.Lancer, 1, 1000);
+        if (!host.Combat.Apply(new(shot, ActorWorldHost.Target(pair.lower), .5f, 0xDEADBEEF, "crate-stack-fixture")))
+            throw new InvalidOperationException("stack support did not break through ordinary contact");
+        if (world.CrateEffects.BreakSounds != sounds + 1 || world.CrateEffects.LastBankSound != 69)
+            throw new InvalidOperationException("native crate break sound was not accepted by the audio host");
+        var pieces = world.CrateEffects.FragmentNodes.Where(node => node.Name.ToString().StartsWith($"Rac2CrateFragment_{pair.lower.Source.InstanceIndex}_", StringComparison.Ordinal)).ToArray();
+        if (pieces.Length != 3) throw new InvalidOperationException($"stack break emitted {pieces.Length} original parts, expected 3");
+        foreach (var piece in pieces)
+        {
+            int triangles = piece.GetChildren().OfType<MeshInstance3D>().Sum(mesh => mesh.Mesh.GetFaces().Length / 3);
+            int expected = piece.Name.ToString().EndsWith("_0", StringComparison.Ordinal) ? 32 : 20;
+            if (triangles != expected || piece.GetChildren().OfType<MeshInstance3D>().Any(mesh => mesh.MaterialOverride is not StandardMaterial3D { AlbedoTexture: not null }))
+                throw new InvalidOperationException($"fragment {piece.Name} did not present its original textured model");
+        }
+        var initialPiece = pieces[0].GlobalTransform;
+        for (int frame = 0; frame < 60; frame++)
+        {
+            token.ThrowIfCancellationRequested();
+            await player.ToSignal(player.GetTree(), SceneTree.SignalName.PhysicsFrame);
+        }
+        float settled = pair.upper.Root.GlobalPosition.Y;
+        if (settled > start - .8f || MathF.Abs(settled - floor) > .08f || MathF.Abs(world.CrateEffects.HeightVelocity(pair.upper.Source.InstanceIndex) ?? 1) > 1e-6f)
+            throw new InvalidOperationException($"unsupported stack did not settle: {start}->{settled}, floor={floor}, velocity={world.CrateEffects.HeightVelocity(pair.upper.Source.InstanceIndex)}");
+        if (Math.Abs(pair.upper.State.Presentation.Transform.Matrix[13] - settled) > 1e-6)
+            throw new InvalidOperationException("falling crate presentation state did not follow its body");
+        if (pieces[0].GlobalPosition.DistanceTo(initialPiece.Origin) < .05f || pieces[0].GlobalBasis.IsEqualApprox(initialPiece.Basis))
+            throw new InvalidOperationException("original fragments did not move and spin");
+        var target = ActorWorldHost.Target(pair.upper);
+        var geometry = host.Combat.ReadGeometry().Single(item => item.Key == target);
+        var centre = geometry.Bounds.GetCenter();
+        var from = centre + Vector3.Up * 2;
+        if (!host.Combat.Trace(new(0, shot, WeaponQueryKind.Segment, new(from.X, from.Y, from.Z), new(centre.X, centre.Y, centre.Z), .05f), from).Any(hit => hit.Target == target))
+            throw new InvalidOperationException("fallen crate combat geometry did not follow its body");
+        for (int frame = 0; frame < 800 && world.CrateEffects.Fragments > 0; frame++)
+        {
+            token.ThrowIfCancellationRequested();
+            await player.ToSignal(player.GetTree(), SceneTree.SignalName.PhysicsFrame);
+        }
+        if (world.CrateEffects.Fragments != 0) throw new InvalidOperationException("crate fragments did not expire");
+        GD.Print($"[rac2-crate-physics] stack={start:0.###}->{settled:0.###}, original-parts=3, break-bank=69, pickup-bank=53, fragments-retired=true");
     }
 
     private static void VerifyCrateAdmission(Rac2WorldModule world, ActorWorldHost host)

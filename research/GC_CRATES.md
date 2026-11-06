@@ -101,7 +101,7 @@ For the class-500 branch, loaded `0x00392158` computes a small integer from a pr
 
 `0x003104E8(n)` is **CONFIRMED** to be an integer modulo-RNG helper: it obtains the native RNG value, masks it to 15 bits, divides by `n`, and returns the remainder. Therefore the call with `2` returns exactly `0` or `1`.
 
-The progression-like input at `gp + 0x3AC` is still semantically **UNKNOWN**, but its effect on the third argument is **CONFIRMED**:
+The input at `gp + 0x3AC` is **CONFIRMED as recent break-fragment pressure** by its decay/increment path in `0x003922B0`, recovered below. Its historical name in the reward API is retained. Its effect on the third argument is:
 
 | progression-like input | base | `pieceBudget` after RNG(2) |
 |---:|---:|---:|
@@ -115,7 +115,7 @@ The important correction is what this value controls. `0x003177C8` first chooses
 
 For each denomination it emits at most the remaining physical-piece budget. Any value left after that budget is exhausted is added to `0x001A7A14`. A later reward event drains `ceil(pool / 50)` from that global, adds the drained amount into its new reward magnitude, and stores `pool - drained` back. Therefore `0x001A7A14` is **CONFIRMED as a deferred-reward reservoir**; it is not an immediate direct-credit path.
 
-Thus the small progression/RNG parameter is **CONFIRMED to be a physical pickup-count budget, not the Bolt reward amount**. The reason later progression reduces the number of physical pieces is still UNKNOWN.
+Thus recent break pressure and RNG determine the physical pickup-count budget. Rapid breaks reduce physical pieces; this is unrelated to campaign progression.
 
 `0x00378270` is the denomination-object constructor used by this path. Its denomination input selects seven runtime object resources/classes through a generic object allocator:
 
@@ -321,17 +321,65 @@ The engine fixture inspects the spawned 14/14/13 classes, 48/48/52-triangle
 ArrayMeshes and the actual material textures before accepting the 5/5/1 pickup
 and wallet trial.
 
-This is a bounded improvement, **not full retail crate parity**. The existing
-fresh-session selector/centre reward choices remain explicit OBP initial
-conditions. Native RNG call order, difficulty-dependent immediate attraction,
-camera-side attraction steering, moving supports, sparkle/debris rendering,
-stack falling, source sound mapping and campaign reload persistence remain
-outside this slice. The existing representative audio cue is still provisional.
+### Falling stacks, original fragments and sounds
 
-**CONFIRMED:** authored crate-family PVar structure; class-500 population; per-level shared crate-family update vtables; seven-state loaded state machine; class-500 damage-flag mask/exclusion and positive-`damageHp` break predicate; class-500 break transition to state 3 and Oozla `+0xC8==0` deactivation path; runtime consumption of authored `+0xC8/+0xCC`; runtime `+0xC6/+0xCA/+0xCB` use; live `Moby+0xAA = oClass`; static Moby `+0x10 -> live +0xB2` UID mapping; static Moby `+0x14 -> live +0xB4` Bolt-reward mapping; class-500's separate `0x0030F920 -> 0x003177C8` reward path; percentage-scaling helper `0x002D9528`; four overlay-backed reward percentage banks at `0x001A89C8..0x001A89E7`; packed selector addressing at `0x0019B4A8 + contextIndex*0x400 + floor(uid/2)` and UID-parity nibble selection; zero-filled selector bytes in the retail executable image; deferred reservoir add/release at `0x001A7A14`; modulo RNG at `0x003104E8`; progression-tier effect on the class-500 physical-piece budget; denomination decomposition `1000/500/100/50/20/5/1`; denomination-to-selector mapping `19..13`; dynamic class-3291 creation on the separate indexed-resource branch; class-3291 amount/index PVar fields; 56-slot indexed count structure; add/subtract/capacity mechanics; class-3291 successful-collection delta check; `-1` runtime-index substitution; class-502 authored absence.
+Loaded crate physics `0x003927E8` traverses supports bottom-up with a per-tick
+visit guard. The unsupported recurrence at `0x003929B8` subtracts float bits
+`0x3B326750` (9.8 / 3600), clamps velocity to -0.3, then advances height.
+`0x00392C08..18` uses the lower crate's root height plus exactly 1.0. Landing
+clears velocity. Break helper `0x003922B0` unlinks supports and marks the remaining
+stack to update. `Rac2CrateFallSession` owns the recurrence; the host supplies
+stationary support contacts and moves both neutral presentation state and an
+AnimatableBody3D derived from the original mesh. Native moving-parent motion,
+chain identity and the exact PS2 contact solver remain outside this port.
+
+The break helper decays `gp+0x3AC` by elapsed ticks >> 2, or resets it after
+240 ticks. Available fragment slots and recent pressure choose budget 4/3/2/1/0
+at free-slot thresholds >250/>200/>150/>100 and pressure thresholds <5/<10/<15/<20.
+Class 500 emits original mask 0x25/0x05/0x01/0 for budget >=3/2/1/0,
+respectively; pressure increases by the chosen budget, including 4 for mask
+0x25. This also feeds the reward-piece budget. OBP explicitly uses a host pool
+of 256 fragment slots, not the retail allocator's history.
+
+Class header +0x2C locates the detachable-part packet directory (units of 16),
+and +0x2E locates the corncob pivot table. Parts 0/2/5 decode to 32/20/20
+triangles and use Oozla texture 40. Original pivots are retained. This layout is
+independently corroborated by pinned Wrench `src/engine/moby_low.h` and
+`moby_packet.h`; implementation follows bounded retail reads, without copying
+Wrench code. Generic emitter `0x0031BF10` supplies planar/upward launch 3..6 / 60,
+spin 90..270 degrees per second and gravity 10..20 / 3600. Constructor
+`0x002D1400` supplies damping 0.45, stopping threshold 0.033333335 and lifetime
+180. Airborne lifetime advances every fourth tick; after contact, every tick.
+The host uses swept point contacts, normal reflection, spin and a 2/128 fade
+mapping. These are bounded presentation adaptations; the native corner-contact
+solver and exact angular/RNG sequence are not reproduced.
+
+The crate call at `0x0039235C/60` selects class-local SoundDef 0 through helper
+`0x00355780`, throttled to once per two ticks. Bolt arrival also selects its own
+class SoundDef 0 (flat playback flag 32). The level +0x70 remap directory has an
+eight-byte prefix and a leading absent direct slot before local SoundDef 0.
+Oozla class 500 maps to SBlk sound 69; Bolt classes 13..17 map to sound 53.
+SoundDef pitch is 0 / -2540 and maximum gain 1 / 921/2048, respectively. Shared
+989snd rendering executes their tone/random-choice/pitch-bend programs and ADSR
+at 48 kHz. Twelve seeded variants cache the randomized arrival program.
+Zero-SoundDef classes remain silent, matching the native guard. This replaces
+the upgrade cue on the ordinary crate/pickup path; hostile audio is unchanged.
+
+`Rac2CrateEffectsRetailTests` checks original parts, sound programs and loaded
+instruction witnesses. The engine trial breaks a real stack support, checks a
+one-unit fall, settling, updated state/combat geometry, original textured parts,
+movement/spin/retirement and audio-host acceptance of both mapped cues.
+
+This remains a bounded improvement. Fresh-session selector/centre reward choices
+are explicit OBP initial conditions. Native RNG order, difficulty-dependent
+immediate attraction, camera-side steering, moving supports, sparkle effects,
+full native debris collision/mixing and campaign reload persistence remain
+unrecovered.
+
+**CONFIRMED:** authored crate-family PVar structure; class-500 population; per-level shared crate-family update vtables; seven-state loaded state machine; class-500 damage-flag mask/exclusion and positive-`damageHp` break predicate; class-500 break transition to state 3 and Oozla `+0xC8==0` deactivation path; runtime consumption of authored `+0xC8/+0xCC`; runtime `+0xC6/+0xCA/+0xCB` use; live `Moby+0xAA = oClass`; static Moby `+0x10 -> live +0xB2` UID mapping; static Moby `+0x14 -> live +0xB4` Bolt-reward mapping; class-500's separate `0x0030F920 -> 0x003177C8` reward path; percentage-scaling helper `0x002D9528`; four overlay-backed reward percentage banks at `0x001A89C8..0x001A89E7`; packed selector addressing at `0x0019B4A8 + contextIndex*0x400 + floor(uid/2)` and UID-parity nibble selection; zero-filled selector bytes in the retail executable image; deferred reservoir add/release at `0x001A7A14`; modulo RNG at `0x003104E8`; recent-break-pressure effect on the class-500 physical-piece budget; denomination decomposition `1000/500/100/50/20/5/1`; denomination-to-selector mapping `19..13`; dynamic class-3291 creation on the separate indexed-resource branch; class-3291 amount/index PVar fields; 56-slot indexed count structure; add/subtract/capacity mechanics; class-3291 successful-collection delta check; `-1` runtime-index substitution; class-502 authored absence.
 
 **CORROBORATED:** `oClass 500 = Bolt Crate`; public `bolts` naming for the now retail-proved `+0x14` reward field; public TargetVars structural lead; public `Ammo[56]` matches the runtime selector's 56-slot domain.
 
 **INFERRED:** `0x003922B0` is a break/destruction transition helper; selectors `13..19` are Bolt-denomination pickup identities; `0x001A7A32/+0x33` are the Challenge Mode bolt multiplier/sublevel; class 3291 is a generic indexed collectible/resource object; the 56-slot counter system is ammo/inventory-resource state.
 
-Still **UNKNOWN:** exact names of states `0..6`; exact `+0xCC/+0xC6/+0xCA/+0xCB` semantics; broader meaning of `+0xC8` outside the proved Oozla deactivation branch; semantic identity of progression-like `gp+0x3AC`; exact runtime population/history of the packed reward-selector blocks and semantic identity of the active `contextIndex`; exact 56-slot resource names; debris/effect presentation; save/reload/persistence/respawn rules; exact GC identities of classes 501/505/511/512.
+Still **UNKNOWN:** exact names of states `0..6`; exact `+0xCC/+0xC6/+0xCA/+0xCB` semantics; broader meaning of `+0xC8` outside the proved Oozla deactivation branch; exact runtime population/history of the packed reward-selector blocks and semantic identity of the active `contextIndex`; exact 56-slot resource names; full native fragment collision/angular behavior and sparkle effects; save/reload/persistence/respawn rules; exact GC identities of classes 501/505/511/512.

@@ -4,6 +4,7 @@ using OBP.Godot;
 using OBP.Fusion;
 using OBP.RAC2.Gameplay;
 using OBP.Runtime;
+using OBP.Runtime.Audio;
 
 namespace OBP.Game;
 
@@ -19,11 +20,12 @@ internal sealed record Rac2CrateBoltPorts(
     Action<ActorInstanceKey, string, string, Func<bool>> RegisterActor,
     Func<ActorInstanceKey, int, int, string?> Credit,
     Action RefreshHud,
-    Action PickupAudio,
+    Action<int> PickupAudio,
     Func<string?> SourcePath,
     Func<int> Seed,
     Func<(float Radius, float Height)> AttractionProfile,
-    Action<global::Godot.Collections.Array<Rid>> ActorExclusions);
+    Action<global::Godot.Collections.Array<Rid>> ActorExclusions,
+    Func<RuntimeAudioPlaybackIntent, bool> PlayEffect);
 
 /// <summary>
 /// One R&C2 scene lease owns its physical class-500 pickup areas. The native
@@ -211,7 +213,7 @@ internal sealed class Rac2CrateBoltPresentation(
         }
         area.QueueFree();
         _areas.Remove(area);
-        ports.PickupAudio();
+        ports.PickupAudio(Rac2BoltAssets.ClassForDenomination(pickup.Denomination));
         resources.CrateDiagnostics.Probe.RewardStatus = $"collected +{denomination}; session total {rewards.CollectedBolts}; " +
             $"{rewards.OutstandingPickupCount} physical remain, {rewards.DeferredBolts} deferred";
         GD.Print($"[crate-bolts] pickup={pickup.PickupId} denomination={denomination} " +

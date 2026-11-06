@@ -58,6 +58,8 @@ public sealed class GameplayTickWiringArchitectureTests
         Assert.Contains("GameplayTickPhase.NativeWorld, \"rac1-native\"", one);
         Assert.Contains("if (_world.Game == ObpSourceGame.Rac2)", two);
         Assert.Contains("GameplayTickPhase.NativeWorld, \"rac2-native\"", two);
+        Assert.Contains("GameplayTickPhase.Physics, \"rac2-bolts\"", two);
+        Assert.Contains("GameplayTickPhase.Physics, \"rac2-crate-effects\"", two);
         Assert.Contains("resources.Rac1Gameplay?.RegisterTicks", binder);
         Assert.Contains("resources.Rac2Gameplay?.RegisterTicks", binder);
         Assert.DoesNotContain("Rac3Gameplay?.RegisterTicks", binder, StringComparison.Ordinal);

@@ -673,4 +673,22 @@ public static partial class GcUyaMoby
 
         return outp;
     }
+    /// <summary>Decode one native detachable-part high-LOD packet range, retaining its original class scale and materials.</summary>
+    public static Mesh ReadBangle(byte[] source, int part)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        if ((uint)part >= 15) throw new ArgumentOutOfRangeException(nameof(part));
+        if (source.Length < ClassHeaderSize) throw new InvalidDataException("Truncated Moby class.");
+        int directory = source[0x2c] * 16;
+        int at = directory + 4 + part * 4;
+        if (directory == 0 || at > source.Length - 4) throw new InvalidDataException("Moby has no bounded part directory.");
+        int first = source[at], count = source[at + 1];
+        long packets = BinaryPrimitives.ReadInt32LittleEndian(source) + first * 16L;
+        if (count == 0 || packets < ClassHeaderSize || packets + count * 16L > source.Length)
+            throw new InvalidDataException("Moby detachable-part packet range is unavailable.");
+        byte[] selected = (byte[])source.Clone();
+        BinaryPrimitives.WriteInt32LittleEndian(selected, (int)packets);
+        selected[4] = (byte)count;
+        return ReadClass(selected, recoverPersistentVertexCache: true);
+    }
 }
