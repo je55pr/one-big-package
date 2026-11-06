@@ -19,15 +19,15 @@ using OBP.Runtime.Presentation;
 namespace OBP.RAC2;
 
 /// <summary>
-/// Native world assembly for a Going Commando retail level â€” the C# equivalent of
+/// Native world assembly for a Going Commando retail level — the C# equivalent of
 /// <c>reference-ts/tools/gc-world.mjs</c>. Opens the level WAD from an ISO,
 /// decodes chunk-0 tfrags + octree collision, instances the tie / shrub / moby
-/// classes (per-texture grouping + vertex welding, native Z-up â†’ OBP Y-up), adds
+/// classes (per-texture grouping + vertex welding, native Z-up → OBP Y-up), adds
 /// moby instance markers, the sky shells and a death-height plane, and grows the
 /// world bounds.
 ///
 /// <para>
-/// Output is a neutral <see cref="RuntimeWorld"/> â€” no GC or Godot types cross
+/// Output is a neutral <see cref="RuntimeWorld"/> — no GC or Godot types cross
 /// this boundary. This is where GC-specific data conversion terminates.
 /// </para>
 public static partial class Rac2WorldImport
@@ -420,7 +420,7 @@ public static partial class Rac2WorldImport
         return outp;
     }
 
-    /// <summary>Package the gameplay lights into the neutral runtime lighting model (native Z-up â†’ OBP Y-up).</summary>
+    /// <summary>Package the gameplay lights into the neutral runtime lighting model (native Z-up → OBP Y-up).</summary>
     private static void PlaceMobyInstances(
         IReadOnlyList<Rac2Instances.MobyInstance> instances,
         Dictionary<int, GcUyaMoby.MobyClass> classes,
