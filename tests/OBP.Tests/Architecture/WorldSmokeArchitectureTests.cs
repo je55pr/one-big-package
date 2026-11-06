@@ -103,6 +103,7 @@ public sealed class WorldSmokeArchitectureTests
             "definition => factories.Routes().CreateRoute(definition)",
             "definition => factories.Encounter().CreateFrogs(definition)",
             "factories.Rac3SeedAudit",
+            "definition => factories.Capture().CreateRac2Crates(definition)",
         ];
         var actual = System.Text.RegularExpressions.Regex.Matches(bind,
             @"definition => factories\.\w+\(\)\.\w+\(definition\)|factories\.Rac3SeedAudit",

@@ -58,6 +58,7 @@ public sealed class Rac2BoltMotionSession
                 else Hop(.0125f);
                 break;
             case 4 when attractEnabled: StepAttracted(socket); break;
+            default: break;
         }
     }
 
@@ -69,7 +70,7 @@ public sealed class Rac2BoltMotionSession
             Attract();
         else if (contact is { } hit && Velocity.Z < 0 && hit.Normal.Z > .70710677f)
         {
-            _rest = hit.Position + Vector3.UnitZ * ContactRadius;
+            _rest = hit.Position + hit.Normal * ContactRadius;
             Position = _rest;
             if (attractEnabled && _activated) { Velocity *= .13333334f; Attract(); }
             else
@@ -86,6 +87,7 @@ public sealed class Rac2BoltMotionSession
         Hop(.025f);
         if (_hopRemaining == 0)
         {
+            Position = _rest;
             NativeState = 3;
             _hopLength = _hopRemaining = (int)_sample(10, 20);
         }
@@ -115,4 +117,5 @@ public sealed class Rac2BoltMotionSession
     }
 }
 
+/// <summary>Host surface point and unit normal. Radius clearance adapts that ray contact to a pickup centre; it does not reproduce PS2 narrow phase.</summary>
 public readonly record struct Rac2BoltContact(Vector3 Position, Vector3 Normal);

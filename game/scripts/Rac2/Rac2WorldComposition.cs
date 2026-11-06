@@ -45,7 +45,7 @@ internal sealed class Rac2WorldComposition(ApplicationComponents components) : C
                 return result.Applied ? null : result.Reason;
             }, () => RefreshRac1HudState(), () => _worldHost.PlayRepresentativeAudioOneShot(),
             () => Sources.Setup.Library.Get(ObpSourceGame.Rac2)?.Path,
-            () => _args.FixedSeed ?? 1,
+            () => _args.FixedSeed ?? Random.Shared.Next(),
             // Selected-player attraction adapter; see research/GC_CRATES.md.
             () => OBP.RAC1.Gameplay.Rac1BoltMotionSession.AttractionProfile(DefaultRac1PickupState,
                 _playerNative?.Inventory.OwnsNativeItem(Rac1BoltGrabberItem) == true)));

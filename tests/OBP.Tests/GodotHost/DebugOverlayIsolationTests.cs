@@ -4,6 +4,14 @@ namespace OBP.Tests;
 
 public sealed class DebugOverlayIsolationTests
 {
+    [Fact]
+    public void LogicMarkersNeedExplicitIsolationWhileOrdinaryGeometryRemainsVisible()
+    {
+        Assert.False(DebugOverlay.IncludesKind("moby-marker", null));
+        Assert.True(DebugOverlay.IncludesKind("moby-marker", "moby-marker"));
+        Assert.False(DebugOverlay.IncludesKind("moby", "moby-marker"));
+        Assert.True(DebugOverlay.IncludesKind("moby", null));
+    }
     [Theory]
     [InlineData("tfrag", 1)]
     [InlineData("moby", 4)]

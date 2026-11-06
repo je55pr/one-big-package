@@ -38,9 +38,9 @@ internal static class WorldEntryPreparationPolicy
     {
         return new WorldHost.Options
         {
-            // Meshless source objects are invisible in play. Their generated
-            // cubes are available only when explicitly requested for inspection.
-            IncludeMobyMarkers = args.Overlay?.Split(',').Any(layer =>
+            // Logic markers are invisible during play. Shot lists retain their
+            // geometry for explicit per-shot inspection overlays.
+            IncludeMobyMarkers = args.ShotsPath is not null || args.Overlay?.Split(',').Any(layer =>
                 layer.Trim().Equals("isolate:moby-marker", StringComparison.OrdinalIgnoreCase)) == true,
             IncludeSky = !args.AnimSolo,
             IncludeCollision = true,

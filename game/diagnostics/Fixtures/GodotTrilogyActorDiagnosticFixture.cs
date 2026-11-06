@@ -3,6 +3,7 @@ using OBP.Fusion;
 using Godot;
 using OBP.Runtime.Gameplay;
 using OBP.Godot;
+using System.Security.Cryptography;
 
 namespace OBP.Game.Diagnostics;
 
@@ -99,9 +100,43 @@ internal sealed class GodotTrilogyActorDiagnosticFixture(GodotTrilogyActorDiagno
         int colliders = crate.Root.GetChildren().OfType<StaticBody3D>().Count(body => body.CollisionLayer != 0);
         if (colliders != 0) throw new InvalidOperationException($"broken crate collision bodies: {colliders}, expected=0");
         int pickups = world.CrateBolts.OutstandingNodes;
+        VerifyPresentedPickups(world);
         bool repeated = host.Combat.Apply(contact);
         if (pickups != 3 || repeated || world.CrateBolts.OutstandingNodes != pickups)
             throw new InvalidOperationException($"crate duplicate gate: pickups={pickups}->{world.CrateBolts.OutstandingNodes}, repeated={repeated}; expected=3->3/false");
+    }
+
+    private static void VerifyPresentedPickups(Rac2WorldModule world)
+    {
+        var nodes = world.CrateBolts.PickupNodes;
+        if (nodes.Count(node => node.Name.ToString().EndsWith("_class14", StringComparison.Ordinal)) != 2 ||
+            nodes.Count(node => node.Name.ToString().EndsWith("_class13", StringComparison.Ordinal)) != 1)
+            throw new InvalidOperationException("crate pickup identities did not match 5/5/1 => classes 14/14/13");
+        foreach (var node in nodes)
+            VerifyPresentedPickup(node);
+    }
+
+    private static void VerifyPresentedPickup(Node3D node)
+    {
+        var meshes = node.GetChildren().OfType<MeshInstance3D>().ToArray();
+        int expectedFaces = node.Name.ToString().EndsWith("_class13", StringComparison.Ordinal) ? 52 : 48;
+        if (meshes.Any(mesh => mesh.Mesh is not ArrayMesh) || meshes.Sum(mesh => mesh.Mesh.GetFaces().Length / 3) != expectedFaces)
+            throw new InvalidOperationException($"pickup {node.Name} did not present its original {expectedFaces}-triangle model");
+        string[] expectedHashes = expectedFaces == 52
+            ? ["FB5727C250A081F005BFA5A17BF99A0DAF44C5A5F2424A2918317D1A4F3A6617",
+                "76C3B3017261FAEA873E612F3BE5AB2A172F51BF5AB5C49C1B65FFF7F38A0C70"]
+            : ["AC4EB53E8608B337921069496D7E0763E2C4FCD4F05CCE4C584BCD6870B1EB5D"];
+        string[] hashes = meshes.Select(PresentedTextureHash).ToArray();
+        if (!expectedHashes.SequenceEqual(hashes))
+            throw new InvalidOperationException($"pickup {node.Name} has unexpected material textures: {string.Join(',', hashes)}");
+    }
+
+    private static string PresentedTextureHash(MeshInstance3D mesh)
+    {
+        using var image = (mesh.MaterialOverride as StandardMaterial3D)?.AlbedoTexture?.GetImage()
+            ?? throw new InvalidOperationException($"pickup {mesh.Name} has no original albedo texture");
+        image.ClearMipmaps();
+        return Convert.ToHexString(SHA256.HashData(image.GetData()));
     }
 
     private async Task CollectCrateAsync(Rac2WorldModule world, PlayerHost player, RuntimeWorldScene.DynamicObjectNode crate,

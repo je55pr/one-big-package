@@ -164,8 +164,8 @@
   {
     "Key": "game/scripts/World/WorldEntryPreparationPolicy.cs::WorldEntryPreparationPolicy.WorldOptions(RuntimeWorld,CommandLineArgs)",
     "Kind": "adapter",
-    "Reason": "#376: native Novalis water collision-face admission and capture display configuration are world-source presentation facts. They cannot select a player avatar or equipment. Meshless object cubes now require the explicit isolate:moby-marker overlay; the rac2-crate-smoke engine trial verifies their absence during ordinary play. No selected player service or capability is changed.",
-    "Hash": "95ebc92ef64dddcfda0d709ffd9246f833f87d38251e4eddd344222c6c0378cc"
+    "Reason": "#376: native Novalis water collision-face admission and capture display configuration are world-source presentation facts. They cannot select a player avatar or equipment. Meshless cubes require explicit isolate:moby-marker visibility; shot lists retain hidden geometry for per-shot inspection. DebugOverlayIsolationTests covers visibility admission and the rac2-crate-smoke engine trial verifies their absence during ordinary play. No selected player service or capability is changed.",
+    "Hash": "cda1b12039023848701ad5572e030db6d7a7b203f0811e942b284acba619c21a"
   },
   {
     "Key": "game/scripts/World/WorldEntryPreparationPolicy.cs::WorldEntryPreparationPolicy.ValidateSourceEntry(RuntimeWorld)",

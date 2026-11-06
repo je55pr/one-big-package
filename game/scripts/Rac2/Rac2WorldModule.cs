@@ -298,6 +298,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
 
     private bool ApplyRac2Class500Damage(RuntimeWorldScene.DynamicObjectNode target, Rac2GameplayDamageEvent damageEvent, string source)
     {
+        if (!_crates.Contains(target)) return false;
         var resources = _resources;
         var probe = resources.CrateDiagnostics.Probe;
         var dispatch = _rac2DamageTransport.Publish(damageEvent);

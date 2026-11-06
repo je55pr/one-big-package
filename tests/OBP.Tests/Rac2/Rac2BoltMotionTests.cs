@@ -57,5 +57,26 @@ public sealed class Rac2BoltMotionTests
         bolt.Step(far, far, 3, 1.75f, true);
         Assert.Equal(3, bolt.NativeState);
         Assert.False(bolt.Collected);
+        bolt.Step(bolt.Position, bolt.Position + Vector3.UnitZ * .7f, 3, 1.75f, true);
+        Assert.Equal(4, bolt.NativeState);
+        var frozen = bolt.Position;
+        for (int tick = 0; tick < 120; tick++) bolt.Step(frozen, frozen, 3, 1.75f, false);
+        Assert.Equal(frozen, bolt.Position);
+        Assert.False(bolt.Collected);
+    }
+
+    [Fact]
+    public void SlopedContactClearsTheSurfaceAndFirstHopFinishesAtItsAnchor()
+    {
+        var bolt = Create();
+        var far = new Vector3(100, 100, 1);
+        for (int tick = 0; tick < 40; tick++) bolt.Step(far, far, 3, 1.75f, false);
+        var hit = new Rac2BoltContact(Vector3.Zero, new(.6f, 0, .8f));
+        bolt.Step(far, far, 3, 1.75f, false, hit);
+        var anchor = hit.Position + hit.Normal * Rac2BoltMotionSession.ContactRadius;
+        Assert.Equal(anchor, bolt.Position);
+        for (int tick = 0; tick < 35; tick++) bolt.Step(far, far, 3, 1.75f, false);
+        Assert.Equal(3, bolt.NativeState);
+        Assert.Equal(anchor, bolt.Position);
     }
 }

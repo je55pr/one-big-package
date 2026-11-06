@@ -285,6 +285,8 @@ Its `lwc1` witnesses are `0x00378378/38C/3A0/3B4/3C8/3DC/3E8`; Oozla's `$gp`
 is `0x001AEFF0`. The decoder already applies the model's own class scale.
 `Rac2BoltAssetsTests` checks the geometry, texture availability and those original
 instruction/data values without retaining asset payloads.
+It also follows each original denomination comparison into its allocator call
+and pins Oozla texture IDs 0/23/24/25 with decoded-payload SHA-256 fingerprints.
 
 The gold placeholder spheres and fixed scatter ring are replaced with these
 models and a bounded source-owned motion session. Loaded pickup update
@@ -295,12 +297,18 @@ and attraction acceleration ramp `0.006666667` up to `0.53333336` per tick.
 The host supplies floor contacts, the selected player's attraction dimensions,
 and an explicit feet-to-socket offset. Collection, rather than proximity alone,
 credits each denomination through the existing player-session receipt port.
+The host ray-to-centre clearance uses the contacted unit normal, including on
+slopes. The catch-up limit is 12 native ticks per host frame, and ordinary launch
+randomness uses a runtime seed unless a diagnostic/replay fixed seed is supplied.
 
 `--destination rac2:LEVEL1 --rac2-crate-smoke --no-profile` exercises the ordinary
 actor/query route, absence of marker cubes, collision removal, duplicate-hit
 isolation, original pickup models and wallet collection. It requires the selected
 R&C1 player source and attached R&C2 source. `Rac2BoltMotionTests` independently
 checks launch/gravity, bounce/rest, attraction and dead-player admission.
+The engine fixture inspects the spawned 14/14/13 classes, 48/48/52-triangle
+ArrayMeshes and the actual material textures before accepting the 5/5/1 pickup
+and wallet trial.
 
 This is a bounded improvement, **not full retail crate parity**. The existing
 fresh-session selector/centre reward choices remain explicit OBP initial
