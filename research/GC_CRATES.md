@@ -267,6 +267,48 @@ This proves a complete development loop from preserved retail crate identity thr
 
 ## What is proved now
 
+### Ordinary Oozla contact and pickup slice
+
+The ordinary actor registry now admits Oozla's 190 class-500 crates. The existing
+weapon/wrench contact service forwards a source-qualified hit to the RAC2 break
+predicate, retaining the source damage amount. The cross-source damage envelope
+is an explicit OBP adapter; foreign weapon class numbers and flags are not
+reinterpreted as native GC attacks. Repeat contacts with an inactive crate cannot
+emit another payout. Godot convex contacts are generated from each retail crate
+mesh and disabled on break; this is host physics, not the PS2 narrow phase.
+
+`Rac2BoltAssets` reads the active level's original Moby classes 13..19 and their
+texture remaps. Oozla's triangle counts are respectively 52, 48, 96, 192, 162, 174
+and 204. The constructor at loaded `0x00378270` selects those classes by
+denomination and loads seven scale factors of `0.5` at `0x001AEBB0..0x001AEBC8`.
+Its `lwc1` witnesses are `0x00378378/38C/3A0/3B4/3C8/3DC/3E8`; Oozla's `$gp`
+is `0x001AEFF0`. The decoder already applies the model's own class scale.
+`Rac2BoltAssetsTests` checks the geometry, texture availability and those original
+instruction/data values without retaining asset payloads.
+
+The gold placeholder spheres and fixed scatter ring are replaced with these
+models and a bounded source-owned motion session. Loaded pickup update
+`0x00376D58`, constructor `0x00378270`, and emission `0x003177C8` provide the
+per-tick gravity `0.003`, planar launch components `0..3 / 60`, upward launch
+`3.7..6 / 60`, contact radius `0.25`, rebound intervals `30..40` and `10..20`,
+and attraction acceleration ramp `0.006666667` up to `0.53333336` per tick.
+The host supplies floor contacts, the selected player's attraction dimensions,
+and an explicit feet-to-socket offset. Collection, rather than proximity alone,
+credits each denomination through the existing player-session receipt port.
+
+`--destination rac2:LEVEL1 --rac2-crate-smoke --no-profile` exercises the ordinary
+actor/query route, absence of marker cubes, collision removal, duplicate-hit
+isolation, original pickup models and wallet collection. It requires the selected
+R&C1 player source and attached R&C2 source. `Rac2BoltMotionTests` independently
+checks launch/gravity, bounce/rest, attraction and dead-player admission.
+
+This is a bounded improvement, **not full retail crate parity**. The existing
+fresh-session selector/centre reward choices remain explicit OBP initial
+conditions. Native RNG call order, difficulty-dependent immediate attraction,
+camera-side attraction steering, moving supports, sparkle/debris rendering,
+stack falling, source sound mapping and campaign reload persistence remain
+outside this slice. The existing representative audio cue is still provisional.
+
 **CONFIRMED:** authored crate-family PVar structure; class-500 population; per-level shared crate-family update vtables; seven-state loaded state machine; class-500 damage-flag mask/exclusion and positive-`damageHp` break predicate; class-500 break transition to state 3 and Oozla `+0xC8==0` deactivation path; runtime consumption of authored `+0xC8/+0xCC`; runtime `+0xC6/+0xCA/+0xCB` use; live `Moby+0xAA = oClass`; static Moby `+0x10 -> live +0xB2` UID mapping; static Moby `+0x14 -> live +0xB4` Bolt-reward mapping; class-500's separate `0x0030F920 -> 0x003177C8` reward path; percentage-scaling helper `0x002D9528`; four overlay-backed reward percentage banks at `0x001A89C8..0x001A89E7`; packed selector addressing at `0x0019B4A8 + contextIndex*0x400 + floor(uid/2)` and UID-parity nibble selection; zero-filled selector bytes in the retail executable image; deferred reservoir add/release at `0x001A7A14`; modulo RNG at `0x003104E8`; progression-tier effect on the class-500 physical-piece budget; denomination decomposition `1000/500/100/50/20/5/1`; denomination-to-selector mapping `19..13`; dynamic class-3291 creation on the separate indexed-resource branch; class-3291 amount/index PVar fields; 56-slot indexed count structure; add/subtract/capacity mechanics; class-3291 successful-collection delta check; `-1` runtime-index substitution; class-502 authored absence.
 
 **CORROBORATED:** `oClass 500 = Bolt Crate`; public `bolts` naming for the now retail-proved `+0x14` reward field; public TargetVars structural lead; public `Ammo[56]` matches the runtime selector's 56-slot domain.

@@ -158,14 +158,14 @@
   {
     "Key": "game/scripts/Rac2/Rac2WorldModule.cs::Rac2WorldModule.RegisterTicks(GameplayTickScheduler<InputEvent>)",
     "Kind": "adapter",
-    "Reason": "#375: register the source-matching R&C2 world adapter once per scene lease, retaining its existing Rac2WorldLeaseClock fractional native tick without choosing avatar or player services from the source identity. Scheduler and host-wiring regressions exercise this boundary.",
-    "Hash": "4434f50450cb0a4464d6d0eb9804ba44f0c8c6aaf60c4a84f35c850b27d94bbf"
+    "Reason": "#375: register the source-matching R&C2 world adapter once per scene lease, retaining its existing Rac2WorldLeaseClock fractional native tick without choosing avatar or player services from the source identity. Also schedules the world-owned Bolt pickup clock; Rac2BoltMotionTests and the rac2-crate-smoke engine trial cover motion and collection through the existing player grant port. No player-global configuration is selected or mutated here.",
+    "Hash": "a14209cc4294417cb828a22af8ee29c2335689f888834e968fd6006cc5a79d79"
   },
   {
     "Key": "game/scripts/World/WorldEntryPreparationPolicy.cs::WorldEntryPreparationPolicy.WorldOptions(RuntimeWorld,CommandLineArgs)",
     "Kind": "adapter",
-    "Reason": "#376: native Novalis water collision-face admission and capture display configuration are world-source presentation facts. They cannot select a player avatar or equipment. The existing frame/collision configuration is moved unchanged from the root into a stateless source preparation policy.",
-    "Hash": "9f98bab3802c297747362e0bbcce576029f8a682b08faf9f79029cc9e175d8c3"
+    "Reason": "#376: native Novalis water collision-face admission and capture display configuration are world-source presentation facts. They cannot select a player avatar or equipment. Meshless object cubes now require the explicit isolate:moby-marker overlay; the rac2-crate-smoke engine trial verifies their absence during ordinary play. No selected player service or capability is changed.",
+    "Hash": "95ebc92ef64dddcfda0d709ffd9246f833f87d38251e4eddd344222c6c0378cc"
   },
   {
     "Key": "game/scripts/World/WorldEntryPreparationPolicy.cs::WorldEntryPreparationPolicy.ValidateSourceEntry(RuntimeWorld)",

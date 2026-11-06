@@ -20,6 +20,7 @@ internal sealed class CaptureDiagnosticHarness(CaptureDiagnosticAuthorities auth
     internal void StartReports(CancellationToken lifetime = default) => Start("bug-report-smoke", context => new BugReporterScenario(context, ports.Recorder, ports.Reports).RunAsync(), "bug-report-smoke-fail", 1, true, lifetime: lifetime);
     internal void StartReconciliation(CancellationToken lifetime = default) => Start("reconciliation-capture", context => Reconciliation(context).RunAsync(), "reconciliation-capture-fail", 2, false, "capture-route", lifetime);
     internal void StartTrilogy() => Start("trilogy-gameplay-smoke", context => new TrilogyGameplayScenario(context, ports.Player, ports.Actors, ports.Navigation, ports.Equipment).RunAsync(), "trilogy-gameplay-smoke-fail", 1, true);
+    internal void StartRac2Crates() => Start("rac2-crate-smoke", context => new TrilogyGameplayScenario(context, ports.Player, ports.Actors, ports.Navigation, ports.Equipment).RunRac2CratesAsync(), "rac2-crate-smoke-fail", 1, true);
     private ReconciliationCaptureScenario Reconciliation(CaptureDiagnosticContext context) => new(context, ports.Recorder, ports.Navigation, ports.Equipment, acceptance);
     private DiagnosticScenarioDefinition Definition(string id) => new(id + "/v1", DiagnosticSourceAccess.ExplicitSourceDiagnostic,
         // Report replays poll process frames while a child imports its world. Headless

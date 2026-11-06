@@ -1,6 +1,7 @@
 using OBP.Core;
 using Godot;
 using OBP.Godot;
+using OBP.Fusion;
 using OBP.RAC2.Gameplay;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
@@ -23,6 +24,8 @@ internal sealed partial class Rac2WorldModule : IDisposable
     private bool _activatingCrateStrike;
     private bool _disposed;
     private readonly Rac2WorldLeaseClock _clock;
+    private readonly List<RuntimeWorldScene.DynamicObjectNode> _crates = [];
+    private readonly Dictionary<int, StaticBody3D> _crateBodies = [];
 
     internal Rac2WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene, GodotWorldResources resources,
         Rac2WorldPorts ports, Rac2CrateBoltPorts boltPorts)
@@ -38,6 +41,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
 
     internal Rac2CrateBoltPresentation CrateBolts { get; }
     internal bool Current => _clock.Current;
+    internal IReadOnlyList<RuntimeWorldScene.DynamicObjectNode> Crates => _crates;
 
     internal IDictionary<int, Rac2Class2827HostileSession> Hostiles => _rac2Class2827Hostiles;
     internal IDictionary<int, Rac2OpeningMsr1HostSession> OpeningSessions => _rac2OpeningMsr1;
@@ -60,6 +64,10 @@ internal sealed partial class Rac2WorldModule : IDisposable
         _disposed = true;
         _clock.Retire();
         CrateBolts.Dispose();
+        foreach (var body in _crateBodies.Values)
+            if (GodotObject.IsInstanceValid(body)) body.CollisionLayer = body.CollisionMask = 0;
+        _crateBodies.Clear();
+        _crates.Clear();
         if (_player is not null && GodotObject.IsInstanceValid(_player))
             _player.CrateStrikeRequested -= OnRac2PrimaryAttackRequested;
         _player = null;
@@ -79,6 +87,24 @@ internal sealed partial class Rac2WorldModule : IDisposable
         {
             return;
         }
+
+        foreach (var node in nodes.Where(node => node.Source.SourceGame == ObpSourceGame.Rac2 && node.Source.NativeClassId == 500))
+        {
+            if (Rac2Class500Authority.Read(node.Source)?.PvarC8 != 0)
+            {
+                GD.PrintErr($"[rac2-crates] {node.Source.InteractionId}: respawning/missing crate authority is not supported.");
+                continue;
+            }
+            _crates.Add(node);
+            // Host convex contact derived from the retail model; PS2 narrow
+            // phase is not reproduced by Godot's physics engine.
+            var body = new StaticBody3D { Name = $"Rac2CrateContact_{node.Source.InstanceIndex}", CollisionLayer = 1, CollisionMask = 1 };
+            foreach (var mesh in node.Root.GetChildren().OfType<MeshInstance3D>())
+                body.AddChild(new CollisionShape3D { Shape = mesh.Mesh.CreateConvexShape(), Transform = mesh.Transform });
+            node.Root.AddChild(body);
+            _crateBodies.Add(node.Source.InstanceIndex, body);
+        }
+        if (_crates.Count > 0) CrateBolts.Prepare();
 
         var openingLiftNode = nodes.FirstOrDefault(n =>
             n.Source.SourceGame == ObpSourceGame.Rac2 &&
@@ -245,10 +271,35 @@ internal sealed partial class Rac2WorldModule : IDisposable
     }
 
     private void ApplyRac2Class500Strike(RuntimeWorldScene.DynamicObjectNode target, string source)
+        => ApplyRac2Class500Damage(target, Rac2DamageRuntime.FromPlayerState20(target.Source), source);
+
+    internal ActorObservation ObserveCrate(RuntimeWorldScene.DynamicObjectNode node)
+    {
+        bool active = Current && _crates.Contains(node) && GodotObject.IsInstanceValid(node.Root) &&
+            node.State.Presentation.Presence == RuntimeEntityPresence.Active;
+        return new(GodotObject.IsInstanceValid(node.Root)
+                ? new(node.Root.GlobalPosition.X, node.Root.GlobalPosition.Y, node.Root.GlobalPosition.Z) : System.Numerics.Vector3.Zero,
+            active, !active, null, active ? Rac2Class500Lifecycle.ActiveNativeState : Rac2Class500Lifecycle.BreakTransitionNativeState, null);
+    }
+
+    internal ActorHitResult ApplyCrate(RuntimeWorldScene.DynamicObjectNode node, WeaponDamageIntent intent)
+    {
+        if (!ObserveCrate(node).Alive || intent.Target != ActorWorldHost.Target(node) ||
+            !float.IsFinite(intent.SourceDamage) || intent.SourceDamage <= 0)
+            return new(false, false, "The R&C2 crate is retired or the contact is invalid.");
+        // Explicit OBP cross-source contact adapter: preserve the real source
+        // amount, then use an admitted target-game envelope. Foreign flags and
+        // native class numbers never become GC attack identities.
+        var damage = new Rac2GameplayDamageEvent(Rac2GameplayEntityRef.Player, Rac2GameplayEntityRef.Moby(node.Source),
+            new(Rac2PlayerAttackDamage.State20.DamageFlags, 0, 0, 0, intent.SourceDamage, 0));
+        bool applied = ApplyRac2Class500Damage(node, damage, "weapon-contact");
+        return new(applied, applied, applied ? null : "The native R&C2 crate receiver rejected this contact.");
+    }
+
+    private bool ApplyRac2Class500Damage(RuntimeWorldScene.DynamicObjectNode target, Rac2GameplayDamageEvent damageEvent, string source)
     {
         var resources = _resources;
         var probe = resources.CrateDiagnostics.Probe;
-        var damageEvent = Rac2DamageRuntime.FromPlayerState20(target.Source);
         var dispatch = _rac2DamageTransport.Publish(damageEvent);
 
         Rac2Class500LifecycleResult? lifecycle;
@@ -263,14 +314,14 @@ internal sealed partial class Rac2WorldModule : IDisposable
         {
             probe.Status = "strike: target has no usable class-500 authority state";
             GD.PrintErr($"[crate-debug] {target.Source.InteractionId}: {ex.Message}");
-            return;
+            return false;
         }
 
         if (lifecycle is null)
         {
             probe.Status = $"{source}: recovered damage was not admitted";
             GD.Print($"[gc-damage] seq={dispatch.Sequence} {target.Source.InteractionId}: no class-500 consequence");
-            return;
+            return false;
         }
 
         var authored = lifecycle.Authored;
@@ -292,7 +343,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
         {
             probe.RewardStatus = ex.Message;
             GD.PrintErr($"[crate-bolts] {target.Source.InteractionId}: {ex.Message}");
-            return;
+            return false;
         }
 
         _ports.CrateReward(target.Root.GlobalPosition, payout);
@@ -304,13 +355,15 @@ internal sealed partial class Rac2WorldModule : IDisposable
         // deactivate helper when authored +0xC8 is zero. State 6 remains visible
         // because that class-family behaviour has not yet been reconstructed.
         target.ApplyState(lifecycle.EntityState);
+        if (_crateBodies.TryGetValue(target.Source.InstanceIndex, out var body)) body.CollisionLayer = body.CollisionMask = 0;
         if (route == Rac2Class500PostBreakRoute.Deactivate)
         {
             probe.Broken = true;
         }
         GD.Print($"[gc-damage] seq={dispatch.Sequence} {target.Source.InteractionId} " +
-                 $"state20 flags=0x{damageEvent.Damage.DamageFlags:X8} hp={damageEvent.Damage.DamageHp:0.###} " +
+                 $"{source} flags=0x{damageEvent.Damage.DamageFlags:X8} hp={damageEvent.Damage.DamageHp:0.###} " +
                  $"PVar+C8={c8} => state {Rac2CrateInteraction.BreakTransitionState} -> {route}");
+        return true;
     }
 
     /// <summary>Keep the existing fractional R&C2 native clock inside this lease.</summary>
@@ -318,7 +371,10 @@ internal sealed partial class Rac2WorldModule : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (_world.Game == ObpSourceGame.Rac2)
+        {
             ticks.Register(GameplayTickPhase.NativeWorld, "rac2-native", "Rac2WorldModule", 10, Tick);
+            ticks.Register(GameplayTickPhase.NativeWorld, "rac2-bolts", "Rac2CrateBoltPresentation", 20, CrateBolts.Tick);
+        }
     }
 
     internal void Tick(double delta)

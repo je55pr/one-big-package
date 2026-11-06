@@ -34,6 +34,7 @@ public sealed record CommandLineArgs
     public bool PlayerSessionSmoke { get; init; }
     public bool PlayerCapabilitiesSmoke { get; init; }
     public bool TrilogyGameplaySmoke { get; init; }
+    public bool Rac2CrateSmoke { get; init; }
     public bool ReconciliationSmoke { get; init; }
     public string? ProfileSmoke { get; init; }
     public string? AcceptanceOut { get; init; }
@@ -252,6 +253,7 @@ public sealed record CommandLineArgs
                 "--player-session-smoke" => result with { PlayerSessionSmoke = true },
                 "--player-capabilities-smoke" => result with { PlayerCapabilitiesSmoke = true },
                 "--trilogy-gameplay-smoke" => result with { TrilogyGameplaySmoke = true },
+                "--rac2-crate-smoke" => result with { Rac2CrateSmoke = true },
                 "--reconciliation-smoke" => result with { ReconciliationSmoke = true },
                 "--profile-smoke" => result with { ProfileSmoke = Next() },
                 "--acceptance-out" => result with { AcceptanceOut = Next() },

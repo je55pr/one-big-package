@@ -41,5 +41,8 @@ internal sealed class Rac2WorldComposition(ApplicationComponents components) : C
                     pickupId, "obp/bolts", denomination),
                     value => _playerNative.Wallet.Credit(checked((int)value)));
                 return result.Applied ? null : result.Reason;
-            }, () => RefreshRac1HudState(), () => _worldHost.PlayRepresentativeAudioOneShot()));
+            }, () => RefreshRac1HudState(), () => _worldHost.PlayRepresentativeAudioOneShot(),
+            () => Sources.Setup.Library.Get(ObpSourceGame.Rac2)?.Path,
+            () => _args.FixedSeed ?? 1,
+            () => OBP.RAC1.Gameplay.Rac1BoltMotionSession.AttractionProfile(0, _playerNative?.Inventory.OwnsNativeItem(34) == true)));
 }

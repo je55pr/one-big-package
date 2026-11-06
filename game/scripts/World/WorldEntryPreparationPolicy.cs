@@ -36,14 +36,12 @@ internal static class WorldEntryPreparationPolicy
 
     internal static WorldHost.Options WorldOptions(RuntimeWorld world, CommandLineArgs args)
     {
-        bool framedCapture = args.CaptureFrame is not null
-            && (args.DirectLoad || args.Destination is not null)
-            && args.TestScene != "player"
-            && !args.AnimSolo
-            && !args.CrateFocus && !args.CrateAutoStrike;
         return new WorldHost.Options
         {
-            IncludeMobyMarkers = !(args.CaptureFrame is not null && !framedCapture),
+            // Meshless source objects are invisible in play. Their generated
+            // cubes are available only when explicitly requested for inspection.
+            IncludeMobyMarkers = args.Overlay?.Split(',').Any(layer =>
+                layer.Trim().Equals("isolate:moby-marker", StringComparison.OrdinalIgnoreCase)) == true,
             IncludeSky = !args.AnimSolo,
             IncludeCollision = true,
             AdmitCollisionFace = world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 1 }

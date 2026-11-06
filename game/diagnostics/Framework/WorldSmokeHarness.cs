@@ -42,6 +42,7 @@ internal static class WorldSmokeHarness
         if (args.FusionSmoke && switches == 1 && !args.PlaytestRequested) fusion().Start();
         if (switches == 1 && PlayerSessionDiagnosticHarness.IsRequested(args)) factories.Player().StartRequested();
         if (args.TrilogyGameplaySmoke && switches == 1) factories.Capture().StartTrilogy();
+        if (args.Rac2CrateSmoke && switches == 1) factories.Capture().StartRac2Crates();
     }
 
     internal static Entrypoints Bind(Factories factories) => new(

@@ -569,10 +569,11 @@ public partial class PlayerHost : CharacterBody3D
 
     internal Basis DevelopmentCameraBasis => _pitch.GlobalTransform.Basis;
 
-    internal void ApplyDevelopmentReset(Vector3 spawnPosition)
+    internal void ApplyDevelopmentReset(Vector3 spawnPosition, bool snapToFloor = true)
     {
         GlobalPosition = spawnPosition;
         ResetAfterPlacement(_rac1Yaw.CurrentYaw);
+        if (!snapToFloor) _placed = true;
     }
 
     /// <summary>Diagnostics-only water placement without snapping down through a pass-through surface.</summary>

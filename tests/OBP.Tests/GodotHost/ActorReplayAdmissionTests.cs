@@ -16,6 +16,7 @@ public sealed class ActorReplayAdmissionTests
     [InlineData(ObpSourceGame.Rac1, Rac1ClassIds.VeldinToad, "source-world/rac1")]
     [InlineData(ObpSourceGame.Rac1, Rac1ClassIds.VeldinFlameRobot, "source-world/rac1")]
     [InlineData(ObpSourceGame.Rac2, 2827, "source-world/rac2")]
+    [InlineData(ObpSourceGame.Rac2, 500, "source-world/rac2")]
     [InlineData(ObpSourceGame.Rac3, 500, "source-world/rac3")]
     public void ExistingOriginalContextsRetainTheirReplayIds(ObpSourceGame game, int nativeClass, string adapter) =>
         Assert.Equal(adapter, OBP.Game.ActorReplayAdmission.Require(Registration(game, nativeClass, adapter), []));

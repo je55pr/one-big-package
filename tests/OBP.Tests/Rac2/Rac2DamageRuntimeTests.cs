@@ -81,6 +81,26 @@ public sealed class Rac2DamageRuntimeTests
     }
 
     [Fact]
+    public void DestroyedCrateCannotBreakAgain()
+    {
+        var target = Class500(17, 91, 0);
+        var damage = Rac2DamageRuntime.FromPlayerState20(target);
+        var broken = Rac2DamageRuntime.ApplyClass500Consequence(target, RuntimeEntityState.FromAuthored(target), damage)!;
+        Assert.Null(Rac2DamageRuntime.ApplyClass500Consequence(target, broken.EntityState, damage));
+    }
+
+    [Theory]
+    [InlineData(float.NaN)]
+    [InlineData(float.PositiveInfinity)]
+    public void InvalidHostDamageCannotDestroyCrate(float amount)
+    {
+        var target = Class500(17, 91, 0);
+        var damage = Rac2DamageRuntime.FromPlayerState20(target);
+        Assert.Null(Rac2DamageRuntime.ApplyClass500Consequence(target, RuntimeEntityState.FromAuthored(target),
+            damage with { Damage = damage.Damage with { DamageHp = amount } }));
+    }
+
+    [Fact]
     public void ConsequenceRejectsDamageAddressedToAnotherAuthoredMoby()
     {
         var target = Class500(instanceIndex: 17, uid: 91, pvarC8: 0);

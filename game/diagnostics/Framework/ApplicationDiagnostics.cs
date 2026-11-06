@@ -559,6 +559,10 @@ internal sealed class ApplicationDiagnostics(ApplicationComponents components) :
         Actors = () => ActorHost.Diagnostics,
         ResetEncounter = () => { FusionWeapons.ClearTransients(); _persistentPlayer.ResetRac1EffectRandom(1440); },
         ResetSharedAssets = FusionWeapons.ResetSources,
+        Rac2World = () => _worldScenes?.Current?.Resources.Rac2Gameplay,
+        Combat = () => ActorHost,
+        Player = () => _player,
+        Wallet = () => _playerNative?.Wallet.Balance ?? 0,
     });
 
     internal UiDiagnosticHarness CreateUiDiagnosticHarness()

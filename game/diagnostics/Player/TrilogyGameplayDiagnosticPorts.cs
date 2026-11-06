@@ -46,6 +46,7 @@ public interface ITrilogyActorRetirementWitness
 public interface ITrilogyActorInvalidation : IDisposable { ITrilogyActorRetirementWitness Retired { get; } bool PendingRejected { get; } }
 public interface ITrilogyActorDiagnosticFixture
 {
+    Task<bool> VerifyRac2CratesAsync(CancellationToken token);
     TrilogyActorPopulationDiagnostic Read();
     ImmutableArray<TrilogyActorDiagnostic> ReadActors();
     Task PumpAsync(CancellationToken token);
