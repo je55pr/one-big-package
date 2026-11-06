@@ -187,9 +187,6 @@ public static partial class Rac2WorldImport
     {
         dynamicInstances = [];
         var outp = new List<RuntimeDynamicObject>();
-        var plYUp = pointLights
-            .Select(p => (Pos: YUp(p.Position), p.Radius, p.Colour))
-            .ToArray();
 
         foreach (var inst in gameplay.MobyInstances)
         {
@@ -209,21 +206,9 @@ public static partial class Rac2WorldImport
                 (inst.Rotation.X, inst.Rotation.Y, inst.Rotation.Z), sc);
             var obpMatrix = ToObpMatrix(nativeMatrix);
 
-            var amb = inst.LightColour;
-            Rac2Instances.DirLight? dl = inst.LightIndex >= 0 && inst.LightIndex < dirLights.Count
-                ? dirLights[inst.LightIndex]
-                : null;
-            var (dAx, dAy, dAz) = dl is { } a ? YUp(a.DirectionA) : (0, 0, 0);
-            var (dBx, dBy, dBz) = dl is { } b ? YUp(b.DirectionB) : (0, 0, 0);
-            var instYUp = YUp(inst.Position);
-            var nearPl = plYUp
-                .Where(p => Dist2(p.Pos, instYUp) < (p.Radius + 40.0) * (p.Radius + 40.0))
-                .ToArray();
-
             var meshData = cls.Mesh;
-            bool haveNormals = meshData.Normals.Length == meshData.Positions.Length;
             var localPositions = new double[meshData.Positions.Length];
-            var colours = new float[meshData.Positions.Length / 3 * 4];
+            var colours = ShadeMobyVertices(meshData, inst, nativeMatrix, dirLights, pointLights);
             for (int i = 0; i < meshData.Positions.Length; i += 3)
             {
                 // Class-local native Z-up -> class-local OBP Y-up. The full
@@ -231,46 +216,6 @@ public static partial class Rac2WorldImport
                 localPositions[i] = R2(meshData.Positions[i]);
                 localPositions[i + 1] = R2(meshData.Positions[i + 2]);
                 localPositions[i + 2] = R2(meshData.Positions[i + 1]);
-
-                var (x, y, z) = Rac2Instances.TransformPoint(
-                    nativeMatrix, meshData.Positions[i], meshData.Positions[i + 1], meshData.Positions[i + 2]);
-                double lr = amb.R, lg = amb.G, lb = amb.B;
-                if (haveNormals)
-                {
-                    var (nx, ny, nz) = WorldNormal(
-                        nativeMatrix, meshData.Normals[i], meshData.Normals[i + 1], meshData.Normals[i + 2]);
-                    if (dl is { } light)
-                    {
-                        double ka = System.Math.Max(0.0, -(nx * dAx + ny * dAy + nz * dAz));
-                        double kb = System.Math.Max(0.0, -(nx * dBx + ny * dBy + nz * dBz));
-                        lr += light.ColourA.X * ka + light.ColourB.X * kb;
-                        lg += light.ColourA.Y * ka + light.ColourB.Y * kb;
-                        lb += light.ColourA.Z * ka + light.ColourB.Z * kb;
-                    }
-
-                    foreach (var p in nearPl)
-                    {
-                        double vx = x - p.Pos.X, vy = z - p.Pos.Y, vz = y - p.Pos.Z;
-                        double dist = System.Math.Sqrt(vx * vx + vy * vy + vz * vz);
-                        if (dist >= p.Radius || dist < 1e-4)
-                        {
-                            continue;
-                        }
-
-                        double atten = 1.0 - dist / p.Radius;
-                        double ndl = System.Math.Max(0.0, -(nx * vx + ny * vy + nz * vz) / dist);
-                        double c = atten * atten * ndl;
-                        lr += p.Colour.R * c;
-                        lg += p.Colour.G * c;
-                        lb += p.Colour.B * c;
-                    }
-                }
-
-                int v = i / 3;
-                colours[v * 4] = (float)System.Math.Clamp(lr, 0.03, 1.0);
-                colours[v * 4 + 1] = (float)System.Math.Clamp(lg, 0.03, 1.0);
-                colours[v * 4 + 2] = (float)System.Math.Clamp(lb, 0.03, 1.0);
-                colours[v * 4 + 3] = 1f;
             }
 
             var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), List<int>>();
@@ -324,6 +269,69 @@ public static partial class Rac2WorldImport
         }
 
         return outp;
+    }
+
+    /// <summary>Existing OBP instance-lighting approximation, shared by intact Mobies and their original detachable parts.</summary>
+    internal static float[] ShadeMobyVertices(GcUyaMoby.Mesh meshData, Rac2Instances.MobyInstance inst,
+        double[] nativeMatrix, IReadOnlyList<Rac2Instances.DirLight> dirLights, IReadOnlyList<Rac2Instances.PointLight> pointLights)
+    {
+        var plYUp = pointLights.Select(p => (Pos: YUp(p.Position), p.Radius, p.Colour)).ToArray();
+        var amb = inst.LightColour;
+        Rac2Instances.DirLight? dl = inst.LightIndex >= 0 && inst.LightIndex < dirLights.Count
+            ? dirLights[inst.LightIndex]
+            : null;
+        var (dAx, dAy, dAz) = dl is { } a ? YUp(a.DirectionA) : (0, 0, 0);
+        var (dBx, dBy, dBz) = dl is { } b ? YUp(b.DirectionB) : (0, 0, 0);
+        var instYUp = YUp(inst.Position);
+        var nearPl = plYUp
+            .Where(p => Dist2(p.Pos, instYUp) < (p.Radius + 40.0) * (p.Radius + 40.0))
+            .ToArray();
+
+        bool haveNormals = meshData.Normals.Length == meshData.Positions.Length;
+        var colours = new float[meshData.Positions.Length / 3 * 4];
+        for (int i = 0; i < meshData.Positions.Length; i += 3)
+        {
+            var (x, y, z) = Rac2Instances.TransformPoint(
+                nativeMatrix, meshData.Positions[i], meshData.Positions[i + 1], meshData.Positions[i + 2]);
+            double lr = amb.R, lg = amb.G, lb = amb.B;
+            if (haveNormals)
+            {
+                var (nx, ny, nz) = WorldNormal(
+                    nativeMatrix, meshData.Normals[i], meshData.Normals[i + 1], meshData.Normals[i + 2]);
+                if (dl is { } light)
+                {
+                    double ka = System.Math.Max(0.0, -(nx * dAx + ny * dAy + nz * dAz));
+                    double kb = System.Math.Max(0.0, -(nx * dBx + ny * dBy + nz * dBz));
+                    lr += light.ColourA.X * ka + light.ColourB.X * kb;
+                    lg += light.ColourA.Y * ka + light.ColourB.Y * kb;
+                    lb += light.ColourA.Z * ka + light.ColourB.Z * kb;
+                }
+
+                foreach (var p in nearPl)
+                {
+                    double vx = x - p.Pos.X, vy = z - p.Pos.Y, vz = y - p.Pos.Z;
+                    double dist = System.Math.Sqrt(vx * vx + vy * vy + vz * vz);
+                    if (dist >= p.Radius || dist < 1e-4)
+                    {
+                        continue;
+                    }
+
+                    double atten = 1.0 - dist / p.Radius;
+                    double ndl = System.Math.Max(0.0, -(nx * vx + ny * vy + nz * vz) / dist);
+                    double c = atten * atten * ndl;
+                    lr += p.Colour.R * c;
+                    lg += p.Colour.G * c;
+                    lb += p.Colour.B * c;
+                }
+            }
+
+            int v = i / 3;
+            colours[v * 4] = (float)System.Math.Clamp(lr, 0.03, 1.0);
+            colours[v * 4 + 1] = (float)System.Math.Clamp(lg, 0.03, 1.0);
+            colours[v * 4 + 2] = (float)System.Math.Clamp(lb, 0.03, 1.0);
+            colours[v * 4 + 3] = 1f;
+        }
+        return colours;
     }
 
     private static byte[] NativeMobyClassBytes(Rac2LevelCore.Core core, int oClass) =>

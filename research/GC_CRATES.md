@@ -352,18 +352,36 @@ The host uses swept point contacts, normal reflection, spin and a 2/128 fade
 mapping. These are bounded presentation adaptations; the native corner-contact
 solver and exact angular/RNG sequence are not reproduced.
 
+The intact class-500 box also uses texture 40. Its imported surfaces multiply
+that texture by computed per-instance ambient/directional/point-light colours.
+The initial fragment path omitted those colours, making debris render at full
+brightness. Fragments now use the same source-owned lighting helper and original
+instance/light records as the intact box, with their own original vertex normals.
+Godot retains those colours in the fragment mesh and enables vertex-colour
+modulation. This retains the existing OBP baked-lighting approximation; spinning
+fragments are not dynamically relit by a recovered native VU lighting program.
+
 The crate call at `0x0039235C/60` selects class-local SoundDef 0 through helper
 `0x00355780`, throttled to once per two ticks. Bolt arrival also selects its own
 class SoundDef 0 (flat playback flag 32). The level +0x70 remap directory has an
 eight-byte prefix and a leading absent direct slot before local SoundDef 0.
 Oozla class 500 maps to SBlk sound 69; Bolt classes 13..17 map to sound 53.
-SoundDef pitch is 0 / -2540 and maximum gain 1 / 921/2048, respectively. Shared
+SoundDef initial pitch bend is 0 / -2540 and maximum gain 1 / 921/2048, respectively. Shared
 989snd rendering executes their tone/random-choice/pitch-bend programs and ADSR
 at 48 kHz. Twelve seeded variants cache the randomized arrival program.
 Zero-SoundDef classes remain silent, matching the native guard. This replaces
 the upgrade cue on the ordinary crate/pickup path; hostile audio is unchanged.
-Classes 18/19 (500/1000 Bolts) follow that same class-local guard: no sound is
-substituted from class 13 when their SoundDef is absent.
+Oozla classes 18/19 (500/1000 Bolts) have zero SoundDefs and intentionally remain
+silent; no class-13 cue is substituted.
+
+The SoundDef value is a signed pitch-bend controller, not a pitch modifier in
+1/128-semitone units. Oozla `0x35574C` stores it at slot +0x84;
+`0x35520C` reads it, and `0x355378` forwards it in t1 (PB), separately from
+t0 (PM) at `0x355370`. PB normalizes by 32768 below zero / 32767 above zero and
+uses each tone's bend limits. Grain 27 replaces the initial controller with its
+random bend. Passing -2540 as PM had lowered pickup playback by about 19.84
+semitones. The corrected seed-0 bank-53 render is 33,925 frames / 0.7068 seconds,
+versus the incorrect 75,829 frames / 1.5798 seconds; bank 69 is unchanged.
 
 Crate setup is atomic at the lease's admission boundary. If original models,
 textures, audio programs or body setup are unavailable, the host logs an explicit

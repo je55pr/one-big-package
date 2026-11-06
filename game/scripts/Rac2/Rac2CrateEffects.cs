@@ -17,7 +17,7 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
     private readonly List<Falling> _crates = [];
     private readonly Dictionary<Rid, Falling> _supports = [];
     private readonly List<Fragment> _fragments = [];
-    private readonly Dictionary<int, List<(ArrayMesh Mesh, StandardMaterial3D Material)>> _models = [];
+    private WorldMaterialFactory? _materials;
     private Rac2CrateBreakBudget _budget = new();
     private Rac2CrateAssets.Catalogue? _assets;
     private Rac2CrateAudio.Catalogue? _audio;
@@ -33,12 +33,11 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
         _assets = Rac2CrateAssets.Load(path, world.LevelId);
         _audio = Rac2CrateAudio.Load(path, world.LevelId);
         _random = new(ports.Seed());
-        var materials = new WorldMaterialFactory(world with { Textures = _assets.Textures });
-        foreach (var part in _assets.Parts.Values)
-            _models.Add(part.Index, part.Surfaces.Select(surface => (Mesh(surface),
-                materials.Instanced("moby", surface.TextureId, false, surface.MaterialPresentation))).ToList());
+        _materials = new WorldMaterialFactory(world with { Textures = _assets.Textures });
         foreach (var node in nodes)
         {
+            if (!_assets.LitInstances.ContainsKey(node.Source.InstanceIndex))
+                throw new InvalidDataException($"Crate {node.Source.InstanceIndex} has no original instance lighting.");
             var body = node.Root.GetChildren().OfType<StaticBody3D>().Single();
             var falling = new Falling(node, body, new(node.Root.GlobalPosition.Y));
             _crates.Add(falling);
@@ -62,14 +61,19 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
             Play(500, crate.Root.GlobalPosition);
             _lastBreakSound = _tick;
         }
-        foreach (var part in _assets.Parts.Values.Where(part => (plan.Mask & 1 << part.Index) != 0))
+        foreach (var part in _assets.LitInstances[crate.Source.InstanceIndex].Values.Where(part => (plan.Mask & 1 << part.Index) != 0))
         {
             var pivot = new Vector3(-part.Pivot.X, part.Pivot.Z, part.Pivot.Y);
             Vector3 position = crate.Root.GlobalTransform * pivot;
             var motion = new Rac2CrateFragment(part.Index, ToNative(position), Sample);
             var node = new Node3D { Name = $"Rac2CrateFragment_{crate.Source.InstanceIndex}_{part.Index}" };
-            foreach (var surface in _models[part.Index])
-                node.AddChild(new MeshInstance3D { Mesh = surface.Mesh, MaterialOverride = surface.Material });
+            foreach (var surface in part.Surfaces)
+                node.AddChild(new MeshInstance3D
+                {
+                    Mesh = Mesh(surface),
+                    MaterialOverride = _materials!.Instanced("moby", surface.TextureId, true, surface.MaterialPresentation),
+                    CastShadow = GeometryInstance3D.ShadowCastingSetting.Off
+                });
             scene.Root.AddChild(node);
             node.GlobalPosition = position;
             node.Quaternion = crate.Root.GlobalBasis.GetRotationQuaternion();
@@ -169,6 +173,9 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
         arrays.Resize((int)global::Godot.Mesh.ArrayType.Max);
         arrays[(int)global::Godot.Mesh.ArrayType.Vertex] = vertices;
         arrays[(int)global::Godot.Mesh.ArrayType.TexUV] = uvs;
+        var colors = surface.Colors ?? throw new InvalidDataException("Crate fragment instance lighting is missing.");
+        arrays[(int)global::Godot.Mesh.ArrayType.Color] = Enumerable.Range(0, vertices.Length)
+            .Select(i => new Color(colors[i * 4], colors[i * 4 + 1], colors[i * 4 + 2], colors[i * 4 + 3])).ToArray();
         arrays[(int)global::Godot.Mesh.ArrayType.Index] = indices;
         var mesh = new ArrayMesh();
         mesh.AddSurfaceFromArrays(global::Godot.Mesh.PrimitiveType.Triangles, arrays);
@@ -181,7 +188,7 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
     {
         _disposed = true;
         foreach (var fragment in _fragments) if (GodotObject.IsInstanceValid(fragment.Node)) fragment.Node.QueueFree();
-        _fragments.Clear(); _models.Clear(); _crates.Clear(); _supports.Clear();
-        _audio = null; _assets = null;
+        _fragments.Clear(); _crates.Clear(); _supports.Clear();
+        _audio = null; _assets = null; _materials = null;
     }
 }

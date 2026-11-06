@@ -7,7 +7,7 @@ using OBP.Runtime.Audio;
 
 namespace OBP.RAC2.Audio;
 
-/// <summary>Source-local class SoundDef 0 dispatch for crate break and Bolt arrival. Pitch, gain and program selection come from the active level.</summary>
+/// <summary>Source-local class SoundDef 0 dispatch for crate break and Bolt arrival. Pitch bend, gain and program selection come from the active level.</summary>
 public static class Rac2CrateAudio
 {
     public sealed record Cue(int NativeClass, int BankSound, double Gain, IReadOnlyList<RuntimeAudioClip> Variants);
@@ -45,13 +45,15 @@ public static class Rac2CrateAudio
             int pitchMin = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(definition + 16));
             int pitchMax = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(definition + 20));
             if (pitchMin != pitchMax || pitchMin < short.MinValue || pitchMax > short.MaxValue)
-                throw new InvalidDataException("Crate SoundDef pitch needs an unrecovered selector.");
+                throw new InvalidDataException("Crate SoundDef pitch bend needs an unrecovered selector.");
             double gain = Math.Clamp(BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(definition + 12)) / 2048d, 0, 1);
             var variants = new List<RuntimeAudioClip>();
             int variantCount = bank.Sounds[id].Grains.Any(grain => grain.Type is 25 or 27 or 31) ? 12 : 1;
             for (int seed = 0; seed < variantCount; seed++)
             {
-                var voices = Ps2SoundRenderer989.TryRenderVoices(bank.Sounds[id], bank.DecodeTone, seed, pitchMin)
+                // Oozla 0x35574C stores SoundDef +0x10/+0x14 at slot +0x84;
+                // 0x355378 passes it as t1 (PB), distinct from t0 (PM).
+                var voices = Ps2SoundRenderer989.TryRenderVoices(bank.Sounds[id], bank.DecodeTone, seed, pitchBend: pitchMin)
                     ?? throw new NotSupportedException($"Original crate sound {id} has an unsupported grain program.");
                 if (voices.Count != 1 || voices[0].Loop || voices[0].StartFrame != 0)
                     throw new NotSupportedException("Crate audio needs an unsupported multi-voice or delayed host.");
