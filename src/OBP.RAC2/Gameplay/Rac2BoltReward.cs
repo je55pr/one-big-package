@@ -4,7 +4,7 @@ namespace OBP.RAC2.Gameplay;
 /// Retail-backed class-500 Bolt reward mechanics recovered from the loaded
 /// Going Commando overlay. This intentionally models only the pieces whose
 /// semantics are proved: authored-value percentage scaling, the retail percentage
-/// banks, the deferred reservoir, progression/RNG physical-pickup budget, and
+/// banks, the deferred reservoir, recent-break/RNG physical-pickup budget, and
 /// denomination partition. Unrelated reward modes stay outside this type.
 /// </summary>
 public static class Rac2BoltReward
@@ -85,8 +85,8 @@ public static class Rac2BoltReward
 
     /// <summary>
     /// Reproduce the class-500 budget passed from loaded 0x00392158 to
-    /// 0x0030F920. <paramref name="progressionLikeInput"/> is deliberately not
-    /// semantically named: retail proves its thresholds but not its game symbol.
+    /// 0x0030F920. The historical <paramref name="progressionLikeInput"/> name
+    /// denotes gp+0x3AC: recent break-fragment pressure, maintained by 0x003922B0.
     /// <paramref name="rngMod2"/> is the proven 0/1 result of 0x003104E8(2).
     /// </summary>
     public static int PhysicalPieceBudget(int progressionLikeInput, int rngMod2)

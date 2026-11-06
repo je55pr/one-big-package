@@ -15,17 +15,33 @@ public static class Rac2MobyClasses
     public static bool NativePoseEnabledForLevel(int level) =>
         level >= 0 && Environment.GetEnvironmentVariable("OBP_RAC2_LEGACY_MOBY") != "1";
 
-    /// <summary>Extract the bounded asset bytes for a native Moby class.</summary>
-    public static byte[] ClassBytes(Rac2LevelCore.Core core, int oClass)
+    /// <summary>A class row retains its native ordinal for sound remaps and its index offset for texture remaps.</summary>
+    public sealed record ClassRow(int Index, int Offset, int NativeClass);
+
+    /// <summary>Validate the complete class table before enumerating rows in native order, preserving duplicates.</summary>
+    public static IReadOnlyList<ClassRow> ClassRows(Rac2LevelCore.Core core)
+    {
+        var table = ValidatedClassTable(core);
+        return Enumerable.Range(0, table.Count).Select(index =>
+        {
+            int offset = table.Offset + index * GcUyaMoby.ClassEntrySize;
+            return new ClassRow(index, offset, BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(offset + 4)));
+        }).ToArray();
+    }
+
+    private static Rac2LevelCore.ArrayRange ValidatedClassTable(Rac2LevelCore.Core core)
     {
         var table = core.Header.MobyClasses;
         if (table.Count < 0 || table.Offset < 0 ||
             (long)table.Offset + (long)table.Count * GcUyaMoby.ClassEntrySize > core.Index.Length)
             throw new InvalidDataException("Invalid native Moby class table bounds.");
+        return table;
+    }
 
-        int entry = Enumerable.Range(0, table.Count)
-            .Select(i => table.Offset + i * GcUyaMoby.ClassEntrySize)
-            .Single(at => BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(at + 4)) == oClass);
+    /// <summary>Extract the bounded asset bytes for exactly one native Moby class; duplicates remain invalid.</summary>
+    public static byte[] ClassBytes(Rac2LevelCore.Core core, int oClass)
+    {
+        int entry = ClassRows(core).Single(row => row.NativeClass == oClass).Offset;
         int start = BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(entry));
         if (start <= 0 || start >= core.Assets.Length)
             throw new InvalidDataException($"Invalid native class {oClass} asset offset.");
@@ -44,7 +60,7 @@ public static class Rac2MobyClasses
     public static Dictionary<int, GcUyaMoby.MobyClass> Read(
         Rac2LevelCore.Core core, int level, bool? nativePoseOverride)
     {
-        var table = core.Header.MobyClasses;
+        var table = ValidatedClassTable(core);
         bool nativePose = level >= 0 && (nativePoseOverride ?? NativePoseEnabledForLevel(level));
         return GcUyaMoby.ReadClasses(
             core.Index,

@@ -77,6 +77,9 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
             foreach (var node in ports.Rac1.OriginalTargets().DistinctBy(ActorWorldHost.Target))
                 register(node, () => ObserveRac1(node, owner), intent => ApplyRac1(node, intent, owner));
         if (ports.Rac2.World() is { } rac2)
+        {
+            foreach (var crate in rac2.Crates)
+                register(crate, () => rac2.ObserveCrate(crate), intent => rac2.ApplyCrate(crate, intent));
             foreach (var hostile in rac2.Hostiles.Values)
             {
                 var node = rac2.OpeningSessions.TryGetValue(hostile.InstanceIndex, out var session) ? session.Node : null;
@@ -85,6 +88,7 @@ internal sealed class ActorNativeAdapters(ActorNativePorts ports, Action<WeaponT
                         intent => rac2.IsLiveHostile(node, hostile) ? ApplyRac2(node, hostile, intent) :
                             new(false, false, "The R&C2 encounter has retired."));
             }
+        }
         if (ports.Rac3.World() is { } rac3)
             foreach (var node in rac3.OriginalTargets)
                 register(node, () => rac3.Observe(node), intent => rac3.Apply(node, intent,

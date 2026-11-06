@@ -109,7 +109,9 @@ public static class Rac2DamageRuntime
                 $"Damage target does not match {target.InteractionId}.");
         }
 
-        if (!Rac2CrateInteraction.ShouldBreakClass500(damage.Damage))
+        if (current.Presentation.Presence != RuntimeEntityPresence.Active ||
+            !float.IsFinite(damage.Damage.DamageHp) ||
+            !Rac2CrateInteraction.ShouldBreakClass500(damage.Damage))
         {
             return null;
         }

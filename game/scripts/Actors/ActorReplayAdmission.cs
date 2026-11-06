@@ -13,7 +13,7 @@ internal static class ActorReplayAdmission
     {
         var target = registration.Instance.Target;
         bool original = registration.AdapterId == "source-world/rac1" && target.SourceGame == ObpSourceGame.Rac1 && target.NativeClassId is Rac1ClassIds.WoodenCrate or Rac1ClassIds.NanotechCrate or Rac1ClassIds.AmmoCrate or Rac1ClassIds.VeldinToad or Rac1ClassIds.VeldinFlameRobot ||
-            registration.AdapterId == "source-world/rac2" && target.SourceGame == ObpSourceGame.Rac2 && target.NativeClassId == 2827 ||
+            registration.AdapterId == "source-world/rac2" && target.SourceGame == ObpSourceGame.Rac2 && target.NativeClassId is 2827 or 500 or 501 or 511 ||
             registration.AdapterId == "source-world/rac3" && target.SourceGame == ObpSourceGame.Rac3 && target.NativeClassId == 500;
         bool registered = factories.Any(factory => factory.Supported && factory.Descriptor.Source == target.SourceGame &&
             factory.Descriptor.Build == registration.Source.Build && factory.Descriptor.NativeClassId == target.NativeClassId &&

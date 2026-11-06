@@ -342,7 +342,7 @@ The later representative-audio integration keeps native selection inside
   world host start it automatically.
 - Music currently plays one linear pass. The recovered raw VAG trailer markers
   are not reinterpreted as a whole-track loop point or transition rule.
-- The self-describing native `UpgradeSample` VAG is decoded as
+- The self-describing native `UpgradeSample` VAG was initially decoded as
   `RuntimeWorld.RepresentativeAudioOneShot`. The development crate harness
   uses that clip only to prove both ordinary and positional effect playback:
   Bolt collection plays it non-spatially, while the crate-break harness places
@@ -350,7 +350,35 @@ The later representative-audio integration keeps native selection inside
 - That representative cue is explicitly **not** a retail claim that the upgrade
   sample is the crate-break or Bolt-pickup sound. Native SBlk event remapping
   and one-shot pitch/rate conversion remain unresolved, so those associations
-  are not invented.
+  are not invented. This paragraph records the earlier representative harness.
+  Ordinary crate/pickup playback now uses `Rac2CrateAudio`, described below.
+
+### Original Oozla crate and Bolt cues
+
+The class-local SoundDef 0 dispatch at `0x00355780`, crate caller
+`0x0039235C/60` and Bolt arrival update establish the original associations.
+The level +0x70 sound directory has an eight-byte prefix and a leading absent
+direct slot before local SoundDef 0. Oozla class 500 maps to SBlk 69, with initial
+pitch bend 0 and gain 1; classes 13..17 map to SBlk 53, with initial pitch bend
+-2540 and gain 921/2048.
+Classes without SoundDefs remain silent. Shared 989snd rendering supplies tone
+selection, random pitch-bend/choice, rate conversion and ADSR. Twelve seeded
+variants cache the randomized arrival program; exact PS2 RNG ordering and SPU
+mixing are not claimed. Crate playback is positional with its two-tick throttle;
+Bolt arrival is flat, matching native flag 32. Neutral clips/intents go through
+the world's existing audio host. Retail witnesses and the ordinary
+engine trial cover this path; see [GC_CRATES.md](GC_CRATES.md).
+
+The native sound-slot path stores SoundDef +0x10/+0x14 at slot +0x84
+(`0x35574C`), then supplies it as the PB argument t1 (`0x355378`), independently
+of PM in t0. The first implementation incorrectly passed it as PM, producing
+slow, low-pitched Bolt arrivals. `Ps2SoundRenderer989` now distinguishes initial
+signed PB from 1/128-semitone PM. Random/set PB grains replace that initial
+controller; additive PB grains offset it.
+The distinction is corroborated by the pinned 989snd implementation's
+[`PitchBend`](https://github.com/open-goal/jak-project/blob/d04ac9d787be16e75ca1023b93efc8ad1a54d71c/game/sound/989snd/util.cpp)
+and `snd_SFX_GRAIN_TYPE_RAND_PB` in `sfxgrain.cpp`. Exact SPU rate quantization
+and native RNG sequence remain outside the renderer's bounded approximation.
 
 ## Deliberate exclusions
 

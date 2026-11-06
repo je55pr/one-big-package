@@ -37,10 +37,11 @@ public static class Ps2SoundRenderer989
     /// need a live synthesizer and are deliberately not admitted here.
     /// </summary>
     public static IReadOnlyList<ScheduledVoice>? TryRenderVoices(Ps2SoundBank989.Sound sound,
-        Func<Ps2SoundBank989.Tone, Ps2SpuAdpcm.DecodedSample> decode, int? seed = null, int pitchModifier = 0)
+        Func<Ps2SoundBank989.Tone, Ps2SpuAdpcm.DecodedSample> decode, int? seed = null, int pitchModifier = 0, int pitchBend = 0)
     {
         if (pitchModifier is < short.MinValue or > short.MaxValue) throw new ArgumentOutOfRangeException(nameof(pitchModifier));
-        var program = Interpret(sound, decode, seed, pitchModifier);
+        if (pitchBend is < short.MinValue or > short.MaxValue) throw new ArgumentOutOfRangeException(nameof(pitchBend));
+        var program = Interpret(sound, decode, seed, pitchModifier, pitchBend);
         if (program is null || program.Lfos.Count != 0) return null;
         var output = new List<ScheduledVoice>();
         foreach (var voice in program.Voices)
@@ -60,10 +61,14 @@ public static class Ps2SoundRenderer989
     }
 
     private static Program? Interpret(Ps2SoundBank989.Sound sound,
-        Func<Ps2SoundBank989.Tone, Ps2SpuAdpcm.DecodedSample> decode, int? seed, int pitchModifier = 0)
+        Func<Ps2SoundBank989.Tone, Ps2SpuAdpcm.DecodedSample> decode, int? seed, int pitchModifier = 0, int pitchBend = 0)
     {
         var voices = new List<Voice>(); var lfos = new List<Lfo>();
+        // Application pitch bend is a signed normalized controller. Random/set
+        // PB grains replace it; additive PB grains offset it. Pitch modifier
+        // remains a separate 1/128-semitone offset.
         var random = new Random(seed ?? sound.Id); double tick = 0, bend = 0;
+        if (pitchBend != 0) bend = pitchBend / (pitchBend < 0 ? 32768d : 32767d);
         var registers = new int[4];
         int pc = 0, operations = 0, skipAt = -1, skipTo = -1;
         while (pc < sound.Grains.Count)

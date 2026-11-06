@@ -231,6 +231,20 @@ internal sealed partial class ActorWorldHost
         foreach (var body in _bodies.Values) if (GodotObject.IsInstanceValid(body)) exclusions.Add(body.GetRid());
     }
 
+    internal void AddOcclusionExclusions(global::Godot.Collections.Array<Rid> exclusions)
+    {
+        AddRayExclusions(exclusions);
+        // Original-world actors own their bodies outside the factory body map.
+        // Damage geometry is evaluated separately; these bodies must not shield
+        // themselves or another damageable actor from a blast/aim visibility ray.
+        foreach (var actor in _views.Values)
+        {
+            if (!GodotObject.IsInstanceValid(actor.Node.Root)) continue;
+            foreach (var body in actor.Node.Root.FindChildren("*", "CollisionObject3D", true, false).OfType<CollisionObject3D>())
+                exclusions.Add(body.GetRid());
+        }
+    }
+
     internal void Reset()
     {
         var runtime = _runtime;

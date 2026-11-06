@@ -195,7 +195,7 @@ public sealed class DebugOverlay
             }
 
             string kind = KindOf(mi);
-            bool visible = isolate is null || kind == isolate;
+            bool visible = IncludesKind(kind, isolate);
             if (hideSky && kind == "sky")
             {
                 visible = false;
@@ -231,6 +231,10 @@ public sealed class DebugOverlay
             BuildSkeletons();
         }
     }
+
+    /// <summary>Logic markers need explicit isolation, including between shot-list captures.</summary>
+    public static bool IncludesKind(string kind, string? isolate) => isolate is null
+        ? kind != "moby-marker" : kind == isolate;
 
     private void ApplyInspectionVisibility(Node3D node, bool allowed)
     {

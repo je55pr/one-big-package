@@ -132,7 +132,7 @@ internal sealed class Rac1WorldComposition(ApplicationComponents components) : C
         new Rac1WeaponContactPhysicsPorts(
             () => _player, () => Rac1WeaponUsePresentationHost.EquipmentForward(_player),
             () => Rac1World.Loot.CrateBodies.Values.Concat<CollisionObject3D>(Rac1World.Enemies.Roster.Values.Select(enemy => enemy.Body)),
-            ActorHost.AddRayExclusions),
+            ActorHost.AddOcclusionExclusions),
         new Rac1SuckCannonPorts(
             () => _persistentPlayer.Rac1Use.Session, () => _player is not null,
             () => Rac1WeaponUsePresentationHost.EquipmentMuzzle(Rac1WeaponId.SuckCannon, 0, _equipmentPresentation, _avatarPresentation, _player), () => Rac1WeaponUsePresentationHost.EquipmentForward(_player),

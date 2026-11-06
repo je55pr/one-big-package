@@ -12,6 +12,8 @@ namespace OBP.Game;
 /// </summary>
 internal sealed class Rac2WorldComposition(ApplicationComponents components) : CompositionBase(components)
 {
+    private const int DefaultRac1PickupState = 0;
+    private const int Rac1BoltGrabberItem = 34;
 
     internal Rac2WorldModule CreateRac2WorldModule(RuntimeWorld world, GodotWorldResources resources) => new(
         world, resources.Scene, resources, new Rac2WorldPorts(
@@ -41,5 +43,30 @@ internal sealed class Rac2WorldComposition(ApplicationComponents components) : C
                     pickupId, "obp/bolts", denomination),
                     value => _playerNative.Wallet.Credit(checked((int)value)));
                 return result.Applied ? null : result.Reason;
-            }, () => RefreshRac1HudState(), () => _worldHost.PlayRepresentativeAudioOneShot()));
+            }, () => RefreshRac1HudState(), nativeClass => resources.Rac2Gameplay?.CrateEffects.PlayPickup(nativeClass),
+            () => Sources.Setup.Library.Get(ObpSourceGame.Rac2)?.Path,
+            () => _args.FixedSeed ?? Random.Shared.Next(),
+            // Selected-player attraction adapter; see research/GC_CRATES.md.
+            () => OBP.RAC1.Gameplay.Rac1BoltMotionSession.AttractionProfile(DefaultRac1PickupState,
+                _playerNative?.Inventory.OwnsNativeItem(Rac1BoltGrabberItem) == true),
+            ActorHost.AddRayExclusions, _worldHost.PlayEffect),
+        new Rac2CrateSupplyPorts(
+            () =>
+            {
+                var health = _playerNative?.Life.Capture();
+                return health is null ? (0, 0) : ((int)health.Current, (int)health.Capacity);
+            },
+            amount =>
+            {
+                if (_playerNative is not { } native || !PlayerLife.Alive) return 0;
+                int before = (int)native.Life.Capture().Current;
+                // Explicit OBP supply conversion: one recovered RAC2 unit heals
+                // one unit in the selected player's health controller.
+                native.Life.Heal(amount);
+                return (int)native.Life.Capture().Current - before;
+            },
+            amount => PlayerCrateSupplyAdapter.Read(_playerNative, ReadPlayerEquipment(), amount),
+            (weapon, amount) => PlayerCrateSupplyAdapter.Grant(_playerNative, weapon, amount),
+            () => Sources.Setup.Library.Get(ObpSourceGame.Rac1) is { } source && source.Identity.BuildId == OBP.RAC1.Rac1Authority.Primary.BuildId
+                ? source.Path : null));
 }

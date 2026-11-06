@@ -216,6 +216,10 @@ inspection layers; normal health, bolts, ammo and interaction prompts remain vis
 `--overlay kindtint,collisionwire` / `--overlay isolate:moby` applies layers on
 load for a deterministic capture.
 
+Meshless Moby marker cubes are excluded from ordinary play and captures by
+default. Request `--overlay isolate:moby-marker` explicitly to include them;
+the F1 marker slot is empty when markers were not requested at world creation.
+
 ## Deterministic capture
 
 OBP options are parsed only after Godot's `--` separator, through
