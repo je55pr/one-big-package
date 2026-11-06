@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Numerics;
 using OBP.IO;
 using OBP.RAC1.Gameplay;
@@ -69,7 +70,7 @@ public sealed class Rac1NanotechOrbTests
         for (int tick = 0; tick < 30; tick++) session.Step(Vector3.Zero, enforceLevelBounds: false);
         var sprite = Assert.Single(Rac1ParticlePresentation.Capture(session, bank, textures).Sprites);
         Assert.Equal(60000 / Rac1ParticleSession.NativeSizeUnits, sprite.Size, 4);
-        Assert.Equal(2, int.Parse(sprite.Texture.OriginalId)); // table 62 entry 1 = the orb texture
+        Assert.Equal("2", sprite.Texture.OriginalId); // table 62 entry 1 = the orb texture
         Assert.True(session.IsLive(orb));
     }
 
@@ -98,6 +99,48 @@ public sealed class Rac1NanotechOrbTests
         using var disc = new FileRandomAccessReader(iso!);
         var level = Rac1DiscIndex.Read(disc).Levels.Single(l => l.LevelId == id);
         return (Rac1ExecutableOverlay.Read(disc, level), Rac1LevelCore.Open(disc, level));
+    }
+
+    /// <summary>A one-section overlay at 0x100000 holding <paramref name="data"/>.</summary>
+    private static Rac1ExecutableOverlay SyntheticOverlay(byte[] data)
+    {
+        var payload = new byte[16 + data.Length];
+        BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(0), 0x100000);
+        BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(4), data.Length);
+        BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(8), 1);
+        BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(12), 0x100000);
+        data.CopyTo(payload, 16);
+        return Rac1ExecutableOverlay.Parse(payload);
+    }
+
+    private static readonly uint[] SpeedKey = [0x3d8efa35, 0x3d0efa35, 0x3dd67750, 0x3d567750, 0x3c8efa35, 0x3db2b8c2, 0x3d32b8c2, 0x3da0d97c];
+
+    [Fact]
+    public void OverlayWithoutTheOrbTablesIsRejectedBeforeAnyLevelDataIsTouched()
+    {
+        var overlay = SyntheticOverlay(new byte[0x4000]);
+        var error = Assert.Throws<InvalidDataException>(() => Rac1NanotechOrbAssets.Decode(overlay, null!));
+        Assert.Contains("authenticated", error.Message);
+    }
+
+    [Fact]
+    public void TablesThatMatchOnlyTheLocatingKeyButNotTheirWitnessHashesAreRejected()
+    {
+        var data = new byte[0x4000];
+        for (int i = 0; i < SpeedKey.Length; i++) BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(0x100 + i * 4), SpeedKey[i]);
+        var overlay = SyntheticOverlay(data);
+        Assert.Equal([0x100100], overlay.FindBlock(data.AsSpan(0x100, 32)));
+        Assert.Throws<InvalidDataException>(() => Rac1NanotechOrbAssets.Decode(overlay, null!));
+    }
+
+    [Fact]
+    public void BlockSearchIsAlignedBoundedAndRejectsEmptyOrUnalignedBlocks()
+    {
+        var overlay = SyntheticOverlay(new byte[64]);
+        Assert.Empty(overlay.FindBlock([]));
+        Assert.Empty(overlay.FindBlock(new byte[3]));
+        Assert.Empty(overlay.FindBlock(new byte[128])); // longer than the section
+        Assert.Contains(0x100000, overlay.FindBlock(new byte[16]));
     }
 
     [SkippableFact]

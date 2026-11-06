@@ -105,6 +105,8 @@ public sealed class Rac1NanotechCluster
             orb.Particle = _particles.Sparkle(orb.Position, 0, 1, k.OrbSize);
         }
         State = Phase.Flying; _flightTimer = k.FlightTimer;
+        // 0x2d89f0 state 3: d = target - moby, d.z -= 0.5 (a native literal). The native target is the hero less
+        // TargetOffset (.75) along his axis; the host supplies that point as heroTarget, so the constant is not reapplied.
         var toTarget = heroTarget - Position; toTarget.Z -= .5f;
         var side = -heroUp * k.CurveSide;
         // side x d, then d x that, leaves the component of "down" perpendicular to the flight line; turned -90 degrees about it.

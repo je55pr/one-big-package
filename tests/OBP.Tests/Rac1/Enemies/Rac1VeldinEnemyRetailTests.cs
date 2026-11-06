@@ -191,6 +191,7 @@ public sealed class Rac1VeldinEnemyRetailTests
             var cls = classes.Mobies[id];
             var assets = Rac1MobyAnimationAssets.Bake(cls, source.Meshes, core.Assets.AsSpan(cls.AssetOffset, cls.AssetLength));
             Assert.Equal(id == 749 ? 8 : 13, assets.Clips.Count);
+            Assert.NotEmpty(source.Meshes);
             // Class 1440 authors a second semantic socket (the glow billboard's chain point 1); the toad does not need one.
             if (id == 1440)
                 Assert.All(assets.Clips.Values, clip =>
@@ -199,7 +200,7 @@ public sealed class Rac1VeldinEnemyRetailTests
                     Assert.Equal(clip.ContactSocket.Length, clip.SecondSocket!.Length);
                     Assert.All(clip.SecondSocket, point => Assert.True(float.IsFinite(point.X + point.Y + point.Z)));
                     Assert.Contains(clip.SecondSocket.Zip(clip.ContactSocket), pair => pair.First != pair.Second);
-                }); Assert.NotEmpty(source.Meshes);
+                });
             Assert.Equal(cls.Sequences.Where(slot => slot.Value is not null).Select(slot => slot.Index).Order(), assets.Clips.Keys.Order());
             Assert.Equal(assets.Clips.Keys.Order(), assets.Clips.Values.Select(clip => clip.Sequence).Order());
             Assert.Equal(assets.Clips.Values.Select(clip => clip.Id).Order(), assets.Presentation.Clips.Select(clip => clip.Id).Order());
