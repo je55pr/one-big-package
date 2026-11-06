@@ -251,6 +251,8 @@ internal sealed partial class Rac1EnemyHost : IDisposable
     {
         if (_disposed || !_ports.Neighbors.Current() || _player is null) return;
         _clock.Advance(delta, TickNativeActors, _birdbots.TickProjectiles);
+        AgeRac1RobotParticles(); // covers frames in which no robot updated
+        PresentRac1RobotParticles();
     }
 
     private bool TickNativeActors()

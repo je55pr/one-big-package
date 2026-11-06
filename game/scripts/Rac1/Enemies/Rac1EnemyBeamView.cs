@@ -38,6 +38,9 @@ internal sealed class Rac1EnemyBeamView : IDisposable
 
     internal void StopBeam() => _slot = null;
 
+    /// <summary>The beam-end sparks of the current tick (only while firing).</summary>
+    internal void EmitSparks(Rac1ParticleSession particles, Rac1PickupRandom random) => _slot?.EmitSparks(particles, random);
+
     internal void SetGlow(NVector3? socketOne) => _glowSocket = socketOne;
 
     /// <summary>Rebuilds the quad mesh for the camera. Call after the tick's Step/Set calls.</summary>

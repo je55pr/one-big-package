@@ -74,6 +74,30 @@ public sealed class Rac1BeamSlot
         if (_scroll <= -ScrollWrap) _scroll += ScrollWrap;
     }
 
+    /// <summary>
+    /// Per-tick end sparks of 0x2e2250, called after <see cref="Step"/>: at the muzzle a spark drifting 20-40 degrees
+    /// off the beam axis and, one tick in three, a 4-frame 120000 flare .3 ahead; at the tip a spark drifting in a
+    /// random direction and, one tick in three, a flare. (Native turns the muzzle sparks by the joint matrix, which
+    /// is not baked; the beam frame stands in.) The robot claims its slot with spark tag mode 0, so every one drifts.
+    /// </summary>
+    public void EmitSparks(Rac1ParticleSession particles, Rac1PickupRandom random)
+    {
+        var frame = Frame(Origin, Endpoint);
+        float speed = random.Range(.01f, .05f), angle = random.Signed(0.34906584f, 0.6981317f);
+        particles.Spark(Origin, MathF.Cos(angle) * speed * frame.Along + MathF.Sin(angle) * speed * frame.Side);
+        if (random.Below(3) == 0) particles.Spark(Origin + frame.Along * .3f, Vector3.Zero, 120000, 4);
+        random.Range(.01f, .05f); // the native call order draws and discards a speed here
+        particles.Spark(Tip, RandomDirection(random, .01f, .05f));
+        if (random.Below(3) == 0) particles.Spark(Tip, Vector3.Zero, 120000, 4);
+    }
+
+    /// <summary>A vector of random length in [min, max] in a random direction (two random angles, 0x257d00).</summary>
+    public static Vector3 RandomDirection(Rac1PickupRandom random, float minimum, float maximum)
+    {
+        float length = random.Range(minimum, maximum), a = random.Angle(), b = random.Angle();
+        return new(MathF.Cos(a) * MathF.Cos(b) * length, MathF.Sin(a) * MathF.Cos(b) * length, MathF.Sin(b) * length);
+    }
+
     /// <summary>The slot's quads in native draw order for a camera at <paramref name="eye"/>: end quads, then each strand with its glow.</summary>
     public IReadOnlyList<Rac1FxSurface> Build(Vector3 eye, Rac1PickupRandom random)
     {

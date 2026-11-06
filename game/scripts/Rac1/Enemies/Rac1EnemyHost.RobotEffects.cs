@@ -9,28 +9,39 @@ namespace OBP.Game;
 internal sealed partial class Rac1EnemyHost
 {
     private Rac1FxMaterials? _robotBeamMaterials;
+    private Rac1EffectAssets? _robotParticleAssets;
+    private Rac1ParticleSession? _robotParticles;
+    private Rac1ParticleView? _robotParticleView;
+    private uint _robotParticleFrame = uint.MaxValue;
 
-    /// <summary>Fx textures the class-1471 beam draws (glow 0x28, beam 0x29, end/robot glow 0xb); read from the active level's own bank.</summary>
+    /// <summary>Fx textures the class-1471 beam draws (glow 0x28, beam 0x29, end/robot glow 0xb) and the Part texture of its sparks; read from the active level's own banks.</summary>
     internal void ConfigureRac1RobotEffects(Rac1LevelCore.Core core)
     {
         _robotBeamMaterials?.Dispose();
         _robotBeamMaterials = new(Rac1FxTextures.Read(core, new HashSet<int>
             { Rac1BeamSlot.GlowTexture, Rac1BeamSlot.BeamTexture, Rac1BeamSlot.EndpointTexture }));
+        _robotParticleAssets = Rac1EffectAssets.DecodeSparks(core);
+        _robotParticles = new(_robotParticleAssets, Random);
+        _robotParticleView = new Rac1ParticleView { Name = "Rac1RobotSparks" };
+        _sceneResult.Root.AddChild(_robotParticleView);
     }
 
     /// <summary>
-    /// Once per native tick for a Veldin shooting robot: its glow billboard is always
-    /// present, and the plasma beam exists only in firing state 5 (the effect slot is
-    /// claimed before and released after, so phases restart on every volley).
+    /// Once per native tick for a Veldin shooting robot: its glow billboard and lamp flash are always present, and
+    /// the plasma beam (with its end sparks) exists only in firing state 5 (the effect slot is claimed before and
+    /// released after, so phases restart on every volley).
     /// </summary>
     internal void UpdateRac1RobotEffects(Rac1HostedEnemy enemy, bool firing)
     {
         if (_robotBeamMaterials is null) return;
         if (!Owns(enemy) || enemy.DeathPresented) { ClearRac1RobotEffects(enemy); return; }
+        AgeRac1RobotParticles(); // the first robot of each native tick ages last tick's sparks before emitting new ones
         var view = enemy.Beam ??= new(_sceneResult.Root, _robotBeamMaterials, $"EnemyBeam_i{enemy.Node.Source.InstanceIndex}");
         Vector3 muzzle = EnemySocket(enemy);
-        view.SetGlow(enemy.Animation.SecondSocket is { } lamp
-            ? ToEffectNative(enemy.Node.Root.ToGlobal(FromEffectNative(lamp))) : null);
+        System.Numerics.Vector3? lamp = enemy.Animation.SecondSocket is { } local
+            ? ToEffectNative(enemy.Node.Root.ToGlobal(FromEffectNative(local))) : null;
+        view.SetGlow(lamp);
+        if (lamp is { } lampPoint && _robotParticles is not null) Rac1RobotLampFlash.Emit(_robotParticles, Random, lampPoint);
         if (firing)
         {
             // 0x2e0b88 state 5: from socket 0 along the heading (flattened), ContactLength long, shortened by the first hit.
@@ -41,9 +52,25 @@ internal sealed partial class Rac1EnemyHost
             var hit = enemy.Body.GetWorld3D().DirectSpaceState.IntersectRay(query);
             if (hit.TryGetValue("position", out var position)) end = (Vector3)position;
             view.StepBeam(ToEffectNative(muzzle), ToEffectNative(end), Random);
+            if (_robotParticles is not null) view.EmitSparks(_robotParticles, Random);
         }
         else view.StopBeam();
         view.Present(_sceneResult.Root.GetViewport()?.GetCamera3D()?.GlobalPosition ?? muzzle + Vector3.Up * 5, Random);
+    }
+
+    /// <summary>Ages every spark once per native frame, whichever caller reaches the new frame first.</summary>
+    private void AgeRac1RobotParticles()
+    {
+        if (_robotParticles is null || _robotParticleFrame == NativeFrame) return;
+        _robotParticleFrame = NativeFrame;
+        var camera = _sceneResult.Root.GetViewport()?.GetCamera3D();
+        _robotParticles.Step(ToEffectNative(camera?.GlobalPosition ?? Vector3.Zero), enforceLevelBounds: false);
+    }
+
+    private void PresentRac1RobotParticles()
+    {
+        if (_robotParticles is not null && _robotParticleView is not null && _robotParticleAssets is not null)
+            _robotParticleView.Render(_robotParticles, _robotParticleAssets.PartTextures);
     }
 
     internal void ClearRac1RobotEffects(Rac1HostedEnemy enemy)
@@ -58,5 +85,8 @@ internal sealed partial class Rac1EnemyHost
         foreach (var enemy in Roster.Values) ClearRac1RobotEffects(enemy);
         _robotBeamMaterials?.Dispose();
         _robotBeamMaterials = null;
+        _robotParticles?.Clear(); _robotParticles = null; _robotParticleAssets = null;
+        if (_robotParticleView is not null && GodotObject.IsInstanceValid(_robotParticleView) && !_robotParticleView.IsQueuedForDeletion()) _robotParticleView.QueueFree();
+        _robotParticleView = null; _robotParticleFrame = uint.MaxValue;
     }
 }

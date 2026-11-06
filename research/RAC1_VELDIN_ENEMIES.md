@@ -235,5 +235,12 @@ electric beam from socket 0 along the robot heading (`ContactLength` 5, shortene
 - The robot also draws, every update, a camera-facing additive glow (half size .2, colour 0x80ffffff) at its
   second semantic socket lowered by .333 (`0x2e1c78`).
 - The retail slot is claimed with endpoint flags 0 and spark mode 0, so the retail beam has **no point
-  lights**. Not yet reproduced: the kind-0x45 spark particles spawned at both ends and the robot's lamp-flash
-  particles (`0x2e1aa8`); both need the runtime particle texture pointer at overlay `0x1b2194`.
+  lights** and every spark drifts.
+- Sparks (kind 0x45, spawn `0x274948`, update `0x274a70`): grey additive, 8000..50000 raw, 10..29 frames, random
+  turn, linear fade. The texture is Part lookup entry 69 (the word at `0x1b2194` is entry (0x1b2194-0x1b2080)/4);
+  on Veldin its offset is 0, so it points at the identity block start and resolves to Part texture 0.
+  `Rac1BeamSlot.EmitSparks` emits at each tick: a muzzle spark 20-40 degrees off the beam axis and a tip spark in a
+  random direction, plus one tick in three a 4-frame 120000 flare at each end. `Rac1RobotLampFlash` emits, every
+  update, one drifting spark and three 2-frame flares (80000..120000, one in eight 180000) at the lowered lamp.
+  Not modelled: the muzzle spark's turn by the joint matrix (the beam frame stands in) and the owner-attached
+  modes 1/2/3/4, which these callers do not use.

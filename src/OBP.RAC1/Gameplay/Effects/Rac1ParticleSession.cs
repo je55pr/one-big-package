@@ -179,6 +179,7 @@ public sealed partial class Rac1ParticleSession(Rac1EffectAssets assets, Rac1Pic
                 case 8: StepGlow(p); break;
                 case 15: StepSpark(p); break;
                 case 16: StepSteam(p, camera); break;
+                case SparkType: StepDriftSpark(p); break;
                 case SparkleType: StepSparkle(p); break;
                 case HeroGlowType: StepHeroGlow(p); break;
                 case GlintType: StepGlint(p); break;
