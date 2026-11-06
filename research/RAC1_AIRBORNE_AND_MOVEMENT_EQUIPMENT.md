@@ -321,7 +321,7 @@ separate until native age/update ordering agrees with retained live traces.
 Reproducible source checks run with the authorized canonical `OBP_RAC1_ISO`:
 
 ```powershell
-dotnet test tests/OBP.Tests/OBP.Tests.csproj -c Release --filter "FullyQualifiedName~Rac1Airborne|FullyQualifiedName~Rac1MovementEquipmentGlide"
+dotnet test https://github.com/je55pr/one-big-package/blob/tests/tests/OBP.Tests/OBP.Tests.csproj -c Release --filter "FullyQualifiedName~Rac1Airborne|FullyQualifiedName~Rac1MovementEquipmentGlide"
 ```
 
 `Rac1AirborneNativeSourceTests` pins dispatcher targets, complete relevant code

@@ -67,7 +67,7 @@ A negative rate (`-0.125`) occurs in original Sandshark sequence 10. The forward
 ## Validation
 
 - `dotnet build game/OneBigPackage.csproj`
-- `dotnet test tests/OBP.Tests/OBP.Tests.csproj`
+- `dotnet test https://github.com/je55pr/one-big-package/blob/tests/tests/OBP.Tests/OBP.Tests.csproj`
 - Optional disc-backed evidence: set `OBP_RAC1_ISO` before the Aridia retail unit test; absent the setting, only that test skips.
 - Godot 4.7.2 .NET headless smoke with `--destination rac1:LEVEL2` and the mounted ISO, no PCSX2. Check that it registers 115+15+7 enemy placements and produces **no** offscreen nest release at startup.
 - Human playtest with wrench/Bomb Glove against all three families, in particular weapon damage, normal emerge/attack, Constructorbot flames, death pickups and respawn. Nests will not launch until the native state-26 lifecycle is supported. Check for wall clipping, enemies sunk into geometry, and frame pacing during dense encounters.

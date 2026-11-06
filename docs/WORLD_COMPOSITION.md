@@ -33,5 +33,5 @@ retained; the historical viewer instructions are not a supported launch path.
 `CompositionTransform`, `AnchorPair` and `PlanarAlignmentSolver` remain as the
 small, engine-neutral numerical helpers used by that research and its synthetic
 invariant tests. They do not load worlds, own gameplay state or expose a viewer.
-Run `tools/test-retail.ps1` with authorised trilogy inputs to reproduce the
+Run `https://github.com/je55pr/one-big-package/blob/tests/tools/test-retail.ps1` with authorised trilogy inputs to reproduce the
 retail witness. No disc bytes or machine-specific paths are stored here.

@@ -135,7 +135,7 @@ run/stop/idle checks now compare the rendered attachment on every update.
 
 Validation: portable/source tests, wrench Godot input/contact smoke and separate
 ordinary Veldin play. The wrench smoke labels its staged contact fixtures and
-does not claim fresh matched PCSX2 captures. See `docs/RETAIL_TESTING.md`.
+does not claim fresh matched PCSX2 captures. See `https://github.com/je55pr/one-big-package/blob/tests/docs/RETAIL_TESTING.md`.
 
 ## Live first-swing facing witnesses
 

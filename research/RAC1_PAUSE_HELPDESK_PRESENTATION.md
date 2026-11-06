@@ -25,7 +25,7 @@ The public Lombyte decompilation is an *architecture lead*, not imported code:
 
 ## Validation and screenshots
 
-- `tests/OBP.Tests/Rac1/Menus/Rac1RetailMenuNavigationTests.cs` covers atomic 12-tick page handoff, focus restoration, owned/locked gating, HelpDesk phases, queued messages and invalid tick inputs.
+- `https://github.com/je55pr/one-big-package/blob/tests/tests/OBP.Tests/Rac1/Menus/Rac1RetailMenuNavigationTests.cs` covers atomic 12-tick page handoff, focus restoration, owned/locked gating, HelpDesk phases, queued messages and invalid tick inputs.
 - An isolated Godot `res://diagnostics/Rac1RetailUiSmoke.tscn` actually instantiates the retail widget with in-memory game assets (with a locally attached R&C1 ISO). It sends injected joystick D-pad/A and keyboard Escape events, verifies page navigation, locked/owned presentation, equipped callback, HelpDesk expansion/dismissal, application options callback and development page separation, and closes with a nonzero exit code on failures.
 - Non-headless rendering outputs local ignored captures under `captures/rac1-retail-ui/`: root, weapons, gadgets, helpdesk, options, development. These captures are private visual comparisons and must not enter Git.
 - The existing full `ControllerSmoke` was updated to navigate separate Options and OBP Development pages. Isolated Godot smoke is a **GUI functional integration**, not a proof that an ordinary retail campaign was played in full.

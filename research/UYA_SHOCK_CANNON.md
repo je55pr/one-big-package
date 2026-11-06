@@ -251,12 +251,12 @@ operands/call targets. No retail payload is stored in Git.
   relative sector `238F`, 136 sectors; SHA-256
   `86e0709dcf702e10a5dac79b15dced6de014bcfb5b7c293ab623a6dbd58c135e`.
 
-Run `tools/test-retail.ps1 -Configuration Release` with authorized local ISOs.
+Run `https://github.com/je55pr/one-big-package/blob/tests/tools/test-retail.ps1 -Configuration Release` with authorized local ISOs.
 Focused tests: `dotnet test tests/OBP.Tests -c Release --filter FullyQualifiedName~UyaShockCannon`.
 Asset tests additionally pin the gadget directory, decoded class/texture and Fx
 RGBA hashes, every sound program, exact clip counts and loader/draw instructions.
 
-`tools/uya-shock-cannon-native-trace.py --iso <original> --reference-root <MIT-reference>
+`https://github.com/je55pr/one-big-package/blob/tests/tools/uya-shock-cannon-native-trace.py --iso <original> --reference-root <MIT-reference>
 --cxx <C++20-compiler>` builds the optional original-instruction oracle and runs
 its managed comparisons. Zig's executable is accepted as the compiler. Original
 code remains in ignored `captures/`; only the harness is distributed. The oracle
