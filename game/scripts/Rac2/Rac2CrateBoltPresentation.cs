@@ -129,36 +129,41 @@ internal sealed class Rac2CrateBoltPresentation(
     internal void Tick(double delta)
     {
         if (_disposed || !canSpawn() || !ports.Current() || ports.Player() is not { } player || !GodotObject.IsInstanceValid(player)) return;
-        _accumulator += Math.Clamp(delta, 0, .25);
+        _accumulator = Math.Min(.2, _accumulator + Math.Clamp(delta, 0, .25));
         int ticks = Math.Min(12, (int)Math.Floor(_accumulator * 60));
         _accumulator -= ticks / 60d;
+        var space = player.GetWorld3D().DirectSpaceState;
+        var excluded = new global::Godot.Collections.Array<Rid> { player.GetRid() };
         for (int tick = 0; tick < ticks; tick++)
         {
             var profile = ports.AttractionProfile();
-            foreach (var pickup in _pickups.ToArray())
+            for (int index = _pickups.Count - 1; index >= 0; index--)
             {
+                var pickup = _pickups[index];
                 var motion = pickup.Motion;
-                Rac2BoltContact? contact = null;
-                if (motion.NativeState == 1 && motion.Velocity.Z < 0)
-                {
-                    Vector3 from = FromNative(motion.Position), next = FromNative(motion.Position + motion.Velocity);
-                    var query = PhysicsRayQueryParameters3D.Create(from + Vector3.Up * .25f, next - Vector3.Up * .25f);
-                    query.Exclude = new global::Godot.Collections.Array<Rid> { player.GetRid() };
-                    var hit = player.GetWorld3D().DirectSpaceState.IntersectRay(query);
-                    if (hit.TryGetValue("position", out var position) && hit.TryGetValue("normal", out var normal))
-                        contact = new(ToNative(position.AsVector3()), ToNative(normal.AsVector3()));
-                }
                 // The selected player's dimensions own attraction admission.
                 // Feet-to-socket mapping is an explicit host adapter.
                 motion.Step(ToNative(player.GlobalPosition), ToNative(player.GlobalPosition + Vector3.Up * .7f),
-                    profile.Radius, profile.Height, ports.Alive(), contact);
+                    profile.Radius, profile.Height, ports.Alive(), ProbeContact(space, excluded, motion));
                 pickup.Node.GlobalPosition = FromNative(motion.Position);
                 pickup.Node.Rotation = new(motion.Spin, motion.Spin * .5f, 0);
                 if (!motion.Collected) continue;
                 OnPickupEntered(player, pickup.Node, pickup.Pickup, pickup.Receipt);
-                if (pickup.Node.IsQueuedForDeletion()) _pickups.Remove(pickup);
+                if (pickup.Node.IsQueuedForDeletion()) _pickups.RemoveAt(index);
             }
         }
+    }
+
+    private static Rac2BoltContact? ProbeContact(PhysicsDirectSpaceState3D space,
+        global::Godot.Collections.Array<Rid> excluded, Rac2BoltMotionSession motion)
+    {
+        if (motion.NativeState != 1 || motion.Velocity.Z >= 0) return null;
+        Vector3 from = FromNative(motion.Position), next = FromNative(motion.Position + motion.Velocity);
+        var query = PhysicsRayQueryParameters3D.Create(from + Vector3.Up * .25f, next - Vector3.Up * .25f);
+        query.Exclude = excluded;
+        var hit = space.IntersectRay(query);
+        return hit.TryGetValue("position", out var position) && hit.TryGetValue("normal", out var normal)
+            ? new(ToNative(position.AsVector3()), ToNative(normal.AsVector3())) : null;
     }
 
     private void OnPickupEntered(Node3D body, Node3D area, Rac2BoltPickup pickup, PlayerBoltReceipt? receipt)

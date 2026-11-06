@@ -16,6 +16,17 @@ public sealed class CaptureReplayCoordinatorTests : IDisposable
     private static JsonElement Json<T>(T value) => JsonSerializer.SerializeToElement(value);
 
     [Fact]
+    public void CrateSmokeCannotInstallARecordingSession()
+    {
+        var fixture = new Fixture(); var owner = fixture.Owner();
+        var args = CommandLineArgs.Parse(["--rac2-crate-smoke", "--record-playtest", "fixture"]);
+        var error = Assert.Throws<InvalidDataException>(() => owner.Initialize(args, () => throw new Exception(),
+            (_, _, _) => throw new InvalidOperationException("Must reject before installing")));
+        Assert.Contains("Choose one playtest mode", error.Message, StringComparison.Ordinal);
+        Assert.Null(owner.Recorder);
+    }
+
+    [Fact]
     public void CoordinatorCapturesQualifiedHeaderAndNativeObservationsWithoutCreatingUi()
     {
         var fixture = new Fixture(); var owner = fixture.Owner();

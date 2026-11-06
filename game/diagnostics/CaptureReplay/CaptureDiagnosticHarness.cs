@@ -21,14 +21,19 @@ internal sealed class CaptureDiagnosticHarness(CaptureDiagnosticAuthorities auth
     internal void StartReports(CancellationToken lifetime = default) => Start("bug-report-smoke", context => new BugReporterScenario(context, ports.Recorder, ports.Reports).RunAsync(), "bug-report-smoke-fail", 1, true, lifetime: lifetime);
     internal void StartReconciliation(CancellationToken lifetime = default) => Start("reconciliation-capture", context => Reconciliation(context).RunAsync(), "reconciliation-capture-fail", 2, false, "capture-route", lifetime);
     internal void StartTrilogy() => Start("trilogy-gameplay-smoke", context => new TrilogyGameplayScenario(context, ports.Player, ports.Actors, ports.Navigation, ports.Equipment).RunAsync(), "trilogy-gameplay-smoke-fail", 1, true);
-    internal void StartRac2Crates() => Start("rac2-crate-smoke", context => new TrilogyGameplayScenario(context, ports.Player, ports.Actors, ports.Navigation, ports.Equipment).RunRac2CratesAsync(), "rac2-crate-smoke-fail", 1, true);
+    internal IDiagnosticScenario CreateRac2Crates(DiagnosticScenarioDefinition definition) => new DiagnosticProcessScenario(
+        Scenario(definition with { SourceAccess = DiagnosticSourceAccess.ExplicitSourceDiagnostic, RequiredSources = CrateAuthorities },
+            context => new TrilogyGameplayScenario(context, ports.Player, ports.Actors, ports.Navigation, ports.Equipment).RunRac2CratesAsync()),
+        new("rac2-crate-smoke-pass", 0), new("rac2-crate-smoke-fail", 1));
+    private ImmutableArray<DiagnosticSourceRequirement> CrateAuthorities =>
+        [.. authorities.Trilogy.Where(source => source.Game is ObpSourceGame.Rac1 or ObpSourceGame.Rac2)];
     private ReconciliationCaptureScenario Reconciliation(CaptureDiagnosticContext context) => new(context, ports.Recorder, ports.Navigation, ports.Equipment, acceptance);
     private DiagnosticScenarioDefinition Definition(string id) => new(id + "/v1", DiagnosticSourceAccess.ExplicitSourceDiagnostic,
         // Report replays poll process frames while a child imports its world. Headless
         // process frames are unpaced; their 90-second wall-clock deadlines own this wait.
         DiagnosticSetup.AssetFreeFixture, id switch
         {
-            "rac2-crate-smoke" => [.. authorities.Trilogy.Where(source => source.Game is ObpSourceGame.Rac1 or ObpSourceGame.Rac2)],
+            "rac2-crate-smoke" => CrateAuthorities,
             "reconciliation-capture" or "finished-capture-continuation" or "trilogy-gameplay-smoke" => authorities.Trilogy,
             _ => authorities.Current(),
         }, TimeSpan.FromMinutes(30), id == "bug-report-smoke" ? int.MaxValue : 108_000);

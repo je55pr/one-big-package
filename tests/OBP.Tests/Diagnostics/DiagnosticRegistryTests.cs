@@ -24,9 +24,9 @@ public sealed class DiagnosticRegistryTests
     public void EveryLegacyWorldAliasSelectsExactlyItsOriginalFlagAndSourceGate()
     {
         var legacy = WorldSmokeHarness.Registry.Registrations
-            .Where(registration => registration.Id != "rac3-target-seed-audit").ToArray();
+            .Where(registration => registration.Id is not ("rac3-target-seed-audit" or "rac2-crate-smoke")).ToArray();
         Assert.Equal(21, legacy.Length);
-        Assert.Equal(22, WorldSmokeHarness.Registry.Registrations.Length);
+        Assert.Equal(23, WorldSmokeHarness.Registry.Registrations.Length);
         foreach (var registration in legacy)
         {
             var args = CommandLineArgs.Parse([Assert.Single(registration.Aliases)]);
@@ -90,6 +90,7 @@ public sealed class DiagnosticRegistryTests
             ("rac1-mission-play-smoke", bindings.MissionPlay, "campaign"),
             ("movement-smoke", bindings.Movement, "movement"),
             ("rac3-target-seed-audit", bindings.Rac3SeedAudit, "rac3"),
+            ("rac2-crate-smoke", bindings.Rac2Crates, "capture"),
         ];
         Assert.Equal(WorldSmokeHarness.Registry.Registrations.Select(registration => registration.Id),
             routes.Select(route => route.Id));
@@ -115,6 +116,16 @@ public sealed class DiagnosticRegistryTests
         Assert.Contains("Unknown diagnostic scenario", Assert.Throws<DiagnosticUnavailableException>(() => WorldSmokeHarness.Registry.Find("unknown")).Message, StringComparison.Ordinal);
         Assert.Throws<ArgumentException>(() => new DiagnosticScenarioRegistry([
             new("one", ["alias"], _ => false), new("two", ["alias"], _ => false)]));
+    }
+
+    [Fact]
+    public void Rac2CrateSmokeIsClassifiedAndSelectedOnlyForTheFirstRac2World()
+    {
+        var args = CommandLineArgs.Parse(["--rac2-crate-smoke"]);
+        Assert.True(WorldSmokeHarness.IsRequested(args));
+        Assert.Equal("rac2-crate-smoke", Assert.Single(WorldSmokeHarness.Registry.Select(args, ObpSourceGame.Rac2, 1)).Id);
+        Assert.Empty(WorldSmokeHarness.Registry.Select(args, ObpSourceGame.Rac1, 1));
+        Assert.Empty(WorldSmokeHarness.Registry.Select(args, ObpSourceGame.Rac2, 2));
     }
 
     [Fact]

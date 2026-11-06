@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using OBP.Fusion;
 using Godot;
 using OBP.Runtime.Gameplay;
+using OBP.Godot;
 
 namespace OBP.Game.Diagnostics;
 
@@ -62,10 +63,29 @@ internal sealed class GodotTrilogyActorDiagnosticFixture(GodotTrilogyActorDiagno
         var world = bindings.Rac2World() ?? throw new DiagnosticUnavailableException("No R&C2 crate world.");
         var player = bindings.Player() ?? throw new DiagnosticUnavailableException("No selected player.");
         var host = bindings.Combat();
-        if (world.Crates.Count != 190 || host.ReadActors().Count(actor => actor.Registration.Instance.Target.NativeClassId == 500) != 190)
-            return false;
+        VerifyCrateAdmission(world, host);
+        int before = bindings.Wallet();
         var crate = world.Crates.OrderByDescending(node => node.Root.GlobalPosition.Y).First();
-        if (crate.Root.GetParent().FindChildren("moby-marker_*", "MeshInstance3D", true, false).Count != 0) return false;
+        VerifyCrateContact(world, host, crate);
+        await CollectCrateAsync(world, player, crate, before + 11, token);
+        var wrenchCrate = VerifyCrateWrench(world, host);
+        await CollectCrateAsync(world, player, wrenchCrate, before + 22, token);
+        return true;
+    }
+
+    private static void VerifyCrateAdmission(Rac2WorldModule world, ActorWorldHost host)
+    {
+        int registered = host.ReadActors().Count(actor => actor.Registration.Instance.Target.NativeClassId == 500);
+        if (world.Crates.Count != 190 || registered != 190)
+            throw new InvalidOperationException($"crate admission: world={world.Crates.Count}, actors={registered}, expected=190");
+        int markers = world.Crates[0].Root.GetParent().FindChildren("moby-marker_*", "MeshInstance3D", true, false).Count;
+        if (markers != 0) throw new InvalidOperationException($"ordinary marker meshes: {markers}, expected=0");
+        int adapters = host.ReadReplayAdapters().Length;
+        if (adapters != 190) throw new InvalidOperationException($"crate replay adapters: {adapters}, expected=190");
+    }
+
+    private static void VerifyCrateContact(Rac2WorldModule world, ActorWorldHost host, RuntimeWorldScene.DynamicObjectNode crate)
+    {
         var target = ActorWorldHost.Target(crate);
         var geometry = host.Combat.ReadGeometry().Single(item => item.Key == target);
         var centre = geometry.Bounds.GetCenter();
@@ -74,13 +94,19 @@ internal sealed class GodotTrilogyActorDiagnosticFixture(GodotTrilogyActorDiagno
         var shot = new WeaponShotKey(FusionWeaponSession.Lancer, 1, 999);
         var query = new WeaponQuery(0, shot, WeaponQueryKind.Segment, new(from.X, from.Y, from.Z), new(to.X, to.Y, to.Z), .05f);
         if (!host.Combat.Trace(query, from).Any(hit => hit.Target == target)) throw new InvalidOperationException($"crate query missed: {target}, bounds={geometry.Bounds}, from={from}");
-        int before = bindings.Wallet();
         var contact = new WeaponDamageIntent(shot, target, .5f, 0xDEADBEEF, "crate-contact-fixture");
         if (!host.Combat.Apply(contact) || world.ObserveCrate(crate).Alive || crate.Root.Visible) throw new InvalidOperationException("crate did not break through ordinary contact");
-        if (crate.Root.GetChildren().OfType<StaticBody3D>().Any(body => body.CollisionLayer != 0)) return false;
+        int colliders = crate.Root.GetChildren().OfType<StaticBody3D>().Count(body => body.CollisionLayer != 0);
+        if (colliders != 0) throw new InvalidOperationException($"broken crate collision bodies: {colliders}, expected=0");
         int pickups = world.CrateBolts.OutstandingNodes;
-        if (pickups != 3 || host.Combat.Apply(contact) || world.CrateBolts.OutstandingNodes != pickups) return false;
-        if (host.ReadReplayAdapters().Length != 190) return false;
+        bool repeated = host.Combat.Apply(contact);
+        if (pickups != 3 || repeated || world.CrateBolts.OutstandingNodes != pickups)
+            throw new InvalidOperationException($"crate duplicate gate: pickups={pickups}->{world.CrateBolts.OutstandingNodes}, repeated={repeated}; expected=3->3/false");
+    }
+
+    private async Task CollectCrateAsync(Rac2WorldModule world, PlayerHost player, RuntimeWorldScene.DynamicObjectNode crate,
+        int expectedWallet, CancellationToken token)
+    {
         player.ApplyDevelopmentReset(crate.Root.GlobalPosition + Vector3.Right * .6f, snapToFloor: false);
         // Keep this trial on the same ordinary world scheduler. No direct grant
         // or test-only pickup collision path is used.
@@ -89,8 +115,12 @@ internal sealed class GodotTrilogyActorDiagnosticFixture(GodotTrilogyActorDiagno
             token.ThrowIfCancellationRequested();
             await player.ToSignal(player.GetTree(), SceneTree.SignalName.PhysicsFrame);
         }
-        if (world.CrateBolts.OutstandingNodes != 0 || bindings.Wallet() != before + 11)
-            throw new InvalidOperationException($"crate collection: remaining={world.CrateBolts.OutstandingNodes}, wallet={before}->{bindings.Wallet()}, player={player.GlobalPosition}, pickups={world.CrateBolts.DiagnosticState}");
+        if (world.CrateBolts.OutstandingNodes != 0 || bindings.Wallet() != expectedWallet)
+            throw new InvalidOperationException($"crate collection: remaining={world.CrateBolts.OutstandingNodes}, wallet={bindings.Wallet()}, expected=0/{expectedWallet}, player={player.GlobalPosition}, pickups={world.CrateBolts.DiagnosticState}");
+    }
+
+    private static RuntimeWorldScene.DynamicObjectNode VerifyCrateWrench(Rac2WorldModule world, ActorWorldHost host)
+    {
         var wrenchCrate = world.Crates.Where(node => world.ObserveCrate(node).Alive)
             .OrderByDescending(node => node.Root.GlobalPosition.Y).First();
         var wrenchBox = host.Combat.ReadGeometry().Single(item => item.Key == ActorWorldHost.Target(wrenchCrate)).Bounds;
@@ -104,15 +134,7 @@ internal sealed class GodotTrilogyActorDiagnosticFixture(GodotTrilogyActorDiagno
             throw new InvalidOperationException("ordinary wrench sweep failed to break a crate once");
         host.Combat.ResolveWrench(hand, tip, hand, tip, .01f, 1);
         if (world.CrateBolts.OutstandingNodes != 3) throw new InvalidOperationException("repeat wrench duplicated payout");
-        player.ApplyDevelopmentReset(wrenchCrate.Root.GlobalPosition + Vector3.Right * .6f, snapToFloor: false);
-        for (int frame = 0; frame < 240 && world.CrateBolts.OutstandingNodes > 0; frame++)
-        {
-            token.ThrowIfCancellationRequested();
-            await player.ToSignal(player.GetTree(), SceneTree.SignalName.PhysicsFrame);
-        }
-        if (world.CrateBolts.OutstandingNodes != 0 || bindings.Wallet() != before + 22)
-            throw new InvalidOperationException("wrench-crate pickups did not credit the shared wallet");
-        return true;
+        return wrenchCrate;
     }
 
     private sealed class Cache(IActorCacheObservation witness) : ITrilogyActorCacheWitness { public bool Reused => witness.Reused; }

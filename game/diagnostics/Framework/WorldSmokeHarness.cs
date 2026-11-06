@@ -19,7 +19,8 @@ internal static class WorldSmokeHarness
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisBirdbot = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisMusic = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Weapons = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? PlayerAudio = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? MetropolisTaxi = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? MissionPlay = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisRoute = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Frogs = null,
-        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Rac3SeedAudit = null);
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Rac3SeedAudit = null,
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Rac2Crates = null);
 
     // Keep Godot's host factories at the composition seam; scenario-to-harness
     // registration stays in the diagnostic owner, not the world-entry root.
@@ -42,7 +43,6 @@ internal static class WorldSmokeHarness
         if (args.FusionSmoke && switches == 1 && !args.PlaytestRequested) fusion().Start();
         if (switches == 1 && PlayerSessionDiagnosticHarness.IsRequested(args)) factories.Player().StartRequested();
         if (args.TrilogyGameplaySmoke && switches == 1) factories.Capture().StartTrilogy();
-        if (args.Rac2CrateSmoke && switches == 1) factories.Capture().StartRac2Crates();
     }
 
     internal static Entrypoints Bind(Factories factories) => new(
@@ -67,7 +67,8 @@ internal static class WorldSmokeHarness
         definition => factories.Campaign().CreateMission(definition),
         definition => factories.Routes().CreateRoute(definition),
         definition => factories.Encounter().CreateFrogs(definition),
-        factories.Rac3SeedAudit);
+        factories.Rac3SeedAudit,
+        definition => factories.Capture().CreateRac2Crates(definition));
 
     private sealed record Entry(DiagnosticRegistration Registration, Func<Entrypoints, ObpDestination, DiagnosticRunContext, Task?>? Invoke,
         Func<Entrypoints, DiagnosticScenarioDefinition, IDiagnosticScenario>? Create = null);
@@ -121,6 +122,10 @@ internal static class WorldSmokeHarness
             (e, definition) => e.Rac3SeedAudit?.Invoke(definition)
                 ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("R&C3 audit port is unavailable.")),
             source: ObpSourceGame.Rac3),
+        TypedCase("rac2-crate-smoke", a => a.Rac2CrateSmoke,
+            (e, definition) => e.Rac2Crates?.Invoke(definition)
+                ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("R&C2 crate diagnostic is unavailable.")),
+            source: ObpSourceGame.Rac2),
     ];
     internal static DiagnosticScenarioRegistry Registry { get; } = new(Entries.Select(entry => entry.Registration));
 

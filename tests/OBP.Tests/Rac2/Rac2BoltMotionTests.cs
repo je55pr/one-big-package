@@ -54,6 +54,7 @@ public sealed class Rac2BoltMotionTests
         bolt.Step(high, high, 3, 1.75f, true);
         Assert.Equal(3, bolt.NativeState);
         bolt.Step(bolt.Position, bolt.Position, 3, 1.75f, false);
+        bolt.Step(far, far, 3, 1.75f, true);
         Assert.Equal(3, bolt.NativeState);
         Assert.False(bolt.Collected);
     }

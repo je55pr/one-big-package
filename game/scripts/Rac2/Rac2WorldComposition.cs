@@ -12,6 +12,8 @@ namespace OBP.Game;
 /// </summary>
 internal sealed class Rac2WorldComposition(ApplicationComponents components) : CompositionBase(components)
 {
+    private const int DefaultRac1PickupState = 0;
+    private const int Rac1BoltGrabberItem = 34;
 
     internal Rac2WorldModule CreateRac2WorldModule(RuntimeWorld world, GodotWorldResources resources) => new(
         world, resources.Scene, resources, new Rac2WorldPorts(
@@ -44,5 +46,7 @@ internal sealed class Rac2WorldComposition(ApplicationComponents components) : C
             }, () => RefreshRac1HudState(), () => _worldHost.PlayRepresentativeAudioOneShot(),
             () => Sources.Setup.Library.Get(ObpSourceGame.Rac2)?.Path,
             () => _args.FixedSeed ?? 1,
-            () => OBP.RAC1.Gameplay.Rac1BoltMotionSession.AttractionProfile(0, _playerNative?.Inventory.OwnsNativeItem(34) == true)));
+            // Selected-player attraction adapter; see research/GC_CRATES.md.
+            () => OBP.RAC1.Gameplay.Rac1BoltMotionSession.AttractionProfile(DefaultRac1PickupState,
+                _playerNative?.Inventory.OwnsNativeItem(Rac1BoltGrabberItem) == true)));
 }

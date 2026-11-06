@@ -49,51 +49,59 @@ public sealed class Rac2BoltMotionSession
         bool nearby = delta.X * delta.X + delta.Y * delta.Y < radius * radius && MathF.Abs(delta.Z) < height;
         if (attractEnabled && nearby) _activated = true;
         Spin += _spinStep;
-        if (NativeState == 1)
+        switch (NativeState)
         {
-            Velocity -= new Vector3(0, 0, GravityPerTick);
-            Position += Velocity;
-            if (Position.Z < _launchHeight - 2 && Position.Z < player.Z - 2 && attractEnabled)
-                Attract();
-            else if (contact is { } hit && Velocity.Z < 0 && hit.Normal.Z > .70710677f)
+            case 1: StepFlight(player, attractEnabled, contact); break;
+            case 2: StepFirstHop(); break;
+            case 3:
+                if (attractEnabled && _activated) Attract();
+                else Hop(.0125f);
+                break;
+            case 4 when attractEnabled: StepAttracted(socket); break;
+        }
+    }
+
+    private void StepFlight(Vector3 player, bool attractEnabled, Rac2BoltContact? contact)
+    {
+        Velocity -= new Vector3(0, 0, GravityPerTick);
+        Position += Velocity;
+        if (Position.Z < _launchHeight - 2 && Position.Z < player.Z - 2 && attractEnabled)
+            Attract();
+        else if (contact is { } hit && Velocity.Z < 0 && hit.Normal.Z > .70710677f)
+        {
+            _rest = hit.Position + Vector3.UnitZ * ContactRadius;
+            Position = _rest;
+            if (attractEnabled && _activated) { Velocity *= .13333334f; Attract(); }
+            else
             {
-                _rest = hit.Position + Vector3.UnitZ * ContactRadius;
-                Position = _rest;
-                if (attractEnabled && _activated) { Velocity *= .13333334f; Attract(); }
-                else
-                {
-                    NativeState = 2;
-                    _hopLength = _hopRemaining = (int)_sample(30, 40);
-                    Velocity = Vector3.Zero;
-                }
+                NativeState = 2;
+                _hopLength = _hopRemaining = (int)_sample(30, 40);
+                Velocity = Vector3.Zero;
             }
         }
-        else if (NativeState == 2)
+    }
+
+    private void StepFirstHop()
+    {
+        Hop(.025f);
+        if (_hopRemaining == 0)
         {
-            Hop(.025f);
-            if (_hopRemaining == 0)
-            {
-                NativeState = 3;
-                _hopLength = _hopRemaining = (int)_sample(10, 20);
-            }
+            NativeState = 3;
+            _hopLength = _hopRemaining = (int)_sample(10, 20);
         }
-        else if (NativeState == 3)
-        {
-            if (attractEnabled && _activated) Attract();
-            else Hop(.0125f);
-        }
-        else if (NativeState == 4 && attractEnabled)
-        {
-            // Front-of-camera attraction branch. Contact/socket mapping is
-            // supplied by the host; no borrowed world/player controller.
-            float speed = Velocity.Length();
-            if (speed > .006666667f) Velocity *= (speed - .006666667f) / speed;
-            _acceleration = Math.Min(.53333336f, _acceleration + .006666667f);
-            Position += Velocity;
-            var to = socket - Position;
-            if (to.Length() <= _acceleration) { Position = socket; Collected = true; }
-            else Position += Vector3.Normalize(to) * _acceleration;
-        }
+    }
+
+    private void StepAttracted(Vector3 socket)
+    {
+        // Front-of-camera attraction branch. Contact/socket mapping is
+        // supplied by the host; no borrowed world/player controller.
+        float speed = Velocity.Length();
+        if (speed > .006666667f) Velocity *= (speed - .006666667f) / speed;
+        _acceleration = Math.Min(.53333336f, _acceleration + .006666667f);
+        Position += Velocity;
+        var to = socket - Position;
+        if (to.Length() <= _acceleration) { Position = socket; Collected = true; }
+        else Position += Vector3.Normalize(to) * _acceleration;
     }
 
     private void Attract() { NativeState = 4; _acceleration = 0; }
