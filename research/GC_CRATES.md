@@ -300,6 +300,12 @@ credits each denomination through the existing player-session receipt port.
 The host ray-to-centre clearance uses the contacted unit normal, including on
 slopes. The catch-up limit is 12 native ticks per host frame, and ordinary launch
 randomness uses a runtime seed unless a diagnostic/replay fixed seed is supplied.
+Falling and first-hop states latch PVar `+0x42` when the player enters the pickup
+volume; leaving the volume does not clear it. Oozla reads it at `0x37703C` and
+`0x37737C`, then writes one at `0x377080/84` and `0x3773C0/C4`. The retail witness
+checks both writes and their count, and the motion regression enters range,
+leaves before landing and still attracts. The first hop also retains its final
+position sample at the state-3 transition; it does not borrow R&C1's anchor reset.
 
 `--destination rac2:LEVEL1 --rac2-crate-smoke --no-profile` exercises the ordinary
 actor/query route, absence of marker cubes, collision removal, duplicate-hit

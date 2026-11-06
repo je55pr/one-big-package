@@ -49,6 +49,16 @@ public sealed class Rac2BoltAssetsTests
         var header = Rac2LevelWad.ReadHeader(wad);
         var overlay = Rac2LevelOverlay.Open(Rac2LevelWad.RequireLump(wad, header, 0));
         uint ReadWord(uint address) => BinaryPrimitives.ReadUInt32LittleEndian(overlay.ReadVirtual(address, 4));
+        // Falling and first-hop states latch PVar +0x42. Only stores of one
+        // occur in the update; moving outside the volume does not clear it.
+        Assert.Equal(0x92820042u, ReadWord(0x37703C));
+        Assert.Equal(0x24020001u, ReadWord(0x377080));
+        Assert.Equal(0xA2820042u, ReadWord(0x377084));
+        Assert.Equal(0x92820042u, ReadWord(0x37737C));
+        Assert.Equal(0x24020001u, ReadWord(0x3773C0));
+        Assert.Equal(0xA2820042u, ReadWord(0x3773C4));
+        Assert.Equal(2, Enumerable.Range(0, (0x377B0C - 0x376D58) / 4)
+            .Count(index => (ReadWord(0x376D58u + (uint)index * 4) & 0xFC00FFFFu) == 0xA0000042u));
         // Follow the retail denomination comparisons to each allocator call.
         // This checks the association against the original control flow rather
         // than duplicating the production lookup table as test expectations.

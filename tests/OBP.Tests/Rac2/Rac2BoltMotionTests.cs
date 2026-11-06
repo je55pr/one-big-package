@@ -66,7 +66,7 @@ public sealed class Rac2BoltMotionTests
     }
 
     [Fact]
-    public void SlopedContactClearsTheSurfaceAndFirstHopFinishesAtItsAnchor()
+    public void SlopedContactClearsTheSurfaceAndFirstHopRetainsItsLastSample()
     {
         var bolt = Create();
         var far = new Vector3(100, 100, 1);
@@ -77,6 +77,18 @@ public sealed class Rac2BoltMotionTests
         Assert.Equal(anchor, bolt.Position);
         for (int tick = 0; tick < 35; tick++) bolt.Step(far, far, 3, 1.75f, false);
         Assert.Equal(3, bolt.NativeState);
-        Assert.Equal(anchor, bolt.Position);
+        Assert.True(bolt.Position.Z > anchor.Z);
+    }
+
+    [Fact]
+    public void RetailActivationSurvivesLeavingTheVolumeBeforeLanding()
+    {
+        var bolt = Create();
+        bolt.Step(bolt.Position, bolt.Position, 3, 1.75f, true);
+        var far = new Vector3(100, 100, 1);
+        for (int tick = 0; tick < 40; tick++) bolt.Step(far, far, 3, 1.75f, true);
+        bolt.Step(far, far, 3, 1.75f, true, new(Vector3.Zero, Vector3.UnitZ));
+        Assert.Equal(4, bolt.NativeState);
+        Assert.False(bolt.Collected);
     }
 }

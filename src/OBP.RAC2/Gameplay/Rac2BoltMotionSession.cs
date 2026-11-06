@@ -87,7 +87,6 @@ public sealed class Rac2BoltMotionSession
         Hop(.025f);
         if (_hopRemaining == 0)
         {
-            Position = _rest;
             NativeState = 3;
             _hopLength = _hopRemaining = (int)_sample(10, 20);
         }
