@@ -115,7 +115,7 @@ Detailed measurements are kept as data rather than separate progress reports:
 - [Format witnesses](generated/rac3-ntscu-original.format-witnesses.json): retained hash/size/count tables from the original compatibility measurements, with source Git blob identities.
 - [Moby animation](UYA_MOBY_ANIMATION.md) and [Veldin gameplay](UYA_VELDIN_GAMEPLAY.md): separate recovered skeletal and class-runtime contracts.
 
-Run `./tools/test-retail.ps1` with the three authorized ISO variables configured.
+Run `./https://github.com/je55pr/one-big-package/blob/tests/tools/test-retail.ps1` with the three authorized ISO variables configured.
 The relevant native suites include `Rac3WorldTests`, `UyaMobyPlacementTests`,
 `UyaSkyPresentationTests`, and the UYA gameplay/controller tests. These are
 current validation; historical browser captures and CI test totals are not.

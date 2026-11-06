@@ -15,8 +15,10 @@ public sealed record FusionWeaponTransientDiagnostic(int Projectiles, int Lancer
 public sealed record FusionWeaponMenuDiagnostic(bool Open, ImmutableArray<SourceWeaponKey?> Entries, SourceWeaponKey? Selected);
 public sealed record FusionWeaponHeldDiagnostic(SourceWeaponKey Weapon, bool Visible, bool HasMeshes,
     DiagnosticWeaponTransform Local, DiagnosticWeaponTransform Global, DiagnosticWeaponTransform? ExpectedHand);
+// A null JointEaseDelta means no procedural deformation is applied to this pose.
+// The native fixture supplies the complete independent deformation whenever that layer is active.
 public sealed record FusionWeaponAnimationDiagnostic(int? UseSequence, double? UseWeight, bool Blending, double BlendFraction,
-    int? TraversalSequence, ImmutableArray<double>? Skin);
+    int? TraversalSequence, ImmutableArray<double>? Skin, ImmutableArray<double>? JointEaseDelta = null);
 public interface IFusionAssetDiagnosticWitness { bool IsCurrent { get; } }
 public interface IFusionPreparationDiagnosticWitness
 {

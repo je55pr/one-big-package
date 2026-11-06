@@ -8,7 +8,7 @@ param(
     [string]$Out = 'captures/player-session-smoke'
 )
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot 'obp-native-process.ps1')
+. (Join-Path $PSScriptRoot 'obp-smoke-process.ps1')
 $root = Split-Path -Parent $PSScriptRoot
 $godot = & (Join-Path $PSScriptRoot 'prepare-game-smoke.ps1') -Sources @($Rac1Iso, $Rac2Iso, $Rac3Iso) -SkipBuild:$SkipBuild
 $Out = [IO.Path]::GetFullPath($Out)
@@ -23,10 +23,9 @@ $stderr = Join-Path $Out 'stderr.log'
 $code = Invoke-ObpNativeProcessCapture -FilePath $godot -ArgumentList $engineArgs -WorkingDirectory $root -StandardOutputPath $stdout -StandardErrorPath $stderr
 Get-Content -LiteralPath $stdout -Encoding UTF8 | ForEach-Object { Write-Host $_ }
 Get-Content -LiteralPath $stderr -Encoding UTF8 | ForEach-Object { Write-Host $_ }
-if ($code -ne 0 -or -not (Select-String -LiteralPath $stdout -SimpleMatch '[player-session-smoke] PASS:')) {
+$log = [IO.File]::ReadAllText($stdout) + "`n" + [IO.File]::ReadAllText($stderr)
+if (-not (Test-ObpSmokeLog -ExitCode $code -Log $log -CompletionMarker '[player-session-smoke] PASS:')) {
     throw "Player session lifecycle smoke failed ($code). Inspect $Out"
 }
-if (Select-String -LiteralPath $stderr -Pattern 'ObjectDB instances leaked|resources still in use|SCRIPT ERROR:') {
-    throw "Godot lifecycle failure. Inspect $stderr"
-}
 Write-Host '[player-session] PASS' -ForegroundColor Green
+exit 0

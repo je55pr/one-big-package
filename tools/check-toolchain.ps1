@@ -31,7 +31,7 @@ try {
   }
   $runtimes = @(& dotnet --list-runtimes 2>&1)
   if ($LASTEXITCODE -ne 0 -or -not (Test-ObpRuntimeList $runtimes)) {
-    throw "The .NET 8 runtime needed to execute net8.0 tools/tests is missing. Run ./tools/bootstrap-dotnet.ps1."
+    throw "The .NET 8 runtime needed to execute net8.0 command-line tools is missing. Run ./tools/bootstrap-dotnet.ps1."
   }
   Write-Output "Toolchain OK: .NET SDK $sdk (global.json: >= $required, $($policy.sdk.rollForward)); C# $language; .NET 8 runtime present"
 }

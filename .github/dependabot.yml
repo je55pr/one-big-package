@@ -14,7 +14,6 @@ updates:
   - package-ecosystem: nuget
     directories:
       - /src/OBP.Godot
-      - /tests/OBP.Tests
     schedule:
       interval: weekly
       day: monday

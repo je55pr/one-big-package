@@ -24,7 +24,7 @@ if [[ "$language" != "12.0" ]]; then
   exit 1
 fi
 if ! dotnet --list-runtimes | obp_runtime_present; then
-  echo 'The .NET 8 runtime needed to execute net8.0 tools/tests is missing. Run ./tools/bootstrap-dotnet.sh.' >&2
+  echo 'The .NET 8 runtime needed to execute net8.0 command-line tools is missing. Run ./tools/bootstrap-dotnet.sh.' >&2
   exit 1
 fi
 echo "Toolchain OK: .NET SDK $sdk (global.json: >= $required, latestPatch); C# $language; .NET 8 runtime present"

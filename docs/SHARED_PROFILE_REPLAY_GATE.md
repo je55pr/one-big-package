@@ -73,39 +73,13 @@ ordinary F12 explicitly explains why a universal bookmark is unavailable. It
 does not pretend to restore native AI from a pose. Legacy version-1/2 R&C1
 bookmarks remain supported in their original parity mode.
 
-## Reproducible gate
+## Historical reconciliation gate (retired)
 
-On an authorised Windows machine, set `OBP_RAC1_ISO`, `OBP_GC_ISO`, and
-`OBP_UYA_ISO`, then run:
+The former multi-world automated reconciliation runner and its capability matrix
+are preserved in the [pre-removal tests tag](https://github.com/je55pr/one-big-package/tree/tests). They are not
+available on current dev, and CI does not claim cross-world behavioural
+validation. The historical findings above remain useful design context.
 
-```powershell
-./tools/test-reconciliation.ps1
-```
-
-Every engine process, including report replays, is headless. The gate runs the
-portable/retail tests, format and UID checks, C# build, five-world pose/controller
-fixture, native mixed-actor/combat/audio/lifecycle fixture, ordinary save/restart,
-five-stop selection/firing capture and exact fresh-process replay, GC/UYA/Lab
-bookmarks, and each destination's F8/F7 inbox/export/two-process report replay.
-The persistent capture route is Veldin → Oozla → UYA Veldin → Lab → Veldin.
-The separate equivalent-input pose/audio fixtures deliberately restore the same
-initial player state on an explicitly authored contact deck for comparison.
-
-Evidence goes to a new ignored `captures/reconciliation/<id>/` directory:
-`summary.json`, observed and declared capability matrices, profile restart
-assertions, native pose traces, input tape, bookmarks, report ZIPs and replay
-comparison results. Results come from assertions and observed state. Skipping
-tests/build labels the result `partial`; it cannot manufacture a full PASS.
-The declared matrix is [reconciliation-capabilities.json](../tests/OBP.Tests/reconciliation-capabilities.json).
-Portable CI checks its registrations and traverses the same qualified route with
-synthetically authored providers; the ownership audit remains active.
-The last two migration exceptions are removed: the ordinary Metal Detector
-shortcut follows its unavailable catalog entry, and checkpoint source admission
-only returns a native placement to the caller's explicit parity policy. A focused
-regression verifies that this source adapter cannot select a player service.
-
-Automation proves state, clocks, geometry/attachment traces, audio intents and
-cleanup. A separate human check should confirm visible attachment/blending,
-effects, audible sound and controller feel across the route, then restart once
-to check the saved loadout. This script does not claim a rendered/audible review
-or close parent #264; its dependencies and that final review remain explicit.
+For current investigation, record and replay actual gameplay with
+`tools/record-playtest.ps1` and `tools/replay-playtest.ps1`, then check
+presentation, audio, controller feel, saves and world transitions manually.

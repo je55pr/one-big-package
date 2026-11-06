@@ -266,10 +266,10 @@ body/equipment pose composition being redesigned separately in #481.
 Use supported sources identified by `Rac1Authority.Primary`,
 `Rac2Authority.Primary` and `Rac3Authority.Primary`.
 
-- Run `tools/test-retail.ps1` for compatibility, converted surfaces and
+- Run `https://github.com/je55pr/one-big-package/blob/tests/tools/test-retail.ps1` for compatibility, converted surfaces and
   cross-source arm playback.
 - With all three ISO environment variables set, run
-  `tools/trilogy-skeleton-native-trace.py --reference-root <pinned MIT checkout> --cxx <C++20 compiler>`.
+  `https://github.com/je55pr/one-big-package/blob/tests/tools/trilogy-skeleton-native-trace.py --reference-root <pinned MIT checkout> --cxx <C++20 compiler>`.
   The script verifies the interpreter revision in `THIRD_PARTY_NOTICES.md`.
   Original code and channels are temporary files under ignored `captures/`;
   tests remove their own input directories.

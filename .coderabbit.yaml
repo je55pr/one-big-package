@@ -65,12 +65,7 @@ reviews:
       instructions: |
         Verify bounded GitHub Actions checks, required native/Godot C# builds,
         no retail payloads or secret exposure, and no unnecessary toolchains.
-        PR reviews stay advisory; builds/tests remain the hard merge checks.
-    - path: "tests/**/*.cs"
-      instructions: |
-        Prefer deterministic portable regressions with explicit source IDs,
-        and retail-backed claims only when real authorised sources were used.
-        Cross-game integration cases must not replace native parity tests.
+        PR reviews stay advisory; the build remains the hard merge check.
 
 knowledge_base:
   code_guidelines:

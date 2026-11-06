@@ -531,8 +531,8 @@ damage owner/flag admission, frame-15.5 lunges and source volume gates.
 
 ## Verification commands
 
-Run `./tools/test.ps1 -Configuration Release`,
+Run `./https://github.com/je55pr/one-big-package/blob/tests/tools/test.ps1 -Configuration Release`,
 `dotnet format OneBigPackage.sln --verify-no-changes --no-restore`,
-`./tools/test-retail.ps1` with the authorised local ISO and Godot
+`./https://github.com/je55pr/one-big-package/blob/tests/tools/test-retail.ps1` with the authorised local ISO and Godot
 headless level smokes for `rac1:LEVEL1`, `rac1:LEVEL5`, `rac1:LEVEL11`.
 The PR description records which gates actually passed.

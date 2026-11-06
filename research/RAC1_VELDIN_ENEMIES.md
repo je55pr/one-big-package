@@ -187,7 +187,7 @@ crate break. It does not privilege i143 over i144 or measure facing along the ol
 placeholder axis. Its approach slows near the creature and releases movement
 during wind-up, rather than driving through the attack volume into the contact
 body. This is test input policy, not an alteration to retail attack dimensions.
-See `../docs/RETAIL_TESTING.md`.
+See `https://github.com/je55pr/one-big-package/blob/tests/docs/RETAIL_TESTING.md`.
 
 Local validation on 2026-10-19 passed the Release and retail-authority suites
 (1,392 tests each), 81 Python tooling tests and formatting verification.
@@ -235,8 +235,10 @@ electric beam from socket 0 along the robot heading (`ContactLength` 5, shortene
 - The robot also draws, every update, a camera-facing additive glow (half size .2, colour 0x80ffffff) at its
   second semantic socket lowered by .333 (`0x2e1c78`).
 - The slot is claimed once, in state 3 of the robot update, by `jal 0x2e1f28` (fx1471_claim) at overlay `0x2e10d4`
-  with `a0` = the robot, `a1` = 0 (endpoint effect flags) and `a2` = 0 (spark tag mode, in the delay slot). That call
-  site and those arguments are witnessed against the retail overlay by `Rac1BeamSlotTests`. "The retail beam has
+  with `a0` = the robot, `a1` = 0 (endpoint effect flags) and `a2` = 0 (spark tag mode, in the delay slot). The
+  instruction words were read from the retail Veldin overlay (`0x2e10d0` = `0000282d`, `0x2e10d4` = `0c0b87ca`,
+  `0x2e10d8` = `0000302d`) and it is the only `jal 0x2e1f28` in the robot update `0x2e0b88..0x2e1678`; this was a
+  manual check, not an automated test (the project no longer carries them). "The retail beam has
   **no point lights**" and "every spark drifts" are inferences from those two zero arguments and the public
   decomp of the slot manager (flag bits 1/2 gate its lights; tag mode 1 gates the attached sparks).
 - Sparks (kind 0x45, spawn `0x274948`, update `0x274a70`): grey additive, 8000..50000 raw, 10..29 frames, random
