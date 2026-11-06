@@ -13,6 +13,9 @@ internal sealed partial class Rac1EnemyHost
     private Rac1ParticleSession? _robotParticles;
     private Rac1ParticleView? _robotParticleView;
     private uint _robotParticleFrame = uint.MaxValue;
+    /// <summary>Presentation-only stream, forked once from the shared effect stream so robot visuals cannot shift crate or pickup rolls.</summary>
+    private Rac1PickupRandom? _robotEffectRandom;
+    private Rac1PickupRandom RobotRandom => _robotEffectRandom ??= Random.Fork();
 
     /// <summary>Fx textures the class-1471 beam draws (glow 0x28, beam 0x29, end/robot glow 0xb) and the Part texture of its sparks; read from the active level's own banks.</summary>
     internal void ConfigureRac1RobotEffects(Rac1LevelCore.Core core)
@@ -21,7 +24,7 @@ internal sealed partial class Rac1EnemyHost
         _robotBeamMaterials = new(Rac1FxTextures.Read(core, new HashSet<int>
             { Rac1BeamSlot.GlowTexture, Rac1BeamSlot.BeamTexture, Rac1BeamSlot.EndpointTexture }));
         _robotParticleAssets = Rac1EffectAssets.DecodeSparks(core);
-        _robotParticles = new(_robotParticleAssets, Random);
+        _robotParticles = new(_robotParticleAssets, RobotRandom);
         _robotParticleView = new Rac1ParticleView { Name = "Rac1RobotSparks" };
         _sceneResult.Root.AddChild(_robotParticleView);
     }
@@ -41,7 +44,7 @@ internal sealed partial class Rac1EnemyHost
         System.Numerics.Vector3? lamp = enemy.Animation.SecondSocket is { } local
             ? ToEffectNative(enemy.Node.Root.ToGlobal(FromEffectNative(local))) : null;
         view.SetGlow(lamp);
-        if (lamp is { } lampPoint && _robotParticles is not null) Rac1RobotLampFlash.Emit(_robotParticles, Random, lampPoint);
+        if (lamp is { } lampPoint && _robotParticles is not null) Rac1RobotLampFlash.Emit(_robotParticles, RobotRandom, lampPoint);
         if (firing)
         {
             // 0x2e0b88 state 5: from socket 0 along the heading (flattened), ContactLength long, shortened by the first hit.
@@ -49,13 +52,14 @@ internal sealed partial class Rac1EnemyHost
             Vector3 end = muzzle + (forward.LengthSquared() > 1e-8f ? forward.Normalized() : Vector3.Forward) * Rac1Class1440Session.ContactLength;
             var query = PhysicsRayQueryParameters3D.Create(muzzle, end);
             query.Exclude = new global::Godot.Collections.Array<Rid> { enemy.Body.GetRid() };
+            query.HitFromInside = true; // as the damage query for this attack: a muzzle inside a collider clips the beam
             var hit = enemy.Body.GetWorld3D().DirectSpaceState.IntersectRay(query);
             if (hit.TryGetValue("position", out var position)) end = (Vector3)position;
-            view.StepBeam(ToEffectNative(muzzle), ToEffectNative(end), Random);
-            if (_robotParticles is not null) view.EmitSparks(_robotParticles, Random);
+            view.StepBeam(ToEffectNative(muzzle), ToEffectNative(end), RobotRandom);
+            if (_robotParticles is not null) view.EmitSparks(_robotParticles, RobotRandom);
         }
         else view.StopBeam();
-        view.Present(_sceneResult.Root.GetViewport()?.GetCamera3D()?.GlobalPosition ?? muzzle + Vector3.Up * 5, Random);
+        view.Present(_sceneResult.Root.GetViewport()?.GetCamera3D()?.GlobalPosition ?? muzzle + Vector3.Up * 5, RobotRandom);
     }
 
     /// <summary>Ages every spark once per native frame, whichever caller reaches the new frame first.</summary>
@@ -87,6 +91,6 @@ internal sealed partial class Rac1EnemyHost
         _robotBeamMaterials = null;
         _robotParticles?.Clear(); _robotParticles = null; _robotParticleAssets = null;
         if (_robotParticleView is not null && GodotObject.IsInstanceValid(_robotParticleView) && !_robotParticleView.IsQueuedForDeletion()) _robotParticleView.QueueFree();
-        _robotParticleView = null; _robotParticleFrame = uint.MaxValue;
+        _robotParticleView = null; _robotParticleFrame = uint.MaxValue; _robotEffectRandom = null;
     }
 }

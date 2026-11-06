@@ -22,6 +22,18 @@ public static class Rac1MobyAttachment
         return joints;
     }
 
+    /// <summary>Whether the class declares <paramref name="semanticJoint"/> at all; a malformed table still throws.</summary>
+    public static bool HasJoint(ReadOnlySpan<byte> classPayload, int semanticJoint)
+    {
+        if (classPayload.Length < Rac1Moby.ClassHeaderSize || semanticJoint < 0)
+            throw new InvalidDataException("Invalid R&C1 attachment joint source.");
+        int table = BinaryPrimitives.ReadInt32LittleEndian(classPayload[0x1c..]);
+        RequireRange(classPayload, table, 4);
+        int count = BinaryPrimitives.ReadInt32LittleEndian(classPayload[table..]);
+        if (count is < 1 or > 256) throw new InvalidDataException("Attachment semantic joint table has an invalid length.");
+        return semanticJoint < count;
+    }
+
     public static int ReadJoint(ReadOnlySpan<byte> classPayload, int semanticJoint)
     {
         if (classPayload.Length < Rac1Moby.ClassHeaderSize || semanticJoint < 0)

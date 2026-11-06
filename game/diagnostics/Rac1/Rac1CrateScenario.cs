@@ -76,7 +76,9 @@ public sealed class Rac1CrateScenario(MovementDiagnosticContext context, Rac1Loo
             Targets.StageCrate(health.Key, origin + new Vector3(-5, 0, 3));
             await PhysicsFramesAsync(40);
             // The intact crate already hosts its orb cluster (class 806 state 1): eight orb sprites ride inside it.
-            Require(Loot.Read().NanotechRiders >= 1 && Loot.Read().NanotechOrbSprites >= 8, "intact Nanotech crate shows no orb cluster");
+            // Keyed by the staged crate itself: another intact class-501 crate cannot satisfy this.
+            Require(Loot.Read().NanotechRiderOrbs is { } riders && riders.TryGetValue(health.Key.Target.InstanceIndex, out int stagedOrbs) && stagedOrbs >= 8,
+                "the staged intact Nanotech crate shows no eight-orb cluster");
             await CaptureAsync("nanotech-intact", origin + new Vector3(-5, 1.0f, 3));
             Require(Loot.StrikeCrate(health.Key), "Nanotech crate failed to break");
             await PhysicsFramesAsync(60);

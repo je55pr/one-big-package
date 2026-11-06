@@ -50,6 +50,8 @@ public sealed class Rac1NanotechCluster
     private sealed class Orb
     {
         public Rac1ParticleSession.Particle? Particle;
+        /// <summary>In flight. Independent of <see cref="Particle"/>: a full particle pool must not stop an orb arriving.</summary>
+        public bool Active;
         public float Distance, Breath;
         public Vector3 Start, Control, Position;
         public int Timer, Life;
@@ -83,6 +85,8 @@ public sealed class Rac1NanotechCluster
     public float Bob => _bob;
     public bool Healed => _healed;
     public int LiveOrbs => _orbs.Count(orb => orb.Particle is not null);
+    /// <summary>Orbs still flying toward Ratchet (each credits nothing on its own; the first arrival heals).</summary>
+    public int ActiveOrbs => _orbs.Count(orb => orb.Active);
     public IReadOnlyList<Vector3> OrbPositions => _orbs.Select(orb => orb.Position).ToArray();
     /// <summary>While riding, the moby follows its crate (0x2d89f0 state 1 copies the crate's position every tick).</summary>
     public void Follow(Vector3 cratePosition) { if (State == Phase.Riding) Position = cratePosition; }
@@ -95,6 +99,7 @@ public sealed class Rac1NanotechCluster
     {
         if (State is Phase.Flying or Phase.Done) return;
         var k = _assets.K;
+        EnsureInitialized(); // a cloud launched before its first tick still needs its orbit basis and spin
         // A launch needs eight orbs even if the cloud was never on screen (the native cloud always has been).
         var centre = Centre;
         for (int i = 0; i < OrbCount; i++)
@@ -116,6 +121,7 @@ public sealed class Rac1NanotechCluster
         {
             var orb = _orbs[i];
             orb.Start = orb.Position;
+            orb.Active = true;
             orb.Control = toTarget * .5f + Rotate(side, toTarget, i * 0.4488f);
             orb.Life = orb.Timer = _random.Inclusive(k.FlightLifeLow, k.FlightLifeHigh);
         }
@@ -135,20 +141,24 @@ public sealed class Rac1NanotechCluster
     {
         var k = _assets.K;
         if (State == Phase.Done) return new(false, true);
-        if (!_initialized)
-        {
-            _initialized = true;
-            // 0x2d89f0 state 0: random spin axis/angle and bob phase, trail timers and frames.
-            float yaw = _random.Range(0, MathF.Tau), pitch = _random.Range(-MathF.PI / 2, MathF.PI / 2);
-            _spinAxis = new(MathF.Cos(yaw) * MathF.Cos(pitch), MathF.Sin(yaw) * MathF.Cos(pitch), MathF.Sin(pitch));
-            _spinAngle = _random.Signed(0.7853981f, MathF.PI / 2);
-            _bobPhase = _random.Range(0, MathF.PI);
-            for (int i = 0; i < 4; i++) { _trailTimers[i] = k.TrailFrames; _trailFrames[i] = _random.Below(255); }
-            for (int i = 0; i < OrbCount; i++) _orbs[i].Distance = k.OrbRadius;
-            if (!_spin.Ready) _spin.Initialize(k.OrbRadius, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
-        }
+        EnsureInitialized();
         _particles.Hero = frame.Hero;
         return State == Phase.Flying ? StepFlight(frame, k) : StepResting(frame, k);
+    }
+
+    /// <summary>0x2d89f0 state 0: random spin axis/angle and bob phase, trail timers and frames, the shared orbit basis.</summary>
+    private void EnsureInitialized()
+    {
+        if (_initialized) return;
+        _initialized = true;
+        var k = _assets.K;
+        float yaw = _random.Range(0, MathF.Tau), pitch = _random.Range(-MathF.PI / 2, MathF.PI / 2);
+        _spinAxis = new(MathF.Cos(yaw) * MathF.Cos(pitch), MathF.Sin(yaw) * MathF.Cos(pitch), MathF.Sin(pitch));
+        _spinAngle = _random.Signed(0.7853981f, MathF.PI / 2);
+        _bobPhase = _random.Range(0, MathF.PI);
+        for (int i = 0; i < 4; i++) { _trailTimers[i] = k.TrailFrames; _trailFrames[i] = _random.Below(255); }
+        for (int i = 0; i < OrbCount; i++) _orbs[i].Distance = k.OrbRadius;
+        if (!_spin.Ready) _spin.Initialize(k.OrbRadius, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
     }
 
     private Result StepResting(in Frame frame, Rac1NanotechOrbAssets.Constants k)
@@ -163,21 +173,23 @@ public sealed class Rac1NanotechCluster
                 orb.Distance = k.BreathAmplitude * MathF.Sin(orb.Breath) + k.OrbRadius;
                 orb.Breath = AngleAdd(orb.Breath, _assets.PhaseSpeeds[i]);
             }
-        if (!frame.Visible) return new(false, false);
         int life = Vector2.Distance(new(Position.X, Position.Y), new(frame.Hero.X, frame.Hero.Y)) > 10 ? 5 : 40;
         var centre = Centre;
         for (int i = 0; i < OrbCount; i++)
         {
             var orb = _orbs[i];
             orb.Position = OrbPosition(i, centre);
-            _particles.Sparkle(orb.Position, life, 2, k.SparkleSize);
-            if (orb.Particle is null || !_particles.IsLive(orb.Particle))
-                orb.Particle = _particles.Sparkle(orb.Position, 0, 1, k.OrbSize);
-            else
+            bool live = orb.Particle is not null && _particles.IsLive(orb.Particle);
+            // Existing orb sprites follow their cluster even while it is hidden, so they never sit at stale positions.
+            if (live)
             {
-                orb.Particle.Position = orb.Position;
+                orb.Particle!.Position = orb.Position;
                 orb.Particle.Angle = (byte)(orb.Particle.Angle + k.OrbFrameStep);
             }
+            // Only a cluster in view spends particles: sparkles and new orb sprites (the native draw gate).
+            if (!frame.Visible) continue;
+            _particles.Sparkle(orb.Position, life, 2, k.SparkleSize);
+            if (!live) orb.Particle = _particles.Sparkle(orb.Position, 0, 1, k.OrbSize);
         }
         return new(false, false);
     }
@@ -200,7 +212,7 @@ public sealed class Rac1NanotechCluster
         for (int i = 0; i < OrbCount; i++)
         {
             var orb = _orbs[i];
-            if (orb.Particle is null) continue;
+            if (!orb.Active) continue;
             if (--orb.Timer <= 0)
             {
                 // Arrival: the first orb of the cloud credits the single health point.
@@ -212,7 +224,7 @@ public sealed class Rac1NanotechCluster
             var previous = orb.Position;
             var b = orb.Start - orb.Control; var d = target - orb.Control;
             orb.Position = new(Cubic(b.X, orb.Start.X, target.X, d.X, u), Cubic(b.Y, orb.Start.Y, target.Y, d.Y, u), Cubic(b.Z, orb.Start.Z, target.Z, d.Z, u));
-            orb.Particle.Position = orb.Position;
+            if (orb.Particle is { } sprite && _particles.IsLive(sprite)) sprite.Position = orb.Position;
             Sparkle(orb.Position, k); Sparkle((orb.Position + previous) * .5f, k);
         }
         return new(first, false);
@@ -229,6 +241,7 @@ public sealed class Rac1NanotechCluster
     {
         if (orb.Particle is { } particle) _particles.Remove(particle);
         orb.Particle = null;
+        orb.Active = false;
     }
 
     /// <summary>0x2d8510: four stacked glows on Ratchet that grow while they fade. Returns whether a timer still has over 48 frames.</summary>
@@ -290,11 +303,8 @@ public sealed class Rac1NanotechCluster
         var up = Vector3.Cross(toEye, side);
         Vector3 ToWorld(Vector3 p) => centre + p.X * toEye + p.Y * side + p.Z * up;
 
-        var positions = _assets.ClusterPoints.Select(ToWorld).ToArray();
-        var uvs = _assets.ClusterUv.ToArray(); var colors = _assets.ClusterColors.ToArray();
-        foreach (var (start, count) in new[] { (0, 148), (146, 109), (254, 36) })
-            surfaces.Add(Rac1FxSurface.Strip(k.GlowTexture, Rac1FxBlend.Alpha, positions[start..(start + count)],
-                uvs[start..(start + count)], colors[start..(start + count)]));
+        foreach (var strip in _assets.Strips)
+            surfaces.Add(Rac1FxSurface.Strip(k.GlowTexture, Rac1FxBlend.Alpha, Array.ConvertAll(strip.Points, ToWorld), strip.Uv, strip.Colors));
 
         float scale = k.BobAmplitude == 0 ? 0 : _bob / k.BobAmplitude;
         uint pulse = (uint)(int)(scale * 64 + 128) << 24;

@@ -26,6 +26,8 @@ internal sealed partial class Rac1LootPresentation
     private readonly List<Rac1HostedNanotechCloud> _rac1NanotechClouds = [];
     private readonly List<Rac1NanotechCluster> _rac1HealingClusters = [];
     private const float OrbVisibleDistance = 48;
+    /// <summary>Presentation-only stream forked from the shared effect stream when the orbs first load.</summary>
+    private Rac1PickupRandom? _orbRandom;
     private List<Rac1NanotechCluster> _orbDrawn = [];
 
     /// <summary>A broken crate's cloud awaiting Ratchet; its cluster is null only if the level's retail tables were unavailable.</summary>
@@ -38,6 +40,8 @@ internal sealed partial class Rac1LootPresentation
     }
 
     internal int NanotechRiderCount => _rac1NanotechRiders.Count;
+    /// <summary>Live orb sprites of each intact crate's cluster, keyed by crate instance.</summary>
+    internal IReadOnlyDictionary<int, int> NanotechRiderOrbSprites => _rac1NanotechRiders.ToDictionary(pair => pair.Key, pair => pair.Value.LiveOrbs);
     internal int NanotechHealingCount => _rac1HealingClusters.Count;
     internal Rac1ParticleSession? NanotechParticles => _orbParticles;
 
@@ -51,13 +55,14 @@ internal sealed partial class Rac1LootPresentation
             var level = Rac1DiscIndex.Read(reader).Levels.Single(candidate => candidate.LevelId == world.LevelId);
             _orbAssets = Rac1NanotechOrbAssets.Decode(Rac1ExecutableOverlay.Read(reader, level), Rac1LevelCore.Open(reader, level));
         }
-        catch (InvalidDataException exception)
+        catch (Exception exception) when (exception is InvalidDataException or IOException or InvalidOperationException)
         {
             _orbAssetsFailed = true;
             GD.PrintErr($"[rac1-crates] Nanotech orb retail tables unavailable for level {world.LevelId}; clouds are invisible: {exception.Message}");
             return false;
         }
-        _orbParticles = new(_orbAssets.Particles, Rac1EffectRandom);
+        _orbRandom = Rac1EffectRandom.Fork();
+        _orbParticles = new(_orbAssets.Particles, _orbRandom);
         _orbMaterials = new(_orbAssets.FxTextures, priorityBias: -10); // the original draws particles after its mesh callbacks
         _orbMesh = new();
         // World-space vertices; the node ignores its parent's transform.
@@ -78,7 +83,7 @@ internal sealed partial class Rac1LootPresentation
         {
             // The intact crate already hosted this cluster (state 1); breaking it drops to state 2.
             if (!_rac1NanotechRiders.Remove(crate.Source.InstanceIndex, out cluster))
-                cluster = new(ToEffectNative(origin), _orbAssets!, _orbSpin, _orbParticles!, Rac1EffectRandom);
+                cluster = new(ToEffectNative(origin), _orbAssets!, _orbSpin, _orbParticles!, _orbRandom!);
             cluster.CrateBroken();
         }
         _rac1NanotechClouds.Add(new(motion, cluster));
@@ -88,7 +93,19 @@ internal sealed partial class Rac1LootPresentation
     {
         if (_player is null || _sceneResult is null) return;
         bool crates = _presentation.CrateNodes.Any(IsNanotechCrate) || _rac1NanotechClouds.Count > 0 || _rac1HealingClusters.Count > 0;
-        if (!crates) return;
+        if (!crates)
+        {
+            // Nothing left to simulate, but the last trail and glint particles still have frames to run and to clear.
+            _orbDrawn = [];
+            if (_orbParticles is not null && _orbParticleView is not null && _orbAssets is not null)
+            {
+                var idleCamera = _sceneResult.Root.GetViewport()?.GetCamera3D();
+                _orbParticles.Hero = root;
+                _orbParticles.Step(ToEffectNative(idleCamera?.GlobalPosition ?? _player.GlobalPosition), enforceLevelBounds: false);
+                _orbParticleView.Render(_orbParticles, _orbAssets.Particles.PartTextures);
+            }
+            return;
+        }
         if (!EnsureNanotechOrbs()) { TickFallbackNanotechClouds(root, socket); return; }
         var assets = _orbAssets!; var k = assets.K;
         var camera = _sceneResult.Root.GetViewport()?.GetCamera3D();
@@ -113,13 +130,15 @@ internal sealed partial class Rac1LootPresentation
             }
             var position = ToEffectNative(node.Root.GlobalPosition);
             if (!_rac1NanotechRiders.TryGetValue(id, out var rider))
-                _rac1NanotechRiders.Add(id, rider = new(position, assets, _orbSpin, _orbParticles!, Rac1EffectRandom));
+                _rac1NanotechRiders.Add(id, rider = new(position, assets, _orbSpin, _orbParticles!, _orbRandom!));
             rider.Follow(position);
             bool visible = Visible(position);
             rider.Step(new(root, socket, NVector3.UnitZ, visible));
             if (visible) drawn.Add(rider);
         }
 
+        // Clusters already healing at the start of this tick; one that arrives now is first advanced next tick.
+        var healing = _rac1HealingClusters.ToArray();
         foreach (var cloud in _rac1NanotechClouds.ToArray())
         {
             var cluster = cloud.Cluster!;
@@ -129,6 +148,14 @@ internal sealed partial class Rac1LootPresentation
             bool visible = Visible(cluster.Position);
             var result = cluster.Step(new(root, socket, NVector3.UnitZ, visible));
             if (visible) drawn.Add(cluster);
+            if (result.Finished && !result.FirstArrival)
+            {
+                // The flight timer ran out with no orb arriving; never leave the cloud blocking other admissions.
+                GD.PrintErr("[rac1-crates] Nanotech cloud finished without an arrival; dropping it.");
+                cluster.Dispose();
+                _rac1NanotechClouds.Remove(cloud);
+                continue;
+            }
             if (!result.FirstArrival) continue;
             // The first orb to arrive credits the one health point and plays class501 sound1; later orbs credit nothing.
             cloud.Motion.Arrive(_rac1Nanotech);
@@ -137,7 +164,7 @@ internal sealed partial class Rac1LootPresentation
             _rac1HealingClusters.Add(cluster);
             RefreshRac1HudState();
         }
-        foreach (var cluster in _rac1HealingClusters.ToArray())
+        foreach (var cluster in healing)
             if (cluster.Step(new(root, socket, NVector3.UnitZ, true)).Finished)
             {
                 cluster.Dispose();
@@ -184,6 +211,6 @@ internal sealed partial class Rac1LootPresentation
             if (node is not null && IsInstanceValid(node) && !node.IsQueuedForDeletion()) node.QueueFree();
         _orbParticleView = null; _orbMeshNode = null; _orbMesh = null; _orbDrawn = [];
         _orbMaterials?.Dispose(); _orbMaterials = null;
-        _orbAssets = null; _orbAssetsFailed = false; _orbSpin = new();
+        _orbAssets = null; _orbAssetsFailed = false; _orbSpin = new(); _orbRandom = null;
     }
 }

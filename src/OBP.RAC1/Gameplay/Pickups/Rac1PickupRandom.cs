@@ -15,6 +15,8 @@ public sealed class Rac1PickupRandom(Func<int> next15)
     private int Next() => next15() is >= 0 and <= 32767 and var value
         ? value : throw new InvalidOperationException("Expected a 15-bit retail random sample.");
     internal int Next15() => Next();
+    /// <summary>An independent presentation-only stream seeded from this one (two draws), so cosmetic effects cannot shift later gameplay rolls.</summary>
+    public Rac1PickupRandom Fork() => FromSeed((uint)(Below(32768) << 15 | Below(32768)));
     public int Below(int limit) => limit > 0 ? Next() % limit : throw new ArgumentOutOfRangeException(nameof(limit));
     public int Inclusive(int minimum, int maximum) => minimum + Below(checked(maximum - minimum + 1));
     public float Range(float minimum, float maximum) => minimum + Next() * (maximum - minimum) / 32768f;

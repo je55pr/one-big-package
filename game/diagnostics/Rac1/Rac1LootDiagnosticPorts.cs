@@ -12,7 +12,8 @@ public sealed record Rac1AmmoPickupDiagnostic(SourceWeaponKey Item, int Amount, 
 public sealed record Rac1LootDiagnosticState(ObpSourceGame Source, int Wallet, int? HudWallet, int Sounds, int Health,
     int BombAmmo, int OutstandingCratePickups, ImmutableArray<int> DebrisClasses,
     ImmutableArray<Rac1LootMotionDiagnostic> Pickups, ImmutableArray<Rac1AmmoPickupDiagnostic> Ammo,
-    ImmutableArray<bool> HealthCloudAttraction, int NanotechRiders = 0, int NanotechHealing = 0, int NanotechOrbSprites = 0, int NanotechParticles = 0);
+    ImmutableArray<bool> HealthCloudAttraction, int NanotechRiders = 0, int NanotechHealing = 0, int NanotechOrbSprites = 0, int NanotechParticles = 0,
+    ImmutableDictionary<int, int>? NanotechRiderOrbs = null);
 public sealed record Rac1PlacedBoltPlacement(ActorInstanceKey Actor, int PickupId, int NativeClass,
     bool Active, bool PreserveAuthoredHeight, Vector3 NativeAuthoredPosition, float? MotionNativeZ, bool OriginalNodeAlias);
 public sealed record Rac1PlacedBoltDiagnostic(int PickupId, int NativeState, bool Collected, bool Active,

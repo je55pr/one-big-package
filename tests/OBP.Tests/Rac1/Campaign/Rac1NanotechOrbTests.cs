@@ -209,6 +209,41 @@ public sealed class Rac1NanotechOrbTests
     }
 
     [SkippableFact]
+    public void ClusterLaunchedBeforeItsFirstTickStillSpreadsItsOrbsAlongTheOrbit()
+    {
+        var (overlay, core) = Level(0);
+        var assets = Rac1NanotechOrbAssets.Decode(overlay, core);
+        var particles = new Rac1ParticleSession(assets.Particles, Rac1PickupRandom.FromSeed(5));
+        var cluster = new Rac1NanotechCluster(new(10, 10, 3), assets, new(), particles, Rac1PickupRandom.FromSeed(6));
+        cluster.CrateBroken();
+        cluster.Launch(new(15, 10, 3.7f), Vector3.UnitZ); // no Step first
+        Assert.Equal(8, cluster.LiveOrbs);
+        var centre = new Vector3(10, 10, 3.5f);
+        Assert.All(cluster.OrbPositions, p => Assert.InRange(Vector3.Distance(p, centre), .2f, .3f));
+        Assert.Equal(8, cluster.OrbPositions.Select(p => (MathF.Round(p.X, 2), MathF.Round(p.Y, 2), MathF.Round(p.Z, 2))).Distinct().Count());
+    }
+
+    [Fact]
+    public void BlockSearchReturnsAscendingAddressesEvenWhenSectionsAreSerializedOutOfOrder()
+    {
+        var block = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+        byte[] Section(int address, int offset)
+        {
+            var data = new byte[32];
+            block.CopyTo(data, offset);
+            var bytes = new byte[16 + data.Length];
+            BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(0), address);
+            BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(4), data.Length);
+            BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(8), 1);
+            BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(12), 0x100000);
+            data.CopyTo(bytes, 16);
+            return bytes;
+        }
+        var overlay = Rac1ExecutableOverlay.Parse([.. Section(0x300000, 8), .. Section(0x100000, 16), .. Section(0x200000, 0)]);
+        Assert.Equal([0x100010, 0x200000, 0x300008], overlay.FindBlock(block));
+    }
+
+    [SkippableFact]
     public void DisposingAClusterReleasesItsOrbSprites()
     {
         var (overlay, core) = Level(0);

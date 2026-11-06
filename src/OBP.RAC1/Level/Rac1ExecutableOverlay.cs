@@ -77,6 +77,7 @@ public sealed class Rac1ExecutableOverlay
             for (int at = 0; at <= data.Length - block.Length; at += 4)
                 if (data.Slice(at, block.Length).SequenceEqual(block)) found.Add(section.Address + at);
         }
+        found.Sort(); // sections may be serialized in any order; callers rely on ascending addresses
         return found;
     }
 

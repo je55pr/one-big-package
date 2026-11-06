@@ -68,12 +68,10 @@ internal sealed class GodotRac1EnemyDiagnosticCapture(Node3D owner, Func<CanvasL
             var point = GodotMovementPlayer.Engine(focus);
             ui.Visible = false; hud.Visible = false;
             // Optional OBP_ENEMY_CAPTURE_OFFSETS="x,y,z;x,y,z" writes one image per camera offset (default 3,2,6).
-            var offsets = (System.Environment.GetEnvironmentVariable("OBP_ENEMY_CAPTURE_OFFSETS") ?? "3,2,6").Split(';',
-                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var offsets = DiagnosticCaptureOffsets.Read("OBP_ENEMY_CAPTURE_OFFSETS", "3,2,6");
             for (int index = 0; index < offsets.Length; index++)
             {
-                var part = offsets[index].Split(',').Select(value => float.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-                camera.GlobalPosition = point + new Vector3(part[0], part[1], part[2]);
+                camera.GlobalPosition = point + offsets[index];
                 camera.LookAt(point);
                 await clock.NextAsync(DiagnosticFramePhase.Process, cancellationToken);
                 await clock.NextAsync(DiagnosticFramePhase.PostDraw, cancellationToken);
@@ -87,5 +85,30 @@ internal sealed class GodotRac1EnemyDiagnosticCapture(Node3D owner, Func<CanvasL
             if (GodotObject.IsInstanceValid(camera)) camera.QueueFree();
             if (GodotObject.IsInstanceValid(previousCamera)) previousCamera.MakeCurrent();
         }
+    }
+}
+
+/// <summary>Camera offsets for optional diagnostic captures: "x,y,z;x,y,z" from an environment variable, validated.</summary>
+internal static class DiagnosticCaptureOffsets
+{
+    internal static Vector3[] Read(string variable, string fallback)
+    {
+        string text = System.Environment.GetEnvironmentVariable(variable) ?? "";
+        if (string.IsNullOrWhiteSpace(text)) text = fallback; // unset, empty or whitespace: the default offsets
+        var tuples = text.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (tuples.Length == 0)
+            throw new InvalidOperationException($"{variable} must list at least one \"x,y,z\" camera offset separated by ';'.");
+        return [.. tuples.Select(tuple =>
+        {
+            var parts = tuple.Split(',', StringSplitOptions.TrimEntries);
+            var values = new float[3];
+            if (parts.Length != 3 || parts.Where((part, i) => !float.TryParse(part, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out values[i]) || !float.IsFinite(values[i])).Any())
+                throw new InvalidOperationException($"{variable} entry \"{tuple}\" must be three finite numbers \"x,y,z\".");
+            // LookAt toward the focus is undefined when the camera sits exactly above or below it.
+            if (values[0] == 0 && values[2] == 0)
+                throw new InvalidOperationException($"{variable} entry \"{tuple}\" is directly above or below the focus; give it a horizontal component.");
+            return new Vector3(values[0], values[1], values[2]);
+        })];
     }
 }

@@ -58,14 +58,21 @@ public sealed class Rac1NanotechOrbAssets
     public IReadOnlyList<Vector3> RingVertices { get; }
     public IReadOnlyList<short[]> RingQuads { get; }
     public IReadOnlyList<float> PhaseSpeeds { get; }
+    /// <summary>The 290-point mesh as its three overlapping GS triangle strips (146/109/36 vertices after the first), cached once.</summary>
+    public IReadOnlyList<Strip> Strips { get; }
+    public sealed record Strip(int Start, int Count, Vector3[] Points, Vector2[] Uv, uint[] Colors);
+    private static readonly (int Start, int Count)[] StripRanges = [(0, 148), (146, 109), (254, 36)];
     public IReadOnlyDictionary<int, RuntimeTexture> FxTextures { get; }
     public Rac1EffectAssets Particles { get; }
 
-    private Rac1NanotechOrbAssets(Constants k, Vector3[] points, Vector2[] uvs, uint[] colors, Vector3[] ring, short[][] ringQuads,
+    /// <summary>Retail loading goes through <see cref="Decode"/>; tests build synthetic instances through this constructor.</summary>
+    internal Rac1NanotechOrbAssets(Constants k, Vector3[] points, Vector2[] uvs, uint[] colors, Vector3[] ring, short[][] ringQuads,
         float[] speeds, IReadOnlyDictionary<int, RuntimeTexture> fx, Rac1EffectAssets particles)
     {
         K = k; ClusterPoints = points; ClusterUv = uvs; ClusterColors = colors; RingVertices = ring; RingQuads = ringQuads;
         PhaseSpeeds = speeds; FxTextures = fx; Particles = particles;
+        Strips = StripRanges.Select(range => new Strip(range.Start, range.Count, points[range.Start..(range.Start + range.Count)],
+            uvs[range.Start..(range.Start + range.Count)], colors[range.Start..(range.Start + range.Count)])).ToArray();
     }
 
     // Bit patterns of the eight orbit phase speeds (2.5 / 4.5 / 1 .. 6 degrees per tick): the locating key.
@@ -102,19 +109,23 @@ public sealed class Rac1NanotechOrbAssets
     public static Rac1NanotechOrbAssets Decode(Rac1ExecutableOverlay overlay, Rac1LevelCore.Core core)
     {
         var candidates = overlay.FindBlock(Words(SpeedWords));
-        int? speeds = candidates.Where(address => Blocks.All(block =>
+        var speedMatches = candidates.Where(address => Blocks.All(block =>
         {
             try { return Hash(overlay.Read(address + block.Offset, block.Size)) == block.Sha256; }
             catch (InvalidDataException) { return false; }
-        })).Select(address => (int?)address).SingleOrDefault();
-        if (speeds is null) throw new InvalidDataException("This level's overlay does not contain the authenticated class-806 orb tables.");
-        int? constants = overlay.FindBlock(Words(ConstantsKey)).Select(hit => hit - ConstantsKeyOffset)
+        })).ToArray();
+        if (speedMatches.Length == 0) throw new InvalidDataException("This level's overlay does not contain the authenticated class-806 orb tables.");
+        if (speedMatches.Length > 1) throw new InvalidDataException("This level's overlay contains more than one authenticated copy of the class-806 orb tables.");
+        int? speeds = speedMatches[0];
+        var constantMatches = overlay.FindBlock(Words(ConstantsKey)).Select(hit => hit - ConstantsKeyOffset)
             .Where(address =>
             {
                 try { return Hash(overlay.Read(address, ConstantsSize)) == ConstantsSha256; }
                 catch (InvalidDataException) { return false; }
-            }).Select(address => (int?)address).SingleOrDefault();
-        if (constants is null) throw new InvalidDataException("This level's overlay does not contain the authenticated class-806 constants.");
+            }).ToArray();
+        if (constantMatches.Length == 0) throw new InvalidDataException("This level's overlay does not contain the authenticated class-806 constants.");
+        if (constantMatches.Length > 1) throw new InvalidDataException("This level's overlay contains more than one authenticated copy of the class-806 constants.");
+        int? constants = constantMatches[0];
 
         byte[] At(string name) { var block = Blocks.Single(b => b.Name == name); return overlay.Read(speeds.Value + block.Offset, block.Size).ToArray(); }
         static float F(byte[] data, int at) => BitConverter.ToSingle(data, at);

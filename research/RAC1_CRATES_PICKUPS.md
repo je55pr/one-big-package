@@ -99,7 +99,7 @@ remains the existing four points; health upgrades are outside this pass.
 
 Update `0x2d89f0`, draw callback `0x2d9810`. Every level links the same object at its own addresses, so
 `Rac1NanotechOrbAssets` locates the tables by content and authenticates each block against a SHA-256 taken
-from the authority overlay (Veldin 0x1e14a0..0x1e3c80 and the $gp constants at 0x1619f0); all 19 levels match.
+from the authority overlay (Veldin 0x1e14a0..0x1e3ca0 and the $gp constants at 0x1619f0); all 19 levels match.
 Nothing from the disc is committed.
 
 - **Cluster**: the cloud exists from the intact crate (state 1), rides it, rests where it stood (state 2) and

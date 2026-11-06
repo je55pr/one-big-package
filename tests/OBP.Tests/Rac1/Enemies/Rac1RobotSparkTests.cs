@@ -107,6 +107,8 @@ public sealed class Rac1RobotSparkTests
         {
             var assets = Rac1EffectAssets.DecodeSparks(Rac1LevelCore.Open(disc, level));
             int id = Assert.Single(assets.ParticleChoices[Rac1ParticleSession.SparkTextureTable]);
+            // Entry 69 is empty (offset 0, the identity block start, so Part 0) on most levels and authored on 14, 15 and 18.
+            Assert.Equal(level.LevelId switch { 14 => 51, 15 => 57, 18 => 40, _ => 0 }, id);
             Assert.True(assets.PartTextures.ContainsKey(id));
             Assert.Contains(assets.PartTextures[id].Rgba.Where((_, i) => i % 4 == 3), alpha => alpha != 0);
         }

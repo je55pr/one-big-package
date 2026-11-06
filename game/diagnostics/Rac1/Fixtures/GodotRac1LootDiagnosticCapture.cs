@@ -22,12 +22,10 @@ internal sealed class GodotRac1LootDiagnosticCapture(Node owner, Func<int> level
             var point = GodotMovementPlayer.Engine(focus);
             overlay.Visible = false; hud.Visible = false;
             // Optional OBP_CRATE_CAPTURE_OFFSETS="x,y,z;x,y,z" writes one image per camera offset (default 2.5,1.5,3.5).
-            var offsets = (System.Environment.GetEnvironmentVariable("OBP_CRATE_CAPTURE_OFFSETS") ?? "2.5,1.5,3.5").Split(";",
-                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var offsets = DiagnosticCaptureOffsets.Read("OBP_CRATE_CAPTURE_OFFSETS", "2.5,1.5,3.5");
             for (int index = 0; index < offsets.Length; index++)
             {
-                var part = offsets[index].Split(",").Select(value => float.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-                camera.GlobalPosition = point + new Vector3(part[0], part[1], part[2]); camera.LookAt(point);
+                camera.GlobalPosition = point + offsets[index]; camera.LookAt(point);
                 await clock.NextAsync(DiagnosticFramePhase.Process, token); await clock.NextAsync(DiagnosticFramePhase.PostDraw, token);
                 using var image = owner.GetViewport().GetTexture().GetImage();
                 string file = offsets.Length == 1 ? $"level{level()}-{name}.png" : $"level{level()}-{name}-{index}.png";

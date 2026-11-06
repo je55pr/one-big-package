@@ -144,7 +144,7 @@ public sealed class Rac1EnemyScenario(MovementDiagnosticContext context, IRac1En
                 player.ResetAt(entrance.Read().Socket + entrance.Read().Forward * 1.2f - Vector3.UnitY * .7f);
                 await Rac1SmokeWaitAsync(() => lifecycle.ReadNanotech().Nanotech < healthBefore, 60, "robot socket/player contact");
             }
-            Require(entrance.Read().FlamePresent && Enemies.ReadRobot(Enemy(189).Key).NativeState == 6, "robot contact did not release its attack and recover");
+            Require(entrance.Read().BeamPresent && Enemies.ReadRobot(Enemy(189).Key).NativeState == 6, "robot contact did not release its attack and recover");
             Log("[enemy-smoke] wind-up/fire/socket/occlusion query/player damage/recovery PASS");
 
             player.ResetAt(origin + new Vector3(-8, .05f, 0));

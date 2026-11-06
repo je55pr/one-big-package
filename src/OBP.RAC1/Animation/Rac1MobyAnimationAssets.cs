@@ -26,9 +26,8 @@ public static class Rac1MobyAnimationAssets
             joint = 0;
         }
         // Semantic socket 1 (e.g. the Veldin robot's lamp) is optional and presentation-only.
-        int? secondJoint = null;
-        try { secondJoint = Rac1MobyAttachment.ReadJoint(classPayload, 1); }
-        catch (InvalidDataException) { }
+        // Absent (the class declares a single semantic joint) is expected; malformed attachment data still throws.
+        int? secondJoint = Rac1MobyAttachment.HasJoint(classPayload, 1) ? Rac1MobyAttachment.ReadJoint(classPayload, 1) : null;
         var maps = new List<int[]>();
         foreach (var surface in surfaces)
         {
