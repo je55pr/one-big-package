@@ -76,7 +76,7 @@ public sealed class Rac1NanotechOrbAssets
     }
 
     /// <summary>The decoded or synthetic geometry tables, kept together so the constructor stays small.</summary>
-    public sealed record Tables(Vector3[] Points, Vector2[] Uvs, uint[] Colors, Vector3[] RingVertices, short[][] RingQuads, float[] PhaseSpeeds);
+    internal sealed record Tables(Vector3[] Points, Vector2[] Uvs, uint[] Colors, Vector3[] RingVertices, short[][] RingQuads, float[] PhaseSpeeds);
 
     // Bit patterns of the eight orbit phase speeds (2.5 / 4.5 / 1 .. 6 degrees per tick): the locating key.
     private static readonly uint[] SpeedWords =

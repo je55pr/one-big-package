@@ -46,18 +46,21 @@ internal sealed partial class Rac1LootPresentation
     internal int NanotechHealingCount => _rac1HealingClusters.Count;
     internal Rac1ParticleSession? NanotechParticles => _orbParticles;
 
-    private bool EnsureNanotechOrbs() => _world is { } world && EnsureNanotechOrbs(world);
+    private bool EnsureNanotechOrbs()
+    {
+        if (_world is { } world) LoadNanotechOrbs(world);
+        return _orbAssets is not null;
+    }
 
     /// <summary>Loads the retail orb tables during world activation (when the level has Nanotech crates) so the first crate break does not stall a gameplay tick.</summary>
     internal void PreloadRac1NanotechOrbs(RuntimeWorld world)
     {
-        if ((world.DynamicObjects ?? []).Any(item => item.NativeClassId == Rac1ClassIds.NanotechCrate)) EnsureNanotechOrbs(world);
+        if ((world.DynamicObjects ?? []).Any(item => item.NativeClassId == Rac1ClassIds.NanotechCrate)) LoadNanotechOrbs(world);
     }
 
-    private bool EnsureNanotechOrbs(RuntimeWorld world)
+    private void LoadNanotechOrbs(RuntimeWorld world)
     {
-        if (_orbAssets is not null) return true;
-        if (_orbAssetsFailed || _sceneResult is null || _ports.SourcePath() is not { } path) return false;
+        if (_orbAssets is not null || _orbAssetsFailed || _sceneResult is null || _ports.SourcePath() is not { } path) return;
         try
         {
             using var reader = new FileRandomAccessReader(path);
@@ -68,7 +71,7 @@ internal sealed partial class Rac1LootPresentation
         {
             _orbAssetsFailed = true;
             GD.PrintErr($"[rac1-crates] Nanotech orb retail tables unavailable for level {world.LevelId}; clouds are invisible: {exception.Message}");
-            return false;
+            return;
         }
         _orbRandom = Rac1EffectRandom.Fork();
         _orbParticles = new(_orbAssets.Particles, _orbRandom);
@@ -79,7 +82,6 @@ internal sealed partial class Rac1LootPresentation
         _sceneResult.Root.AddChild(_orbMeshNode);
         _orbParticleView = new Rac1ParticleView { Name = "Rac1NanotechParticles" };
         _sceneResult.Root.AddChild(_orbParticleView);
-        return true;
     }
 
     private static bool IsNanotechCrate(RuntimeWorldScene.DynamicObjectNode node) => node.Source.NativeClassId == Rac1ClassIds.NanotechCrate;
