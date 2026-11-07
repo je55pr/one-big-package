@@ -31,7 +31,8 @@ public sealed class Rac2FreshBoltSession
         int progressionLikeInput, int rngMod2) =>
         PlanCratePayout(uid, authoredBolts, rewardMultiplierByte, progressionLikeInput, rngMod2);
 
-    /// <summary>The common authored-bolt path also serves class 505; the same explicit fresh-session choices apply.</summary>
+    /// <summary>The common authored-bolt path also serves class 505. Validate and calculate the entire
+    /// payout before committing UID, deferred balance or pickup identities, so rejected plans leave the session unchanged.</summary>
     public Rac2CratePayout PlanCratePayout(
         int uid, int authoredBolts, int rewardMultiplierByte,
         int progressionLikeInput, int rngMod2)
@@ -48,7 +49,7 @@ public sealed class Rac2FreshBoltSession
             throw new ArgumentOutOfRangeException(nameof(rngMod2), "Native RNG(2) result must be 0 or 1.");
         }
 
-        if (!_paidUids.Add(uid))
+        if (_paidUids.Contains(uid))
         {
             throw new InvalidOperationException($"UID {uid} already paid out in this fresh session.");
         }
@@ -59,20 +60,23 @@ public sealed class Rac2FreshBoltSession
         int effectiveMultiplier = Math.Max(1, rewardMultiplierByte);
         int scaled = checked(percentageScaled * effectiveMultiplier);
         var released = Rac2BoltReward.ReleaseDeferred(DeferredBolts);
-        DeferredBolts = released.RemainingValue;
         int rewardCentre = checked(scaled + released.ReleasedValue);
         int pieceBudget = Rac2BoltReward.PhysicalPieceBudget(progressionLikeInput, rngMod2);
         var partition = Rac2BoltReward.PartitionPhysicalPieces(rewardCentre, pieceBudget);
 
+        int deferred = checked(released.RemainingValue + partition.DeferredValue);
+        int nextPickup = checked(_nextPickupId + partition.PhysicalDenominations.Count);
         var pickups = new List<Rac2BoltPickup>(partition.PhysicalDenominations.Count);
+        int pickupId = _nextPickupId;
         foreach (int denomination in partition.PhysicalDenominations)
         {
-            int id = _nextPickupId++;
-            _outstandingPickups.Add(id, denomination);
-            pickups.Add(new Rac2BoltPickup(id, denomination));
+            pickups.Add(new Rac2BoltPickup(pickupId++, denomination));
         }
 
-        DeferredBolts = checked(DeferredBolts + partition.DeferredValue);
+        _paidUids.Add(uid);
+        foreach (var pickup in pickups) _outstandingPickups.Add(pickup.PickupId, pickup.Denomination);
+        _nextPickupId = nextPickup;
+        DeferredBolts = deferred;
         return new Rac2CratePayout(
             uid, authoredBolts, selector, percentage,
             percentageScaled, rewardMultiplierByte, effectiveMultiplier, scaled,

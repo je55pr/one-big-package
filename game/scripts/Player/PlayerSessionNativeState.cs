@@ -23,10 +23,12 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
     public PlayerHealthSession Life { get; }
     public PlayerEquipmentAssignments Assignments { get; }
     public PlayerLoadoutPolicy LoadoutPolicy { get; }
+#pragma warning disable S2339 // Versioned persistent adapter wire IDs retain their established compile-time constant API.
     public const string Rac1DamageAdapter = "rac1/player-contact/v1", Rac1DamageDescriptor = "rac1/recovered-player-damage/v1",
         Rac2DamageAdapter = "rac2/msr1-player-contact/v1", Rac2DamageDescriptor = "rac2/admitted-integer-nanotech/v1",
         Rac2ExplosiveDamageAdapter = "rac2/explosive-crate-player-contact/v1", Rac2CrateBoltRewardAdapter = "rac2/collected-crate-bolt/v1",
         AridiaDamageAdapter = "obp/aridia-provisional-contact/v1", AridiaDamageDescriptor = "obp/provisional-damage-one/v1";
+#pragma warning restore S2339
 
     public PlayerSessionNativeState(Rac1WeaponInventory initial, int bolts, int seed,
         PlayerLoadoutPolicy loadoutPolicy = PlayerLoadoutPolicy.DevelopmentAvailable)

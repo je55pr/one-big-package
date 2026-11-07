@@ -17,10 +17,10 @@ This is the semantic catalogue layer above the structural census in [`GC_PVARS.m
 | oClass | retail instances | levels observed | PVar | mode | rel-ptr fixups | identity |
 |---:|---:|---|---:|---:|---|---|
 | 500 | 1,979 | 18 levels | `0x110` | `0x20` | `+0x00,+0x08` | **CORROBORATED:** Bolt Crate |
-| 501 | 131 | 13 levels | `0x110` | `0x20` | `+0x00,+0x08` | **UNKNOWN** |
+| 501 | 131 | 13 levels | `0x110` | `0x20` | `+0x00,+0x08` | **CONFIRMED:** Nanotech crate |
 | 502 | 0 | none | none | — | — | **UNKNOWN:** dormant/shared-code branch only |
 | 505 | 159 | 7 levels | `0x110` | `0x20` | `+0x00,+0x08` | **CONFIRMED:** timed explosive crate |
-| 511 | 423 | 19 levels | `0x110` | `0x20` | `+0x00,+0x08` | **UNKNOWN** |
+| 511 | 423 | 19 levels | `0x110` | `0x20` | `+0x00,+0x08` | **CONFIRMED:** ammunition crate |
 | 512 | 96 | 11 levels | `0x110` | `0x20` | `+0x00,+0x08` | **CONFIRMED:** advanced / purple Nanotech crate |
 | 3291 | 0 | none; class-table entry all 27 | runtime only | — | — | **INFERRED:** generic indexed collectible/resource object |
 | 4018 | 5 | LEVEL6 only | `0x40` | `0` | none | **CORROBORATED:** Thermanator/water lead |
@@ -41,12 +41,10 @@ The loaded-runtime picture has advanced substantially:
 
 The per-level addresses differ because the level executable overlay is loaded/relocated per level; these addresses are evidence for those specific overlays, not universal fixed ABI addresses.
 
-Still UNKNOWN for a native-faithful production crate implementation:
+Remaining limits beyond the admitted production crate paths:
 
-- exact meanings/entry conditions of states `0..6`;
-- exact native hit/health threshold for class 500;
-- which indexed resource IDs/amounts correspond specifically to the Bolt Crate's reward;
-- collision removal/effect ordering;
+- broader meanings/entry conditions of states `0..6` outside the recovered ordinary branches;
+- native global reward-selector history and unsupported indexed-resource recipients;
 - persistence, reload and respawn behaviour.
 
 ### oClasses 501 / 505 / 511 / 512

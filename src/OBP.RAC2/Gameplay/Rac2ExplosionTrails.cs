@@ -33,6 +33,8 @@ internal sealed class Rac2ExplosionTrails(Rac2ParticleAssets assets, Rac2Particl
         internal int Remaining, Total, FadeTicks, FadeDuration, State = 3;
         internal float Size = 315000, Growth;
         internal byte Angle, Spin;
+        // 0x3F9B0C..0x3F9B44 passes this constructor colour literally. The
+        // first callback starts the fade envelope; native draw ordering is not yet proved.
         internal uint Color = 0x7f60a0ff;
     }
 
@@ -142,8 +144,8 @@ internal sealed class Rac2ExplosionTrails(Rac2ParticleAssets assets, Rac2Particl
         out ImmutableArray<RuntimeEffectMesh> meshes)
     {
         foreach (var cloud in _clouds)
-            if (Rac2CrateExplosion.Project(cloud.Identity, 0, Texture(assets.Definitions.Texture(23, 0)), cloud.Position,
-                cloud.Size, cloud.Color, cloud.Angle, 0x44, view) is { } sprite) sprites.Add(sprite);
+            if (Rac2CrateExplosion.Project(new(cloud.Identity, 0, Texture(assets.Definitions.Texture(23, 0)), cloud.Position,
+                cloud.Size, cloud.Color, cloud.Angle, 0x44), view) is { } sprite) sprites.Add(sprite);
         var strips = ImmutableArray.CreateBuilder<RuntimeEffectMesh>();
         foreach (var spark in _sparks)
         {

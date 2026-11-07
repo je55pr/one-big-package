@@ -18,6 +18,8 @@ namespace OBP.RAC2.Gameplay;
 /// </summary>
 public sealed class Rac2CrateExplosion
 {
+    internal readonly record struct Sprite(long Identity, int Slot, ObpSourceRef Texture, Vector3 Position,
+        float Size, uint Color, byte Angle, byte DepthRange);
     private readonly Rac2ParticleAssets _assets;
     private readonly Rac2ParticleSession _particles;
     private readonly Rac2ParticleRandom _random;
@@ -109,15 +111,15 @@ public sealed class Rac2CrateExplosion
     {
         var sprites = ImmutableArray.CreateBuilder<RuntimeEffectSprite>();
         foreach (var particle in _particles.Live)
-            if (Project(particle.Identity, particle.Slot, particle.TextureSource, particle.Position, particle.NativeSize,
-                particle.Color, particle.Angle, particle.DepthRange, view) is { } sprite) sprites.Add(sprite);
+            if (Project(new(particle.Identity, particle.Slot, particle.TextureSource, particle.Position, particle.NativeSize,
+                particle.Color, particle.Angle, particle.DepthRange), view) is { } sprite) sprites.Add(sprite);
         _trails.Capture(view, sprites, out var meshes);
         return new(sprites.ToImmutable(), meshes, []);
     }
 
-    internal static RuntimeEffectSprite? Project(long identity, int slot, ObpSourceRef texture, Vector3 position,
-        float size, uint color, byte angle, byte depthRange, RuntimeEffectView view)
+    internal static RuntimeEffectSprite? Project(Sprite sprite, RuntimeEffectView view)
     {
+        var (identity, slot, texture, position, size, color, angle, depthRange) = sprite;
         var runtimePosition = new Vector3(position.X, position.Z, position.Y);
         float depth = Vector3.Dot(runtimePosition - view.Eye, view.Forward);
         int z = (int)Math.Clamp((double)depth * 4096, int.MinValue, int.MaxValue);

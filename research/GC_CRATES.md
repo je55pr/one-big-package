@@ -31,8 +31,9 @@ across seven level files; every one has PVar `+0xC8=0`:
 Oozla contains the shared code but **no authored explosive crates**. Maktar's
 `lvl.vtbl` entry at `0x2A6348` maps class 505 to update `0x3A52B8`. The following
 Oozla instruction addresses refer to the loaded overlay, never the boot image.
-The public OpenRAC `UpdateCrateMoby`/stack-handler notes and
-`src/game/0030F7B0-update.c` provide corroborating leads; implementation was
+The public OpenRAC `UpdateCrateMoby`/stack-handler notes and the
+[crate update at pinned revision 40e6fafd](https://github.com/OpenRAC/rac2-decomp/blob/40e6fafd5c9edbab103513fa8046d24275ec3ca5/src/game/0030F7B0-update.c)
+provide corroborating leads; implementation was
 derived independently from the authorized retail instructions, not translated C.
 
 ### Fuse, touch and blast
@@ -103,7 +104,7 @@ layer in the first group, for **71 particles per admitted explosion**:
 | 10 | 97 / 97 / 5 | random 0.75..1.5 -> 0.01 | 30..50 | 127 |
 | 10 | 97 / 97 / 3 | random 0.6..1 -> 0.01 | 30..50 | 127 |
 | 15 | 90 / 90 / flickers between 0 and 1 | head/tail trail | 20..35 | 127, final 15 ticks fade |
-| 10 | 23 / 23 / 0, caller selects state 3 | 1.5, grows by random 1..1.01 per tick | 40..70 | caller envelope peaks at 64 |
+| 10 | 23 / 23 / 0, caller selects state 3 | 1.5, grows by random 1..1.01 per tick | 40..70 | 127 at construction; callback envelope 0..64 |
 
 Fire sprites start within +/-0.1 of the centre, move in the camera-facing
 half-plane with horizontal speed 9..12/60 and vertical speed 0..12/60 per tick,
@@ -122,10 +123,17 @@ type-23 constructor/callback `0x32A730/0x32A8F8` receives the caller's state-3
 override at `0x3F9B58..0x3F9BA4`: life 40..70, opacity peak 64, fade-in duration
 1..10, followed by a proportional fade-out. It expands and drifts; its spin is
 one signed angle-byte step per tick. All groups use the original Part bank.
+The caller literally passes `7F60A0FF` at `0x3F9B0C..0x3F9B44`, and the
+constructor stores that colour before the first callback. OBP can display this
+birth state before its next particle step. Native first-update/draw ordering
+has not been proved, so the constructor alpha remains 127 rather than silently
+substituting zero. A possible first-frame brightness difference remains an
+explicit presentation limitation pending that ordering evidence.
 
 Random helpers were checked at `0x310528/0x310580/0x3105E0`: inclusive integer
 range, high-15-bit float range, and a signed magnitude using one sample's low
-12 bits plus its own sign bit. The conditioned stream does not reproduce other
+12 bits plus bit zero for sign. That bit deliberately overlaps the fraction
+(`0x310604/0x31061C`), rather than being an independent sign draw. The conditioned stream does not reproduce other
 retail global consumers. The source session retains the 2048-particle bound.
 
 Sprite projection now retains the native `depth + 0.5` divisor and packed
@@ -400,6 +408,12 @@ state machine. The normal credit path `0x3963A0..0x3963D8` adds one unit for
 flag zero and four times that base for flag one, then clamps to player capacity.
 `+56` still protects the single first-arrival grant. Bonus/global-mode branches
 are not silently enabled by this ordinary crate adapter.
+Admission's pending counter increments by one per cloud at
+`0x395CFC..0x395D04`, including the advanced variant. OBP retains that native
+counting rule. With a low-capacity shared player, concurrent purple clouds can
+therefore outlive the remaining health deficit and be consumed for zero credit;
+reserving four health units would be an intentional OBP policy change, not a
+literal recovery of this counter.
 
 The flag selects the palette at `0x3951F4`, `0x395404`, `0x39609C` and
 `0x396674`, and selects the arrival SoundDef class at `0x39641C..0x39644C`.
@@ -466,7 +480,7 @@ Exact-authority vtable probes confirm that authored members of the crate family 
 |---|---|---:|
 | LEVEL1 / Oozla | 500, 501, 511 | `0x00391080` |
 | LEVEL2 / Maktar | 500, 501, 505, 511 | `0x003A52B8` |
-| LEVEL8 / Endako | 500, 501, 511, 512 | `0x003AB1E8` |
+| LEVEL8 / Tabora | 500, 501, 511, 512 | `0x003AB1E8` |
 
 The changing address is expected: each level supplies its own executable overlay. Do **not** treat `0x00391080` as a universal GC crate address.
 
@@ -667,7 +681,7 @@ All runs below verified the full retail ISO SHA-256 in the same job:
 - pipeline `2827602355`, job `16354095087` — transition/emission/3291 loaded helper slices;
 - pipeline `2827606692`, job `16354123617` — complete `0x003918D0` callback + class-3291 constructor bridge;
 - pipeline `2827607142`, job `16354126201` — all-level census including dormant class 502;
-- pipeline `2827609920`, job `16354148745` — Maktar/Endako family vtable confirmation and `+0xCC` read;
+- pipeline `2827609920`, job `16354148745` — Maktar/Tabora family vtable confirmation and `+0xCC` read;
 - pipeline `2827610817`, job `16354155119` — indexed resource add/clamp service and resource selector;
 - pipeline `2827647584`, job `16354385800` — post-main-sync bounded Oozla count/selector/class-3291 disassembly, including the 56-slot structure and `-1` correction.
 

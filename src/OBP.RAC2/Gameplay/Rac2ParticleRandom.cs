@@ -24,7 +24,8 @@ public sealed class Rac2ParticleRandom(Func<int> next15)
     internal int Inclusive(int minimum, int maximum) => minimum + Next() % (maximum - minimum + 1);
 
     // Loaded Oozla 0x310580 / 0x3105E0. Symmetric uses the same sample's
-    // low twelve fraction bits and sign bit; it is not a second random draw.
+    // low twelve fraction bits and bit zero for sign. The sign bit deliberately
+    // overlaps the fraction, matching 0x310604/0x31061C; it is not an independent draw.
     internal float Range(float minimum, float maximum) => Rac2ParticleMath.Add(minimum,
         Rac2ParticleMath.Multiply(Rac2ParticleMath.Multiply(Next(), Rac2ParticleMath.Subtract(maximum, minimum)), 1f / 32768));
     internal float Symmetric(float minimum, float maximum)

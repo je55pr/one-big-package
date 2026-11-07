@@ -12,12 +12,14 @@ namespace OBP.RAC2.Gameplay;
 /// </summary>
 public sealed class Rac2ExplosiveCrateSession
 {
+#pragma warning disable S2339 // Pinned retail facts; native IDs/states are also used in constant patterns across assemblies.
     public const int NativeClass = 505;
     public const int BurstState = 3;
     public const float BurstCentreOffset = .5f;
     public static Vector3 FlashTint { get; } = new(200 / 128f, 64 / 128f, 64 / 128f);
     public const int MobyDamage = 2, PlayerDamage = 4;
     public const uint MobyDamageFlags = 1, PlayerDamageFlags = 0x10000, FastFuseDamageFlag = 0x20000;
+#pragma warning restore S2339
     public int NativeState { get; private set; } = 1;
     public int FuseTicks { get; private set; }
     public int Uid { get; }
@@ -55,7 +57,9 @@ public sealed class Rac2ExplosiveCrateSession
     }
 
     /// <summary>Native standing/side/ledge/touch contacts start the long fuse; an underside break detonates directly.</summary>
+#pragma warning disable S2360 // The existing ordinary-contact default is intentional; underside admission is an explicit named argument.
     public bool Touch(bool undersideBreak = false)
+#pragma warning restore S2360
     {
         if (NativeState != 1 && !(undersideBreak && NativeState == 5)) return false;
         if (undersideBreak) BeginBurst();
@@ -79,12 +83,15 @@ public sealed class Rac2ExplosiveCrateSession
         return true;
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Critical Code Smell", "S2197", Justification =
+        "State 5 seeds zero at 179 or enters with a validated 1/5..15 fuse, and exits at one. Modulo is always nonnegative; preserve the retail schedule.")]
     public Rac2ExplosiveCrateFrame Step()
     {
         bool warning = false, flash = false;
         if (NativeState == 5)
         {
             if (FuseTicks == 0) FuseTicks = 179;
+            System.Diagnostics.Debug.Assert(FuseTicks > 0, "The native countdown cannot evaluate modulo with a negative fuse.");
             warning = FuseTicks % 60 == 57 || FuseTicks == 13;
             flash = FuseTicks % 60 > 40 || FuseTicks < 15;
             if (FuseTicks == 1) { BeginBurst(); flash = false; }

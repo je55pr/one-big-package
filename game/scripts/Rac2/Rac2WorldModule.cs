@@ -442,15 +442,26 @@ internal sealed partial class Rac2WorldModule : IDisposable
     private void DetonateExplosive(RuntimeWorldScene.DynamicObjectNode node, Rac2ExplosiveCrateSession motion)
     {
         var plan = CrateEffects.PlanBreak(Rac2ExplosiveCrateSession.NativeClass);
-        var payout = _resources.Rac2CrateBolts.PlanCratePayout(motion.Uid, motion.AuthoredBolts,
-            rewardMultiplierByte: 0, progressionLikeInput: plan.Budget.Recent, rngMod2: 1);
-        _ports.CrateReward(node.Root.GlobalPosition, payout);
+        Rac2CratePayout? payout = null;
+        try
+        {
+            payout = _resources.Rac2CrateBolts.PlanCratePayout(motion.Uid, motion.AuthoredBolts,
+                rewardMultiplierByte: 0, progressionLikeInput: plan.Budget.Recent, rngMod2: 1);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or OverflowException)
+        {
+            // A rejected reward is reported, but cannot strand the already
+            // bursting source actor as a visible, solid crate or stop its blast.
+            _resources.CrateDiagnostics.Probe.RewardStatus = ex.Message;
+            GD.PrintErr($"[crate-bolts] {node.Source.InteractionId}: {ex.Message}; detonation continues without a new payout");
+        }
+        if (payout is not null) _ports.CrateReward(node.Root.GlobalPosition, payout);
         CrateEffects.Break(node, plan);
         if (_crateBodies.TryGetValue(node.Source.InstanceIndex, out var body)) body.CollisionLayer = body.CollisionMask = 0;
         // Native state 3 remains a registered damage producer until its expanding
         // sphere finishes. Hide the mesh without retiring its source identity early.
         node.Root.Visible = false;
-        GD.Print($"[rac2-explosives] detonated={node.Source.InstanceIndex} payout={payout.PhysicalValue} deferred={payout.DeferredValue}");
+        GD.Print($"[rac2-explosives] detonated={node.Source.InstanceIndex} payout={payout?.PhysicalValue ?? 0} deferred={payout?.DeferredValue ?? 0}");
     }
 
     private bool ApplyExplosiveBlastDamage(RuntimeWorldScene.DynamicObjectNode node, Rac2GameplayDamageEvent damage)

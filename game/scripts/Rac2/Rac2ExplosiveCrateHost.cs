@@ -4,7 +4,6 @@ using OBP.Godot;
 using OBP.RAC2.Gameplay;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
-using OBP.Runtime.Effects;
 
 namespace OBP.Game;
 
@@ -88,11 +87,12 @@ internal sealed class Rac2ExplosiveCrateHost(RuntimeWorld world, RuntimeWorldSce
                 if (frame.WarningSound) effects.PlayCrateCue(entry.Node, 1);
                 if (frame.Detonated)
                 {
+                    // A presentation camera can disappear during a transition;
+                    // its absence must not interrupt the source damage timeline.
+                    var eye = scene.Root.GetViewport().GetCamera3D()?.GlobalPosition ?? player.GlobalPosition;
                     detonate(entry.Node, entry.Motion);
-                    var camera = scene.Root.GetViewport().GetCamera3D()
-                        ?? throw new InvalidOperationException("RAC2 explosion emission requires the active player camera.");
                     _explosion!.Emit(ToNative(BurstCentre(entry.Node)), entry.Node.Source.InstanceIndex,
-                        ToNative(camera.GlobalPosition), ToNative(player.GlobalPosition));
+                        ToNative(eye), ToNative(player.GlobalPosition));
                 }
                 if (frame.MobyRadius > 0 || frame.PlayerRadius > 0) Blast(entry, frame, player);
                 if (frame.Terminal) entry.Node.ApplyState(entry.Node.State.WithPresence(RuntimeEntityPresence.Inactive));
@@ -134,13 +134,8 @@ internal sealed class Rac2ExplosiveCrateHost(RuntimeWorld world, RuntimeWorldSce
     internal void Present()
     {
         if (_disposed || !current() || _view is null || _explosion is null || scene.Root.GetViewport().GetCamera3D() is not { } camera) return;
-        var basis = camera.GlobalBasis.Orthonormalized();
-        var projection = camera.GetCameraProjection();
-        float tanY = 1 / MathF.Abs(projection.Y.Y), tanX = 1 / MathF.Abs(projection.X.X);
-        float aspect = camera.GetViewport().GetVisibleRect().Size.Aspect();
-        var view = new RuntimeEffectView(WorldEffectHost.Runtime(camera.GlobalPosition), WorldEffectHost.Runtime(-basis.Z),
-            WorldEffectHost.Runtime(basis.X), WorldEffectHost.Runtime(basis.Y), tanX, tanY, 1 / tanY, aspect);
-        _view.Render([_explosion.Capture(view)], _explosion.Textures, aspect);
+        var view = WorldEffectHost.CameraView(camera);
+        _view.Render([_explosion.Capture(view)], _explosion.Textures, view.Aspect);
     }
     private static System.Numerics.Vector3 ToNative(Vector3 value) => new(-value.X, value.Z, value.Y);
     private static Vector3 BurstCentre(RuntimeWorldScene.DynamicObjectNode node) =>

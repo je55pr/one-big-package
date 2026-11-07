@@ -16,7 +16,9 @@ public sealed partial class Rac1ParticleView : Node3D
     private EffectSceneView? _view;
     public int RenderedCount => _view?.RenderedCount ?? 0;
     public int DrawCalls => _view?.DrawCalls ?? 0;
+#pragma warning disable S2360 // Null preserves every existing native donor caller; recipients opt in to output-only palette conversion.
     public void Render(Rac1ParticleSession session, IReadOnlyDictionary<int, RuntimeTexture> textures, Func<uint, uint>? palette = null)
+#pragma warning restore S2360
     {
         if (session.Count == 0) { if (_view?.TextureCount > 0) _view.Clear(); return; }
         _view ??= new(this);

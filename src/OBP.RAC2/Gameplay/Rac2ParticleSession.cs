@@ -15,7 +15,8 @@ public sealed class Rac2ParticleSession(Rac2ParticleAssets assets, Rac2ParticleR
 {
     public const int NativeCapacity = 2048;
     public const float EditorSizeUnits = 210000;
-    public static bool SupportsType(int type) => type == 85;
+    /// <summary>Linear constructors recovered by this session; each caller still needs its own recipe admission.</summary>
+    public static bool SupportsType(int type) => type is 85 or 97;
 
     public sealed class Particle
     {
