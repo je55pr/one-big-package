@@ -78,7 +78,7 @@ public sealed class Rac1ParticleEffectFactory : IRuntimeEffectFactory
 public static class Rac1ParticlePresentation
 {
     public static RuntimeEffectFrame Capture(Rac1ParticleSession session, ObpSourceRef bank,
-        IReadOnlyDictionary<int, OBP.Runtime.RuntimeTexture> textures, Vector3 placement = default)
+        IReadOnlyDictionary<int, OBP.Runtime.RuntimeTexture> textures, Vector3 placement = default, Func<uint, uint>? palette = null)
     {
         var sprites = ImmutableArray.CreateBuilder<RuntimeEffectSprite>();
         foreach (var p in session.Live)
@@ -86,7 +86,8 @@ public static class Rac1ParticlePresentation
             if (p.Size <= 0 || p.Remaining <= 0) continue;
             if (!textures.TryGetValue(p.Texture, out var texture)) throw new InvalidDataException("R&C1 particle texture is unavailable.");
             var source = bank with { AssetKind = texture.AssetKind, OriginalId = p.Texture.ToString(CultureInfo.InvariantCulture) };
-            var color = new Vector4((p.Color & 255) / 128f, (p.Color >> 8 & 255) / 128f, (p.Color >> 16 & 255) / 128f, (p.Color >> 24) / 128f);
+            uint rgba = palette?.Invoke(p.Color) ?? p.Color;
+            var color = new Vector4((rgba & 255) / 128f, (rgba >> 8 & 255) / 128f, (rgba >> 16 & 255) / 128f, (rgba >> 24) / 128f);
             var draw = new RuntimeEffectDrawState(p.Blending == Rac1ParticleSession.Blend.Additive ? RuntimeBlendEquation.AdditiveSourceAlpha : RuntimeBlendEquation.SourceAlpha,
                 NearFade: (p.DepthRange & 15) * .25f, FarFade: (p.DepthRange & 0xf0) * 2f, DepthFade: true);
             sprites.Add(new(p.Identity, p.Slot, source, new Vector3(p.Position.X, p.Position.Z, p.Position.Y) + placement, p.Size, color, p.Rotation, draw));

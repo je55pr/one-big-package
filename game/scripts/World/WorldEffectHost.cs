@@ -139,9 +139,11 @@ internal sealed class WorldEffectHost : IDisposable, IProgress<string>
         }
         var view = CameraView(); _view.Render(_session.CaptureDraw(view).Select(d => d.Frame), _session.Textures, view.Aspect);
     }
-    public RuntimeEffectView CameraView()
+    public RuntimeEffectView CameraView() => CameraView(_camera()
+        ?? throw new InvalidOperationException("Effect rendering requires the active scene camera."));
+
+    internal static RuntimeEffectView CameraView(Camera3D camera)
     {
-        var camera = _camera() ?? throw new InvalidOperationException("Effect rendering requires the active scene camera.");
         var basis = camera.GlobalBasis.Orthonormalized(); float aspect = camera.GetViewport().GetVisibleRect().Size.Aspect();
         var projection = camera.GetCameraProjection();
         float tanY = 1 / MathF.Abs(projection.Y.Y), tanX = 1 / MathF.Abs(projection.X.X);

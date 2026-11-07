@@ -23,6 +23,7 @@ internal sealed class Rac1NanotechSpherePresentation : IDisposable
     private readonly ImmediateMesh _mesh = new();
     private readonly MeshInstance3D _meshNode;
     private readonly Rac1ParticleView _particleView;
+    private readonly Func<uint, uint>? _palette;
     private readonly Dictionary<int, (RuntimeWorldScene.DynamicObjectNode Crate, Rac1NanotechCluster Cluster)> _riders = [];
     private readonly List<Rac1NanotechCluster> _healing = [];
     private readonly List<Rac1NanotechCluster> _drawn = [];
@@ -32,9 +33,10 @@ internal sealed class Rac1NanotechSpherePresentation : IDisposable
     private bool _disposed;
 
     internal Rac1NanotechSpherePresentation(RuntimeWorldScene.Result scene, string sourcePath, int seed,
-        IEnumerable<RuntimeWorldScene.DynamicObjectNode> crates)
+        IEnumerable<RuntimeWorldScene.DynamicObjectNode> crates, Func<uint, uint>? palette = null)
     {
         _scene = scene;
+        _palette = palette;
         using var reader = new FileRandomAccessReader(sourcePath);
         // Deliberate donor identity: RAC1 Veldin, never the recipient level ID.
         var donor = Rac1DiscIndex.Read(reader).Levels.Single(level => level.LevelId == 0);
@@ -120,7 +122,7 @@ internal sealed class Rac1NanotechSpherePresentation : IDisposable
     {
         _particles.Hero = player;
         _particles.Step(_eye, enforceLevelBounds: false);
-        _particleView.Render(_particles, _assets.Particles.PartTextures);
+        _particleView.Render(_particles, _assets.Particles.PartTextures, _palette);
     }
 
     internal void Present()
@@ -128,7 +130,9 @@ internal sealed class Rac1NanotechSpherePresentation : IDisposable
         if (_disposed) return;
         var camera = _scene.Root.GetViewport()?.GetCamera3D();
         var eye = camera is null ? _eye : ToNative(camera.GlobalPosition);
-        _materials.Write(_mesh, _drawn.SelectMany(cluster => cluster.Build(eye)), FromNative);
+        var surfaces = _drawn.SelectMany(cluster => cluster.Build(eye));
+        if (_palette is not null) surfaces = surfaces.Select(surface => surface with { Colors = surface.Colors.Select(_palette).ToArray() });
+        _materials.Write(_mesh, surfaces, FromNative);
     }
 
     private static NVector3 ToNative(Vector3 point) => new(-point.X, point.Z, point.Y);

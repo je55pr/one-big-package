@@ -7,15 +7,30 @@ namespace OBP.RAC2.Gameplay;
 /// <summary>Loaded Oozla crate-family facts; source-specific rules, not player inventory policy.</summary>
 public static class Rac2CrateSupply
 {
-    public const int NanotechClass = 501, AmmoClass = 511, AmmoPickupClass = 3291;
+    public const int NanotechClass = 501, AdvancedNanotechClass = 512, AmmoClass = 511, AmmoPickupClass = 3291;
     public const int NanotechPerCloud = 1, ParticleCount = 8;
     public const float NanotechAttractionDistance = 10;
     // Loaded Oozla 0x2BE700..0x2BE714 writes ordinary player reach.
     // Class3291 reads it at 0x3D3944..0x3D3990 as planar distance
     // and absolute vertical separation, not a spherical or squared radius.
     public const float AmmoPickupRadius = 4.25f, AmmoPickupHeight = 2.25f;
-    public static bool IsCrate(int nativeClass) => nativeClass is 500 or NanotechClass or AmmoClass;
-    public static bool IsSupply(int nativeClass) => nativeClass is NanotechClass or AmmoClass;
+    public static bool IsNanotech(int nativeClass) => nativeClass is NanotechClass or AdvancedNanotechClass;
+    public static bool IsCrate(int nativeClass) => nativeClass is 500 or Rac2ExplosiveCrateSession.NativeClass or AmmoClass || IsNanotech(nativeClass);
+    public static bool IsSupply(int nativeClass) => IsNanotech(nativeClass) || nativeClass == AmmoClass;
+
+    // Loaded 0x3963B0..0x3963D8: class806 +57 selects four times the
+    // ordinary one-unit grant. Player capacity is still owned by the recipient.
+    public static int NanotechAmount(int nativeClass) => nativeClass switch
+    {
+        NanotechClass => NanotechPerCloud,
+        AdvancedNanotechClass => NanotechPerCloud * 4,
+        _ => throw new ArgumentOutOfRangeException(nameof(nativeClass))
+    };
+
+    /// <summary>Explicit RAC2 palette conversion for the requested RAC1 sphere donor.
+    /// Loaded +3C8/+3CC colours are 7F7F4040/7F7F407F: purple raises red to blue,
+    /// retaining green and alpha. Geometry and simulation remain the RAC1 donor.</summary>
+    public static uint AdvancedNanotechColor(uint rgba) => rgba & 0xffffff00u | Math.Max(rgba & 255, rgba >> 16 & 255);
 
     public static byte? RespawnFlag(RuntimeDynamicObject source) =>
         source.SourceGame == ObpSourceGame.Rac2 && IsCrate(source.NativeClassId) &&

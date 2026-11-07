@@ -10,12 +10,13 @@ namespace OBP.RAC2.Gameplay;
 public readonly record struct Rac2Particle85Spawn(Vector3 Position, Vector3 Velocity, int Lifespan, uint Rgb,
     int RotationSpeed, byte InitialOpacity, byte EndOpacity, float InitialSize, float EndSize, float Gravity, int NativeContext = 0);
 
-/// <summary>GC Museum type-85 constructor 0x33e8f8 and callback 0x33eaa0. One call to Step is one NTSC tick.</summary>
+/// <summary>GC linear sprites: Museum type 85 and loaded Oozla type 97. One Step is one NTSC tick.</summary>
 public sealed class Rac2ParticleSession(Rac2ParticleAssets assets, Rac2ParticleRandom random, int capacity = 2048)
 {
     public const int NativeCapacity = 2048;
     public const float EditorSizeUnits = 210000;
-    public static bool SupportsType(int type) => type == 85;
+    /// <summary>Linear constructors recovered by this session; each caller still needs its own recipe admission.</summary>
+    public static bool SupportsType(int type) => type is 85 or 97;
 
     public sealed class Particle
     {
@@ -23,7 +24,7 @@ public sealed class Rac2ParticleSession(Rac2ParticleAssets assets, Rac2ParticleR
         public int Slot { get; internal init; }
         public long Identity { get; internal init; }
         public ObpSourceRef Source { get; }
-        public int Type => 85;
+        public int Type { get; internal init; } = 85;
         public ObpSourceRef TextureSource { get; internal set; }
         public int Texture { get; internal set; }
         public byte Blend => 0x48;
@@ -38,11 +39,11 @@ public sealed class Rac2ParticleSession(Rac2ParticleAssets assets, Rac2ParticleR
         internal float SizeStep, Gravity;
         internal byte OpacityStep, Spin;
 
-        /// <summary>Source-layout diagnostic comparison; callback identity is Museum-qualified, not a runtime pointer.</summary>
+        /// <summary>Source-layout comparison; callback identities name Museum type 85 / Oozla type 97, not live runtime pointers.</summary>
         public byte[] CopyNativeRecord()
         {
             byte[] record = new byte[64];
-            record[0] = 85; record[2] = checked((byte)Texture); record[3] = Blend;
+            record[0] = checked((byte)Type); record[2] = checked((byte)Texture); record[3] = Blend;
             BinaryPrimitives.WriteUInt32LittleEndian(record.AsSpan(4), Color);
             record[8] = Angle; record[9] = DepthRange;
             BinaryPrimitives.WriteInt16LittleEndian(record.AsSpan(0xa), checked((short)Remaining));
@@ -50,7 +51,7 @@ public sealed class Rac2ParticleSession(Rac2ParticleAssets assets, Rac2ParticleR
             F(0xc, NativeSize); F(0x10, Position.X); F(0x14, Position.Y); F(0x18, Position.Z);
             F(0x20, Velocity.X); F(0x24, Velocity.Y); F(0x28, Velocity.Z); F(0x2c, Gravity); F(0x30, SizeStep);
             record[0x34] = OpacityStep; record[0x35] = Spin;
-            BinaryPrimitives.WriteUInt32LittleEndian(record.AsSpan(0x3c), 0x33eaa0);
+            BinaryPrimitives.WriteUInt32LittleEndian(record.AsSpan(0x3c), Type == 85 ? 0x33eaa0u : 0x3356a8u);
             return record;
         }
     }
@@ -61,6 +62,7 @@ public sealed class Rac2ParticleSession(Rac2ParticleAssets assets, Rac2ParticleR
     private int _highest = -1;
     private long _nextIdentity;
     public int Count { get; private set; }
+    internal long ReserveIdentity() => ++_nextIdentity;
     public IEnumerable<Particle> Live { get { for (int i = 0; i <= _highest; i++) if (_slots[i] is { } p) yield return p; } }
     public bool IsLive(Particle p) => (uint)p.Slot < _slots.Length && ReferenceEquals(_slots[p.Slot], p);
 
@@ -91,25 +93,31 @@ public sealed class Rac2ParticleSession(Rac2ParticleAssets assets, Rac2ParticleR
         return new(EmissionStatus.Emitted, record);
     }
 
-    public Particle? Spawn85(ObpSourceRef source, Rac2Particle85Spawn p)
+    public Particle? Spawn85(ObpSourceRef source, Rac2Particle85Spawn p) => SpawnLinear(source, p, 85, 0);
+
+    /// <summary>Oozla 0x335530/0x3356A8: same linear callback, original lifetime and definition-97 frame.</summary>
+    internal Particle? Spawn97(ObpSourceRef source, Rac2Particle85Spawn p, int frame) => SpawnLinear(source, p, 97, frame);
+
+    private Particle? SpawnLinear(ObpSourceRef source, Rac2Particle85Spawn p, int type, int frame)
     {
         RequireSource(source);
-        if (p.NativeContext != 0) throw new NotSupportedException("GC moving-context type-85 particles require a native context adapter.");
+        if (p.NativeContext != 0) throw new NotSupportedException("GC moving-context linear particles require a native context adapter.");
         if (p.Lifespan is < 1 or > short.MaxValue || !Finite(p.Position) || !Finite(p.Velocity) ||
             !float.IsFinite(p.InitialSize) || !float.IsFinite(p.EndSize) || !float.IsFinite(p.Gravity))
-            throw new ArgumentException("GC type-85 arguments exceed the admitted finite, positive-timer domain.", nameof(p));
-        int texture = assets.Definitions.Texture(85, 0);
-        if (!_textureSources.ContainsKey(texture)) throw new InvalidDataException("GC type-85's default Part texture has not been admitted.");
+            throw new ArgumentException("GC linear particle arguments exceed the admitted finite, positive-timer domain.", nameof(p));
+        int texture = assets.Definitions.Texture(type, frame);
+        if (!_textureSources.ContainsKey(texture)) throw new InvalidDataException("GC linear particle's Part texture has not been admitted.");
         int free = Array.FindIndex(_slots, slot => slot is null);
         // Constructor returns on a full pool before drawing its random angle.
         if (free < 0) return null;
         int opacityDelta = p.EndOpacity - p.InitialOpacity;
         int step = opacityDelta / p.Lifespan;
-        int lifespan = step == 0 ? p.Lifespan : opacityDelta / step;
+        int lifespan = type == 97 || step == 0 ? p.Lifespan : opacityDelta / step;
         var record = new Particle(source, _textureSources[texture])
         {
             Slot = free,
-            Identity = ++_nextIdentity,
+            Type = type,
+            Identity = ReserveIdentity(),
             Texture = texture,
             Position = p.Position,
             Velocity = p.Velocity,

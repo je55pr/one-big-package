@@ -14,8 +14,10 @@ public sealed class Rac2CrateBreakBudget
         int pieces = freeSlots > 250 && Recent < 5 ? 4 : freeSlots > 200 && Recent < 10 ? 3 :
             freeSlots > 150 && Recent < 15 ? 2 : freeSlots > 100 && Recent < 20 ? 1 : 0;
         Recent += pieces;
+        // Class 505 takes no detachable-part branch at 0x39263C..0x392670.
+        if (nativeClass == Rac2ExplosiveCrateSession.NativeClass) return 0;
         // 0x3926A8..C0: Nanotech has contiguous parts, unlike wood/ammo.
-        if (nativeClass == Rac2CrateSupply.NanotechClass) return pieces > 0 ? (1 << (pieces - 1)) - 1 : 0;
+        if (Rac2CrateSupply.IsNanotech(nativeClass)) return pieces > 0 ? (1 << (pieces - 1)) - 1 : 0;
         return pieces >= 3 ? 0x25 : pieces == 2 ? 5 : pieces == 1 ? 1 : 0;
     }
 }

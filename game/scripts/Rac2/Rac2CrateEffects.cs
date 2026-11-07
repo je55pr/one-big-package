@@ -35,8 +35,9 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
         HashSet<int> soundClasses = nativeClass switch
         {
             500 => [500, 13, 14, 15, 16, 17, 18, 19],
-            Rac2CrateSupply.NanotechClass => [Rac2CrateSupply.NanotechClass],
+            Rac2CrateSupply.NanotechClass or Rac2CrateSupply.AdvancedNanotechClass => [nativeClass],
             Rac2CrateSupply.AmmoClass => [Rac2CrateSupply.AmmoClass, Rac2CrateSupply.AmmoPickupClass],
+            Rac2ExplosiveCrateSession.NativeClass => [Rac2ExplosiveCrateSession.NativeClass],
             _ => throw new ArgumentOutOfRangeException(nameof(nativeClass))
         };
         var audio = Rac2CrateAudio.Load(path, world.LevelId, soundClasses);
@@ -73,6 +74,11 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
     internal void Break(RuntimeWorldScene.DynamicObjectNode crate, BreakPlan plan)
     {
         if (_disposed || !current() || !_assets.TryGetValue(crate.Source.NativeClassId, out var assets)) return;
+        foreach (var falling in _crates.Where(falling => ReferenceEquals(falling.Node, crate)).ToArray())
+        {
+            _supports.Remove(falling.Body.GetRid());
+            _crates.Remove(falling);
+        }
         _budget = plan.Budget;
         if (_tick - _lastBreakSound >= 2)
         {
@@ -105,6 +111,11 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
     {
         if (_disposed || !current()) return;
         Play(nativeClass, null, localSound);
+    }
+
+    internal void PlayCrateCue(RuntimeWorldScene.DynamicObjectNode crate, int localSound)
+    {
+        if (!_disposed && current()) Play(crate.Source.NativeClassId, crate.Root.GlobalPosition, localSound);
     }
 
     private void Play(int nativeClass, Vector3? position, int localSound = 0)
