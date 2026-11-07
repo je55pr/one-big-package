@@ -71,7 +71,7 @@ class-505 Bolt values are retained in the existing fresh-session payout policy.
 The resulting physical objects retain their real denomination classes 13..19,
 source build, crate UID provenance and one-time wallet receipts.
 
-### Original sounds and the recovered flash slice
+### Original sounds and the explosion particle recipe
 
 Maktar class-505 local SoundDefs **0/1** map to SBlk **73/74** (explosion/beep).
 Both programs decode through the existing SoundDef/989snd path. All seven
@@ -87,13 +87,60 @@ zero gravity/spin, initial opacity 100 for the first pair and 127 for four more,
 end opacity zero. Colours are `0x388EF7` and `0x0063F7`. The caller replaces
 the texture with definition **92**, frames **0/5/6**, in counts **2/2/2**.
 These resolve to active-level Part textures **70/74/75** in the inspected banks.
-Every authored level decoded this original flash slice successfully.
+Every authored level decoded these original flash assets successfully.
 
-This implementation reuses that native type-85 simulation and source-qualified
-Part bank. World-size billboard projection remains an OBP presentation adapter;
-the remaining explosion particle families, native draw/depth sorting, full
-camera shake, moving attachments and native repeat/global-action variants are
-not claimed. No RAC1 explosion assets or recipes are substituted.
+The initial flash-only implementation omitted most of the effect. The exact
+class-505 call at `0x392778..0x3927B4` supplies **10/10/10/10/15** to the
+five group counters stored at explosion PVar `+20/+24/+28/+2C/+30`.
+`0x3F9150..0x3F9BC4` emits **65 additional particles**, including a paired
+layer in the first group, for **71 particles per admitted explosion**:
+
+| Count | Native type / definition / frame | Size in editor units | Requested life | Initial opacity |
+| ---: | --- | --- | --- | ---: |
+| 6 | 85 / 92 / 0,5,6, two each | 3 -> 4 | 30, constructor-adjusted | 100/127 -> 0 |
+| 10 | 97 / 97 / 1 | random 0.6..1 -> 0.01 | 30..50 | 127 |
+| 10 | 97 / 53 / 0, paired with previous row | six times paired size -> 0.02 | same as paired row | 48 |
+| 10 | 97 / 97 / 5 | random 0.75..1.5 -> 0.01 | 30..50 | 127 |
+| 10 | 97 / 97 / 3 | random 0.6..1 -> 0.01 | 30..50 | 127 |
+| 15 | 90 / 90 / flickers between 0 and 1 | head/tail trail | 20..35 | 127, final 15 ticks fade |
+| 10 | 23 / 23 / 0, caller selects state 3 | 1.5, grows by random 1..1.01 per tick | 40..70 | caller envelope peaks at 64 |
+
+Fire sprites start within +/-0.1 of the centre, move in the camera-facing
+half-plane with horizontal speed 9..12/60 and vertical speed 0..12/60 per tick,
+and fall with gravity literal **0.004055555909872055**. Their signed angle-byte
+step is rounded from a symmetric 2..5 draw; the paired outer layer uses minus
+twice that step. Packed RGB values are `407FFF`, `0020FF`, `008FFF`, `3064FF`.
+Type 97's constructor/callback `0x335530/0x3356A8` retain the original lifespan,
+linear size step and constant opacity; type 85's opacity-based lifetime
+adjustment must not shorten these particles.
+
+The spark constructor/callback `0x334640/0x334758` retain a head and a tail
+0.9 units behind its velocity, flicker the original definition-90 texture each
+tick, and apply the same gravity. Initial velocity is 15..20/60 in the
+explosion's camera-facing basis with two signed 15..80-degree rotations. The
+type-23 constructor/callback `0x32A730/0x32A8F8` receives the caller's state-3
+override at `0x3F9B58..0x3F9BA4`: life 40..70, opacity peak 64, fade-in duration
+1..10, followed by a proportional fade-out. It expands and drifts; its spin is
+one signed angle-byte step per tick. All groups use the original Part bank.
+
+Random helpers were checked at `0x310528/0x310580/0x3105E0`: inclusive integer
+range, high-15-bit float range, and a signed magnitude using one sample's low
+12 bits plus its own sign bit. The conditioned stream does not reproduce other
+retail global consumers. The source session retains the 2048-particle bound.
+
+Sprite projection now retains the native `depth + 0.5` divisor and packed
+near/far alpha fade, using the existing explicit OBP camera calibration. The
+active camera and selected player's root supply observations for the emission
+frame; they are adapters for native camera/hero structures, not recovered
+player-controller rules. Spark head/tail facts are projected as camera-facing
+triangles; the exact line VU program, GS rasterization and global depth ordering
+remain unavailable. Full camera shake, moving attachments and native
+repeat/global-action variants are not claimed. No RAC1 assets are substituted.
+
+A manual source probe admitted all 71 particles and ten distinct original
+textures in each of the seven authored levels, sampled motion/fades at ticks
+0/1/10/30/50/70, and observed complete retirement by tick 70. Ordinary Maktar
+captures sampled the early flash, moving fire, chained bursts and late fade.
 
 ### Host and player boundaries
 
