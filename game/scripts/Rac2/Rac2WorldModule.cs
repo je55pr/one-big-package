@@ -39,11 +39,13 @@ internal sealed partial class Rac2WorldModule : IDisposable
         CrateBolts = new(world, scene, resources, boltPorts, () => _clock.CanSpawnCrateBolts(_activatingCrateStrike));
         CrateEffects = new(world, scene, boltPorts, () => _clock.CanSpawnCrateBolts(_activatingCrateStrike));
         CrateSupply = new(world, scene, boltPorts, supplyPorts, CrateEffects, () => _clock.CanSpawnCrateBolts(_activatingCrateStrike));
+        Explosives = new(world, scene, boltPorts, ports, CrateEffects, ApplyExplosiveBlastDamage, DetonateExplosive, () => Current);
     }
 
     internal Rac2CrateBoltPresentation CrateBolts { get; }
     internal Rac2CrateEffects CrateEffects { get; }
     internal Rac2CrateSupplyPresentation CrateSupply { get; }
+    internal Rac2ExplosiveCrateHost Explosives { get; }
     internal bool Current => _clock.Current;
     internal IReadOnlyList<RuntimeWorldScene.DynamicObjectNode> Crates => _crates;
 
@@ -70,6 +72,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
         CrateBolts.Dispose();
         CrateEffects.Dispose();
         CrateSupply.Dispose();
+        Explosives.Dispose();
         foreach (var body in _crateBodies.Values)
             if (GodotObject.IsInstanceValid(body)) body.CollisionLayer = body.CollisionMask = 0;
         _crateBodies.Clear();
@@ -102,6 +105,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
             catch (Exception ex) when (ex is InvalidDataException or IOException or NotSupportedException or InvalidOperationException)
             {
                 CrateSupply.RetireFamily(family.Key);
+                if (family.Key == Rac2ExplosiveCrateSession.NativeClass) Explosives.Dispose();
                 foreach (var node in family)
                 {
                     if (_crateBodies.Remove(node.Source.InstanceIndex, out var body))
@@ -175,8 +179,9 @@ internal sealed partial class Rac2WorldModule : IDisposable
             node.Root.AddChild(body);
         }
         if (admitted.Count == 0) return;
-        if (nativeClass == 500) CrateBolts.Prepare();
-        else CrateSupply.Prepare(nativeClass, admitted);
+        if (nativeClass is 500 or Rac2ExplosiveCrateSession.NativeClass) CrateBolts.Prepare();
+        if (nativeClass == Rac2ExplosiveCrateSession.NativeClass) Explosives.Configure(admitted);
+        else if (Rac2CrateSupply.IsSupply(nativeClass)) CrateSupply.Prepare(nativeClass, admitted);
         CrateEffects.Configure(nativeClass, admitted);
     }
 
@@ -313,10 +318,18 @@ internal sealed partial class Rac2WorldModule : IDisposable
     {
         bool active = Current && _crates.Contains(node) && GodotObject.IsInstanceValid(node.Root) &&
             node.State.Presentation.Presence == RuntimeEntityPresence.Active;
+        int nativeState = node.Source.NativeClassId == Rac2ExplosiveCrateSession.NativeClass
+            ? Explosives.NativeState(node) : active ? Rac2Class500Lifecycle.ActiveNativeState : Rac2Class500Lifecycle.BreakTransitionNativeState;
         return new(GodotObject.IsInstanceValid(node.Root)
                 ? new(node.Root.GlobalPosition.X, node.Root.GlobalPosition.Y, node.Root.GlobalPosition.Z) : System.Numerics.Vector3.Zero,
-            active, !active, null, active ? Rac2Class500Lifecycle.ActiveNativeState : Rac2Class500Lifecycle.BreakTransitionNativeState, null);
+            active && !(node.Source.NativeClassId == Rac2ExplosiveCrateSession.NativeClass && nativeState == Rac2ExplosiveCrateSession.BurstState),
+            !active, null, nativeState, null);
     }
+
+    internal bool IsExplosiveDamageProducer(RuntimeWorldScene.DynamicObjectNode node) =>
+        Current && node.Source.SourceGame == ObpSourceGame.Rac2 && node.Source.NativeClassId == Rac2ExplosiveCrateSession.NativeClass &&
+        _crates.Contains(node) && GodotObject.IsInstanceValid(node.Root) && node.State.Presentation.Presence == RuntimeEntityPresence.Active &&
+        Explosives.NativeState(node) == Rac2ExplosiveCrateSession.BurstState;
 
     internal ActorHitResult ApplyCrate(RuntimeWorldScene.DynamicObjectNode node, WeaponDamageIntent intent)
     {
@@ -327,14 +340,23 @@ internal sealed partial class Rac2WorldModule : IDisposable
         // amount, then use an admitted target-game envelope. Foreign flags and
         // native class numbers never become GC attack identities.
         var damage = new Rac2GameplayDamageEvent(Rac2GameplayEntityRef.Player, Rac2GameplayEntityRef.Moby(node.Source),
-            new(Rac2PlayerAttackDamage.State20.DamageFlags, 0, 0, 0, intent.SourceDamage, 0));
+            new(intent.Kind == "native-blast" ? Rac2ExplosiveCrateSession.FastFuseDamageFlag : Rac2PlayerAttackDamage.State20.DamageFlags,
+                0, 0, 0, intent.SourceDamage, 0));
         bool applied = ApplyRac2Class500Damage(node, damage, "weapon-contact");
-        return new(applied, applied, applied ? null : "The native R&C2 crate receiver rejected this contact.");
+        return new(applied, applied && node.Source.NativeClassId != Rac2ExplosiveCrateSession.NativeClass,
+            applied ? null : "The native R&C2 crate receiver rejected this contact.");
     }
 
     private bool ApplyRac2Class500Damage(RuntimeWorldScene.DynamicObjectNode target, Rac2GameplayDamageEvent damageEvent, string source)
     {
         if (!_crates.Contains(target)) return false;
+        if (target.Source.NativeClassId == Rac2ExplosiveCrateSession.NativeClass)
+        {
+            if (!Explosives.Apply(target, damageEvent.Damage)) return false;
+            _rac2DamageTransport.Publish(damageEvent);
+            GD.Print($"[rac2-explosives] triggered={target.Source.InstanceIndex} state={Explosives.NativeState(target)} route={source}");
+            return true;
+        }
         if (Rac2CrateSupply.IsSupply(target.Source.NativeClassId))
         {
             var next = Rac2CrateSupply.ApplyDamage(target.Source, target.State, damageEvent);
@@ -379,7 +401,7 @@ internal sealed partial class Rac2WorldModule : IDisposable
         var route = lifecycle.Route;
         probe.ObserveStrike(target.Source.InstanceIndex, c8, route.ToString(), source);
 
-        Rac2Class500Payout payout;
+        Rac2CratePayout payout;
         var breakPlan = CrateEffects.PlanBreak();
         try
         {
@@ -417,6 +439,30 @@ internal sealed partial class Rac2WorldModule : IDisposable
         return true;
     }
 
+    private void DetonateExplosive(RuntimeWorldScene.DynamicObjectNode node, Rac2ExplosiveCrateSession motion)
+    {
+        var plan = CrateEffects.PlanBreak(Rac2ExplosiveCrateSession.NativeClass);
+        var payout = _resources.Rac2CrateBolts.PlanCratePayout(motion.Uid, motion.AuthoredBolts,
+            rewardMultiplierByte: 0, progressionLikeInput: plan.Budget.Recent, rngMod2: 1);
+        _ports.CrateReward(node.Root.GlobalPosition, payout);
+        CrateEffects.Break(node, plan);
+        if (_crateBodies.TryGetValue(node.Source.InstanceIndex, out var body)) body.CollisionLayer = body.CollisionMask = 0;
+        // Native state 3 remains a registered damage producer until its expanding
+        // sphere finishes. Hide the mesh without retiring its source identity early.
+        node.Root.Visible = false;
+        GD.Print($"[rac2-explosives] detonated={node.Source.InstanceIndex} payout={payout.PhysicalValue} deferred={payout.DeferredValue}");
+    }
+
+    private bool ApplyExplosiveBlastDamage(RuntimeWorldScene.DynamicObjectNode node, Rac2GameplayDamageEvent damage)
+    {
+        if (!Current || !damage.Target.Matches(node.Source)) return false;
+        if (_crates.Contains(node)) return ApplyRac2Class500Damage(node, damage, "explosive-chain");
+        if (!_rac2Class2827Hostiles.TryGetValue(node.Source.InstanceIndex, out var hostile) || !IsLiveHostile(node, hostile)) return false;
+        var result = hostile.Apply(damage);
+        node.ApplyState(result.EntityState);
+        return result.Admitted;
+    }
+
     /// <summary>Keep the existing fractional R&C2 native clock inside this lease.</summary>
     internal void RegisterTicks(GameplayTickScheduler<InputEvent> ticks)
     {
@@ -429,8 +475,10 @@ internal sealed partial class Rac2WorldModule : IDisposable
         {
             ticks.Register(GameplayTickPhase.Physics, "rac2-bolts", "Rac2CrateBoltPresentation", 20, CrateBolts.Tick);
             ticks.Register(GameplayTickPhase.Physics, "rac2-crate-effects", "Rac2CrateEffects", 10, CrateEffects.Tick);
+            ticks.Register(GameplayTickPhase.Physics, "rac2-explosive-crates", "Rac2ExplosiveCrateHost", 15, Explosives.Tick);
             ticks.Register(GameplayTickPhase.Physics, "rac2-crate-supply", "Rac2CrateSupplyPresentation", 20, CrateSupply.Tick);
             ticks.Register(GameplayTickPhase.Presentation, "rac2-crate-supply-render", "Rac2CrateSupplyPresentation", 20, _ => CrateSupply.Present());
+            ticks.Register(GameplayTickPhase.Presentation, "rac2-crate-explosion-render", "Rac2ExplosiveCrateHost", 20, _ => Explosives.Present());
         }
     }
 

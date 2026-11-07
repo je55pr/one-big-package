@@ -19,7 +19,7 @@ This is the semantic catalogue layer above the structural census in [`GC_PVARS.m
 | 500 | 1,979 | 18 levels | `0x110` | `0x20` | `+0x00,+0x08` | **CORROBORATED:** Bolt Crate |
 | 501 | 131 | 13 levels | `0x110` | `0x20` | `+0x00,+0x08` | **UNKNOWN** |
 | 502 | 0 | none | none | — | — | **UNKNOWN:** dormant/shared-code branch only |
-| 505 | 159 | 7 levels | `0x110` | `0x20` | `+0x00,+0x08` | **UNKNOWN** |
+| 505 | 159 | 7 levels | `0x110` | `0x20` | `+0x00,+0x08` | **CONFIRMED:** timed explosive crate |
 | 511 | 423 | 19 levels | `0x110` | `0x20` | `+0x00,+0x08` | **UNKNOWN** |
 | 512 | 96 | 11 levels | `0x110` | `0x20` | `+0x00,+0x08` | **UNKNOWN** |
 | 3291 | 0 | none; class-table entry all 27 | runtime only | — | — | **INFERRED:** generic indexed collectible/resource object |
@@ -50,6 +50,11 @@ Still UNKNOWN for a native-faithful production crate implementation:
 - persistence, reload and respawn behaviour.
 
 ### oClasses 501 / 505 / 511 / 512
+
+The later [crate recovery](GC_CRATES.md#explosive-crates-class-505) resolves
+505 as the timed explosive crate, with loaded fuse/blast authority and ordinary
+Maktar gameplay. Classes 501/511 are the recovered Nanotech/ammo crates;
+512 remains the alternate Nanotech variant rather than an explosive crate.
 
 **CONFIRMED:** these are both a common authored PVar family and a common loaded-runtime update family where they are present. The exact-address probes above independently cover class 505 on Maktar and class 512 on Endako.
 

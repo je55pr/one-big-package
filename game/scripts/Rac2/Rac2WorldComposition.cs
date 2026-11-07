@@ -28,15 +28,18 @@ internal sealed class Rac2WorldComposition(ApplicationComponents components) : C
             PlayerDamage: (node, hit, amount, mask) => PlayerLife.ApplySourceDamage(node, OBP.RAC2.Rac2Authority.Primary.BuildId,
                 PlayerSessionNativeState.Rac2DamageAdapter, PlayerSessionNativeState.Rac2DamageDescriptor,
                 hit, amount, mask).Applied,
+            ExplosivePlayerDamage: (node, hit, amount, mask) => PlayerLife.ApplySourceDamage(node, OBP.RAC2.Rac2Authority.Primary.BuildId,
+                PlayerSessionNativeState.Rac2ExplosiveDamageAdapter, PlayerSessionNativeState.Rac2DamageDescriptor,
+                hit, amount, mask).Applied,
             CrateFocus: _args.CrateFocus, CrateAutoStrike: _args.CrateAutoStrike),
         new Rac2CrateBoltPorts(
             () => _player, () => PlayerLife.Alive, () => ReferenceEquals(_worldScenes?.Current?.Resources, resources),
             () => _playerNative is not null, () => _playerNative?.Wallet.Balance ?? 0,
-            index => new(PlayerLife.WorldId!, PlayerLife.Generation, new(ObpSourceGame.Rac2, 500, index)),
+            (index, nativeClass) => new(PlayerLife.WorldId!, PlayerLife.Generation, new(ObpSourceGame.Rac2, nativeClass, index)),
             actor => actor.WorldInstanceId == PlayerLife.WorldId && actor.Generation == PlayerLife.Generation,
             (actor, source, provenance, isActive) => _playerNative!.Life.RegisterActor(new(actor,
                 new(ObpSourceGame.Rac2, OBP.RAC2.Rac2Authority.Primary.BuildId, source),
-                "rac2/collected-class500-bolt/v1", provenance, []), isActive),
+                PlayerSessionNativeState.Rac2CrateBoltRewardAdapter, provenance, []), isActive),
             (actor, pickupId, denomination) =>
             {
                 var result = _playerNative!.Life.Credit(new(actor, OBP.RAC2.Rac2Authority.Primary.BuildId,
@@ -49,7 +52,7 @@ internal sealed class Rac2WorldComposition(ApplicationComponents components) : C
             // Selected-player attraction adapter; see research/GC_CRATES.md.
             () => OBP.RAC1.Gameplay.Rac1BoltMotionSession.AttractionProfile(DefaultRac1PickupState,
                 _playerNative?.Inventory.OwnsNativeItem(Rac1BoltGrabberItem) == true),
-            ActorHost.AddRayExclusions, _worldHost.PlayEffect),
+            ActorHost.AddRayExclusions, ActorHost.AddOcclusionExclusions, _worldHost.PlayEffect),
         new Rac2CrateSupplyPorts(
             () =>
             {

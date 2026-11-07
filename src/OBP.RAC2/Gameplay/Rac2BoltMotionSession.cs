@@ -17,17 +17,24 @@ public sealed class Rac2BoltMotionSession
     public Vector3 Velocity { get; private set; }
     public int NativeState { get; private set; } = 1;
     public bool Collected { get; private set; }
-    public float Spin { get; private set; }
+    public Quaternion Orientation { get; private set; } = Quaternion.Identity;
     private readonly Func<float, float, float> _sample;
-    private readonly float _launchHeight, _spinStep;
+    private readonly float _launchHeight;
+    private readonly int _nativeClass;
+    private readonly bool _clockwise;
+    private float _angleX, _angleZ;
+    private Quaternion _spin, _groundBlend;
+    private Quaternion _surface = Quaternion.Identity;
     private Vector3 _rest;
     private int _hopLength, _hopRemaining;
     private float _acceleration;
     private bool _activated;
 
-    public Rac2BoltMotionSession(Vector3 origin, Func<float, float, float> sample)
+    public Rac2BoltMotionSession(int nativeClass, Vector3 origin, Func<float, float, float> sample)
     {
-        _sample = sample;
+        if (nativeClass is < 13 or > 19) throw new ArgumentOutOfRangeException(nameof(nativeClass));
+        _nativeClass = nativeClass;
+        _sample = sample ?? throw new ArgumentNullException(nameof(sample));
         float angle = sample(-MathF.PI, MathF.PI);
         Velocity = new(MathF.Cos(angle) * sample(0, 3) / 60, MathF.Sin(angle) * sample(0, 3) / 60,
             sample(3.7f, 6) / 60);
@@ -35,7 +42,12 @@ public sealed class Rac2BoltMotionSession
         if (offset.LengthSquared() > 0) offset = Vector3.Normalize(offset) * .5f;
         Position = origin + offset;
         _launchHeight = Position.Z;
-        _spinStep = sample(0, 720) * MathF.PI / 180 / 60;
+        // 0x37850C..0x3785A8: one quaternion increment about the launch
+        // velocity/owner-offset cross product, not independent Euler spins.
+        _clockwise = sample(0, 2) >= 1;
+        _angleX = sample(-MathF.PI, MathF.PI);
+        _angleZ = sample(-MathF.PI, MathF.PI);
+        _spin = AxisSpin(Vector3.Cross(Velocity, origin - Position), sample(0, 720) * MathF.PI / 180 / 60);
     }
 
     public void Step(Vector3 player, Vector3 socket, float radius, float height, bool attractEnabled) =>
@@ -48,14 +60,13 @@ public sealed class Rac2BoltMotionSession
         var delta = player - Position;
         bool nearby = delta.X * delta.X + delta.Y * delta.Y < radius * radius && MathF.Abs(delta.Z) < height;
         if (attractEnabled && nearby) _activated = true;
-        Spin += _spinStep;
         switch (NativeState)
         {
             case 1: StepFlight(player, attractEnabled, contact); break;
             case 2: StepFirstHop(); break;
             case 3:
-                if (attractEnabled && _activated) Attract();
-                else Hop(.0125f);
+                if (attractEnabled && _activated) Attract(player);
+                else { Orientation = StepGroundPose(); Hop(.0125f); }
                 break;
             case 4 when attractEnabled: StepAttracted(socket); break;
             default: break;
@@ -66,17 +77,24 @@ public sealed class Rac2BoltMotionSession
     {
         Velocity -= new Vector3(0, 0, GravityPerTick);
         Position += Velocity;
+        StepSpin();
         if (Position.Z < _launchHeight - 2 && Position.Z < player.Z - 2 && attractEnabled)
-            Attract();
+            Attract(player);
         else if (contact is { } hit && Velocity.Z < 0 && hit.Normal.Z > .70710677f)
         {
-            _rest = hit.Position + hit.Normal * ContactRadius;
+            _rest = hit.Position;
+            _surface = SurfaceOrientation(hit.Normal);
             Position = _rest;
-            if (attractEnabled && _activated) { Velocity *= .13333334f; Attract(); }
+            if (attractEnabled && _activated)
+            {
+                if (Velocity.LengthSquared() > 1e-12f) Velocity = Vector3.Normalize(Velocity) * .13333334f;
+                Attract(player);
+            }
             else
             {
                 NativeState = 2;
                 _hopLength = _hopRemaining = (int)_sample(30, 40);
+                _groundBlend = Orientation;
                 Velocity = Vector3.Zero;
             }
         }
@@ -84,6 +102,13 @@ public sealed class Rac2BoltMotionSession
 
     private void StepFirstHop()
     {
+        // 0x3773CC..0x3774BC: settle the airborne quaternion toward the
+        // continuously turning ground pose over the first rebound.
+        var ground = StepGroundPose();
+        float remaining = (float)_hopRemaining / _hopLength;
+        Position = Vector3.Lerp(Position, _rest + Vector3.UnitZ * ContactRadius, remaining);
+        _groundBlend = Quaternion.Normalize(Quaternion.Slerp(_groundBlend, ground, 1f / _hopRemaining));
+        Orientation = _groundBlend;
         Hop(.025f);
         if (_hopRemaining == 0)
         {
@@ -94,6 +119,7 @@ public sealed class Rac2BoltMotionSession
 
     private void StepAttracted(Vector3 socket)
     {
+        StepSpin();
         // Front-of-camera attraction branch. Contact/socket mapping is
         // supplied by the host; no borrowed world/player controller.
         float speed = Velocity.Length();
@@ -105,10 +131,48 @@ public sealed class Rac2BoltMotionSession
         else Position += Vector3.Normalize(to) * _acceleration;
     }
 
-    private void Attract() { NativeState = 4; _acceleration = 0; }
+    private void Attract(Vector3 target)
+    {
+        // 0x378174..0x3781F8: a resting pickup leaves along the support's
+        // up axis, then spins at 720 degrees/second around the homing axis.
+        if (NativeState == 3) Velocity = Vector3.Transform(Vector3.UnitZ, _surface) * .13333334f;
+        _spin = AxisSpin(Vector3.Cross(Velocity, target - Position), .20943955f);
+        NativeState = 4;
+        _acceleration = 0;
+    }
+
+    private void StepSpin() => Orientation = Quaternion.Normalize(Quaternion.Concatenate(Orientation, _spin));
+
+    private Quaternion StepGroundPose()
+    {
+        // Loaded 0x377D10: denomination-specific roll/tilt and the original
+        // off-centre model pivot compensation, composed in the support frame.
+        var (step, tilt, normalOffset, radialOffset) = _nativeClass switch
+        {
+            13 => (.04f, -.25f, .04875f, .325f),
+            14 => (.03f, -.5f, .0245f, .35f),
+            15 => (.025f, -.4f, .05625f, .375f),
+            _ => (.0175f, -.35f, .135f, .3f)
+        };
+        _angleX = MathF.IEEERemainder(_angleX + (_clockwise ? step : -step), MathF.Tau);
+        _angleZ = MathF.IEEERemainder(_angleZ + (_clockwise ? -.0125f : .0125f), MathF.Tau);
+        var local = Quaternion.CreateFromRotationMatrix(Matrix4x4.CreateRotationX(_angleX) *
+            Matrix4x4.CreateRotationY(tilt) * Matrix4x4.CreateRotationZ(_angleZ));
+        var pose = Quaternion.Normalize(Quaternion.Concatenate(local, _surface));
+        Position = _rest + Vector3.Transform(Vector3.UnitZ, _surface) * normalOffset +
+            Vector3.Transform(Vector3.UnitX, pose) * radialOffset;
+        return pose;
+    }
+
+    private static Quaternion SurfaceOrientation(Vector3 normal) => Quaternion.CreateFromRotationMatrix(
+        Matrix4x4.CreateRotationY(MathF.Atan2(MathF.Sqrt(normal.X * normal.X + normal.Y * normal.Y), normal.Z)) *
+        Matrix4x4.CreateRotationZ(MathF.Atan2(normal.Y, normal.X)));
+
+    private static Quaternion AxisSpin(Vector3 axis, float angle) => axis.LengthSquared() > 1e-12f
+        ? Quaternion.CreateFromAxisAngle(Vector3.Normalize(axis), angle) : Quaternion.Identity;
+
     private void Hop(float amplitude)
     {
-        Position = _rest;
         if (_hopRemaining <= 0) return;
         float t = (float)_hopRemaining / _hopLength - .5f;
         Position += Vector3.UnitZ * ((.25f - t * t) * amplitude * _hopLength);
@@ -116,5 +180,5 @@ public sealed class Rac2BoltMotionSession
     }
 }
 
-/// <summary>Host surface point and unit normal. Radius clearance adapts that ray contact to a pickup centre; it does not reproduce PS2 narrow phase.</summary>
+/// <summary>Host surface point and unit normal; the source session supplies the model pivot offset. This does not reproduce PS2 narrow phase.</summary>
 public readonly record struct Rac2BoltContact(Vector3 Position, Vector3 Normal);
