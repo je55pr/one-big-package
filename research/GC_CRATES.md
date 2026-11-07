@@ -232,7 +232,7 @@ The current authority pass closes the Oozla identities and first-break paths:
   at `0x3911FC..0x391224` creates class **806** through `0x394E90` with the
   ordinary-health flag zero. The cloud starts attached to its owning crate;
   collection becomes available after the owner breaks. Class 512 uses the
-  alternate flag and is outside this implementation.
+  alternate flag; its ordinary path is now admitted as described below.
 - **511 = ammo crate:** 26 authored Oozla instances. Initialization writes
   PVar `+0xC6 = 100`; the reward helper takes the indexed-resource branch.
 - **Shared damage/lifetime:** `0x3912DC..0x391394` admits both through the
@@ -279,8 +279,8 @@ unobstructed world query through `0x3956E8`. Eight particle slots are
 initialized at `0x3958A4..0x3958C8`; the first arriving particle performs
 the one-time health credit and sets `+0x56` so the others cannot credit again
 (`0x396374..0x396454`). Ordinary flag zero grants **one** health unit and
-clamps to current capacity. The alternate/challenge-mode paths are not
-implemented by this ordinary slice.
+clamps to current capacity. The class-512 alternate flag's ordinary path is
+described below; challenge/global bonus paths remain outside this slice.
 
 **Original audio:** Oozla Nanotech class 501 local SoundDefs 0/1 map to
 bank sounds **70/71** (break/arrival); ammo class 511 uses local **1**,
@@ -290,7 +290,8 @@ and bounded pitch-bend ranges. It retains the corrected PB versus PM semantics.
 
 **Explicit OBP adapters:** the normal persistent player's controller receives
 one unit per ordinary Nanotech cloud; the world never selects a health provider
-or capacity. At the user's request, ordinary ammo drops are **unassigned until
+or capacity. The advanced class-512 variant supplies four units through that
+same clamped player conversion. At the user's request, ordinary ammo drops are **unassigned until
 collection**, including drops created while the arsenal is full. Fusion's
 `PlayerAmmoSupplyPolicy` chooses an owned, implemented, attached-source
 recipient that is missing ammo at that moment, and each
@@ -372,6 +373,65 @@ available. Approaching one then credited **+1** to Bomb Glove (clamped to 40),
 retired that pickup and left the other two on the ground. The recipient therefore
 depends on inventory at collection, not on what was missing when the crate broke.
 Observers and temporary profiles remain outside the repository.
+
+## Advanced / purple Nanotech: class 512
+
+**CONFIRMED:** a fresh census of the authorized disc contains 96 class-512
+instances in eleven level files. The ordinary admitted subset is 80:
+
+| Level | Authored class 512 | Ordinary admitted |
+| --- | ---: | ---: |
+| 8 / Tabora | 5 | 5 |
+| 9 / Dobbo | 12 | 12 |
+| 11 / Joba | 24 | 8 |
+| 12 / Todano | 7 | 7 |
+| 13 / Boldan | 6 | 6 |
+| 14 / Aranos return | 3 | 3 |
+| 16 / Snivelak | 7 | 7 |
+| 17 / Smolg | 18 | 18 |
+| 18 / Damosel | 5 | 5 |
+| 19 / Grelbin | 3 | 3 |
+| 20 / Yeedil | 6 | 6 |
+
+Loaded Oozla `0x3911FC..0x391224` passes zero for class 501 and one for
+class 512 into the same class-806 constructor `0x394E90`; the latter stores
+the flag at cloud PVar `+57` (`0x394EE4`). Both variants share the eight-orb
+state machine. The normal credit path `0x3963A0..0x3963D8` adds one unit for
+flag zero and four times that base for flag one, then clamps to player capacity.
+`+56` still protects the single first-arrival grant. Bonus/global-mode branches
+are not silently enabled by this ordinary crate adapter.
+
+The flag selects the palette at `0x3951F4`, `0x395404`, `0x39609C` and
+`0x396674`, and selects the arrival SoundDef class at `0x39641C..0x39644C`.
+The particle colour constants at `$gp+3C8/+3CC` are `7F7F4040/7F7F407F`:
+the purple version raises red to the blue component while retaining green and
+alpha. This is applied as an explicit RAC2 output-palette conversion to the
+requested RAC1 donor, for both sphere meshes and particle sprites; no donor
+simulation state, decoded retail palette or ordinary RAC1 output is mutated.
+Blue and purple crate families retain separate lease-owned donor pools and
+their own pickup class/amount/sound throughout collection.
+
+Class 512 uses its own original parent model, texture remap and fragments.
+For example, Tabora's class-512 model has 452 vertices / 288 triangles and
+texture 40; class 501 has 294 vertices / 160 triangles and textures 37/38.
+The shared fragment switch explicitly includes 512 at `0x392660..0x3926AC`
+in the contiguous 0/1/2 Nanotech part path. All eleven banks admitted those
+three own-model fragments, authored lighting and both original SoundDefs.
+Tabora local sounds 0/1 map to SBlk 83/87.
+
+The 16 remaining Joba instances have `+C8=1,+CC=1`. The native state-6
+respawn path involves visibility, timers and stack/support reconstruction;
+it is not a normal one-use break. They retain the existing explicit unsupported
+admission status, as do the already-unavailable respawning ordinary supplies.
+No substitute respawn rule is invented here.
+
+An ordinary Tabora wrench interaction broke class 512 instance 148, emitted
+its three original fragments and collected exactly one cloud: the selected
+RAC1 player's health rose from 1/4 to 4/4 (the four-unit grant clamped to three
+missing units). Class-512 break and arrival sounds dispatched successfully.
+A separate ordinary class-501 interaction in the same mixed-family level
+still granted one unit. Rendered inspection confirmed the purple donor sphere;
+captures, temporary profiles and source probes remain outside the repository.
 
 ## Identity and authored structural family
 
@@ -859,4 +919,4 @@ unrecovered.
 
 **INFERRED:** `0x003922B0` is a break/destruction transition helper; selectors `13..19` are Bolt-denomination pickup identities; `0x001A7A32/+0x33` are the Challenge Mode bolt multiplier/sublevel; class 3291 is a generic indexed collectible/resource object; the 56-slot counter system is ammo/inventory-resource state.
 
-Still **UNKNOWN:** broader crate-family state names and `+0xCC/+0xC6/+0xCB` semantics outside the proved paths; broader meaning of `+0xC8` outside the proved ordinary deactivation branch; exact runtime population/history of the packed reward-selector blocks and semantic identity of the active `contextIndex`; exact 56-slot resource names; full native fragment collision/angular behavior and sparkle effects; save/reload/persistence/respawn rules; complete class-512 alternate Nanotech behaviour. Class 505 and its `+0xCA` expanding-blast counter are resolved above.
+Still **UNKNOWN:** broader crate-family state names and `+0xCC/+0xC6/+0xCB` semantics outside the proved paths; broader meaning of `+0xC8` outside the proved ordinary deactivation branch; exact runtime population/history of the packed reward-selector blocks and semantic identity of the active `contextIndex`; exact 56-slot resource names; full native fragment collision/angular behavior and sparkle effects; save/reload/persistence/respawn rules; class-512 bonus/global-mode Nanotech behaviour beyond the admitted ordinary four-unit path. Class 505 and its `+0xCA` expanding-blast counter are resolved above.

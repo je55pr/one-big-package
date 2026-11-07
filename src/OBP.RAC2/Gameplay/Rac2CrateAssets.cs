@@ -37,7 +37,7 @@ public static class Rac2CrateAssets
         int[] partIndices = nativeClass switch
         {
             Rac2ExplosiveCrateSession.NativeClass => [],
-            Rac2CrateSupply.NanotechClass => [0, 1, 2],
+            Rac2CrateSupply.NanotechClass or Rac2CrateSupply.AdvancedNanotechClass => [0, 1, 2],
             _ => [0, 2, 5]
         };
         foreach (int part in partIndices)

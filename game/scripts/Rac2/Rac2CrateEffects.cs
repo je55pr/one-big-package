@@ -35,7 +35,7 @@ internal sealed class Rac2CrateEffects(RuntimeWorld world, RuntimeWorldScene.Res
         HashSet<int> soundClasses = nativeClass switch
         {
             500 => [500, 13, 14, 15, 16, 17, 18, 19],
-            Rac2CrateSupply.NanotechClass => [Rac2CrateSupply.NanotechClass],
+            Rac2CrateSupply.NanotechClass or Rac2CrateSupply.AdvancedNanotechClass => [nativeClass],
             Rac2CrateSupply.AmmoClass => [Rac2CrateSupply.AmmoClass, Rac2CrateSupply.AmmoPickupClass],
             Rac2ExplosiveCrateSession.NativeClass => [Rac2ExplosiveCrateSession.NativeClass],
             _ => throw new ArgumentOutOfRangeException(nameof(nativeClass))

@@ -21,7 +21,7 @@ This is the semantic catalogue layer above the structural census in [`GC_PVARS.m
 | 502 | 0 | none | none | — | — | **UNKNOWN:** dormant/shared-code branch only |
 | 505 | 159 | 7 levels | `0x110` | `0x20` | `+0x00,+0x08` | **CONFIRMED:** timed explosive crate |
 | 511 | 423 | 19 levels | `0x110` | `0x20` | `+0x00,+0x08` | **UNKNOWN** |
-| 512 | 96 | 11 levels | `0x110` | `0x20` | `+0x00,+0x08` | **UNKNOWN** |
+| 512 | 96 | 11 levels | `0x110` | `0x20` | `+0x00,+0x08` | **CONFIRMED:** advanced / purple Nanotech crate |
 | 3291 | 0 | none; class-table entry all 27 | runtime only | — | — | **INFERRED:** generic indexed collectible/resource object |
 | 4018 | 5 | LEVEL6 only | `0x40` | `0` | none | **CORROBORATED:** Thermanator/water lead |
 | 4021 | 11 | LEVEL6 only | `0x10` | `0` | none | **UNKNOWN** |
@@ -34,7 +34,7 @@ The loaded-runtime picture has advanced substantially:
 
 - Oozla classes 500/501/511 share loaded update `0x00391080`;
 - Maktar classes 500/501/505/511 share `0x003A52B8`;
-- Endako classes 500/501/511/512 share `0x003AB1E8`;
+- LEVEL8 / Tabora classes 500/501/511/512 share `0x003AB1E8`;
 - the shared routine is a seven-state Moby state machine using Moby `+0x20` and the PVar at Moby `+0x68`;
 - loaded transitions reach a dynamic indexed-resource emission path which constructs class 3291 objects;
 - authored PVar `+0xC8/+0xCC` are both consumed by native runtime code.
@@ -54,9 +54,12 @@ Still UNKNOWN for a native-faithful production crate implementation:
 The later [crate recovery](GC_CRATES.md#explosive-crates-class-505) resolves
 505 as the timed explosive crate, with loaded fuse/blast authority and ordinary
 Maktar gameplay. Classes 501/511 are the recovered Nanotech/ammo crates;
-512 remains the alternate Nanotech variant rather than an explosive crate.
+512 is the advanced / purple Nanotech variant: the shared class-806 cloud uses
+an alternate palette and ordinary four-unit grant. Its own model/fragments and
+sounds are admitted for the 80 non-respawning instances; 16 Joba respawn variants
+remain explicitly unsupported. See [the class-512 recovery](GC_CRATES.md#advanced--purple-nanotech-class-512).
 
-**CONFIRMED:** these are both a common authored PVar family and a common loaded-runtime update family where they are present. The exact-address probes above independently cover class 505 on Maktar and class 512 on Endako.
+**CONFIRMED:** these are both a common authored PVar family and a common loaded-runtime update family where they are present. The exact-address probes above independently cover class 505 on Maktar and class 512 on Tabora.
 
 Wrench's R&C1 underlay gives analogous R&C1 identities for several matching numbers, but those are not GC identities and are deliberately not promoted here.
 

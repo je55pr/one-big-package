@@ -20,13 +20,13 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
     Rac2CrateBoltPorts ports, Rac2CrateSupplyPorts supply, Rac2CrateEffects effects, Func<bool> current) : IDisposable
 {
     private sealed record Ammo(Node3D Node, Rac2AmmoPickup Motion);
-    private sealed record Cloud(Rac2NanotechCloud Motion, Rac1NanotechCluster Cluster);
+    private sealed record Cloud(Rac2NanotechCloud Motion, Rac1NanotechCluster Cluster, Rac1NanotechSpherePresentation Orbs, int NativeClass);
     private readonly List<Ammo> _ammo = [];
     private readonly List<Cloud> _clouds = [];
     private readonly List<(ArrayMesh Mesh, Material Material)> _ammoModel = [];
     private Rac2SupplyAssets.Catalogue? _assets;
     private Random? _random;
-    private Rac1NanotechSpherePresentation? _orbs;
+    private readonly Dictionary<int, Rac1NanotechSpherePresentation> _orbs = [];
     private double _accumulator;
     private float _ammoGroundOffset;
     private bool _disposed;
@@ -34,10 +34,12 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
     /// <summary>Admit only the requested family; Nanotech never depends on the ammo model or descriptor.</summary>
     internal void Prepare(int nativeClass, IReadOnlyList<RuntimeWorldScene.DynamicObjectNode> crates)
     {
-        if (nativeClass == Rac2CrateSupply.NanotechClass)
+        if (Rac2CrateSupply.IsNanotech(nativeClass))
         {
-            _orbs = new(scene, supply.NanotechPresentationSource()
-                ?? throw new InvalidDataException("The selected RAC1 nanotech sphere presentation source is unavailable."), ports.Seed(), crates);
+            var orbs = new Rac1NanotechSpherePresentation(scene, supply.NanotechPresentationSource()
+                ?? throw new InvalidDataException("The selected RAC1 nanotech sphere presentation source is unavailable."), ports.Seed(), crates,
+                nativeClass == Rac2CrateSupply.AdvancedNanotechClass ? Rac2CrateSupply.AdvancedNanotechColor : null);
+            _orbs.Add(nativeClass, orbs);
         }
         else if (nativeClass == Rac2CrateSupply.AmmoClass) PrepareAmmo();
         else throw new ArgumentOutOfRangeException(nameof(nativeClass));
@@ -72,10 +74,9 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
     /// <summary>Roll back a failed family's preparation without retiring another family's live presentation.</summary>
     internal void RetireFamily(int nativeClass)
     {
-        if (nativeClass == Rac2CrateSupply.NanotechClass)
+        if (Rac2CrateSupply.IsNanotech(nativeClass))
         {
-            _orbs?.Dispose();
-            _orbs = null;
+            if (_orbs.Remove(nativeClass, out var orbs)) orbs.Dispose();
         }
         else if (nativeClass == Rac2CrateSupply.AmmoClass)
         {
@@ -88,11 +89,13 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
     {
         if (_disposed || !current()) return;
         var origin = crate.Root.GlobalPosition + Vector3.Up * .5f;
-        if (crate.Source.NativeClassId == Rac2CrateSupply.NanotechClass)
+        int nativeClass = crate.Source.NativeClassId;
+        if (Rac2CrateSupply.IsNanotech(nativeClass))
         {
-            var cluster = _orbs?.Break(crate) ?? throw new InvalidOperationException("Nanotech sphere presentation was not prepared.");
-            _clouds.Add(new(new(ToNative(origin)), cluster));
-            GD.Print($"[rac2-supply] crate={crate.Source.InstanceIndex} nanotech cloud=1 presentation=rac1-sphere");
+            if (!_orbs.TryGetValue(nativeClass, out var orbs)) throw new InvalidOperationException("Nanotech sphere presentation was not prepared.");
+            var cluster = orbs.Break(crate);
+            _clouds.Add(new(new(ToNative(origin)), cluster, orbs, nativeClass));
+            GD.Print($"[rac2-supply] crate={crate.Source.InstanceIndex} class={nativeClass} nanotech cloud=1 amount={Rac2CrateSupply.NanotechAmount(nativeClass)} presentation=rac1-sphere");
             return;
         }
         if (_assets is null) throw new InvalidOperationException("Ammo presentation was not prepared.");
@@ -121,7 +124,7 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
         {
             var root = ToNative(player.GlobalPosition);
             var socket = ToNative(player.GlobalPosition + Vector3.Up * .7f);
-            _orbs?.BeginTick(root, socket);
+            foreach (var orbs in _orbs.Values) orbs.BeginTick(root, socket);
             foreach (var pickup in _ammo.ToArray())
             {
                 if (ports.Alive() && pickup.Motion.CanCollect(root))
@@ -165,7 +168,7 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
                 bool visible = cloud.Motion.Attracting || space.IntersectRay(query).Count == 0;
                 if (cloud.Motion.TryAttract(root, ports.Alive() ? health.Current : 0, health.Capacity, pending, visible))
                     cloud.Cluster.Launch(socket, System.Numerics.Vector3.UnitZ);
-                var result = _orbs!.Step(cloud.Cluster, root, socket);
+                var result = cloud.Orbs.Step(cloud.Cluster, root, socket);
                 if (result.Finished && !result.FirstArrival)
                 {
                     cloud.Cluster.Dispose();
@@ -173,21 +176,25 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
                     continue;
                 }
                 if (!result.FirstArrival || !cloud.Motion.Arrive()) continue;
-                int granted = supply.Heal(Rac2CrateSupply.NanotechPerCloud);
+                int granted = supply.Heal(Rac2CrateSupply.NanotechAmount(cloud.NativeClass));
                 if (granted > 0)
                 {
-                    effects.PlayPickup(Rac2CrateSupply.NanotechClass, 1);
+                    effects.PlayPickup(cloud.NativeClass, 1);
                     ports.RefreshHud();
-                    GD.Print($"[rac2-supply] nanotech collected delta={granted}");
+                    GD.Print($"[rac2-supply] nanotech collected class={cloud.NativeClass} delta={granted}");
                 }
-                _orbs.Healing(cloud.Cluster);
+                cloud.Orbs.Healing(cloud.Cluster);
                 _clouds.Remove(cloud);
             }
-            _orbs?.EndTick(root);
+            foreach (var orbs in _orbs.Values) orbs.EndTick(root);
         }
     }
 
-    internal void Present() { if (!_disposed && current()) _orbs?.Present(); }
+    internal void Present()
+    {
+        if (_disposed || !current()) return;
+        foreach (var orbs in _orbs.Values) orbs.Present();
+    }
 
     private float Sample(float min, float max) => min + _random!.NextSingle() * (max - min);
     private static System.Numerics.Vector3 ToNative(Vector3 point) => new(-point.X, point.Z, point.Y);
@@ -198,7 +205,8 @@ internal sealed class Rac2CrateSupplyPresentation(RuntimeWorld world, RuntimeWor
         foreach (var node in _ammo.Select(pickup => pickup.Node))
             if (GodotObject.IsInstanceValid(node)) node.QueueFree();
         foreach (var cloud in _clouds) cloud.Cluster.Dispose();
-        _orbs?.Dispose(); _orbs = null;
+        foreach (var orbs in _orbs.Values) orbs.Dispose();
+        _orbs.Clear();
         _ammo.Clear(); _clouds.Clear(); _ammoModel.Clear();
         _assets = null;
     }
