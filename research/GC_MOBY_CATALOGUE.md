@@ -45,6 +45,7 @@ Remaining limits beyond the admitted production crate paths:
 
 - broader meanings/entry conditions of states `0..6` outside the recovered ordinary branches;
 - native global reward-selector history and unsupported indexed-resource recipients;
+- full native debris collision/mixing and exact debris/effect presentation;
 - persistence, reload and respawn behaviour.
 
 ### oClasses 501 / 505 / 511 / 512
