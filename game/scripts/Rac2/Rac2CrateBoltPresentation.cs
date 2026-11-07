@@ -79,7 +79,7 @@ internal sealed class Rac2CrateBoltPresentation(
             var pickup = payout.PhysicalPickups[i];
             int nativeClass = Rac2BoltAssets.ClassForDenomination(pickup.Denomination);
             var area = CreateModel(nativeClass, $"Rac2RetailBolt_{pickup.PickupId}_class{nativeClass}");
-            var motion = new Rac2BoltMotionSession(ToNative(centre), Sample);
+            var motion = new Rac2BoltMotionSession(nativeClass, ToNative(centre), Sample);
             scene.Root.AddChild(area);
             area.GlobalPosition = FromNative(motion.Position);
             _areas.Add(area);
@@ -151,7 +151,9 @@ internal sealed class Rac2CrateBoltPresentation(
                 motion.Step(ToNative(player.GlobalPosition), ToNative(player.GlobalPosition + Vector3.Up * .7f),
                     profile.Radius, profile.Height, ports.Alive(), ProbeContact(space, excluded, motion));
                 pickup.Node.GlobalPosition = FromNative(motion.Position);
-                pickup.Node.Rotation = new(motion.Spin, motion.Spin * .5f, 0);
+                var orientation = motion.Orientation;
+                pickup.Node.Basis = new Basis(new Quaternion(-orientation.X, orientation.Z, orientation.Y, orientation.W))
+                    .Scaled(Vector3.One * Rac2BoltAssets.VisualScale);
                 if (!motion.Collected) continue;
                 CollectArrivedPickup(player, pickup);
                 if (pickup.Node.IsQueuedForDeletion()) _pickups.RemoveAt(index);

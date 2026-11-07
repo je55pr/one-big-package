@@ -126,6 +126,57 @@ the same persistent wallet from 10 to 42 without duplicate credit.
 Captures, observers, native payloads and diagnostic executables remain local;
 no automated tests or test infrastructure were added.
 
+## Physical Bolt rotation: classes 13..19
+
+**CONFIRMED:** the loaded Oozla constructor `0x378270`, update `0x376D58`,
+ground-pose helper `0x377D10` and attraction entry `0x378098` use distinct
+rotation rules for flight, landing and collection. The previous OBP presenter
+invented two Euler rotations from one airborne angular rate and kept applying
+them on the floor. That presentation has been replaced with source-owned poses.
+
+- `0x37850C..0x3785A8` chooses a turn direction, two initial ground angles,
+  and an airborne angular rate in **[0,720) degrees/second**. The quaternion
+  axis is the normalized cross product of launch velocity with
+  **owner position minus pickup position**. Updates at `0x3770D0..0x3770E4`
+  compose this increment with the current basis, rather than rotating two axes
+  independently.
+- `0x377E8C..0x377FF0` constructs a local X/Y/Z Euler pose in the support's
+  normal-derived frame. The X and Z angular steps have opposite signs,
+  selected by the constructor's direction bit. The Z magnitude is **0.0125
+  radians/tick**; the X rate and fixed Y tilt depend on denomination:
+
+| Native class | Value | X step, radians/tick | Y tilt, radians | Normal offset | First-basis offset |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 13 | 1 | 0.04 | -0.25 | 0.04875 | 0.325 |
+| 14 | 5 | 0.03 | -0.5 | 0.0245 | 0.35 |
+| 15 | 20 | 0.025 | -0.4 | 0.05625 | 0.375 |
+| 16..19 | 50/100/500/1000 | 0.0175 | -0.35 | 0.135 | 0.3 |
+
+- `0x377FF4..0x378034` positions the model pivot at the raw contact anchor
+  plus the support up vector times the normal offset, plus the posed first
+  basis vector times the first-basis offset. Holding the pivot at a fixed
+  contact-radius clearance while turning the off-centre model is incorrect.
+- `0x3773CC..0x3774BC` blends the saved airborne quaternion toward the moving
+  ground pose with slerp weight **1 / remaining first-hop ticks**. Position
+  similarly blends from contact-anchor Z plus **0.25** toward the compensated
+  ground pivot using the remaining/total fraction, then adds the existing
+  parabolic first hop. State 3 uses the ground pose directly, with its smaller
+  second hop.
+- `0x378174..0x3781F8` gives a resting pickup an initial velocity along the
+  support up vector of **8/60 units/tick**, then builds a new quaternion about
+  `cross(velocity, target position - pickup position)` at a fixed **720
+  degrees/second**. That rate belongs to attraction, not to floor rotation.
+
+The host transforms the native Z-up quaternion into the scene coordinate frame
+without changing the original **0.5** model scale. Contact points and the player
+socket remain explicit Godot adapters. Random samples reproduce these domains,
+not the retail global RNG history; moving supports, camera-side steering and
+pickup sparkles remain unavailable. A local manual pose probe covered all seven
+denominations on flat and sloped contacts, first-hop settling and attraction;
+an ordinary Maktar run also confirmed the presented scale stays at 0.5 through
+rotation and the landed pickups still attract and credit the wallet. Retail
+instruction dumps, captures and probe executables remain outside the repository.
+
 ## Nanotech and ammunition crates: playable shared family
 
 The current authority pass closes the Oozla identities and first-break paths:
