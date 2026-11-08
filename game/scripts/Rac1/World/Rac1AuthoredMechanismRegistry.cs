@@ -144,9 +144,13 @@ internal static class Rac1AuthoredMechanismCatalog
         {
             registry.Register(new Rac1NovalisCrankMechanism(ports, registry.SelectAuthoredMusicCrank));
             registry.Register(new Rac1NovalisRouteMechanism(ports));
-            registry.Register(new Rac1NovalisWaterMechanism());
+            var waterSurfaces = new Rac1NovalisWaterMechanism();
+            var underwaterLook = new OBP.RAC1.Level.Rac1NovalisUnderwaterLook();
+            registry.Register(waterSurfaces);
             registry.Register(new Rac1NovalisScrollingWaterMechanism(ports));
-            registry.Register(new Rac1NovalisPoolWaterMechanism(ports));
+            // The pool controller chooses the underwater colours, so it ticks before the underwater look reads them.
+            registry.Register(new Rac1NovalisPoolWaterMechanism(ports, underwaterLook));
+            registry.Register(new Rac1NovalisUnderwaterMechanism(ports, waterSurfaces, underwaterLook));
             registry.Register(new Rac1NovalisMusicMechanism(ports));
         }
         if (world.LevelId == Rac1RedPlantSession.NativeLevelId)

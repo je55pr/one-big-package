@@ -17,6 +17,8 @@ namespace OBP.Game;
 internal sealed class Rac1NovalisScrollingWaterMechanism(Rac1AuthoredMechanismPorts ports) : Rac1AuthoredMechanism
 {
     private const double NativeFrameRate = 60;
+    /// <summary>Drawn after the level's blended geometry: submerged plants and bank foliage sit under the water (the original draws water after the world).</summary>
+    internal const int WaterRenderPriority = 1;
 
     private sealed record LayerView(
         Rac1NovalisScrollingWater.Layer Source, MeshInstance3D Node, ShaderMaterial Material);
@@ -58,7 +60,7 @@ internal sealed class Rac1NovalisScrollingWaterMechanism(Rac1AuthoredMechanismPo
         _shader = new Shader { Code = ShaderCode };
         foreach (var layer in layers)
         {
-            var material = new ShaderMaterial { Shader = _shader };
+            var material = new ShaderMaterial { Shader = _shader, RenderPriority = WaterRenderPriority };
             material.SetShaderParameter("tex0", TextureFor(fx, layer.Texture0));
             material.SetShaderParameter("tex1", TextureFor(fx, layer.Texture1));
             material.SetShaderParameter("fix_alpha", new Vector2(layer.Alpha0 / 128f, layer.Alpha1 / 128f));

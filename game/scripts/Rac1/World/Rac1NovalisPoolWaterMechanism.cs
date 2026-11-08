@@ -15,7 +15,7 @@ namespace OBP.Game;
 /// reflection-mapped texture, both alpha-blended by constant ALPHA FIX / 128 with a grey light taken
 /// from the surface normals. The sim and surface maths live in OBP.RAC1; this class only hosts them.
 /// </summary>
-internal sealed class Rac1NovalisPoolWaterMechanism(Rac1AuthoredMechanismPorts ports) : Rac1AuthoredMechanism
+internal sealed class Rac1NovalisPoolWaterMechanism(Rac1AuthoredMechanismPorts ports, Rac1NovalisUnderwaterLook underwaterLook) : Rac1AuthoredMechanism
 {
     private const double NativeFrameRate = 60;
     private const int MaximumFramesPerTick = 4;
@@ -26,7 +26,7 @@ internal sealed class Rac1NovalisPoolWaterMechanism(Rac1AuthoredMechanismPorts p
         public MeshInstance3D Node { get; } = node;
         public ShaderMaterial Material { get; } = material;
         public ArrayMesh Mesh { get; } = (ArrayMesh)node.Mesh;
-        public ushort BuiltMask { get; set; } = ushort.MaxValue;
+        public int BuiltMask { get; set; } = -1;   // no index list built yet (every ushort is a valid mask, 0xffff included)
         public int[] Indices { get; set; } = [];
         public Rac1PoolWaterSurface.Buffers Buffers { get; } = new();
         public readonly Vector3[] ScenePositions = new Vector3[Rac1PoolWaterSurface.VertexCount];
@@ -86,7 +86,7 @@ internal sealed class Rac1NovalisPoolWaterMechanism(Rac1AuthoredMechanismPorts p
         _shader = new Shader { Code = ShaderCode };
         foreach (var tile in _water.Tiles)
         {
-            var material = new ShaderMaterial { Shader = _shader };
+            var material = new ShaderMaterial { Shader = _shader, RenderPriority = Rac1NovalisScrollingWaterMechanism.WaterRenderPriority };
             material.SetShaderParameter("tex_scroll", TextureFor(fx, tile.SecondTexture));
             material.SetShaderParameter("tex_reflect", TextureFor(fx, tile.Texture));
             material.SetShaderParameter("fix_alpha", new Vector2(tile.Alpha1Fix / 128f, tile.Alpha2Fix / 128f));
@@ -162,9 +162,11 @@ internal sealed class Rac1NovalisPoolWaterMechanism(Rac1AuthoredMechanismPorts p
         var water = _water!;
         _frame++;
         Array.Clear(_masks);
+        int found = -1;
         foreach (var zone in water.Zones)
         {
-            if (zone.ClipVolume < 0 || zone.TileCount == 0 || !_volumes[zone.ClipVolume].Contains(camera)) continue;
+            if (zone.ClipVolume < 0 || !_volumes[zone.ClipVolume].Contains(camera)) continue;
+            found = zone.Index;   // the last zone holding the camera, whether or not it owns tiles
             for (int k = 0; k < zone.TileCount; k++)
             {
                 var tile = water.Tiles[zone.FirstTile + k];
@@ -177,6 +179,7 @@ internal sealed class Rac1NovalisPoolWaterMechanism(Rac1AuthoredMechanismPorts p
                 }
             }
         }
+        if (found >= 0) underwaterLook.SelectZone(found);   // the controller rewrites the underwater colours each frame it finds a zone
         _simulation!.Flush(_tileActive ??= index => _masks[index] != 0);
     }
 
