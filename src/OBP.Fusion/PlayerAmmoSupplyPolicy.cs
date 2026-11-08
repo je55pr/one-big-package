@@ -21,6 +21,10 @@ public static class PlayerAmmoSupplyPolicy
         return missing.Length == 0 ? null : missing[below(missing.Length)];
     }
 
+    /// <summary>Recipients remain unassigned within their emitted family until collection.</summary>
+    public static PlayerAmmoSupply? Select(IReadOnlyList<PlayerAmmoSupply> owned, AmmoPickupFamily family, Func<int, int> below) =>
+        Select(owned.Where(item => item.Family == family).ToArray(), below);
+
     /// <summary>
     /// Fix the visible family when the piece is emitted. Prefer families with missing ammo;
     /// an all-full owned arsenal may still leave a useful physical drop for later.
@@ -31,11 +35,7 @@ public static class PlayerAmmoSupplyPolicy
         var usable = owned.Where(item => item.Family is { } family && Enum.IsDefined(family) &&
             item.Capacity > 0 && item.Amount > 0 && item.Count >= 0).ToArray();
         var missing = usable.Where(item => item.Count < item.Capacity).ToArray();
-        var families = (missing.Length > 0 ? missing : usable).Select(item => item.Family!.Value).Distinct().ToArray();
+        var families = (missing.Length > 0 ? missing : usable).Select(item => item.Family.GetValueOrDefault()).Distinct().ToArray();
         return families.Length == 0 ? null : families[below(families.Length)];
     }
-
-    /// <summary>Recipients remain unassigned within their emitted family until collection.</summary>
-    public static PlayerAmmoSupply? Select(IReadOnlyList<PlayerAmmoSupply> owned, AmmoPickupFamily family, Func<int, int> below) =>
-        Select(owned.Where(item => item.Family == family).ToArray(), below);
 }

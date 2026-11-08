@@ -67,35 +67,38 @@ internal sealed class PlayerAmmoPickupHost(RuntimeWorld world, RuntimeWorldScene
             var root = ToNeutral(player.GlobalPosition);
             var socket = root + NVector3.UnitY * .7f;
             foreach (var drop in _drops.ToArray())
-            {
-                if (ports.Alive() && drop.Motion.CanCollect(root))
-                {
-                    var ray = PhysicsRayQueryParameters3D.Create(FromNeutral(drop.Motion.Position) + Vector3.Up * .1f, FromNeutral(socket));
-                    ray.Exclude = excluded;
-                    if (space.IntersectRay(ray).Count == 0 && PlayerAmmoSupplyPolicy.Select(ports.Supplies(), drop.Family, ports.Below) is { } selected)
-                    {
-                        int amount = ports.Grant(selected.Weapon, selected.Amount);
-                        if (amount > 0)
-                        {
-                            drop.Motion.Claim(); ports.Collected();
-                            GD.Print($"[ammo-family] collected family={drop.Family} recipient={selected.Weapon} delta={amount}");
-                        }
-                    }
-                }
-                drop.Motion.Step(socket, (from, to) =>
-                {
-                    var bottom = Vector3.Up * _visuals!.GroundOffset(drop.Family);
-                    var ray = PhysicsRayQueryParameters3D.Create(FromNeutral(from) - bottom + Vector3.Up * .1f, FromNeutral(to) - bottom);
-                    ray.Exclude = excluded;
-                    var hit = space.IntersectRay(ray);
-                    return hit.TryGetValue("position", out var point) && hit.TryGetValue("normal", out var normal) && normal.AsVector3().Y > .70710677f
-                        ? ToNeutral(point.AsVector3() + bottom) : null;
-                });
-                drop.Node.GlobalPosition = FromNeutral(drop.Motion.Position); drop.Node.Rotation = new(0, drop.Motion.Spin, 0);
-                if (!drop.Motion.Finished) continue;
-                drop.Node.QueueFree(); _drops.Remove(drop);
-            }
+                TickDrop(drop, root, socket, space, excluded);
         }
+    }
+
+    private void TickDrop(Drop drop, NVector3 root, NVector3 socket, PhysicsDirectSpaceState3D space,
+        global::Godot.Collections.Array<Rid> excluded)
+    {
+        if (ports.Alive() && drop.Motion.CanCollect(root)) TryCollect(drop, socket, space, excluded);
+        drop.Motion.Step(socket, (from, to) =>
+        {
+            var bottom = Vector3.Up * _visuals!.GroundOffset(drop.Family);
+            var ray = PhysicsRayQueryParameters3D.Create(FromNeutral(from) - bottom + Vector3.Up * .1f, FromNeutral(to) - bottom);
+            ray.Exclude = excluded;
+            var hit = space.IntersectRay(ray);
+            return hit.TryGetValue("position", out var point) && hit.TryGetValue("normal", out var normal) && normal.AsVector3().Y > .70710677f
+                ? ToNeutral(point.AsVector3() + bottom) : null;
+        });
+        drop.Node.GlobalPosition = FromNeutral(drop.Motion.Position); drop.Node.Rotation = new(0, drop.Motion.Spin, 0);
+        if (!drop.Motion.Finished) return;
+        drop.Node.QueueFree(); _drops.Remove(drop);
+    }
+
+    private void TryCollect(Drop drop, NVector3 socket, PhysicsDirectSpaceState3D space,
+        global::Godot.Collections.Array<Rid> excluded)
+    {
+        var ray = PhysicsRayQueryParameters3D.Create(FromNeutral(drop.Motion.Position) + Vector3.Up * .1f, FromNeutral(socket));
+        ray.Exclude = excluded;
+        if (space.IntersectRay(ray).Count != 0 || PlayerAmmoSupplyPolicy.Select(ports.Supplies(), drop.Family, ports.Below) is not { } selected) return;
+        int amount = ports.Grant(selected.Weapon, selected.Amount);
+        if (amount <= 0) return;
+        drop.Motion.Claim(); ports.Collected();
+        GD.Print($"[ammo-family] collected family={drop.Family} recipient={selected.Weapon} delta={amount}");
     }
 
     private float Sample(float min, float max) => min + ports.Below(32768) * (max - min) / 32768f;
@@ -106,7 +109,7 @@ internal sealed class PlayerAmmoPickupHost(RuntimeWorld world, RuntimeWorldScene
     {
         if (_disposed) return;
         _disposed = true;
-        foreach (var drop in _drops) if (GodotObject.IsInstanceValid(drop.Node)) drop.Node.QueueFree();
+        foreach (var drop in _drops.Where(drop => GodotObject.IsInstanceValid(drop.Node))) drop.Node.QueueFree();
         _drops.Clear(); _visuals = null;
     }
 }

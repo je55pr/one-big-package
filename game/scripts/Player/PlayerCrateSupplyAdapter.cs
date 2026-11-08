@@ -20,15 +20,20 @@ internal static class PlayerCrateSupplyAdapter
             entry.Definition.Category == EquipmentCategory.Weapon))
         {
             if (entry.Definition.Item is not { } key) continue;
-            int amount = key.SourceGame == ObpSourceGame.Rac1
-                ? Rac1CrateSupply.AmmoDefinitions.FirstOrDefault(definition => definition.Item == key.NativeItemId)?.Amount ?? 0
-                : key == FusionWeaponSession.Lancer ? Rac2LancerProfile.AmmoPickupAmount
-                : key == FusionWeaponSession.ShockCannon ? Rac3ShockCannonProfile.AmmoPickupAmount : 0;
+            int amount = PickupAmount(key);
             if (amount <= 0 || PlayerAmmoFamilies.ForWeapon(key) is not { } family) continue;
             var status = player.Weapons.Status(key);
             if (status.Capacity > 0) result.Add(new(key, status.Ammo, status.Capacity, amount, family));
         }
         return result;
+    }
+
+    private static int PickupAmount(SourceWeaponKey key)
+    {
+        if (key.SourceGame == ObpSourceGame.Rac1)
+            return Rac1CrateSupply.AmmoDefinitions.FirstOrDefault(definition => definition.Item == key.NativeItemId)?.Amount ?? 0;
+        if (key == FusionWeaponSession.Lancer) return Rac2LancerProfile.AmmoPickupAmount;
+        return key == FusionWeaponSession.ShockCannon ? Rac3ShockCannonProfile.AmmoPickupAmount : 0;
     }
 
     internal static int Grant(PlayerSessionNativeState? player, SourceWeaponKey weapon, int amount)
