@@ -29,7 +29,6 @@ internal sealed class Rac1NovalisUnderwaterMechanism(
     private GodotEnvironment? _environment;
     private SavedFog? _saved;
     private bool _underwater;
-    private float? _lastSurface;
 
     internal bool Underwater => _underwater;
 
@@ -74,7 +73,6 @@ internal sealed class Rac1NovalisUnderwaterMechanism(
         if (surface is float height && Math.Abs(camera.Y - height) <= ProbeReach)
         {
             _underwater = camera.Y < height + SubmergedMargin;
-            _lastSurface = height;
         }
         else if (_underwater && player is not null && player.Rac1SwimState is null &&
                  (surface is not float plane || camera.Y >= plane + SubmergedMargin))

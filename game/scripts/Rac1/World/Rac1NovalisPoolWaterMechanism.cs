@@ -94,7 +94,7 @@ internal sealed class Rac1NovalisPoolWaterMechanism(Rac1AuthoredMechanismPorts p
         _masks = new ushort[_water.Tiles.Count];
         _root = new Node3D { Name = "Rac1NovalisPoolWater", TopLevel = true };
         scene.Root.AddChild(_root);
-        _bubbles = new Rac1ParticleSession(_bubbleAssets!, Rac1PickupRandom.FromSeed(0x4e4f5642));   // host RNG, visual only
+        _bubbles = new Rac1ParticleSession(_bubbleAssets, Rac1PickupRandom.FromSeed(0x4e4f5642));   // host RNG, visual only
         _bubbleView = new Rac1ParticleView
         {
             Name = "Rac1NovalisPoolBubbles",

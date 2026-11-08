@@ -96,7 +96,7 @@ public static class Rac1ParticlePresentation
             bool pool = p.Type == Rac1ParticleSession.PoolBubbleType || p.Type == Rac1ParticleSession.PoolFoamType;
             var draw = new RuntimeEffectDrawState(p.Blending == Rac1ParticleSession.Blend.Additive ? RuntimeBlendEquation.AdditiveSourceAlpha : RuntimeBlendEquation.SourceAlpha,
                 NearFade: (p.DepthRange & 15) * .25f, FarFade: (p.DepthRange & 0xf0) * 2f, DepthFade: true);
-            // The Novalis pool foam lies on the water like a decal in the original captures; every other kind faces the camera.
+            // The Novalis pool kinds (bubble and foam) lie on the water like a decal in the original captures; every other kind faces the camera.
             var projection = pool ? RuntimeEffectSpriteProjection.SurfaceFlat : RuntimeEffectSpriteProjection.WorldBillboard;
             sprites.Add(new(p.Identity, p.Slot, source, new Vector3(p.Position.X, p.Position.Z, p.Position.Y) + placement, p.Size, color, p.Rotation, draw, projection));
         }

@@ -200,6 +200,9 @@ public sealed class EffectSceneView : IDisposable
         foreach (var texture in _textures.Values) texture.Dispose();
         foreach (var light in _lights) { light.Visible = false; light.QueueFree(); }
         _batches.Clear(); _meshMaterials.Clear(); _shaders.Clear(); _textures.Clear(); _lights.Clear(); RenderedCount = DrawCalls = 0;
+        // The per-call caches would otherwise keep the previous frame's texture bindings and sprite records alive.
+        _groups.Clear(); _groupOrder.Clear();
+        (_boundResources, _boundCount, _bindings, _cleanupPending) = (null, 0, null, false);
     }
     private static void Release(Batch batch)
     { batch.Node.Visible = false; batch.Node.QueueFree(); batch.Instances.Dispose(); batch.Mesh.Dispose(); batch.Material.Dispose(); }

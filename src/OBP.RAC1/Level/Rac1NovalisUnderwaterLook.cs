@@ -8,7 +8,8 @@ namespace OBP.RAC1.Level;
 /// the frame loop at 0x2a0ba8 / fog_setup 0x1f7170 whenever the camera-underwater flag 0x167014 is set).
 /// The class-751 pool controller (update 0x2fd0e8) rewrites both colours each frame it finds the camera
 /// inside one of its seven zones: dark teal for zones 1-3 (the cave pools), blue otherwise. The initial
-/// values are initialised overlay data, so the river (which has no zone) uses the blue default.
+/// values are initialised overlay data and apply until a zone first rewrites them; after that the colours persist from the
+/// last zone that held the camera.
 /// </summary>
 public sealed class Rac1NovalisUnderwaterLook
 {

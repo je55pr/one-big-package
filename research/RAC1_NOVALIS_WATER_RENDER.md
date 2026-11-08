@@ -11,7 +11,8 @@ decompilations `lombyte-project/Lombyte` (`src/overlays/l01/scroll_layers.c`,
 read from the overlay itself.
 
 Novalis has two independent water systems. Both draw through VU1 program 7 inside the draw-list
-callbacks of their owning moby class, after the world, with depth test but no depth write.
+callbacks of their owning moby class, after the world, with the depth test on (the packet sets TEST only; whether depth is
+written depends on the frame's ZBUF mask, which the water packet does not set).
 
 ## 1. Moving water: scrolling strips (classes 676, 678, 761, 1225)
 
@@ -41,8 +42,8 @@ Per frame (0x2b96e0 drawer, 0x262618 vertex builder):
 
 GS state (packet 0x1cac80 and the template at 0x1c44a0): triangle strip with TME, ABE and fog, Gouraud
 colour, repeat wrap, linear filter. ALPHA_1 / ALPHA_2 = `(Cs - Cd) * FIX / 128 + Cd`, FIX from the record;
-texture alpha is ignored. TEST: alpha >= 0x60 with AFAIL = frame-buffer-only, so alpha only gates the
-depth write. The strip is drawn twice (context 1 then 2, same vertices and colour, textures 0 / 1).
+texture alpha is ignored. TEST: alpha >= 0x60 (ATST GEQUAL, AREF 0x60) with AFAIL = RGB_ONLY, so a failing fragment still updates colour and
+only the depth update is gated by alpha. The strip is drawn twice (context 1 then 2, same vertices and colour, textures 0 / 1).
 Vertex colour modulates with 0x80 = 1.0 and saturates per pass.
 
 OBP folds the two sequential constant-alpha blends into one equivalent blend in the shader
@@ -100,8 +101,8 @@ Approximations / host choices (not retail facts):
   lies within 0.75 of the camera (flag = camera below surface + 0.04), so it holds in flooded tunnels with no surface.
 * Swimming: `try_transition_hero_water_state` (0x227778) keeps the hero in swim mode until the air runs out or he
   rises more than 0.4 above the last water surface; it never looks for a surface plane or a clear path to it again.
-  OBP used to re-test every tick, which dropped Ratchet to running on the floor of flooded cave tunnels. It now holds
-  the last surface while underwater (`PlayerHost.Rac1Swimming.cs`).
+  OBP holds the last surface while underwater (`PlayerHost.Rac1Swimming.cs`), so Ratchet stays in swim mode through flooded
+  cave tunnels that have no surface plane.
 
 Not yet reproduced (open):
 
@@ -153,8 +154,8 @@ native one and the sprite depth range bytes (0x24 / 0x2c) come from the construc
   a presentation choice made from the captures, not a recovered retail fact; the native sprite projection of these kinds was not
   decoded beyond what is above.
 * Colour samples of matching regions (OBP / PCSX2, 0..255): river strips (86,110,170) / (71,85,125) and (87,115,196) / (61,82,148);
-  tank tile (104,136,197) / (114,152,219). OBP's river is about 25-30% brighter and its tank about 10% darker than the capture, so
-  the strip to tank step is inverted in sign and the seam reads as an edge. Working the strip blend backwards from the capture puts the
+  tank tile (104,136,197) / (114,152,219). OBP's river is about 25-43% brighter and its tank about 10% darker than the capture, so
+  the strip to tank step (the tank is brighter in both) is much smaller in OBP and the seam reads as a hard edge instead of a soft one. Working the strip blend backwards from the capture puts the
   framebuffer under the river near (46,38,26), far darker than OBP's pale river bed, so the likely cause is the underwater terrain
   colour, not the strip blend. Not yet changed.
 * Foam brightness and coverage: the flat sprites use the native colour and alpha unscaled (a gain of 1.5 looked too bright against the capture, and a gain of 3 saturated to white). They draw after the water (render priority 2 against 1), as the original draws particles after the water callbacks; before that the water covered them. The foam spawns along native y 165..176 at x 177 and drifts +x; in a render from the bank it covers the visible length of the river / tank join. Not checked: the far part of the join seen from above.

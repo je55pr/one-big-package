@@ -130,7 +130,8 @@ internal sealed partial class Rac1LootPresentation
         if (_player is null || _sceneResult is null) return;
         InitializeRac1PlacedBolts();
         _rac1PickupTickAccumulator += Math.Max(0, delta) * 60;
-        if (_rac1PickupTickAccumulator > 4) _rac1PickupTickAccumulator = 4;   // see Rac1EnemyTickClock: never owe more than a few ticks
+        // Same cap as the enemy clock: never owe more than a few ticks after a long frame.
+        if (_rac1PickupTickAccumulator > Rac1EnemyTickClock.MaximumTicksPerAdvance) _rac1PickupTickAccumulator = Rac1EnemyTickClock.MaximumTicksPerAdvance;
         int collectedValue = 0;
         while (_rac1PickupTickAccumulator >= 1)
         {
@@ -256,6 +257,9 @@ internal sealed partial class Rac1LootPresentation
     // A landed crate is re-checked only occasionally (a support that moves away still drops it);
     // every crate used to cast a world ray on every gameplay tick for the rest of the level.
     private const int SettledCrateRecheckTicks = 30;
+    // "Did the fall step move the crate": a crate at rest steps to the same height with zero velocity; compare with a
+    // tolerance far below one centimetre rather than exactly.
+    private const float CrateRestEpsilon = 1e-6f;
     private readonly Dictionary<int, int> _rac1CrateSettledTicks = [];
     private readonly List<KeyValuePair<int, (Node3D Node, Rac1CrateFallSession Motion, float FootOffset)>> _rac1ActiveCrates = [];
     private int _rac1CrateSupportTick;
@@ -284,7 +288,7 @@ internal sealed partial class Rac1LootPresentation
             float? support = hit.TryGetValue("position", out var position) && hit.TryGetValue("normal", out var normal) &&
                 normal.AsVector3().Y > .70710677f ? position.AsVector3().Y : null;
             crate.Motion.Step(support);
-            _rac1CrateSettledTicks[entry.Key] = crate.Motion.Velocity == 0f && crate.Motion.Height == heightBefore
+            _rac1CrateSettledTicks[entry.Key] = MathF.Abs(crate.Motion.Velocity) < CrateRestEpsilon && MathF.Abs(crate.Motion.Height - heightBefore) < CrateRestEpsilon
                 ? _rac1CrateSettledTicks.GetValueOrDefault(entry.Key) + 1 : 0;
             var current = crate.Node.GlobalPosition;
             crate.Node.GlobalPosition = new(current.X, crate.Motion.Height - crate.FootOffset, current.Z);

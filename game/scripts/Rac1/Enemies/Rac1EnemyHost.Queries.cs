@@ -136,16 +136,16 @@ internal sealed partial class Rac1EnemyHost
     // Every enemy body plus the player. Rebuilding this (one engine call per body, then marshalling the array)
     // for each ground probe made every enemy's step cost grow with the whole level's enemy count.
     private global::Godot.Collections.Array<Rid>? _groundExclusions;
-    private int _groundExclusionCount = -1;
+    private int _groundExclusionVersion = -1;
     private Rid _groundExclusionPlayer;
 
     private global::Godot.Collections.Array<Rid> GroundExclusions()
     {
         var player = _player!.GetRid();
-        if (_groundExclusions is null || _groundExclusionCount != _rac1Enemies.Count || _groundExclusionPlayer != player)
+        if (_groundExclusions is null || _groundExclusionVersion != _rac1Enemies.Version || _groundExclusionPlayer != player)
         {
             _groundExclusions = new(_rac1Enemies.Values.Select(other => other.Body.GetRid()).Append(player));
-            _groundExclusionCount = _rac1Enemies.Count;
+            _groundExclusionVersion = _rac1Enemies.Version;
             _groundExclusionPlayer = player;
         }
         return _groundExclusions;

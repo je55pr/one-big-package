@@ -12,7 +12,7 @@ public sealed partial class Rac1ParticleSession
 {
     private const int PoolBubbleKind = 0x38, PoolFoamKind = 0x39;
     public static readonly int PoolBubbleType = PoolBubbleKind, PoolFoamType = PoolFoamKind;
-    private const byte PoolBubbleDepth = 0x24, PoolFoamDepth = 0x2c;   // alpha byte (+9) set by each constructor
+    private const byte PoolBubbleDepth = 0x24, PoolFoamDepth = 0x2c;   // depth-range byte (+9) set by each constructor
     private const float PoolBubbleGrowth = 6300f, PoolFoamGrowth = 5880f;
     private const int PoolFoamLife = 0x80;
 
