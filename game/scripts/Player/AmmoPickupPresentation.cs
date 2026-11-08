@@ -42,7 +42,7 @@ internal sealed class AmmoPickupPresentation
                 throw new InvalidDataException($"Ammo family {visual.Family}: original class {nativeClass} is unavailable.");
             donors.Add(visual.Family, model);
             if (visual.Cleanup is null) continue;
-            var used = model.Surfaces.Select(surface => surface.TextureId).Distinct().ToArray();
+            var used = model.Surfaces.Select(surface => surface.TextureId).Where(id => id >= 0).Distinct().ToArray();
             var original = used.Select(id => textures[id]).SingleOrDefault(texture =>
                 Convert.ToHexString(SHA256.HashData(texture.Rgba)).Equals(visual.OriginalHash, StringComparison.OrdinalIgnoreCase))
                 ?? throw new InvalidDataException($"Ammo family {visual.Family}: cleanup overlay does not match its source atlas.");
