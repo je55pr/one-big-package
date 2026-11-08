@@ -17,7 +17,10 @@ public static class Rac1EquipmentAssets
         float[] Positions, int? DirectSound, IReadOnlyList<Rac1MobyAnimation.TimedSoundCue> Sounds,
         IReadOnlyDictionary<int, Vector3[]>? SocketOrigins = null);
     public sealed record Model(int NativeClass, IReadOnlyList<RuntimeObjectMesh> Surfaces,
-        IReadOnlyDictionary<int, Clip> Clips, int VertexCount, int TriangleCount, string SourceSha256);
+        IReadOnlyDictionary<int, Clip> Clips, int VertexCount, int TriangleCount, string SourceSha256)
+    {
+        public Rac1GloveSkin? GloveSkin { get; init; }
+    }
     public sealed record Catalogue(IReadOnlyDictionary<int, Model> Models, IReadOnlyList<RuntimeTexture> Textures,
         IReadOnlyDictionary<int, RuntimeTexture> ParticleTextures)
     {
@@ -53,6 +56,13 @@ public static class Rac1EquipmentAssets
                 Rac1MobyAttachment.ReadJoint(source.Payload, 0), hash,
                 profile.Item == Rac1WeaponId.Ryno ? Enumerable.Range(0, Rac1ArsenalRules.RynoBarrels)
                     .Select(socket => Rac1MobyAttachment.ReadJoint(source.Payload, socket)).ToArray() : null));
+            if (profile.Item is Rac1WeaponId.MineGlove or Rac1WeaponId.GloveOfDoom or Rac1WeaponId.DecoyGlove)
+                models[profile.ModelClass] = models[profile.ModelClass] with
+                {
+                    GloveSkin = Rac1GloveSkin.Decode(source.Payload, mesh, Rac1MobyAttachment.ReadJoint(source.Payload, 0),
+                        profile.Item == Rac1WeaponId.MineGlove ? new(0, -.09f, -.02f) :
+                        profile.Item == Rac1WeaponId.GloveOfDoom ? new(.01f, -.14f, -.05f) : Vector3.Zero),
+                };
         }
         foreach (int id in new[] { 74, 186, 230, 153, 172, 203, 270, 479, 457 })
         {

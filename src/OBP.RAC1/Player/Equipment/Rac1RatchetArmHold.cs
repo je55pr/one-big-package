@@ -34,6 +34,8 @@ internal static class Rac1RatchetArmHold
         for (int slot = 0; slot < SlotCount; slot++)
         {
             var bank = source.BankJoints[slot];
+            var channelByJoint = bank.Select((joint, channel) => (joint, channel))
+                .ToDictionary(pair => pair.joint, pair => pair.channel);
             var clips = new Dictionary<int, PlayerSkeletalClip>();
             for (int sequence = 0; sequence < SequenceLimit && sequence < source.Sequences[slot].Count; sequence++)
             {
@@ -53,23 +55,24 @@ internal static class Rac1RatchetArmHold
                     }
                     foreach (ulong word in frame.Thing1)
                     {
-                        int k = (int)(word >> 48) & 0x7fff;
-                        if (k < channels.Length)
-                            channels[k] = channels[k] with
-                            {
-                                Scale = new Vector3((short)word, (short)(word >> 16), (short)(word >> 32)) / 4096,
-                            };
+                        int joint = (int)(word >> 48) & 0x7fff;
+                        if (!channelByJoint.TryGetValue(joint, out int k))
+                            throw new InvalidDataException("R&C1 arm scale escapes its joint bank.");
+                        channels[k] = channels[k] with
+                        {
+                            Scale = new Vector3((short)word, (short)(word >> 16), (short)(word >> 32)) / 4096,
+                        };
                     }
                     foreach (ulong word in frame.Thing2)
                     {
-                        int k = (int)(word >> 48);
-                        // Retail data includes translation records whose joint id lies outside the 20-joint
-                        // bank (for example id 52 in sequence 0); they are not bank joints and are skipped.
-                        if (k < channels.Length)
-                            channels[k] = channels[k] with
-                            {
-                                Translation = new Vector3((short)word, (short)(word >> 16), (short)(word >> 32)) * vectorScale,
-                            };
+                        // Sparse vectors name full Ratchet joints, while rotations are packed in bank order.
+                        int joint = (int)(word >> 48);
+                        if (!channelByJoint.TryGetValue(joint, out int k))
+                            throw new InvalidDataException("R&C1 arm translation escapes its joint bank.");
+                        channels[k] = channels[k] with
+                        {
+                            Translation = new Vector3((short)word, (short)(word >> 16), (short)(word >> 32)) * vectorScale,
+                        };
                     }
                     return new PlayerSkeletalFrame(channels, reference.Frames[i].DurationSeconds, reference.Frames[i].TimelinePosition);
                 }).ToArray();

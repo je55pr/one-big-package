@@ -12,6 +12,8 @@ public sealed class Rac1RatchetEquipmentRig
     private readonly IReadOnlyDictionary<int, PlayerSkeletalClip> _armClips;
     public PlayerSkeletalAsset Asset { get; }
     public IReadOnlyList<int> LayerJoints { get; }
+    public IReadOnlyList<int>? GloveJoints { get; init; }
+    private readonly float _coordinateScale;
     /// <summary>Retail procedural joint table; absent for rigs built without the original overlay.</summary>
     public Rac1HeroEaseTable? HeroEases { get; private set; }
 
@@ -55,6 +57,7 @@ public sealed class Rac1RatchetEquipmentRig
         Rac1RatchetArmHoldSource? armHold = null)
     {
         LayerJoints = layerJoints;
+        _coordinateScale = asset.Mesh.Scale / 1024;
         Asset = Convert(asset);
         _sampler = new(Asset.Skeleton, Asset.Skin);
         _armClips = Asset.Clips.ToDictionary(p => p.Key, p => Subset(p.Value, layerJoints));
@@ -308,4 +311,17 @@ public sealed class Rac1RatchetEquipmentRig
 
     private static PlayerSkeletalSample Sample(Rac1AnimationFrameClock.Sample sample) => new(sample.CurrentFrame, sample.NextFrame, sample.Fraction);
     public PlayerAvatarAttachmentPose Attachment(int joint) => _sampler.Attachment(joint);
+
+    internal Rac1RatchetHandPose HandPose(Rac1AnimationFrameClock.Sample basis, PlayerSkeletalPose? body,
+        IReadOnlyList<Rac1RatchetJointEases.Offset> offsets)
+    {
+        if (GloveJoints is null) throw new InvalidOperationException("The native R&C1 glove joint map is unavailable.");
+        var target = basis.IsBlending ? basis with { CurrentFrame = basis.NextFrame, Fraction = 0 } : basis;
+        if (body is not null) _sampler.LoadPose(body);
+        else _sampler.Reset(Asset.Clips[target.Sequence], Sample(target));
+        ApplyArmHold(target.Sequence, Sample(target), record: false);
+        foreach (var offset in offsets)
+            _sampler.ComposeLocalRotation(Asset.Skeleton.Attachments[offset.AttachmentId].Joint, offset.Rotation);
+        return new(GloveJoints.Select(_sampler.GetLocal).ToArray(), _coordinateScale);
+    }
 }

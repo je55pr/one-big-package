@@ -103,6 +103,15 @@ internal sealed class PlayerAvatarPresentationHost
         return true;
     }
 
+    internal bool TryEquipmentHandOrigin(Rac1EquipmentView equipment, out Vector3 position)
+    {
+        position = default;
+        if (View is null || !GodotObject.IsInstanceValid(View) || !GodotObject.IsInstanceValid(equipment) ||
+            equipment.HandOriginLocal is not { } local) return false;
+        position = View.ToGlobal(local);
+        return true;
+    }
+
     internal static IPlayerAvatarProvider Provider(ObpSourceGame game) =>
         Providers.Get(game) ?? throw new InvalidOperationException($"No provider for selected avatar source {game}.");
 
@@ -410,7 +419,7 @@ internal sealed class PlayerAvatarPresentationHost
         if (GloveView is not null &&
             controller.CurrentAttachmentPose(Rac1BombProjectileSession.GloveSocketKey) is { } gloveHand)
         {
-            GloveView.StepAttached(gloveHand, bombGeneration);
+            GloveView.StepAttached(gloveHand, bombGeneration, controller.CurrentHandPose());
             if (StagedBombView is not null) StagedBombView.Position = GloveView.BombLocal;
         }
     }

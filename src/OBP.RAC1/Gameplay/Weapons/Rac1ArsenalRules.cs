@@ -14,6 +14,7 @@ public static class Rac1ArsenalRules
     public const int RynoMissilesPerUse = 7; // reviewed firing-state exit, 0x2ccd..
     public const int RynoMissileInterval = 9;
     public const int VisibombLifetime = 3000; // 0x2b59c0.
+    public const float VisibombLaunchForward = .6f; // 0x2b32c0..2b32e4: held Moby origin + level-facing offset.
     public const int RocketLifetime = 300; // 0x2afddc.
     public const int RynoRocketLifetime = 250; // 0x2ccff8.
     public const float RynoInitialSpeed = 8; // 0x2cd09c.

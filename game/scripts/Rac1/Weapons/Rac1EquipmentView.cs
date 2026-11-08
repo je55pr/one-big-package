@@ -14,6 +14,7 @@ public sealed partial class Rac1EquipmentView : Node3D
     private readonly PlayerAvatar? _avatar;
     private readonly List<(ArrayMesh Mesh, Vector2[] Uvs, int[] Indices)> _surfaces = [];
     private readonly Rac1AnimationFrameClock _clock;
+    private readonly PlayerSkeletalSampler? _gloveSampler;
     private int _sequence;
     private int _returnSequence;
     private bool _loop = true;
@@ -23,6 +24,8 @@ public sealed partial class Rac1EquipmentView : Node3D
     private double[]? _transitionFrom;
     private int _transitionTicks, _transitionRemaining;
     public Vector3 MuzzleLocal { get; private set; }
+    public Vector3? HandOriginLocal { get; private set; }
+    public PlayerAvatarAttachmentPose? PayloadPose { get; private set; }
     private readonly Dictionary<int, Vector3> _socketOrigins = [];
     public Vector3 MuzzleAt(int socket) => _socketOrigins.GetValueOrDefault(socket, MuzzleLocal);
     public int Sequence => _sequence;
@@ -38,6 +41,7 @@ public sealed partial class Rac1EquipmentView : Node3D
     public Rac1EquipmentView(Rac1EquipmentAssets.Model model, WorldMaterialFactory materials, PlayerAvatar? avatar = null)
     {
         _model = model; _avatar = avatar;
+        if (model.GloveSkin is { } skin) _gloveSampler = new(skin.Skeleton, skin.Skin);
         _sequence = model.Clips.ContainsKey(1) ? 1 : 0;
         _returnSequence = _sequence;
         _clock = new(model.Clips.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<double>)pair.Value.Durations), _sequence, 0, 1);
@@ -85,7 +89,7 @@ public sealed partial class Rac1EquipmentView : Node3D
         Play(sequence, true, generation);
     }
 
-    public IReadOnlyList<int> Step(PlayerAvatarAttachmentPose? hand = null)
+    public IReadOnlyList<int> Step(PlayerAvatarAttachmentPose? hand = null, Rac1RatchetHandPose? handPose = null)
     {
         var sounds = new List<int>();
         var clip = _model.Clips[_sequence];
@@ -114,20 +118,25 @@ public sealed partial class Rac1EquipmentView : Node3D
             _clock.ResumePlayback(_sequence, 0, 0, 1);
             _position = _model.Clips[_sequence].Positions[0]; _soundPending = true;
         }
-        Sample(hand);
+        Sample(hand, handPose);
         return sounds;
     }
 
-    public void RefreshAttachment(PlayerAvatarAttachmentPose? hand) => Sample(hand);
+    public void RefreshAttachment(PlayerAvatarAttachmentPose? hand, Rac1RatchetHandPose? handPose = null) => Sample(hand, handPose);
 
-    private void Sample(PlayerAvatarAttachmentPose? hand)
+    private void Sample(PlayerAvatarAttachmentPose? hand, Rac1RatchetHandPose? handPose = null)
     {
         var sample = _clock.Current;
         var clip = _model.Clips[_sequence];
+        var copied = hand is null ? null : _model.GloveSkin?.Pose(_gloveSampler!, handPose ??
+            throw new InvalidOperationException("The held glove needs Ratchet's current hand pose."));
+        HandOriginLocal = hand is null ? null : _avatar is null
+            ? new(-(float)hand.Origin.X, (float)hand.Origin.Z, (float)hand.Origin.Y)
+            : PlayerAvatarView.ToGodotLocal(hand.Origin, _avatar.Axes, _avatar.BaseHeight, true);
         // A clip that plays once holds its last key; the clock reports the wrap towards frame 0 there,
         // which would collapse a construction animation into its folded first pose for two updates.
         int next = !_loop && sample.NextFrame < sample.CurrentFrame ? sample.CurrentFrame : sample.NextFrame;
-        var a = clip.Frames[sample.CurrentFrame]; var b = clip.Frames[next];
+        var a = copied?.Positions ?? clip.Frames[sample.CurrentFrame]; var b = copied?.Positions ?? clip.Frames[next];
         var vertices = new Vector3[a.Length / 3];
         float minimumHeight = float.PositiveInfinity;
         for (int i = 0; i < vertices.Length; i++)
@@ -150,11 +159,27 @@ public sealed partial class Rac1EquipmentView : Node3D
         }
         FootOffset = MathF.Max(0, -minimumHeight);
         var origin = System.Numerics.Vector3.Lerp(clip.Origins[sample.CurrentFrame], clip.Origins[next], sample.Fraction);
+        if (copied is not null) origin = new((float)copied.PayloadPose.Origin.X, (float)copied.PayloadPose.Origin.Y, (float)copied.PayloadPose.Origin.Z);
         var muzzle = new PlayerAvatarPoint(origin.X, origin.Y, origin.Z);
         if (hand is not null) muzzle = hand.Transform(muzzle);
         MuzzleLocal = _avatar is null ? new(-(float)muzzle.X, (float)muzzle.Z, (float)muzzle.Y) :
             PlayerAvatarView.ToGodotLocal(muzzle, _avatar.Axes, _avatar.BaseHeight, true);
         _socketOrigins.Clear();
+        PayloadPose = null;
+        if (copied is not null)
+        {
+            var pose = copied.PayloadPose;
+            if (hand is not null)
+            {
+                PlayerAvatarPoint Direction(PlayerAvatarPoint p)
+                {
+                    var end = hand.Transform(p);
+                    return new(end.X - hand.Origin.X, end.Y - hand.Origin.Y, end.Z - hand.Origin.Z);
+                }
+                pose = new(hand.Transform(pose.Origin), Direction(pose.X), Direction(pose.Y), Direction(pose.Z));
+            }
+            PayloadPose = pose;
+        }
         if (clip.SocketOrigins is { } sockets)
             foreach (var pair in sockets)
             {

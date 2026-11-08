@@ -110,6 +110,8 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
         var rightArm = Animation.Rac1MobyAttachment.ReadAnimationLayerJoints(payload, 12);
         var leftArm = Animation.Rac1MobyAttachment.ReadAnimationLayerJoints(payload, 13);
         var layerJoints = rightArm.Concat(leftArm).ToArray();
+        var overlay = Rac1ExecutableOverlay.Read(reader, level);
+        var gloveJoints = Rac1RatchetHandPose.ReadJointMap(overlay);
         // Moby classes 1 and 2 are the two arm hold animation sets (joint lists 12 and 13).
         Rac1RatchetArmHoldSource? armHold = staticClasses.Mobies.TryGetValue(1, out var rightClass) &&
             staticClasses.Mobies.TryGetValue(2, out var leftClass)
@@ -129,6 +131,7 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
         {
             rig = new Rac1RatchetEquipmentRig(native, layerJoints, armHold)
             {
+                GloveJoints = gloveJoints,
                 ArmHoldStatus = armHold is null ? "Held-gun arm hold unavailable: one of arm classes 1 and 2 is absent." : null,
             };
         }
@@ -136,13 +139,14 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
         {
             rig = new Rac1RatchetEquipmentRig(native, layerJoints)
             {
+                GloveJoints = gloveJoints,
                 ArmHoldStatus = $"Held-gun arm hold unavailable: {ex.Message.TrimEnd('.')}.",
             };
         }
         // The procedural joint (hero ease) table lives in the same canonical level overlay. It is an
         // optional layer: a table that does not match leaves Ratchet loading without it, with the reason
         // available as the rig's HeroEaseStatus, instead of failing the whole avatar.
-        try { rig.AdmitHeroEases(Rac1HeroEaseTable.Read(Rac1ExecutableOverlay.Read(reader, level))); }
+        try { rig.AdmitHeroEases(Rac1HeroEaseTable.Read(overlay)); }
         catch (InvalidDataException ex) { rig.RejectHeroEases(ex.Message.TrimEnd('.')); }
         avatar = avatar with { Skeleton = new(rig.Asset.Skeleton.Joints.Select(j => j.Parent).ToArray()), Skeletal = rig.Asset };
         _equipmentMasks.Add(avatar, mask);
