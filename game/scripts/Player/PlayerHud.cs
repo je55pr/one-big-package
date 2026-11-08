@@ -30,6 +30,8 @@ public partial class PlayerHud : Control
             Name = "WeaponSlot",
             OffsetLeft = 24,
             OffsetTop = 20,
+            OffsetRight = 300,
+            OffsetBottom = 64,
         });
         var boltSlot = Passive(new MarginContainer
         {
@@ -39,10 +41,12 @@ public partial class PlayerHud : Control
             OffsetLeft = -244,
             OffsetRight = -24,
             OffsetTop = 20,
+            OffsetBottom = 64,
         });
         AddChild(weaponSlot);
         AddChild(boltSlot);
         _weaponRow = Counter("WeaponAmmo", "WeaponIcon", "AmmoCount", out _weaponIcon, out _ammoCount);
+        _weaponRow.Alignment = BoxContainer.AlignmentMode.Begin;
         _boltsRow = Counter("Bolts", "BoltIcon", "BoltCount", out _boltsIcon, out _boltCount);
         weaponSlot.AddChild(_weaponRow);
         boltSlot.AddChild(_boltsRow);

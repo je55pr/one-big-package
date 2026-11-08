@@ -25,10 +25,16 @@ public partial class Rac1NanotechHudView : Control
 
     internal void Render(HudHealth? health)
     {
-        _health = health;
-        Visible = health is not null;
-        if (health is null) return;
+        if (health is null)
+        {
+            _health = null;
+            Visible = false;
+            return;
+        }
         var assets = Rac1RetailUiAssets.NativeNanotech;
+        if (_health == health && ReferenceEquals(_assets, assets) && Visible) return;
+        _health = health;
+        Visible = true;
         if (!ReferenceEquals(_assets, assets)) Prepare(assets);
         QueueRedraw();
     }

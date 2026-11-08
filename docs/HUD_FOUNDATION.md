@@ -16,8 +16,10 @@ The white weapon glyph uses the snapshot's typed `SourceWeaponKey`, without
 borrowing another source's family member. The regular Bolt glyph uses R&C1 HUD
 animation `0x754F`, frame 0, converted with the same white-mask and fitting path
 as weapon icons. Its source image was visually checked against the authorised
-NTSC-U bank. Required glyphs have no substitute text or artwork; no retail images
-are stored in the repository. These choices do not claim retail HUD equivalence.
+NTSC-U bank. The Bolt is already transparent, so it uses alpha coverage directly;
+RAC1 weapon tiles additionally need blue-background matte recovery. Required glyphs
+have no substitute text or artwork; no retail images are stored in the repository.
+These choices do not claim retail HUD equivalence.
 The wrench uses the existing authored weapons-menu glyph as its explicit icon;
 R&C1 has no corresponding native quick-select glyph. It is not selected in
 response to a missing source. The standalone `hud` fixture requires `--rac1-iso`
