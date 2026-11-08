@@ -8,9 +8,12 @@ namespace OBP.Game;
 internal sealed partial class Rac1LootPresentation
 {
     private readonly List<(Node3D Node, Rac1AmmoPickupSession Motion)> _rac1AmmoPickups = [];
+    private PlayerAmmoPickupHost? _familyAmmo;
 
     internal void ResetRac1CrateSupply()
     {
+        _familyAmmo?.Dispose();
+        _familyAmmo = null;
         foreach (var node in _rac1AmmoPickups.Select(pickup => pickup.Node))
             if (IsInstanceValid(node)) node.QueueFree();
         _rac1AmmoPickups.Clear();
@@ -26,6 +29,12 @@ internal sealed partial class Rac1LootPresentation
         }
         else if (crate.Source.NativeClassId == Rac1ClassIds.AmmoCrate)
         {
+            if (OrdinaryPlayerSession)
+            {
+                if (_familyAmmo is null) throw new InvalidOperationException("Ammo-family presentation was not prepared.");
+                _familyAmmo.Spawn(origin, Rac1CrateSupply.SelectFirstAmmoPieceCount(Rac1EffectRandom), crate.Source.InstanceIndex);
+                return;
+            }
             var definition = Rac1CrateSupply.SelectFirstAmmo(crate.Source, _rac1Weapons, Rac1EffectRandom);
             if (_rac1PickupAssets?.Models.ContainsKey(definition.ModelClass) != true)
             {
@@ -45,6 +54,7 @@ internal sealed partial class Rac1LootPresentation
 
     internal void TickRac1CrateSupply(NVector3 root, NVector3 socket)
     {
+        _familyAmmo?.Tick(1d / 60);
         for (int i = _rac1AmmoPickups.Count - 1; i >= 0; i--)
         {
             var pickup = _rac1AmmoPickups[i];

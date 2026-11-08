@@ -186,6 +186,8 @@ public sealed partial class Rac1ParticleSession(Rac1EffectAssets assets, Rac1Pic
                 case SparkleKind: StepSparkle(p); break;
                 case HeroGlowKind: StepHeroGlow(p); break;
                 case GlintKind: StepGlint(p); break;
+                case PoolBubbleKind: StepPoolBubble(p); break;
+                case PoolFoamKind: StepPoolFoam(p); break;
             }
         }
         while (_highest >= 0 && _slots[_highest] is null) _highest--;

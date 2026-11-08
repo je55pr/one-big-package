@@ -19,6 +19,7 @@ public partial class PlayerHost
     private Rac1NativeVector3? _rac1WaterContactMotion;
     private Rac1NativeVector3 _rac1PackWaterContact;
     private float _rac1PackWaterFloor;
+    private float? _rac1HeldWaterSurface;
 
     public bool Rac1SwimmingActive => _rac1SwimActive;
     public Rac1SwimSnapshot? Rac1SwimState => _rac1SwimActive ? _rac1SwimState : null;
@@ -32,6 +33,14 @@ public partial class PlayerHost
         bool wasActive = _rac1SwimActive;
         float? surface = Rac1WaterSurfaceHeight?.Invoke(GlobalPosition);
         var contact = surface is float height ? ProbeRac1WaterContact(height) : default;
+        // Once swimming underwater the original stays in swim mode until the air runs out or the hero rises more than
+        // 0.4 above the last water surface (try_transition_hero_water_state, 0x227778); it does not look for a water
+        // plane or a clear path to the surface again. Re-testing every tick dropped Ratchet to running on the floor
+        // of flooded cave tunnels, where the plane lies above the rock roof or does not exist.
+        if (contact.Present) _rac1HeldWaterSurface = contact.SurfaceHeight;
+        else if (wasActive && _rac1SwimState.Water == Rac1WaterDomain.Underwater &&
+                 _rac1HeldWaterSurface is float held && GlobalPosition.Y <= held + .4f)
+            contact = ProbeRac1WaterContact(held, persistent: true);
         _rac1PackWaterFloor = contact.SolidFloorHeight;
         var analogue = Rac1AnalogueInput.ConditionUnitAxes(move.X, -move.Y);
         double controlYaw = GetRac1ControlYaw();
@@ -59,6 +68,7 @@ public partial class PlayerHost
         _rac1WaterCrouchHeld = hydroHeld;
         _rac1WaterContactMotion = null;
         _rac1SwimActive = _rac1SwimMotion.Active;
+        if (!_rac1SwimActive) _rac1HeldWaterSurface = null;
         _rac1SwimState = _rac1SwimMotion.State;
         if (_rac1SwimMotion.Sound is int sound) Rac1WaterSoundRequested?.Invoke(sound);
         if (!_rac1SwimActive)
@@ -101,7 +111,7 @@ public partial class PlayerHost
         return true;
     }
 
-    private Rac1WaterContact ProbeRac1WaterContact(float waterY)
+    private Rac1WaterContact ProbeRac1WaterContact(float waterY, bool persistent = false)
     {
         // Native floor query starts above the feet and reaches down 48 units;
         // Godot's filtered collision approximates native query-mask membership.
@@ -112,10 +122,10 @@ public partial class PlayerHost
         var space = GetWorld3D().DirectSpaceState;
         var floor = space.IntersectRay(query);
         float floorY = floor.TryGetValue("position", out var point) ? point.AsVector3().Y : 0;
-        if (floorY >= waterY)
+        if (floorY >= waterY && !persistent)
             return default;
         bool underfoot = waterY <= GlobalPosition.Y + .99f;
-        if (!underfoot)
+        if (!underfoot && !persistent)
         {
             // The native periodic submerged ray can find water above the
             // ordinary floor ray. A solid ceiling in between must occlude it.
@@ -153,5 +163,6 @@ public partial class PlayerHost
         _rac1WaterContactStart = null;
         _rac1WaterContactMotion = null;
         Rac1WaterAnimationFacts = default;
+        _rac1HeldWaterSurface = null;
     }
 }

@@ -44,6 +44,7 @@ public sealed class SourceSetupCoordinator
     public SourceAccessMode Access { get; }
     public string ConfigurationPath { get; }
     public bool StartupResolved { get; private set; }
+    public bool SetupCompleted { get; private set; }
     public bool RepairNeeded { get; private set; }
     public bool ProfileSuspended { get; private set; }
     public bool ConsumersInvalidated { get; private set; }
@@ -96,6 +97,7 @@ public sealed class SourceSetupCoordinator
         try { read = _storage.ReadConfiguration(ConfigurationPath); }
         catch (Exception error) { ConfigurationWarning = "Could not read remembered game sources: " + error.Message; return; }
         RepairNeeded = read.Kind is DocumentReadKind.Backup or DocumentReadKind.Rejected;
+        SetupCompleted = read.Value is { } saved && _authorities.All(authority => saved.Any(source => source.Game == authority.Game));
         if (read.Problem is { } problem) { ConfigurationWarning = "Remembered game sources: " + problem; _error("[sources] " + problem); }
         foreach (var entry in read.Value ?? []) Restore(entry);
     }
@@ -220,6 +222,7 @@ public sealed class SourceSetupCoordinator
         readiness = Readiness();
         if (!readiness.Ready || RepairNeeded || ConsumersInvalidated) { SuspendProfile(); return false; }
         ProfileSuspended = false;
+        SetupCompleted = true;
         return true;
     }
     public SourceSetupOperation Complete()
@@ -237,6 +240,7 @@ public sealed class SourceSetupCoordinator
             }
             if (ConsumersInvalidated) _consumers.Prepare(true);
             ConsumersInvalidated = false;
+            SetupCompleted = true;
             return new(true, string.Empty);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or InvalidDataException)

@@ -8,22 +8,38 @@ namespace OBP.Game;
 
 internal sealed class GodotSourceSetupConsumers(Node owner, Action<ObpSourceGame> invalidate, Action<bool> prepare) : ISourceSetupConsumers
 {
-    public void Invalidate(ObpSourceGame game) => invalidate(game);
+    public void Invalidate(ObpSourceGame game)
+    {
+        WeaponMenuIcons.Clear(game);
+        invalidate(game);
+    }
     public void Prepare(bool force) => prepare(force);
     public string? RefreshPresentation(ObpAttachedSource? source, IRandomAccessReader? reader)
     {
-        if (source is not null && source.Game != ObpSourceGame.Rac1) return null;
-        string? warning = null;
         try
         {
-            if (source is null) Rac1RetailUiAssets.Clear();
-            else Rac1RetailUiAssets.Load(reader ?? throw new InvalidOperationException("UI source has no disc reader."));
+            if (source is null)
+            {
+                WeaponMenuIcons.Clear(ObpSourceGame.Rac1);
+                Rac1RetailUiAssets.Clear();
+            }
+            else
+            {
+                if (source.Game == ObpSourceGame.Rac1)
+                    Rac1RetailUiAssets.Load(reader ?? throw new InvalidOperationException("UI source has no disc reader."));
+                WeaponMenuIcons.Load(source.Game, reader);
+            }
+            if (source is null || source.Game == ObpSourceGame.Rac1) UiTheme.Apply(owner.GetTree().Root);
+            return null;
         }
         catch (Exception error)
         {
-            Rac1RetailUiAssets.Clear(); warning = "Could not read R&C1 UI assets: " + error.Message; GD.PushWarning(warning);
+            if (source is not null) WeaponMenuIcons.Clear(source.Game);
+            if (source is null || source.Game == ObpSourceGame.Rac1) Rac1RetailUiAssets.Clear();
+            string problem = "Required source UI assets could not be read: " + error.Message;
+            GD.PrintErr(problem);
+            ApplicationLifecycle.RequestQuit(owner, "required-source-ui-unavailable", 2);
+            return problem;
         }
-        UiTheme.Apply(owner.GetTree().Root);
-        return warning;
     }
 }

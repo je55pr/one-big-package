@@ -1,0 +1,5 @@
+<!-- OBP-authored menu glyph. This is not a recovered RAC1 sprite. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 64 64">
+  <defs><mask id="cut"><rect width="64" height="64" fill="white"/><path d="M44 0 63 19 51 28 35 13Z" fill="black"/><circle cx="16" cy="48" r="3.5" fill="black"/></mask></defs>
+  <g fill="white" mask="url(#cut)"><path d="m10 43 29-29 11 11-29 29Z"/><circle cx="16" cy="48" r="8"/><circle cx="44" cy="18" r="14"/></g>
+</svg>
