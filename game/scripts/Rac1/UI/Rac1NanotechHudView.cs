@@ -5,7 +5,7 @@ using NVector3 = System.Numerics.Vector3;
 
 namespace OBP.Game;
 
-/// <summary>Projects the recovered class-806 sphere mesh and halo into an OBP-authored health row.</summary>
+/// <summary>Projects the recovered class-806 sphere animation and particles into an OBP-authored health row.</summary>
 public partial class Rac1NanotechHudView : Control
 {
     private HudHealth? _health;
@@ -13,6 +13,14 @@ public partial class Rac1NanotechHudView : Control
     private SubViewport? _viewport;
     private ImmediateMesh? _mesh;
     private Rac1FxMaterials? _materials;
+    private Rac1NanotechCluster? _sphere;
+    private Rac1NanotechOrbSpin _spin = new();
+    private Rac1ParticleSession? _particles;
+    private Rac1ParticleView? _particleView;
+    private double _animationTime;
+    private float _framingScale = 1;
+    private static readonly NVector3 Eye = new(10, 0, .5f);
+    private const double NativeTick = 1d / 60d;
 
     public override void _Ready()
     {
@@ -43,19 +51,18 @@ public partial class Rac1NanotechHudView : Control
     {
         Release();
         _assets = assets;
-        var particles = new Rac1ParticleSession(assets.Particles, Rac1PickupRandom.FromSeed(0));
-        using var sphere = new Rac1NanotechCluster(NVector3.Zero, assets, new Rac1NanotechOrbSpin(),
-            particles, Rac1PickupRandom.FromSeed(0));
-        // Use the source draw callback's mesh and halo without starting a pickup session.
-        var surfaces = sphere.Build(new NVector3(10, 0, .5f));
+        var random = Rac1PickupRandom.FromSeed(0);
+        _particles = new Rac1ParticleSession(assets.Particles, random);
+        _sphere = new Rac1NanotechCluster(NVector3.Zero, assets, _spin, _particles, random);
+        var surfaces = _sphere.Build(Eye);
         var points = surfaces.SelectMany(surface => surface.Positions).ToArray();
         float left = points.Min(point => point.Y), right = points.Max(point => point.Y);
         float bottom = points.Min(point => point.Z), top = points.Max(point => point.Z);
-        float width = Math.Max(right - left, top - bottom) * 1.08f;
-        _materials = new Rac1FxMaterials(assets.FxTextures);
+        float originalWidth = Math.Max(right - left, top - bottom) * 1.08f;
+        float width = originalWidth + 2 * Math.Abs(assets.K.BobAmplitude);
+        _framingScale = width / originalWidth;
+        _materials = new Rac1FxMaterials(assets.FxTextures, priorityBias: -10);
         _mesh = new ImmediateMesh();
-        _materials.Write(_mesh, surfaces, point => new Vector3(point.Y - (left + right) * .5f,
-            point.Z - (bottom + top) * .5f, point.X));
         _viewport = new SubViewport
         {
             Name = "RecoveredNanotechSphere",
@@ -71,13 +78,51 @@ public partial class Rac1NanotechHudView : Control
             Mesh = _mesh,
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
         });
-        _viewport.AddChild(new Camera3D
+        var camera = new Camera3D
         {
             Projection = Camera3D.ProjectionType.Orthogonal,
             Size = width,
-            Position = new Vector3(0, 0, 10),
+            Position = ToGodot(Eye),
             Current = true,
-        });
+        };
+        _viewport.AddChild(camera);
+        camera.LookAt(new Vector3(0, .5f, 0), Vector3.Up);
+        _particleView = new Rac1ParticleView { Name = "RecoveredNanotechParticles" };
+        _viewport.AddChild(_particleView);
+        StepAnimation();
+        Present();
+    }
+
+    public override void _Process(double delta)
+    {
+        if (_sphere is null || !IsVisibleInTree() || GetTree().Paused) return;
+        _animationTime += delta;
+        bool advanced = false;
+        while (_animationTime >= NativeTick)
+        {
+            _animationTime -= NativeTick;
+            StepAnimation();
+            advanced = true;
+        }
+        if (advanced) Present();
+    }
+
+    private void StepAnimation()
+    {
+        var assets = _assets!;
+        _spin.Step(assets.K.SpinStep, assets.K.OrbRadius);
+        // A riding cluster supplies the same bob, halo pulse, orbiting sprites
+        // and sparkle trails as an intact world crate, without a pickup route.
+        _sphere!.Step(new(NVector3.Zero, NVector3.Zero, NVector3.UnitZ, true));
+        _particles!.Hero = NVector3.Zero;
+        _particles.Step(Eye, enforceLevelBounds: false);
+    }
+
+    private void Present()
+    {
+        _materials!.Write(_mesh!, _sphere!.Build(Eye), ToGodot);
+        _particleView!.Render(_particles!, _assets!.Particles.PartTextures);
+        _viewport!.RenderTargetUpdateMode = SubViewport.UpdateMode.Once;
     }
 
     public override void _Draw()
@@ -85,8 +130,8 @@ public partial class Rac1NanotechHudView : Control
         if (_health is not { } health || _viewport is null) return;
         int count = Math.Max(health.Current, health.Capacity ?? health.Current);
         if (count <= 0) return;
-        float spacing = Math.Min(38f, Size.X * .36f / count);
-        float size = Math.Min(40f, spacing * 1.05f);
+        float spacing = Math.Min(57f, Size.X * .36f / count);
+        float size = Math.Min(60f, spacing * 1.05f) * _framingScale;
         float left = Size.X * .5f - (count - 1) * spacing * .5f;
         var texture = _viewport.GetTexture();
         for (int i = 0; i < count; i++)
@@ -96,14 +141,23 @@ public partial class Rac1NanotechHudView : Control
 
     public override void _ExitTree() => Release();
 
+    private static Vector3 ToGodot(NVector3 point) => new(-point.X, point.Z, point.Y);
+
     private void Release()
     {
+        _sphere?.Dispose();
+        _sphere = null;
+        _particles?.Clear();
+        _particles = null;
         _viewport?.Free();
         _viewport = null;
+        _particleView = null;
         _mesh?.Dispose();
         _mesh = null;
         _materials?.Dispose();
         _materials = null;
         _assets = null;
+        _spin = new Rac1NanotechOrbSpin();
+        _animationTime = 0;
     }
 }

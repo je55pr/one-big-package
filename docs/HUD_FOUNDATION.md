@@ -9,8 +9,12 @@ text, prompts or oxygen widgets. Snapshot feedback never creates extra HUD conte
 Each filled sphere represents one current health unit; empty spheres appear only
 when the snapshot supplies a capacity. Spheres use the recovered RAC1 class-806
 mesh, UVs, vertex colours, Fx textures and halo via the existing source draw
-callback and material adapter. A transparent viewport renders that source asset;
-the HUD placement, scale and dimming of empty slots are OBP choices. Ammo displays
+callback and material adapter. The same riding-cluster session, shared orbit spin
+and particle renderer used by intact world crates drive its bob, halo pulse,
+orbiting orb sprites and sparkle trails at 60 native ticks per second. A transparent
+viewport renders that effect into the row; nominal sphere size and spacing are
+50 percent larger than the initial recovered-asset HUD. The HUD placement, scale
+and dimming of empty slots are OBP choices. Ammo displays
 `current/max` whenever the owning snapshot supplies a capacity.
 The white weapon glyph uses the snapshot's typed `SourceWeaponKey`, without
 borrowing another source's family member. The regular Bolt glyph uses R&C1 HUD
