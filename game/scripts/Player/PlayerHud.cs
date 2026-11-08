@@ -12,7 +12,7 @@ public partial class PlayerHud : Control
     private TextureRect _boltsIcon = null!;
     private Label _ammoCount = null!;
     private Label _boltCount = null!;
-    private HudHealth? _health;
+    private Rac1NanotechHudView _nanotech = null!;
     private long _epoch = -1;
     private long _revision = -1;
 
@@ -22,7 +22,8 @@ public partial class PlayerHud : Control
         MouseFilter = MouseFilterEnum.Ignore;
         AnchorRight = 1f;
         AnchorBottom = 1f;
-        Resized += QueueRedraw;
+        _nanotech = new Rac1NanotechHudView();
+        AddChild(_nanotech);
 
         var weaponSlot = Passive(new MarginContainer
         {
@@ -54,14 +55,16 @@ public partial class PlayerHud : Control
         if (snapshot.Epoch < _epoch || snapshot.Epoch == _epoch && snapshot.Revision < _revision) return;
         _epoch = snapshot.Epoch;
         _revision = snapshot.Revision;
-        _health = snapshot.Health;
+        _nanotech.Render(snapshot.Health);
 
         _weaponRow.Visible = snapshot.CurrentWeapon is not null;
         if (snapshot.CurrentWeapon is { } weapon)
         {
             _weaponIcon.Texture = WeaponMenuIcons.ForWeapon(weapon.Weapon);
             _ammoCount.Visible = weapon.Ammo is not null;
-            _ammoCount.Text = weapon.Ammo?.Current.ToString("N0") ?? string.Empty;
+            _ammoCount.Text = weapon.Ammo is { } ammo
+                ? ammo.Capacity is { } capacity ? $"{ammo.Current:N0}/{capacity:N0}" : $"{ammo.Current:N0}"
+                : string.Empty;
         }
 
         _boltsRow.Visible = snapshot.Bolts is not null;
@@ -72,40 +75,7 @@ public partial class PlayerHud : Control
         }
 
         // Feedback events, status, prompts and oxygen never add HUD text or widgets.
-        Visible = _health is not null || _weaponRow.Visible || _boltsRow.Visible;
-        QueueRedraw();
-    }
-
-    public override void _Draw()
-    {
-        if (_health is not { } health) return;
-        int count = Math.Max(health.Current, health.Capacity ?? health.Current);
-        if (count <= 0) return;
-        float spacing = Math.Min(34f, Size.X * .36f / count);
-        float radius = Math.Min(12f, spacing * .38f);
-        float left = Size.X * .5f - (count - 1) * spacing * .5f;
-        for (int i = 0; i < count; i++)
-            DrawNanotechSphere(new Vector2(left + i * spacing, 42), radius, i < health.Current);
-    }
-
-    // Authored glossy spheres, not a claim about recovered retail HUD rendering.
-    private void DrawNanotechSphere(Vector2 centre, float radius, bool filled)
-    {
-        DrawCircle(centre + new Vector2(0, 2), radius + 2, new Color(0, 0, 0, .55f), true, -1, true);
-        if (filled)
-            DrawCircle(centre, radius + 4, new Color(.1f, .7f, 1, .14f), true, -1, true);
-        Color edge = filled ? new Color(.025f, .18f, .38f) : new Color(.025f, .055f, .08f, .8f);
-        Color light = filled ? new Color(.35f, .9f, 1) : new Color(.08f, .15f, .2f, .8f);
-        DrawCircle(centre, radius, edge, true, -1, true);
-        for (int ring = 1; ring <= 16; ring++)
-        {
-            float t = ring / 16f;
-            DrawCircle(centre + new Vector2(-radius * .22f, -radius * .25f) * t,
-                radius * (1 - t * .8f), edge.Lerp(light, t), true, -1, true);
-        }
-        if (filled)
-            DrawCircle(centre + new Vector2(-radius * .32f, -radius * .38f), radius * .18f,
-                new Color(.9f, 1, 1, .9f), true, -1, true);
+        Visible = snapshot.Health is not null || _weaponRow.Visible || _boltsRow.Visible;
     }
 
     private static HBoxContainer Counter(string name, string iconName, string countName,

@@ -2,12 +2,16 @@
 
 Status: foundation contract, engine-independent state adapter, R&C1 projection and a non-interactive Godot renderer are implemented. This document defines the smallest player-HUD presentation model needed by the current playable slices. Retail-faithful artwork, layout and timing remain unresolved.
 
-The current OBP-authored gameplay HUD contains only weapon icon/current ammo at
+The current OBP-authored gameplay HUD contains only weapon icon/current/max ammo at
 the top left, Bolt icon/balance at the top right, and Nanotech spheres centred at
 the top. There are no cards, headings, weapon names, status messages, pickup/damage
 text, prompts or oxygen widgets. Snapshot feedback never creates extra HUD content.
 Each filled sphere represents one current health unit; empty spheres appear only
-when the snapshot supplies a capacity. Sphere artwork and layout are OBP choices.
+when the snapshot supplies a capacity. Spheres use the recovered RAC1 class-806
+mesh, UVs, vertex colours, Fx textures and halo via the existing source draw
+callback and material adapter. A transparent viewport renders that source asset;
+the HUD placement, scale and dimming of empty slots are OBP choices. Ammo displays
+`current/max` whenever the owning snapshot supplies a capacity.
 The white weapon glyph uses the snapshot's typed `SourceWeaponKey`, without
 borrowing another source's family member. The regular Bolt glyph uses R&C1 HUD
 animation `0x754F`, frame 0, converted with the same white-mask and fitting path
