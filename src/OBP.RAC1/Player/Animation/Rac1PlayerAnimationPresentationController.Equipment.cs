@@ -81,6 +81,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
             var positions = _equipmentRig.Sample(basis, new(sourceSequence.Value, frame, next, fraction, false),
                 _equipmentAmount, fullBody, baseline, _equipmentBodyBlend);
             var sockets = _attachments.GetOrCreateValue(positions);
+            sockets[Rac1ClankPackAssets.SocketKey] = _equipmentRig.Attachment(Rac1ClankPackAssets.RatchetJoint);
             sockets[Rac1WrenchAttachment.SocketKey] = _equipmentRig.Attachment(56);
             sockets[Gameplay.Rac1BombProjectileSession.GloveSocketKey] = _equipmentRig.Attachment(54);
             sockets[Gameplay.Rac1WeaponProfiles.HandSocket(0)] = _equipmentRig.Attachment(56);
@@ -110,6 +111,12 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     }
 
     public Rac1AnimationFrameClock.Sample AnimationSoundSample => EquipmentBaseSample();
+    public float AnimationPlaybackMultiplier =>
+        _traversalClock?.Current.Sequence == _currentSequenceId ? _traversalClock.PlaybackMultiplier :
+        _crouchClock?.Current.Sequence == _currentSequenceId ? _crouchClock.PlaybackMultiplier :
+        _stopClock?.Current.Sequence == _currentSequenceId ? _stopClock.PlaybackMultiplier :
+        _standingClock?.Current.Sequence == _currentSequenceId ? _standingClock.PlaybackMultiplier :
+        _locomotionClock?.Current.Sequence == _currentSequenceId ? _locomotionClock.PlaybackMultiplier : 1;
     public int AudioNativeAction => int.Parse(Current.SourceStateKey!, System.Globalization.CultureInfo.InvariantCulture);
     public int AudioActionAge => (int)Math.Min(_ordinaryActionAge, int.MaxValue);
 

@@ -12,7 +12,8 @@ public readonly record struct Rac1MovementContext(
     float GroundClearance, float ForwardClearance = 0, float ForwardNormalAngle = 1.5707964f,
     bool ForwardCrateFamily = false, bool PackDisabled = false, float NativePositionHeight = 0,
     bool NativeAnimationExitRequested = false, Rac1AirborneWallProbeResult? WallProbe = null,
-    float AuthoredAnimationTime = 0, bool ForwardHitMoby = false);
+    float AuthoredAnimationTime = 0, bool ForwardHitMoby = false,
+    bool LongJumpAnimationCompleted = false);
 
 public sealed partial class Rac1RatchetMovementController
 {
@@ -375,8 +376,17 @@ public sealed partial class Rac1RatchetMovementController
             Rac1AirborneJumpKind.WallJump) &&
             (session.Profile.Kind != Rac1AirborneJumpKind.HeliPackLong || !vertical.HasLaunched))
             resolveNativeFacingYaw?.Invoke(YawMode);
-        if (!contact.IsGrounded && Rac1MovementEquipmentGlide.CanEnter(context.ActivePackId,
-                context.ClankAvailable, context.PackDisabled, input.JumpHeld, _specialAge,
+        // 22edd4..22ee2c's scripted-arc branch returns before glide admission
+        // tail while P+3d0 <= action age < P+3d4. Thruster high jump must
+        // finish its ages 9..43 impulse script even when Cross stays held.
+        int motionAge = _specialAge - 1;
+        bool scriptedArc = motionAge >= session.Profile.ScriptStartAge && motionAge < session.Profile.ScriptEndAge;
+        // OBP's held-input extension retains Thruster's completed-animation
+        // handoff. Heli uses its recovered age gate, not a landing/apex marker.
+        bool longJumpWaiting = session.Profile.Kind == Rac1AirborneJumpKind.ThrusterPackLong &&
+            !context.LongJumpAnimationCompleted;
+        if (!scriptedArc && !longJumpWaiting && !contact.IsGrounded && Rac1MovementEquipmentGlide.CanEnter(context.ActivePackId,
+                context.ClankAvailable, context.PackDisabled, input.JumpHeld, motionAge,
                 session.Profile.GlideAdmissionAge, context.GroundClearance, (int)session.Profile.Kind,
                 recentCrossPress: _crossPressSerial > _launchPressSerial &&
                     _crossPressAge < Rac1AirborneBoostSession.CrossBufferWindow(_specialAge)))

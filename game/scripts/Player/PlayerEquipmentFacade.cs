@@ -102,11 +102,12 @@ internal sealed class PlayerEquipmentFacade(PlayerEquipmentPorts ports) : IDispo
                 {
                     { SourceGame: ObpSourceGame.Rac1, NativeItemId: (int)Rac1TraversalEquipmentId.Swingshot } when !context.SwingshotTargets =>
                         "No admitted source-native Swingshot target is present.",
-                    { SourceGame: ObpSourceGame.Rac1, NativeItemId: (int)Rac1TraversalEquipmentId.HydroPack or (int)Rac1TraversalEquipmentId.OxygenMask } when !context.Water =>
+                    { SourceGame: ObpSourceGame.Rac1, NativeItemId: (int)Rac1TraversalEquipmentId.OxygenMask } when !context.Water =>
                         "No admitted source-native water context is present.",
                     _ => null,
                 };
-                return new(owned, enabled, enabled && reason is null, EquipmentResourceStatus.NotRequired,
+                bool hydro = key is { SourceGame: ObpSourceGame.Rac1, NativeItemId: (int)Rac1TraversalEquipmentId.HydroPack };
+                return new(owned, enabled, enabled && reason is null && (!hydro || context.Water), EquipmentResourceStatus.NotRequired,
                     EquipmentResourceStatus.Unavailable, ContextAllowed: reason is null, ContextReason: reason);
             }
             var presentation = Ports.Presentation(key!.Value);
@@ -231,7 +232,7 @@ internal sealed class PlayerEquipmentFacade(PlayerEquipmentPorts ports) : IDispo
             sources.GetValueOrDefault(ObpSourceGame.Rac1) == OBP.RAC1.Rac1Authority.Primary.BuildId;
         var movement = new Rac1MovementCapabilities(Enabled(Rac1TraversalEquipmentId.HeliPack), Enabled(Rac1TraversalEquipmentId.ThrusterPack),
             Enabled(Rac1TraversalEquipmentId.HydroPack), Enabled(Rac1TraversalEquipmentId.OxygenMask), Enabled(Rac1TraversalEquipmentId.Swingshot), false, false);
-        var backpack = new[] { Rac1TraversalEquipmentId.HeliPack, Rac1TraversalEquipmentId.ThrusterPack, Rac1TraversalEquipmentId.HydroPack }
+        var backpack = new[] { Rac1TraversalEquipmentId.HeliPack, Rac1TraversalEquipmentId.ThrusterPack }
             .Cast<Rac1TraversalEquipmentId?>().FirstOrDefault(item => item.HasValue && Enabled(item.Value));
         Ports.ApplyMovementEquipment(movement, backpack);
     }

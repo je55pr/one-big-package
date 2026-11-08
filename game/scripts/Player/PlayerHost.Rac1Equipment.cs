@@ -11,6 +11,7 @@ public partial class PlayerHost
     public Rac1MovementCapabilities Rac1MovementEquipment { get; set; }
     public Rac1TraversalEquipmentId? Rac1ActiveBackpack { get; set; }
     public bool Rac1ClankAvailable { get; set; }
+    public bool Rac1BackpackReady { get; set; }
     public int? Rac1DevelopmentPackPreview { get; private set; }
     public bool Rac1DevelopmentSwingshotPreview { get; private set; }
 
@@ -18,15 +19,23 @@ public partial class PlayerHost
     {
         Rac1MovementEquipment = movement;
         Rac1ActiveBackpack = backpack;
-        Rac1ClankAvailable = backpack.HasValue;
+        Rac1ClankAvailable = backpack.HasValue || movement.HydroPack;
         Rac1SwingshotEquipped = movement.Swingshot;
     }
     public int? Rac1TraversalAction => Rac1SwimmingActive ? _rac1SwimState.NativeAction :
         Rac1SwingshotActive ? Rac1SwingshotNativeAction :
         Rac1Hanging ? _rac1Ledge.NativeAction : _rac1Movement.TraversalAction;
 
-    private int ActiveRac1Pack => Rac1DevelopmentPackPreview ??
-        (Rac1ActiveBackpack is { } pack && Rac1MovementEquipment.Owns(pack) ? (int)pack : 0);
+    public int Rac1PresentedPackId => ActiveRac1Pack;
+    internal Rac1ClankPackEffects.Input ClankPackEffectsInput(Rac1PlayerAnimationPresentationController animation) => new(
+        Rac1AudioMovementAction, Math.Max(0, _rac1Movement.TraversalAge - 1), (float)animation.TraversalAuthoredAnimationTime,
+        animation.AnimationSoundSample.IsBlending, !Rac1RecoveredSupportGrounded,
+        _rac1Movement.Phase == Rac1RatchetMovementPhase.Falling || _rac1Movement.IsLanding,
+        _rac1Swimming.Scalar, new((float)_rac1PackWaterContact.X, (float)_rac1PackWaterContact.Y, (float)_rac1PackWaterContact.Z),
+        (float)Rac1CurrentYaw, _rac1SwimMotion.Pitch, _rac1PackWaterFloor, (float)Rac1ControlYaw);
+    private int ActiveRac1Pack => Rac1ClankPackSession.ResolvePack(Rac1DevelopmentPackPreview ??
+        (Rac1ActiveBackpack is { } pack && Rac1MovementEquipment.Owns(pack) ? (int)pack : 0),
+        Rac1MovementEquipment.HydroPack, Rac1SwimmingActive);
 
     public void CycleRac1DevelopmentPack()
     {
@@ -90,7 +99,9 @@ public partial class PlayerHost
             NativePositionHeight: GlobalPosition.Y,
             NativeAnimationExitRequested: Rac1TraversalAnimationCycleCompleted,
             AuthoredAnimationTime: (float)Rac1TraversalAuthoredAnimationTime,
-            ForwardHitMoby: hitMoby);
+            ForwardHitMoby: hitMoby,
+            LongJumpAnimationCompleted: Rac1LongJumpAnimationCompleted);
+        context = context with { PackDisabled = !Rac1BackpackReady };
         return context with { WallProbe = ProbeRac1Wall(context) };
     }
 }

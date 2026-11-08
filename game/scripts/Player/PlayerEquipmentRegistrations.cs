@@ -37,7 +37,7 @@ public static class PlayerEquipmentRegistrations
         })
             yield return new($"rac1/item/{(int)item}", name, ObpSourceGame.Rac1, Rac1Authority.Primary.BuildId, EquipmentCategory.Gadget,
                 implemented ? EquipmentImplementation.Implemented : EquipmentImplementation.Unimplemented, new(ObpSourceGame.Rac1, (int)item),
-                ConflictGroup: item is Rac1TraversalEquipmentId.HeliPack or Rac1TraversalEquipmentId.ThrusterPack or Rac1TraversalEquipmentId.HydroPack ? "backpack" : null,
+                ConflictGroup: item is Rac1TraversalEquipmentId.HeliPack or Rac1TraversalEquipmentId.ThrusterPack ? "backpack" : null,
                 UnsupportedReason: implemented ? null : "The source-owned traversal controller is not implemented.",
                 Usage: item is Rac1TraversalEquipmentId.HeliPack or Rac1TraversalEquipmentId.ThrusterPack or Rac1TraversalEquipmentId.HydroPack
                     ? EquipmentUsage.Backpack : item == Rac1TraversalEquipmentId.Swingshot ? EquipmentUsage.ContextAction : EquipmentUsage.Passive);

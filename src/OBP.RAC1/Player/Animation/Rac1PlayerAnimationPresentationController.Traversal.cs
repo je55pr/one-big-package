@@ -17,6 +17,10 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         Rac1OrdinaryStopAnimation.EvaluateAnimationTime(_traversalClock.Current,
             CurrentClip.FrameTimelinePositions ?? throw new InvalidDataException("Traversal timeline is absent."));
     public bool TraversalAnimationCycleCompleted => _traversalCycleCompleted;
+    // Thruster's authored handoff waits for its terminal key. Heli glide
+    // timing belongs to the movement profile's recovered P+4a6 age gate.
+    public bool LongJumpAnimationCompleted => _traversalSelection is { NativeAction: 0x10 } &&
+        _traversalClock is { Current.IsBlending: false, Current.NextFrame: 0 };
     public Rac1AnimationFrameClock.Sample? TraversalSample => _traversalClock?.Current;
 
     private bool StepTraversalAnimation(PlayerAnimationState state, Rac1MovementAnimationSelection? selection)

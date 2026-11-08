@@ -54,7 +54,8 @@ public static class Rac1RatchetAvatar
         IReadOnlyList<OBP.Runtime.Player.PlayerAvatarAttachmentPose>? WrenchSocketFrames = null,
         IReadOnlyList<OBP.Runtime.Player.PlayerAvatarAttachmentPose>? BombGloveSocketFrames = null,
         IReadOnlyList<OBP.Runtime.Player.PlayerAvatarAttachmentPose>? LeftHandSocketFrames = null,
-        IReadOnlyList<Rac1MobyAnimation.Frame>? SourceFrames = null)
+        IReadOnlyList<Rac1MobyAnimation.Frame>? SourceFrames = null,
+        IReadOnlyList<OBP.Runtime.Player.PlayerAvatarAttachmentPose>? ClankSocketFrames = null)
     {
         public int FrameCount => LocalFrames.Count;
         public bool HasVariableTiming =>
@@ -287,7 +288,8 @@ public static class Rac1RatchetAvatar
             sequence.Frames.Select(frame => unchecked((short)frame.TimestampUnits) / 16d).ToArray(),
             jointFrames.Select(joints => Rac1WrenchAttachment.ToAttachment(joints[Rac1WrenchAttachment.RatchetJoint])).ToArray(),
             jointFrames.Select(joints => Rac1WrenchAttachment.ToAttachment(joints[Gameplay.Rac1BombProjectileSession.RatchetGloveJoint])).ToArray(),
-            jointFrames.Select(joints => Rac1WrenchAttachment.ToAttachment(joints[55])).ToArray(), sequence.Frames);
+            jointFrames.Select(joints => Rac1WrenchAttachment.ToAttachment(joints[55])).ToArray(), sequence.Frames,
+            jointFrames.Select(joints => Rac1WrenchAttachment.ToAttachment(joints[Rac1ClankPackAssets.RatchetJoint])).ToArray());
     }
 
     private static double FrameDuration(float transitionRate, int sequenceId)

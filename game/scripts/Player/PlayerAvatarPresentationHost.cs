@@ -57,7 +57,7 @@ internal sealed class PlayerAvatarPresentationHost
 
     private sealed record PreparedAssets(PlayerAvatarIdentity Identity, string Path,
         (long Length, long Written) Stamp, PlayerAvatar Avatar, Rac1WrenchAsset.Asset? Wrench,
-        Rac1BombGloveAssets.Asset? Glove, bool Changed);
+        Rac1BombGloveAssets.Asset? Glove, Rac1ClankPackAssets? Clank, bool Changed);
 
     internal (long Length, long Written)? CommittedSourceStamp => _sourceStamp;
     internal bool HasPrepared => _prepared is not null;
@@ -70,6 +70,8 @@ internal sealed class PlayerAvatarPresentationHost
     internal PlayerNativeClock? Clock { get; private set; }
     internal Rac1WrenchAsset.Asset? WrenchAsset { get; private set; }
     internal Rac1BombGloveAssets.Asset? GloveAsset { get; private set; }
+    internal Rac1ClankPackAssets? ClankAsset { get; private set; }
+    internal Rac1ClankPackView? ClankView { get; private set; }
     internal Rac1WrenchView? WrenchView { get; private set; }
     internal Rac1BombGloveView? GloveView { get; private set; }
     internal Node3D? StagedBombView { get; private set; }
@@ -154,7 +156,9 @@ internal sealed class PlayerAvatarPresentationHost
             changed || WrenchAsset is null ? Rac1WrenchAsset.Load(path) : WrenchAsset;
         var glove = identity.SourceGame != ObpSourceGame.Rac1 ? null :
             changed || GloveAsset is null ? Rac1BombGloveAssets.Load(path) : GloveAsset;
-        _prepared = new(identity, path, stamp, avatar, wrench, glove, changed);
+        var clank = identity.SourceGame != ObpSourceGame.Rac1 ? null :
+            changed || ClankAsset is null ? Rac1ClankPackAssets.Load(path) : ClankAsset;
+        _prepared = new(identity, path, stamp, avatar, wrench, glove, clank, changed);
     }
 
     /// <summary>Publish only after the previous world has retired its visuals and callbacks.</summary>
@@ -166,6 +170,7 @@ internal sealed class PlayerAvatarPresentationHost
         Avatar = prepared.Avatar;
         WrenchAsset = prepared.Wrench;
         GloveAsset = prepared.Glove;
+        ClankAsset = prepared.Clank;
         _sourcePath = prepared.Path;
         _sourceGame = prepared.Identity.SourceGame;
         _sourceStamp = prepared.Stamp;
@@ -175,7 +180,8 @@ internal sealed class PlayerAvatarPresentationHost
     internal void DiscardPrepared() => _prepared = null;
 
     internal (PlayerAvatarView View, Rac1PlayerAnimationPresentationController Controller) CreateWorldVisual(
-        PlayerHost player, PlayerAnimationProfile profile, WorldMaterialFactory? gloveMaterials)
+        PlayerHost player, PlayerAnimationProfile profile, WorldMaterialFactory? gloveMaterials,
+        WorldMaterialFactory? clankMaterials, Rac1PickupRandom random)
     {
         var avatar = Avatar ?? throw new InvalidOperationException("Selected avatar was not staged before world entry.");
         // Validate mandatory source assets before creating Godot nodes so a failed
@@ -185,6 +191,8 @@ internal sealed class PlayerAvatarPresentationHost
             _ = WrenchAsset ?? throw new InvalidOperationException("Selected wrench asset was not staged.");
             _ = GloveAsset ?? throw new InvalidOperationException("Selected glove asset was not staged.");
             _ = gloveMaterials ?? throw new InvalidOperationException("Selected glove materials are unavailable.");
+            _ = ClankAsset ?? throw new InvalidOperationException("Selected Clank assets were not staged.");
+            _ = clankMaterials ?? throw new InvalidOperationException("Selected Clank materials are unavailable.");
         }
         var controller = CreateController(avatar);
         if (controller is not Rac1PlayerAnimationPresentationController native ||
@@ -200,6 +208,9 @@ internal sealed class PlayerAvatarPresentationHost
                 view.AddChild(WrenchView);
                 GloveView = new(GloveAsset!, avatar, gloveMaterials!);
                 view.AddChild(GloveView);
+                ClankView = new(ClankAsset!, avatar, clankMaterials!, random);
+                player.Rac1BackpackReady = false;
+                view.AddChild(ClankView);
             }
         }
         catch
@@ -207,6 +218,7 @@ internal sealed class PlayerAvatarPresentationHost
             view.Free();
             WrenchView = null;
             GloveView = null;
+            ClankView = null;
             throw;
         }
         View = view;
@@ -248,7 +260,9 @@ internal sealed class PlayerAvatarPresentationHost
             ? GloveAsset ?? throw new InvalidOperationException("Selected glove asset was not staged.")
             : null;
         var materials = glove is null ? null : new WorldMaterialFactory(bindings.World() with { Textures = glove.Textures });
-        var (view, _) = CreateWorldVisual(player, bindings.AnimationProfile(), materials);
+        var clankMaterials = ClankAsset is null ? null : new WorldMaterialFactory(bindings.World() with { Textures = ClankAsset.Textures });
+        var (view, _) = CreateWorldVisual(player, bindings.AnimationProfile(), materials, clankMaterials,
+            bindings.Audio()?.Random ?? Rac1PickupRandom.FromSeed(0x52414331));
         if (selected.SourceGame == ObpSourceGame.Rac1)
         {
             if (bindings.Equipment.Assets(bindings.Ordinary(),
@@ -296,6 +310,18 @@ internal sealed class PlayerAvatarPresentationHost
                 bindings.Gameplay()?.Weapons.ThrownAnimation.Generation ?? 0);
             bindings.Gameplay()?.UsePresentation.StepViews(controller);
             bindings.Weapons().StepViews(controller, Avatar);
+            if (ClankView is { } clank && controller.CurrentAttachmentPose(Rac1ClankPackAssets.SocketKey) is { } back)
+            {
+                var selection = input.Traversal ?? input.GroundEntry;
+                clank.Visible = bindings.Alive() && !player.DevelopmentControls.FlyEnabled;
+                clank.Step(back, new(player.Rac1PresentedPackId, controller.AudioNativeAction,
+                    controller.AnimationSoundSample, controller.Current.ClipStartedAtSeconds, controller.AnimationPlaybackMultiplier,
+                    selection?.EntryFrame ?? 0, selection?.BlendTicks ?? 7,
+                    controller.JointEases?.Angle(3, 2) ?? 0, controller.JointEases?.Angle(3, 1) ?? 0, input.NativeYawVelocity),
+                    player.Rac1ClankAvailable || player.Rac1DevelopmentPackPreview.HasValue);
+                player.Rac1BackpackReady = clank.Session.Ready;
+                clank.StepEffects(back, player.ClankPackEffectsInput(controller));
+            }
         }
 
 
@@ -332,6 +358,8 @@ internal sealed class PlayerAvatarPresentationHost
     {
         bindings.Weapons().ClearTransients();
         NativeController?.ResetJointEases();
+        ClankView?.Reset();
+        if (PhysicsPlayer is { } player) player.Rac1BackpackReady = false;
         bindings.Audio()?.Reset();
         Rac1WrenchHost.ResetOrFallback(bindings.Gameplay()?.Wrench, bindings.Audio(), bindings.Player());
         bindings.Gameplay()?.Weapons.ThrownAnimation.Stop();
@@ -373,6 +401,7 @@ internal sealed class PlayerAvatarPresentationHost
         if (_physicsPlayer is not { } player) return;
         player.Rac1TraversalAuthoredAnimationTime = controller.TraversalAuthoredAnimationTime;
         player.Rac1TraversalAnimationCycleCompleted = controller.TraversalAnimationCycleCompleted;
+        player.Rac1LongJumpAnimationCompleted = controller.LongJumpAnimationCompleted;
         player.Rac1WaterAnimationFacts = controller.WaterAnimationFacts;
         player.Rac1WrenchAnimationBlending = controller.TraversalSample?.IsBlending ?? false;
         player.Rac1CrankAnimationSequence = controller.TraversalSample?.Sequence;
@@ -473,6 +502,7 @@ internal sealed class PlayerAvatarPresentationHost
         _physicsPlayer = null; _step = null; _reset = null;
         Sink = null; Controller = null; View = null;
         WrenchView = null; GloveView = null; StagedBombView = null;
+        ClankView = null;
         AnimationTime = 0; Clock = null;
     }
 }

@@ -17,6 +17,8 @@ public partial class PlayerHost
     private Rac1WaterMovementResult _rac1SwimMotion;
     private Vector3? _rac1WaterContactStart;
     private Rac1NativeVector3? _rac1WaterContactMotion;
+    private Rac1NativeVector3 _rac1PackWaterContact;
+    private float _rac1PackWaterFloor;
     private float? _rac1HeldWaterSurface;
 
     public bool Rac1SwimmingActive => _rac1SwimActive;
@@ -39,6 +41,7 @@ public partial class PlayerHost
         else if (wasActive && _rac1SwimState.Water == Rac1WaterDomain.Underwater &&
                  _rac1HeldWaterSurface is float held && GlobalPosition.Y <= held + .4f)
             contact = ProbeRac1WaterContact(held, persistent: true);
+        _rac1PackWaterFloor = contact.SolidFloorHeight;
         var analogue = Rac1AnalogueInput.ConditionUnitAxes(move.X, -move.Y);
         double controlYaw = GetRac1ControlYaw();
         float targetYaw = analogue.IsActive ? (float)Rac1RatchetYawController.BuildMovementTarget(
@@ -46,13 +49,14 @@ public partial class PlayerHost
         bool square = _liveInput.ActionHeld;
         var primaryMotion = _rac1WaterContactMotion ?? new Rac1NativeVector3(
             -Velocity.X / 60f, Velocity.Z / 60f, Velocity.Y / 60f);
+        _rac1PackWaterContact = primaryMotion;
         _rac1SwimMotion = _rac1Swimming.Step(new(
             contact, GlobalPosition.Y, primaryMotion, Velocity.Y / 60f,
             (float)_rac1Yaw.CurrentYaw, targetYaw, (float)analogue.Magnitude,
             CrossHeld: ascendHeld, CrossPressed: ascendHeld && !_rac1JumpWasHeld,
             SquareHeld: square, SquarePressed: square && !_rac1WaterSquareHeld,
             CrouchHeld: hydroHeld, CrouchPressed: hydroHeld && !_rac1WaterCrouchHeld,
-            OwnsHydroPack: Rac1MovementEquipment.HydroPack,
+            OwnsHydroPack: Rac1MovementEquipment.HydroPack && Rac1BackpackReady && ActiveRac1Pack == 4,
             OwnsOxygenMask: Rac1MovementEquipment.OxygenMask,
             MovementDomain: Rac1Hanging ? 3 : _rac1Movement.CurrentMovementDomain,
             MovementAction: _rac1Movement.CurrentNativeMovementAction,

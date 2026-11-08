@@ -17,14 +17,14 @@ public readonly record struct Rac1AirborneAnimationInput(
 public sealed class Rac1AirborneAnimationSession
 {
     private readonly int _launchAge;
-    private readonly float _apexFrame, _targetFrame;
+    private readonly float _apexFrame, _landingTargetFrame;
     private const int LandingFrame = 10;
     private float _speed = 1;
     private bool _pastApex, _landing;
 
     public Rac1AirborneAnimationSession(int nativeAction)
     {
-        (_launchAge, _apexFrame, _targetFrame) = nativeAction switch
+        (_launchAge, _apexFrame, _landingTargetFrame) = nativeAction switch
         {
             0x0a => (5, 18f, 29f),
             0x11 => (9, 12f, 20f),
@@ -52,7 +52,7 @@ public sealed class Rac1AirborneAnimationSession
         }
         if (input.LandingUpdates > 0)
         {
-            bool selectRecovery = !_landing && _targetFrame - 1.5f > authoredTime;
+            bool selectRecovery = !_landing && _landingTargetFrame - 1.5f > authoredTime;
             _landing = true;
             _speed = 1;
             return selectRecovery ? new(_speed, LandingFrame + 2, 7) : new(_speed);
@@ -65,7 +65,7 @@ public sealed class Rac1AirborneAnimationSession
         if (sample.NextFrame < LandingFrame)
         {
             int landingSteps = PredictLandingSteps(input);
-            float target = Retime(_targetFrame, landingSteps, sample, authoredTime, playbackRate, frameCount);
+            float target = Retime(_landingTargetFrame, landingSteps, sample, authoredTime, playbackRate, frameCount);
             _speed += Math.Clamp(target - _speed, -0.2f, 0.2f);
             if (_speed > 1.8f)
             {
@@ -75,7 +75,7 @@ public sealed class Rac1AirborneAnimationSession
             }
             _speed = Math.Clamp(_speed, 0.2f, 2.7f);
         }
-        if ((int)authoredTime == (int)_targetFrame)
+        if ((int)authoredTime == (int)_landingTargetFrame)
             _speed = 0;
         return new(_speed, recovery, blend);
     }

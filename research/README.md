@@ -20,7 +20,7 @@ validation live in code/tests and Git, not completed-task reports.
 |---|---|
 | Disc/core data | [Disc index](RAC1_DISC_INDEX.md), [overlay mapping](RAC1_LEVEL_OVERLAY.md), [settings](RAC1_LEVEL_SETTINGS.md), [instances](RAC1_INSTANCES.md) |
 | Graphics | [Terrain](RAC1_STATIC_GEOMETRY.md), [textures](RAC1_TEXTURES.md), [sky](RAC1_SKY.md), [Mobies](RAC1_MOBY.md), [skinning](RAC1_MOBY_SKINNING.md), [Moby animation/audio](RAC1_MOBY_ANIMATION_SOUND.md) |
-| Player | [Movement](RAC1_PLAYER_MOVEMENT.md), [animation and handoffs](RAC1_LOCOMOTION_ANIMATION.md), [avatar](RAC1_PLAYER_AVATAR.md), [camera](RAC1_CAMERA_ARCHAEOLOGY.md) |
+| Player | [Movement](RAC1_PLAYER_MOVEMENT.md), [animation and handoffs](RAC1_LOCOMOTION_ANIMATION.md), [avatar](RAC1_PLAYER_AVATAR.md), [Clank packs](RAC1_CLANK_PACKS.md), [camera](RAC1_CAMERA_ARCHAEOLOGY.md) |
 | Contact/traversal | [Collision and ledges](RAC1_LEDGE_TRAVERSAL_AND_COLLISION_PROFILE.md), [contact carry](RAC1_CONTACT_MOTION_CARRY.md), [surfaces](RAC1_SURFACE_MOVEMENT.md), [airborne packs/flips](RAC1_AIRBORNE_AND_MOVEMENT_EQUIPMENT.md), [traversal equipment](RAC1_TRAVERSAL_EQUIPMENT.md), [Swingshot pendulum](RAC1_SWINGSHOT_PENDULUM.md), [bolt crank](RAC1_BOLT_CRANK.md) |
 | Combat/equipment | [Wrench actions](RAC1_WRENCH_ACTIONS.md), [wrench model](RAC1_WRENCH_VISUAL.md), [Bomb Glove](RAC1_BOMB_GLOVE.md), [inventory](RAC1_WEAPON_INVENTORY.md), [fire framework](RAC1_WEAPON_FIRE_FRAMEWORK.md), [contact records](RAC1_PROJECTILE_HIT_PATTERNS.md) |
 | Working arsenal | [Additional weapons](RAC1_ADDITIONAL_WEAPONS.md), [ordinary arsenal](RAC1_ARSENAL.md), [pose/audio contracts](RAC1_WEAPON_PRESENTATION_AUDIO_FIXES.md) |

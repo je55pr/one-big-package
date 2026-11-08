@@ -44,6 +44,7 @@ public sealed partial class Rac1ParticleSession(Rac1EffectAssets assets, Rac1Pic
         internal float EndSize;
         internal Vector3 Offset;
         internal bool Relative;
+        internal float DustPhase, DustPhaseStep, DustSway;
     }
 
     private readonly Particle?[] _slots = capacity is > 0 and <= 65536 ? new Particle[capacity] :
@@ -160,7 +161,10 @@ public sealed partial class Rac1ParticleSession(Rac1EffectAssets assets, Rac1Pic
         }
     }
 
-    public void Step(Vector3 camera, bool enforceLevelBounds = true)
+    public void Step(Vector3 camera) => Step(camera, true, 0);
+    public void Step(Vector3 camera, bool enforceLevelBounds) => Step(camera, enforceLevelBounds, 0);
+
+    public void Step(Vector3 camera, bool enforceLevelBounds, float controlHeading)
     {
         _tick++;
         // Native traversal fixes its end before dispatch. Children in later
@@ -179,6 +183,8 @@ public sealed partial class Rac1ParticleSession(Rac1EffectAssets assets, Rac1Pic
                 case 8: StepGlow(p); break;
                 case 15: StepSpark(p); break;
                 case 16: StepSteam(p, camera); break;
+                case 0x22: StepDust(p, controlHeading); break;
+                case 0x15: StepHitFlash(p); break;
                 case SparkKind: StepDriftSpark(p); break;
                 case SparkleKind: StepSparkle(p); break;
                 case HeroGlowKind: StepHeroGlow(p); break;

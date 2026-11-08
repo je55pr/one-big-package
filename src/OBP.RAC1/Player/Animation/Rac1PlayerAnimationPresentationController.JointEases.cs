@@ -84,7 +84,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         return Current;
     }
 
-    // The hand sockets that ride on joints the procedural layer can move.
+    // Hand and back sockets ride on joints the procedural layer can move.
     private Dictionary<string, int> SocketJoints() => new()
     {
         [Rac1WrenchAttachment.SocketKey] = 56,
@@ -93,6 +93,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         [Gameplay.Rac1WeaponProfiles.HandSocket(1)] = 55,
         [Gameplay.Rac1WeaponProfiles.HandSocket(6)] = 54,
         [PlayerEquipmentPose.HandAttachmentKey] = _sourceHandJoint,
+        [Rac1ClankPackAssets.SocketKey] = Rac1ClankPackAssets.RatchetJoint,
     };
 
     private static PlayerAvatarAttachmentPose Move(PlayerAvatarAttachmentPose pose, Matrix4x4 delta)
