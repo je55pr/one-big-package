@@ -49,6 +49,11 @@ internal sealed partial class Rac1LootPresentation
         _rac1PickupAssets = world.LevelId == 0 && _equipmentPresentation.SelectedAssets is not null
             ? _equipmentPresentation.SelectedAssets : Rac1PickupAssets.Load(sourcePath, world.LevelId);
         _rac1PickupMaterials = new WorldMaterialFactory(world with { Textures = _rac1PickupAssets.Textures });
+        if (OrdinaryPlayerSession)
+        {
+            _familyAmmo = new(world, _sceneResult, _ports.AmmoSupply);
+            _familyAmmo.Prepare(_equipmentPresentation.SelectedAssets ?? _rac1PickupAssets);
+        }
         GD.Print($"[rac1-pickups] loaded {_rac1PickupAssets.Models.Count} retail bolt/debris models");
         PreloadRac1NanotechOrbs(world);
     }

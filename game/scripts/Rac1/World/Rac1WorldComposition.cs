@@ -27,6 +27,16 @@ internal sealed class Rac1WorldComposition(ApplicationComponents components) : C
     private SourceWeaponKey? _previousSelectedWeapon { get => Modals.PreviousSelectedWeapon; set => Modals.PreviousSelectedWeapon = value; }
     private bool InWorldMode => Context.Mode().World;
 
+    private PlayerAmmoPickupPorts CreateAmmoPickupPorts(RuntimeWorldScene.Result scene) => new(
+        () => _player, () => PlayerLife.Alive,
+        () => ReferenceEquals(_worldScenes?.Current?.Resources.Scene, scene),
+        () => PlayerCrateSupplyAdapter.Read(_playerNative, ReadPlayerEquipment()),
+        (weapon, amount) => PlayerCrateSupplyAdapter.Grant(_playerNative, weapon, amount),
+        () => Sources.Setup.Library.Get(ObpSourceGame.Rac1) is { } source && source.Identity.BuildId == OBP.RAC1.Rac1Authority.Primary.BuildId
+            ? source.Path : null,
+        count => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Below(count),
+        () => { PersistRac1CampaignState("family ammo collection"); RefreshRac1HudState(); }, ActorHost.AddRayExclusions);
+
     internal Rac1WorldModule CreateRac1WorldModule(RuntimeWorld world, RuntimeWorldScene.Result scene) => new(world, scene, _persistentPlayer.Rac1EffectRandom(_args.FixedSeed),
         new Rac1LootPorts(() => _player, () => _world, () => _rac1Weapons, () => _rac1Nanotech,
             () => _rac1BoltWallet, () => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed), () => (_worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive == true),
@@ -34,7 +44,8 @@ internal sealed class Rac1WorldComposition(ApplicationComponents components) : C
             () => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path, _worldHost.PlayEffect,
             () => _playerAudio?.RetireWorld(), PersistRac1CampaignState,
             () => RefreshRac1HudState(), value => RefreshRac1HudState(Rac1HudProjection.CollectedBoltFeedback(value)),
-            (nativeClass, localSound) => _equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), _args.Rac1WeaponsSmoke), () => _rac1Campaign.CollectedNovalisGoldBolts),
+            (nativeClass, localSound) => _equipmentPresentation.WeaponAudio.Record(nativeClass, localSound, (_worldScenes?.Current?.Resources.Rac1Gameplay?.Weapons.WorldTick ?? 0), _args.Rac1WeaponsSmoke), () => _rac1Campaign.CollectedNovalisGoldBolts,
+            CreateAmmoPickupPorts(scene)),
         new Rac1BreakablePorts(() => _player,
             owner => ReferenceEquals(_worldScenes?.Current?.Resources.Rac1Gameplay, owner),
             (min, max) => _persistentPlayer.Rac1EffectRandom(_args.FixedSeed).Inclusive(min, max),

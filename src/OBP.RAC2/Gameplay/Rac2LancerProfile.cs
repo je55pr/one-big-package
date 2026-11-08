@@ -15,6 +15,8 @@ public static class Rac2LancerProfile
     public const int ProjectileMobyClass = 3070;
     public const int AmmoCapacity = 200;
     public const int AmmoPerShot = 1;
+    // Oozla's mapped native descriptor +0x8C; research/GC_CRATES.md.
+    public const int AmmoPickupAmount = 25;
 
     public const int TicksPerSecond = 60;
     public const float TickSeconds = 1f / TicksPerSecond;
