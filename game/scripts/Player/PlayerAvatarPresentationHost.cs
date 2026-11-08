@@ -209,6 +209,7 @@ internal sealed class PlayerAvatarPresentationHost
                 GloveView = new(GloveAsset!, avatar, gloveMaterials!);
                 view.AddChild(GloveView);
                 ClankView = new(ClankAsset!, avatar, clankMaterials!, random);
+                player.Rac1BackpackReady = false;
                 view.AddChild(ClankView);
             }
         }
@@ -358,6 +359,7 @@ internal sealed class PlayerAvatarPresentationHost
         bindings.Weapons().ClearTransients();
         NativeController?.ResetJointEases();
         ClankView?.Reset();
+        if (PhysicsPlayer is { } player) player.Rac1BackpackReady = false;
         bindings.Audio()?.Reset();
         Rac1WrenchHost.ResetOrFallback(bindings.Gameplay()?.Wrench, bindings.Audio(), bindings.Player());
         bindings.Gameplay()?.Weapons.ThrownAnimation.Stop();

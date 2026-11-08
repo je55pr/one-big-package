@@ -11,7 +11,7 @@ public partial class PlayerHost
     public Rac1MovementCapabilities Rac1MovementEquipment { get; set; }
     public Rac1TraversalEquipmentId? Rac1ActiveBackpack { get; set; }
     public bool Rac1ClankAvailable { get; set; }
-    public bool Rac1BackpackReady { get; set; } = true;
+    public bool Rac1BackpackReady { get; set; }
     public int? Rac1DevelopmentPackPreview { get; private set; }
     public bool Rac1DevelopmentSwingshotPreview { get; private set; }
 
@@ -19,7 +19,7 @@ public partial class PlayerHost
     {
         Rac1MovementEquipment = movement;
         Rac1ActiveBackpack = backpack;
-        Rac1ClankAvailable = backpack.HasValue;
+        Rac1ClankAvailable = backpack.HasValue || movement.HydroPack;
         Rac1SwingshotEquipped = movement.Swingshot;
     }
     public int? Rac1TraversalAction => Rac1SwimmingActive ? _rac1SwimState.NativeAction :

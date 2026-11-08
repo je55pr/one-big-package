@@ -14,10 +14,40 @@ public sealed class Rac1ClankPackEffects(Rac1ClankPackAssets assets, Rac1PickupR
     private float _jetStrength, _scroll;
     private bool _emitJets, _jetHistory;
     private readonly Vector3[] _previousJets = new Vector3[2];
+    private readonly List<Jet> _jets = [];
     public float JetStrength => _jetStrength;
     public Rac1ParticleSession Particles { get; } = new(assets.Effects, random, 512);
     public sealed record Jet(double[] Positions, float[] Uvs, int[] Indices, int Texture,
-        float BillboardSize = 0, uint Color = 0x80808080);
+        float BillboardSize = 0, uint Color = 0x80808080)
+    {
+        public int Texture { get; set; } = Texture;
+    }
+
+    private void EnsureJetBuffers()
+    {
+        if (_jets.Count != 0) return;
+        // Native draw issues two overlapping triangle strips. Topology and UV
+        // storage are fixed; only positions, UV scroll and flicker change.
+        var indices = new List<int>();
+        foreach (var (first, count) in new[] { (0, 148), (146, 50) })
+            for (int i = 0; i < count - 2; i++)
+            {
+                indices.Add(first + i + (i % 2));
+                indices.Add(first + i + (1 - i % 2));
+                indices.Add(first + i + 2);
+            }
+        int[] plumeIndices = indices.ToArray();
+        float[] quadUvs = [0, 0, 0, 1, 1, 0, 1, 1];
+        int[] quadIndices = [0, 1, 2, 2, 1, 3];
+        for (int side = 0; side < 2; side++)
+        {
+            _jets.Add(new(new double[assets.JetVertices.Count * 3], new float[assets.JetUvs.Count * 2],
+                plumeIndices, assets.Effects.ParticleChoices[10][0]));
+            for (int plane = 0; plane < 2; plane++)
+                _jets.Add(new(new double[12], quadUvs, quadIndices, assets.Effects.ParticleChoices[12][0]));
+            _jets.Add(new(new double[3], [], [], assets.Effects.ParticleChoices[11][0], .4f, 0x7f2020ff));
+        }
+    }
 
     public IReadOnlyList<Jet> StepJets(Rac1ClankPackSession pack, Input input, PlayerAvatarAttachmentPose worldBack)
     {
@@ -49,7 +79,7 @@ public sealed class Rac1ClankPackEffects(Rac1ClankPackAssets assets, Rac1PickupR
         if (pack.Pack != 3 || pack.Upgrade is null || _jetStrength <= 0) return [];
         _scroll -= .025f;
         if (_scroll < -7) _scroll += 7;
-        var result = new List<Jet>();
+        EnsureJetBuffers();
         for (int side = 0; side < 2; side++)
         {
             var origin = V(worldBack.Transform(pack.Upgrade.Attachment(side * 2).Origin));
@@ -57,8 +87,8 @@ public sealed class Rac1ClankPackEffects(Rac1ClankPackAssets assets, Rac1PickupR
             var z = Vector3.Normalize(origin - end);
             var x = Vector3.Normalize(Vector3.Cross(Vector3.UnitY, z));
             var y = Vector3.Cross(z, x);
-            var positions = new double[assets.JetVertices.Count * 3];
-            var uvs = new float[assets.JetUvs.Count * 2];
+            var positions = _jets[side * 4].Positions;
+            var uvs = _jets[side * 4].Uvs;
             for (int i = 0; i < assets.JetVertices.Count; i++)
             {
                 var v = assets.JetVertices[i] * (.0125f * _jetStrength);
@@ -66,21 +96,12 @@ public sealed class Rac1ClankPackEffects(Rac1ClankPackAssets assets, Rac1PickupR
                 positions[i * 3] = p.X; positions[i * 3 + 1] = p.Y; positions[i * 3 + 2] = p.Z;
                 uvs[i * 2] = assets.JetUvs[i].X; uvs[i * 2 + 1] = assets.JetUvs[i].Y + _scroll;
             }
-            // Native draw issues two triangle strips, overlapping their last
-            // two vertices. Keep their topology instead of inventing a cone.
-            var indices = new List<int>();
-            foreach (var (first, count) in new[] { (0, 148), (146, 50) })
-                for (int i = 0; i < count - 2; i++)
-                {
-                    indices.Add(first + i + (i % 2));
-                    indices.Add(first + i + (1 - i % 2));
-                    indices.Add(first + i + 2);
-                }
-            result.Add(new(positions, uvs, indices.ToArray(), assets.Effects.ParticleChoices[10][0]));
             int texture = assets.Effects.ParticleChoices[12][random.Below(8)];
             for (int plane = 0; plane < 2; plane++)
             {
-                var quad = new double[12];
+                var layer = _jets[side * 4 + plane + 1];
+                layer.Texture = texture;
+                var quad = layer.Positions;
                 for (int i = 0; i < 4; i++)
                 {
                     var v = assets.JetQuads[plane * 4 + i] * (.025f * _jetStrength);
@@ -88,12 +109,12 @@ public sealed class Rac1ClankPackEffects(Rac1ClankPackAssets assets, Rac1PickupR
                     var p = origin + x * v.X + y * v.Y + z * (v.Z - .075f);
                     quad[i * 3] = p.X; quad[i * 3 + 1] = p.Y; quad[i * 3 + 2] = p.Z;
                 }
-                result.Add(new(quad, [0, 0, 0, 1, 1, 0, 1, 1], [0, 1, 2, 2, 1, 3], texture));
             }
             var glow = origin - z * .13f;
-            result.Add(new([glow.X, glow.Y, glow.Z], [], [], assets.Effects.ParticleChoices[11][0], .4f, 0x7f2020ff));
+            var glowPosition = _jets[side * 4 + 3].Positions;
+            glowPosition[0] = glow.X; glowPosition[1] = glow.Y; glowPosition[2] = glow.Z;
         }
-        return result;
+        return _jets;
     }
 
     /// <summary>The host supplies world-space nozzle points and the hero's native X basis.</summary>

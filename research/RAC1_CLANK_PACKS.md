@@ -17,7 +17,7 @@ the addresses and data below were checked against the retail overlay.
 | 608 | Thruster-Pack | 527 / 15 / 9 | `f73c7eba18df8ad28c18c5735f5604a532e1eab85306b9b545bbfd83c1091e01` |
 | 609 | Hydro-Pack | 638 / 10 / 5 | `05fef95614ee0e1656b84dd6136f84483d405e170e283c9543873fa51c5d1679` |
 
-These are local static classes, not global-Moby entries. Both slot-3 models
+These are local static classes, not global-Moby entries. Clank and each upgrade
 attach at Ratchet semantic socket 5, joint 5 (`20f580`, `20f7b0`). Normalize
 the socket's axes and retain its translation. There is no fitted back offset.
 Keep the socket through ordinary, equipment, arm-hold and joint-ease poses.
@@ -53,7 +53,8 @@ Default negative blend requests read the two integers at `15f6e0` (11,16).
 
 Clank's run head spring (`215ef8`, `205168`) retains its own angular and
 translation velocities. Blink (`2059d8`) reads the four absolute eye layers
-and 22-step weight curve at `17c1e0..17c2a0`, with 50..200-update intervals.
+at `17c1e0..17c2a0` and the 22-step weight curve at `17c2a0..17c2f8`
+(exclusive end), with 50..200-update intervals.
 
 ## Effects, audio and ownership
 

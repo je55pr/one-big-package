@@ -84,7 +84,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         return Current;
     }
 
-    // The hand sockets that ride on joints the procedural layer can move.
+    // Hand and back sockets ride on joints the procedural layer can move.
     private Dictionary<string, int> SocketJoints() => new()
     {
         [Rac1WrenchAttachment.SocketKey] = 56,

@@ -232,7 +232,7 @@ internal sealed class PlayerEquipmentFacade(PlayerEquipmentPorts ports) : IDispo
             sources.GetValueOrDefault(ObpSourceGame.Rac1) == OBP.RAC1.Rac1Authority.Primary.BuildId;
         var movement = new Rac1MovementCapabilities(Enabled(Rac1TraversalEquipmentId.HeliPack), Enabled(Rac1TraversalEquipmentId.ThrusterPack),
             Enabled(Rac1TraversalEquipmentId.HydroPack), Enabled(Rac1TraversalEquipmentId.OxygenMask), Enabled(Rac1TraversalEquipmentId.Swingshot), false, false);
-        var backpack = new[] { Rac1TraversalEquipmentId.HeliPack, Rac1TraversalEquipmentId.ThrusterPack, Rac1TraversalEquipmentId.HydroPack }
+        var backpack = new[] { Rac1TraversalEquipmentId.HeliPack, Rac1TraversalEquipmentId.ThrusterPack }
             .Cast<Rac1TraversalEquipmentId?>().FirstOrDefault(item => item.HasValue && Enabled(item.Value));
         Ports.ApplyMovementEquipment(movement, backpack);
     }

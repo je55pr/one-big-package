@@ -184,19 +184,21 @@ public sealed class Rac1ClankPackAnimation
     private readonly PlayerSkeletalSampler _sampler;
     private PlayerSkeletalPose _pose, _source;
     private float _rate;
+    private double[]? _positions;
     public Rac1AnimationFrameClock.Sample Sample { get; private set; }
     public float Multiplier { get; set; } = 1;
     public bool Wrapped { get; private set; }
-    public double[] Positions => _sampler.Skin();
+    public double[] Positions => _positions ??= _sampler.Skin();
     public int NativeClass => _model.NativeClass;
     public PlayerAvatarAttachmentPose Attachment(int socket)
     {
-        _sampler.Skin(); // Resolve the hierarchy before querying a semantic socket.
+        _ = Positions; // Resolve this pose once; all semantic sockets reuse its hierarchy.
         return _sampler.Attachment(_model.Skeletal.Skeleton.Attachments[socket].Joint);
     }
 
     public void ApplyHead(float yaw, float offset, IReadOnlyList<Rac1ClankPackAssets.BlinkLayer> blink, float weight)
     {
+        _positions = null;
         _sampler.LoadPose(_pose);
         int head = _model.Skeletal.Skeleton.Attachments[0].Joint;
         _sampler.ComposeLocalRotation(head, Rac1RatchetJointEases.EulerQuaternion(0, 0, yaw));
@@ -268,6 +270,7 @@ public sealed class Rac1ClankPackAnimation
 
     private void Evaluate()
     {
+        _positions = null;
         var s = Sample;
         _sampler.Reset(_model.Skeletal.Clips[s.Sequence],
             s.IsBlending ? new(s.NextFrame, s.NextFrame, 0) : new(s.CurrentFrame, s.NextFrame, s.Fraction));
