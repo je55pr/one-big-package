@@ -39,6 +39,7 @@ public static class Rac1PlayerActionDomain
     public const int HydroPackSwim = 0x35;
     public const int SurfaceSwimMoving = 0x36;
     public const int SurfaceSwimIdle = 0x37;
+    public const int BoltCrank = 0x3b;
     public const int IceSlide = 0x2f;
     public const int Magneboot = 0x3f;
     public const int Mud = 0x68;
@@ -85,6 +86,7 @@ public static class Rac1PlayerActionDomain
         SwingshotReady => "swingshot-ready",
         SwingshotPull => "swingshot-pull",
         SwingshotSwing => "swingshot-swing",
+        BoltCrank => "bolt-crank",
         UnderwaterMoving => "underwater-moving",
         UnderwaterIdle => "underwater-idle",
         HydroPackSwim => "hydro-pack-swim",

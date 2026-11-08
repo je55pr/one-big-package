@@ -9,10 +9,11 @@ namespace OBP.Game;
 
 /// <summary>
 /// Engine-only ports for authored R&C1 objects. Source rules stay in OBP.RAC1;
-/// these ports may only present a source object, play a source sound or report status.
+/// these ports borrow selected-player hand availability and present source objects/audio/status.
 /// </summary>
 internal sealed record Rac1AuthoredMechanismPorts(
     Func<string?> SourcePath,
+    Func<bool> WrenchAvailable,
     Action<int, int, Vector3> PlaySourceSound,
     Func<RuntimeAudioPlaybackIntent, int> StartLevelMusic,
     Action StopLevelMusic,
@@ -43,7 +44,7 @@ internal sealed class Rac1AuthoredMechanismRegistry : IDisposable
     private bool _disposed;
     private bool _configured;
 
-    internal Rac1NovalisCrankMechanism? Cranks { get; private set; }
+    internal Rac1BoltCrankMechanism? Cranks { get; private set; }
     internal Rac1NovalisRouteMechanism? Route { get; private set; }
     internal Rac1NovalisMusicMechanism? Music { get; private set; }
     internal Rac1NovalisWaterMechanism? Water { get; private set; }
@@ -65,7 +66,8 @@ internal sealed class Rac1AuthoredMechanismRegistry : IDisposable
         _registered.Add(mechanism);
         switch (mechanism)
         {
-            case Rac1NovalisCrankMechanism crank: Cranks = crank; break;
+            case Rac1BoltCrankMechanism crank: Cranks = crank; break;
+            case Rac1NovalisCrankMechanism: break;
             case Rac1NovalisRouteMechanism route: Route = route; break;
             case Rac1NovalisMusicMechanism music: Music = music; break;
             case Rac1NovalisWaterMechanism water: Water = water; break;
@@ -142,11 +144,21 @@ internal static class Rac1AuthoredMechanismCatalog
         if (world.Game != ObpSourceGame.Rac1) return;
         if (world.LevelId == 1)
         {
-            registry.Register(new Rac1NovalisCrankMechanism(ports, registry.SelectAuthoredMusicCrank));
+            var followers = new Rac1NovalisCrankMechanism(ports, registry.SelectAuthoredMusicCrank);
+            registry.Register(new Rac1BoltCrankMechanism(ports, followers.ApplyCrankProgress));
+            registry.Register(followers);
             registry.Register(new Rac1NovalisRouteMechanism(ports));
-            registry.Register(new Rac1NovalisWaterMechanism());
+            var waterSurfaces = new Rac1NovalisWaterMechanism();
+            var underwaterLook = new OBP.RAC1.Level.Rac1NovalisUnderwaterLook();
+            registry.Register(waterSurfaces);
+            registry.Register(new Rac1NovalisScrollingWaterMechanism(ports));
+            // The pool controller chooses the underwater colours, so it ticks before the underwater look reads them.
+            registry.Register(new Rac1NovalisPoolWaterMechanism(ports, underwaterLook));
+            registry.Register(new Rac1NovalisUnderwaterMechanism(ports, waterSurfaces, underwaterLook));
             registry.Register(new Rac1NovalisMusicMechanism(ports));
         }
+        else if ((world.DynamicObjects ?? []).Any(source => source.NativeClassId == Rac1BoltCrankSession.NativeClass))
+            registry.Register(new Rac1BoltCrankMechanism(ports, null));
         if (world.LevelId == Rac1RedPlantSession.NativeLevelId)
             registry.Register(new Rac1RedPlantMechanism());
         if (Rac1PulsingOrbSession.SupportsLevel(world.LevelId))

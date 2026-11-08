@@ -104,6 +104,18 @@ public partial class PlayerHost : CharacterBody3D
     /// <summary>Optional source-specific interaction admission before ordinary Square attacks.</summary>
     public Func<bool, Vector2, bool>? Rac1CrankInput { get; set; }
     private bool _rac1CrankInputActive;
+    private Rac1MovementAnimationSelection? _rac1CrankAnimation;
+    private bool _rac1CrankReleased;
+    public bool Rac1CrankActive => _rac1CrankInputActive;
+    internal int? Rac1CrankAnimationSequence { get; set; }
+    internal double Rac1CrankControlYaw => GetRac1ControlYaw();
+
+    internal void ApplyRac1CrankFrame(Rac1BoltCrankSession.Frame frame)
+    {
+        GlobalPosition = new(-frame.PlayerPosition.X, GlobalPosition.Y, frame.PlayerPosition.Y);
+        Rac1CurrentYaw = frame.PlayerYaw;
+        _rac1CrankAnimation = frame.Animation;
+    }
 
     /// <summary>Host-only keyboard selection seam for the bounded R&amp;C1 weapon inventory.</summary>
     public event Action<Rac1WeaponId>? Rac1WeaponSelectionRequested;
@@ -205,8 +217,19 @@ public partial class PlayerHost : CharacterBody3D
     public bool QuickSelectOwnsGameplayInput { get; set; }
 
     /// <summary>Which camera source currently owns ordinary presentation and control heading.</summary>
-    public string CameraControllerLabel =>
-        HasActiveRecoveredCamera ? "rac1-native-type0" : "host-debug-fallback";
+    public string CameraControllerLabel
+    {
+        get
+        {
+            if (!HasActiveRecoveredCamera) return "host-debug-fallback";
+            return _rac1CrankCamera switch
+            {
+                { Returning: false } => "rac1-native-type5-crank",
+                { Returning: true } => "rac1-native-type0-crank-return",
+                _ => "rac1-native-type0",
+            };
+        }
+    }
 
     /// <summary>True when a recovered RAC1 camera snapshot is actively driving Godot.</summary>
     public bool HasActiveRecoveredCamera =>
@@ -440,11 +463,14 @@ public partial class PlayerHost : CharacterBody3D
                     ActionJustPressed = false,
                     EquippedUseJustPressed = false
                 };
+            bool crankWasActive = _rac1CrankInputActive;
+            _rac1CrankAnimation = null;
             _rac1CrankInputActive = HasNativeTraversal && !DevelopmentControls.FlyEnabled && !Rac1RemoteControlActive &&
-                (Rac1CrankInput?.Invoke(_liveInput.ActionHeld, _liveInput.Move) ?? false);
+                (Rac1CrankInput?.Invoke(_liveInput.ActionJustPressed, _liveInput.Move) ?? false);
+            _rac1CrankReleased = crankWasActive && !_rac1CrankInputActive;
             if (!HasActiveRecoveredCamera)
                 ApplyGamepadCamera((float)delta, _liveInput.CameraIntent);
-            if (_liveInput.ActionJustPressed && !_rac1CrankInputActive && !Rac1SwimmingActive)
+            if (_liveInput.ActionJustPressed && !_rac1CrankInputActive && !_rac1CrankReleased && !Rac1SwimmingActive)
             {
                 if (CanWrenchAttack && !Rac1Hanging && !Rac1SwingshotActive)
                     NotifyRac1WrenchAttackAccepted();
@@ -452,7 +478,7 @@ public partial class PlayerHost : CharacterBody3D
                     RequestPrimaryAction();
             }
             if (CanUseEquipment && _liveInput.EquippedUseJustPressed && !DevelopmentControls.FlyEnabled &&
-                !Rac1DevelopmentSwingshotPreview)
+                !Rac1DevelopmentSwingshotPreview && !_rac1CrankInputActive && !_rac1CrankReleased)
                 RequestPrimaryAction();
         }
 

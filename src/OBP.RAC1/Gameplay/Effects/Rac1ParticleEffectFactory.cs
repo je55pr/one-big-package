@@ -81,16 +81,24 @@ public static class Rac1ParticlePresentation
         IReadOnlyDictionary<int, OBP.Runtime.RuntimeTexture> textures, Vector3 placement = default, Func<uint, uint>? palette = null)
     {
         var sprites = ImmutableArray.CreateBuilder<RuntimeEffectSprite>();
+        // A frame can hold hundreds of particles that share a handful of textures: build each source record once.
+        var sources = new Dictionary<int, ObpSourceRef>();
         foreach (var p in session.Live)
         {
             if (p.Size <= 0 || p.Remaining <= 0) continue;
-            if (!textures.TryGetValue(p.Texture, out var texture)) throw new InvalidDataException("R&C1 particle texture is unavailable.");
-            var source = bank with { AssetKind = texture.AssetKind, OriginalId = p.Texture.ToString(CultureInfo.InvariantCulture) };
+            if (!sources.TryGetValue(p.Texture, out var source))
+            {
+                if (!textures.TryGetValue(p.Texture, out var texture)) throw new InvalidDataException("R&C1 particle texture is unavailable.");
+                sources.Add(p.Texture, source = bank with { AssetKind = texture.AssetKind, OriginalId = p.Texture.ToString(CultureInfo.InvariantCulture) });
+            }
             uint rgba = palette?.Invoke(p.Color) ?? p.Color;
             var color = new Vector4((rgba & 255) / 128f, (rgba >> 8 & 255) / 128f, (rgba >> 16 & 255) / 128f, (rgba >> 24) / 128f);
+            bool pool = p.Type == Rac1ParticleSession.PoolBubbleType || p.Type == Rac1ParticleSession.PoolFoamType;
             var draw = new RuntimeEffectDrawState(p.Blending == Rac1ParticleSession.Blend.Additive ? RuntimeBlendEquation.AdditiveSourceAlpha : RuntimeBlendEquation.SourceAlpha,
                 NearFade: (p.DepthRange & 15) * .25f, FarFade: (p.DepthRange & 0xf0) * 2f, DepthFade: true);
-            sprites.Add(new(p.Identity, p.Slot, source, new Vector3(p.Position.X, p.Position.Z, p.Position.Y) + placement, p.Size, color, p.Rotation, draw));
+            // The Novalis pool kinds (bubble and foam) lie on the water like a decal in the original captures; every other kind faces the camera.
+            var projection = pool ? RuntimeEffectSpriteProjection.SurfaceFlat : RuntimeEffectSpriteProjection.WorldBillboard;
+            sprites.Add(new(p.Identity, p.Slot, source, new Vector3(p.Position.X, p.Position.Z, p.Position.Y) + placement, p.Size, color, p.Rotation, draw, projection));
         }
         return new(sprites.ToImmutable(), [], []);
     }

@@ -28,7 +28,8 @@ internal sealed record Rac1LootPorts(
     Action RefreshHud,
     Action<int> BoltFeedback,
     Action<int, int> RecordSound,
-    Func<HashSet<int>> CollectedGoldBolts);
+    Func<HashSet<int>> CollectedGoldBolts,
+    PlayerAmmoPickupPorts AmmoSupply);
 
 /// <summary>
 /// One R&C1 world lease's transient pickup and collectible presentation.

@@ -10,7 +10,8 @@ public static class RuntimeCameraSceneAdapter
 {
     public readonly record struct ScenePose(
         Vector3 Eye,
-        Vector3 Forward);
+        Vector3 Forward,
+        Vector3 Up);
 
     public static ScenePose ToScenePose(RuntimeCameraState state)
     {
@@ -29,7 +30,11 @@ public static class RuntimeCameraSceneAdapter
         if (forward.LengthSquared() <= 1e-12f)
             throw new ArgumentOutOfRangeException(nameof(state), "Camera forward vector must be non-zero.");
 
-        return new ScenePose(eye, forward.Normalized());
+        Vector3 up = state.Up is { } orientedUp
+            ? RuntimeWorldScene.ToScene(orientedUp.X, orientedUp.Y, orientedUp.Z) : Vector3.Up;
+        if (up.LengthSquared() <= 1e-12f || forward.Cross(up).LengthSquared() <= 1e-12f)
+            throw new ArgumentOutOfRangeException(nameof(state), "Camera up must be non-zero and independent of forward.");
+        return new ScenePose(eye, forward.Normalized(), up.Normalized());
     }
 
     public static void Apply(Camera3D camera, RuntimeCameraState state)
@@ -44,6 +49,6 @@ public static class RuntimeCameraSceneAdapter
         camera.LookAtFromPosition(
             pose.Eye,
             pose.Eye + pose.Forward,
-            Vector3.Up);
+            pose.Up);
     }
 }
