@@ -62,8 +62,8 @@ public static class Rac1MovementEquipmentGlide
     /// The bounded admission at 0x22f648..0x22f830. The caller supplies
     /// the already resolved native age gate (P+0x4a6); other earlier action
     /// transitions must have been processed before invoking this tail.
-    /// OBP's held-long-jump extension also requires the caller's completed
-    /// animation gate before this method is invoked.
+    /// OBP's held-long-jump extension retains Heli's native age gate;
+    /// Thruster additionally requires the caller's completed animation gate.
     /// </summary>
     public static bool CanEnter(
         int nativePackId, bool clankAvailable, bool packDisabled,
@@ -75,8 +75,8 @@ public static class Rac1MovementEquipmentGlide
         if (previousAction is 0x0b or 0x11 or 0x12 or 0x1c or 0x3c or 0x69)
             return false;
         // Ordinary jumps retain their press-history admission. OBP's long-jump
-        // caller waits for animation completion, then admits either held-input
-        // path. High pack jumps/aerial boost retain their native age gates.
+        // caller admits either held-input path after the pack's exit gate.
+        // High pack jumps/aerial boost retain their native age gates.
         if (!recentCrossPress && previousAction is not (0x0a or 0x0d or 0x0e or 0x0f or 0x10))
             return false;
         if (actionAge < 0 || admissionAge < 0)

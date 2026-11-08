@@ -381,12 +381,12 @@ public sealed partial class Rac1RatchetMovementController
         // finish its ages 9..43 impulse script even when Cross stays held.
         int motionAge = _specialAge - 1;
         bool scriptedArc = motionAge >= session.Profile.ScriptStartAge && motionAge < session.Profile.ScriptEndAge;
-        // OBP's completed-animation handoff uses the current held button,
-        // regardless of whether Cross was released/repressed during flight.
-        bool longJumpWaiting = (session.Profile.Kind is Rac1AirborneJumpKind.HeliPackLong or
-            Rac1AirborneJumpKind.ThrusterPackLong) && !context.LongJumpAnimationCompleted;
+        // OBP's held-input extension retains Thruster's completed-animation
+        // handoff. Heli uses its recovered age gate, not a landing/apex marker.
+        bool longJumpWaiting = session.Profile.Kind == Rac1AirborneJumpKind.ThrusterPackLong &&
+            !context.LongJumpAnimationCompleted;
         if (!scriptedArc && !longJumpWaiting && !contact.IsGrounded && Rac1MovementEquipmentGlide.CanEnter(context.ActivePackId,
-                context.ClankAvailable, context.PackDisabled, input.JumpHeld, _specialAge,
+                context.ClankAvailable, context.PackDisabled, input.JumpHeld, motionAge,
                 session.Profile.GlideAdmissionAge, context.GroundClearance, (int)session.Profile.Kind,
                 recentCrossPress: _crossPressSerial > _launchPressSerial &&
                     _crossPressAge < Rac1AirborneBoostSession.CrossBufferWindow(_specialAge)))

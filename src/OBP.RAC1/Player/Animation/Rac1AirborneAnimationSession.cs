@@ -21,7 +21,6 @@ public sealed class Rac1AirborneAnimationSession
     private const int LandingFrame = 10;
     private float _speed = 1;
     private bool _pastApex, _landing;
-    public bool GlideHandoffReady { get; private set; }
 
     public Rac1AirborneAnimationSession(int nativeAction)
     {
@@ -43,10 +42,6 @@ public sealed class Rac1AirborneAnimationSession
             return new(_speed);
 
         _pastApex |= input.VerticalStep < 0.001f;
-        // OBP's held-long-jump handoff follows the completed rise/apex pose.
-        // The landing target is retimed towards the floor and can be much
-        // later over a drop; it must not delay deployment of the Heli-Pack.
-        GlideHandoffReady |= _pastApex && authoredTime >= _apexFrame;
         if (input.NativeActionAge == _launchAge + 1)
         {
             // 0x233c30 truncates velocity/gravity; 0x208f20 retimes the

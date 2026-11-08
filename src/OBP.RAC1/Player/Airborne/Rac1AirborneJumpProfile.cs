@@ -61,7 +61,9 @@ public sealed record Rac1AirborneJumpProfile(
         {
             Rac1AirborneJumpKind.Stationary => new(kind, 1.47f, 2.62f, 5, 15, 29.7f, 7, 0, 5, 30),
             Rac1AirborneJumpKind.Moving => new(kind, 1f, 2.7f, 5, 15, 29.7f, 8, 0, 5, 30),
-            Rac1AirborneJumpKind.HeliPackLong => new(kind, 1.9f, 1.95f, 5, 14, 11f, 18, 0, 5, 0),
+            // 224fc8 -> 225678 stores frame_scale(70) in P+4a6;
+            // the shared glide tail at 22f7c8 requires age strictly above it.
+            Rac1AirborneJumpKind.HeliPackLong => new(kind, 1.9f, 1.95f, 5, 14, 11f, 18, 0, 5, 70),
             Rac1AirborneJumpKind.DirectionalFlip => new(kind, 3.2f, 3.25f,
                 fastEntry ? 1 : 5, 14, 29.7f,
                 28 + (flipDirection == 2 ? 0 : flipDirection),

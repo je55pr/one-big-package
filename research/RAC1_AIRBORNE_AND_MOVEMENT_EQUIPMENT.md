@@ -123,33 +123,38 @@ Ground actions 7/9 require clearance >1,
 boost 0x0e >1.5, other admitted families >0.6. Shared minimum age is >20,
 Thruster stretch uses >8, and aerial boost uses >17 when clearance exceeds 4.
 The Heli boost P+0x4a6 gate is 85; its separate timer of 70 is not this gate.
+Heli **stretch** has a separate P+0x4a6 gate of 70. The retail instruction at
+`224fc8` branches to `225678` with `a0=0x46`; the shared frame-scaling call
+then stores its return at `225684`. The tail at `22f7c4..22f7cc` loads that
+halfword and requires `gate < action age`. In the ordinary NTSC 60-Hz context,
+the first eligible stretch age is therefore 71 (about 1.183 seconds from action
+entry), rather than the physical apex or an authored landing key. Both Veldin's
+and Novalis's inspected decomp entry paths corroborate the 70 value.
 The earlier scripted-arc branch (`22edd4..22ee2c`) returns before this tail
 while `P+3d0 <= action age < P+3d4`. For Thruster high jump that is ages
 9..43 inclusive: holding Cross must not replace the active rise with glide
 at age 20. The glide tail is reachable again at age 44.
 Ledge/mud/flip and other explicit earlier caller exclusions are preserved.
 
-OBP long-jump exit policy: once the launch and rise animation completes,
-either pack enters glide if Cross is currently held, including an uninterrupted
-hold from launch or release/re-hold during flight. This is an explicit authored
-handoff, separate from the recovered retail jump-tail press-history branch
-above. Heli completion uses its rise/apex pose at authored time 18 after the
-physical apex. Its separate authored-time-29 landing target is retimed towards
-the floor and must not gate glide over a drop. Thruster completion uses
-sequence 38's terminal key.
-Readiness is an observed animation fact supplied to the movement owner, not
-a second age timer. Ground contact, pack readiness, Clank and glide clearance
-still gate the transition. Ordinary jumps keep their existing press admission.
-Manual inspection on an explicitly staged platform/gap confirmed continuous
-hold and release/re-hold enter sequence 19 immediately after their handoff pose:
-Heli after its rise/apex pose, Thruster after terminal authored time 33. Released
-input stayed in the long-jump/fall path. The existing airborne diagnostic also
-checks high jumps, glide and Power Slam; temporary inspection changes are not
-retained as new automated tests.
-Source-controller/animation inspection over 5-, 20- and 50-unit drops confirmed
-Heli deployment timing no longer depends on the floor below. Deployment was
-within 0.04 units of the apex, rather than the previous roughly 14-unit fall
-over deep drops; Thruster's terminal-key transition was unchanged.
+OBP's requested held-input extension lets either long jump enter glide with
+Cross currently held, including an uninterrupted hold from launch or a
+release/re-hold during flight. This relaxes the retail jump-tail press-history
+branch above; it is explicitly authored behavior. Timing still respects Heli's
+recovered strict age-70 gate. It does not use the earlier apex shortcut or the
+floor-retimed authored-time-29 landing target. Thruster's authored handoff keeps
+sequence 38's terminal-key completion. The movement adapter supplies the
+pre-increment action age to the gate, matching the motion sample for that tick.
+Ground contact, pack readiness, Clank and glide clearance still gate both
+transitions. Ordinary jumps keep their existing press admission.
+
+Manual source-controller/animation inspection over 5-, 20- and 50-unit drops
+confirmed Heli enters glide at action age 71 with both held-input paths. In the
+staged host platform/gap check, both paths entered sequence 19 on the same tick,
+about 1.92 units below the apex, rather than the previous roughly 14-unit fall
+or the too-early apex shortcut. Released input did not glide. Thruster's
+terminal-key transition was unchanged. Existing airborne checks cover high
+jumps, glide and Power Slam; temporary inspection fixtures are not retained as
+new automated tests.
 
 ## Ground crouch and directional input admission
 
