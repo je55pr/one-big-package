@@ -384,7 +384,19 @@ public sealed partial class Rac1RatchetMovementController
             BeginGlide();
             return StepGlide(input, context, resolveNativeFacingYaw: null);
         }
+        UpdateSpecialAirAnimation(context);
         return new(_planarX, _planarY, _verticalStep, Phase, LocomotionState, YawMode);
+    }
+
+    private void UpdateSpecialAirAnimation(Rac1MovementContext context)
+    {
+        if (_specialAir?.Profile.Kind is Rac1AirborneJumpKind.WallJump or Rac1AirborneJumpKind.HeliPackLong &&
+            TraversalAnimation is { } animation)
+            TraversalAnimation = animation with
+            {
+                Airborne = new(_specialAge, (float)_verticalStep, _specialAir.GravityPerUpdate,
+                    context.GroundClearance, _landing?.LandingUpdates ?? 0),
+            };
     }
 
     private StepResult StepAirBoost(PlayerControlIntent input, Rac1PlayerContactResult contact,
@@ -503,6 +515,7 @@ public sealed partial class Rac1RatchetMovementController
         resolveNativeFacingYaw?.Invoke(YawMode);
         _specialAge++;
         _ordinaryAirAge++;
+        UpdateSpecialAirAnimation(context);
         var motion = new StepResult(_planarX, _planarY, _verticalStep, Phase, LocomotionState, YawMode);
         if (landing.GroundHandoff is not { } handoff)
             return motion;

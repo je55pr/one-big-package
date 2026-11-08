@@ -346,9 +346,72 @@ once on each of three consecutive action-17 entries (native player audio ticks
 68, 109, 150); letting the third animation continue also recorded sound 30 at
 tick 180. The Godot host allocated PCM one-shot voices, with no missing-sound
 errors. A new jump may interrupt the old animation before its later cue.
-This corrects the entry and uses the authored sound windows; it does not add
-the native common-jump apex animation-speed retiming, which remains a separate
-presentation limitation.
+That entry correction initially retained fixed-speed playback. The follow-up
+below adds native apex/descent playback for wall and Heli-Pack long jumps;
+their cues consequently follow the retimed clock, including landing recovery.
+
+### Airborne landing-pose correction
+
+Wall jump (action `0x11`, sequence 35) and Heli-Pack long jump (action `0x0a`,
+sequence 18) previously ran at multiplier 1 until their clip ended. The baked
+terminal-pose fallback then held the landing/recovery pose even during a long
+unsupported descent. Grounded crouch input was not selecting that pose.
+
+The same local NTSC-U overlay, cross-checked against Lombyte's
+`hero_update_transitions.c`, `hero_idle_sequence.c` and `hero_set_state.c`,
+supplies these controls:
+
+| Action | Launch age | Authored apex / airborne target | Landing keyframe threshold |
+| --- | --- | --- | --- |
+| `0x11` wall jump | 9 | 12 / 20 | 10 |
+| `0x0a` Heli-Pack long jump | 5 | 18 / 29 | 10 |
+
+At launch age + 1, truncate vertical step / gravity to predict apex updates.
+`0x208f20` retimes the authored frame distance with scale 0.5, the transition
+rate and that update count; the caller caps speed at 1.5. After apex, while
+the next keyframe is below 10, retime toward the airborne target with a 0.2
+speed step and bounds 0.2..2.7. Speed above 1.8 selects keyframe 12 with
+predicted landing updates + 3 blend updates. Matching the target's truncated
+authored time stops playback. First landing can select keyframe 12 with blend
+7 when animation time is below target - 1.5; landing restores speed 1.
+
+`Rac1AirborneAnimationSession` owns this bounded selector. The movement owner
+provides regular-axis velocity, gravity, action age and landing counter through
+the existing source animation selection; the presentation owner retains the
+native frame clock and blend snapshot. A new action generation creates a new
+selector, so held playback cannot leak into a repeated jump or a ground action.
+
+| Independently read executable interval (end exclusive) | SHA-256 |
+| --- | --- |
+| `0x224f20..0x224fd0` | `0237d5d2dda6fa083b7caa08c8340046b2e33336b4921f9840983cdae3b61b88` |
+| `0x225278..0x225338` | `25b9964b2c382de34cb873786736910efadfb058543cc23a92818f1a55f66e65` |
+| `0x208f20..0x209018` | `5c7d3b1a61b24ed3dafdf8d111a08e37fc66794cc607df0dba964f7a51d0deb4` |
+| `0x22ed84..0x22f224` | `3473516adbf30d8f4b61270511b4ae4c9991ddd2a2a1d6a2ee3db3728872f612` |
+| `0x233c30..0x233d30` | `08de1f0f08dc79147b634f0dc23688c5ee20235e522113473207653d95b89833` |
+
+Manual frame-stepping on imported retail worlds observed:
+
+- Novalis wall jump: authored time 12.785 at action age 39 and 16.908 at
+  age 55, rather than advancing into the landing tail at fixed speed. A late
+  sample reached target interval 20.5; recovery resumed on support, sound 30
+  played, and the player returned to standing. Sound 37 remained present on
+  each of five alternating wall jumps, ending grounded on the upper walkway
+  at native `(241.675,114.248,87.513)`.
+- Heli-Pack long jump from that walkway: action 10 remained airborne at age
+  112, clearance 4.593, authored time 27.138. The rendered pose retained its
+  extended airborne posture. At age 130 authored time reached 29; landing
+  handed off to stop/standing instead of retaining a crouched clip ending.
+  Crouch stayed held through the first 112 updates to cover the reported input.
+- Kerwan: four alternating wall jumps still reached the ledge. Ledge jumps
+  and ordinary steering/jumping reached the highest grass, grounded at native
+  `(200.537,146.231,75.997)`, beside the cable.
+
+Landing prediction uses the host's floor clearance with the native discrete
+gravity equation and 60-update horizon. It does **not** reproduce the native
+forward trajectory collision ray, so predicted landing timing can differ near
+edges. Other jump families, alternate gravity and native timed fall-action
+handoffs retain their existing adapter limitations. No jump impulse, wall
+admission gate, contact solver or player capability is changed by this fix.
 
 ## Implementation and limits
 
