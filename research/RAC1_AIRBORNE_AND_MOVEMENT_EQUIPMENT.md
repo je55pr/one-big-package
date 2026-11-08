@@ -29,7 +29,7 @@ timing context, `dt = float(1/60)` and `dtSquared = float(1/3600)`; computing
 | 0x0d | Thruster-Pack boost jump | 0.1 / 0.2 | 9 | 14 | 29.7 | 17 / 0 / 5 |
 | 0x0f | Heli-Pack boost jump | 1.9 / 1.95 | 9 | 5 | 29.7 | 21 / 0 / 5 |
 | 0x10 | Thruster-Pack stretch jump | 0.4 / 0.9 | 1, or 4 after native air/recent-crouch history | 1 | 8.5 | 38 / 0 / 5; history override blend 8 |
-| 0x11 | wall jump | 3.3 / 3.35 | 9 | 12 | 29 | 35 / 0 / 7 |
+| 0x11 | wall jump | 3.3 / 3.35 | 9 | 12 | 29 | 35 / 2 / 7 |
 | 0x1c | jump from ledge | 2 / 2.05 | 10 | 1 | 25 | 34 / 0 / 4 |
 | 0x69 | mud escape jump | mud depth + 1.7 / depth + 1.75 | 5 | 19 | 29.7 | 7 / 0 / 5 |
 
@@ -313,6 +313,42 @@ bit-exact equivalence of Godot's contact solver to the native query masks,
 alternate gravity frames, or the still-bounded predicted-ledge continuation.
 No new wall markers, planet-specific admission, extra jump impulse, equipment
 grant, or relaxed opposing-normal/action-age gate is used for either route.
+
+### Wall-jump animation and sound follow-up
+
+The same authorised NTSC-U Veldin overlay selects animation 35 with a
+seven-update blend in `0x225a84..0x225aa8`, then branches to `0x227264`,
+whose call to `0x2323b8` sets argument `a1` to **2** in the delay slot.
+`0x23248c` stores that argument into the target keyframe byte at Moby+0x51;
+it is a keyframe index, not an authored motion-timeline time. Lombyte's
+`hero_set_state.c` and `set_hero_animation.c` corroborate this selection.
+OBP previously started this animation at keyframe 0; the source-owned jump
+profile now starts at keyframe 2. The bounded `0x227264..0x227274` block has
+SHA-256 `bf52c08d4cacc21e6c4430766605157588ca71d346243b937e7b049fc8cc1c32`.
+
+Animation 35 has no direct loop sound. Its retail timed cues are class-0
+local sound **37** at keyframe **3.0** and local sound **30** at **10.5**
+(packed cue words `0x00300025` and `0x00a8001e`). Veldin, Novalis and Kerwan
+all contain these cues and decode non-silent PCM for both sounds through
+their own class-to-bank remaps:
+
+| Level | Bank IDs for local 37 / 30 | Decoded frames for 37 / 30 |
+| --- | --- | --- |
+| Veldin (0) | 57 / 50 | 3304 / 4648 |
+| Novalis (1) | 50 / 44 | 3304 / 4648 |
+| Kerwan (3) | 40 / 35 | 3304 / 4648 |
+
+The existing animation sound cursor and selected-player audio presenter own
+dispatch and playback, retaining source gain and pitch selection. No additional
+button-triggered sound or destination-specific audio rule is needed. A local
+manual frame-stepping check on Novalis's imported shaft recorded sound 37
+once on each of three consecutive action-17 entries (native player audio ticks
+68, 109, 150); letting the third animation continue also recorded sound 30 at
+tick 180. The Godot host allocated PCM one-shot voices, with no missing-sound
+errors. A new jump may interrupt the old animation before its later cue.
+This corrects the entry and uses the authored sound windows; it does not add
+the native common-jump apex animation-speed retiming, which remains a separate
+presentation limitation.
 
 ## Implementation and limits
 
