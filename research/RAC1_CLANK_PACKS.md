@@ -62,7 +62,11 @@ the ordinary local-to-world conversion. These tables therefore use
 ## Effects, audio and ownership
 
 Thruster admission/ramp is `2b4198`: native action, apex, authored-frame and
-support predicates; two-update rise and eight-update decay. The procedural
+support predicates; two-update rise and eight-update decay.
+Slam's post-age-33 predicate is **unsupported** (`P+30e != 0`, `2b42d8`),
+so the jets decay on contact and remain off during grounded recovery. Effects
+read the current movement action; a retained animation label is not authority
+for the action or its age after recovery ends. The procedural
 plume (`2b3628`) reads 196 vertices at `1d9470`, UVs at `1da0b0`, two strips,
 and cross-plane templates at `1da9e0`. Nozzle bases are formed in native world
 space from semantic socket pairs 0/1 and 2/3. Texture definitions 10/11/12
@@ -96,6 +100,10 @@ Thruster jets, replacement and restoration. The existing airborne diagnostic
 passed both packs' high/stretch jumps, glide and Power Slam. A temporary
 water inspection confirmed ready pack 4 and Hydro fast action `35` in decoded
 Novalis water; temporary fixture code and captures were removed from the patch.
+Focused held-Cross inspection retained Thruster high action 13 through the
+script, reached a 3.353-unit in-game apex, and entered glide only after the
+script ended. Slam inspection observed jet strength decay in eighths to zero
+while action 34 was still in its grounded recovery, with no standing restart.
 
 Existing audio smoke passed pack loop ownership, pause/release and the earlier
 movement/weapon cases, then failed its unrelated fatal-hit held-sound fixture.

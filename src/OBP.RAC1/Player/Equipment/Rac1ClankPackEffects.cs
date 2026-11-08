@@ -8,7 +8,7 @@ namespace OBP.RAC1.Player;
 public sealed class Rac1ClankPackEffects(Rac1ClankPackAssets assets, Rac1PickupRandom random)
 {
     public readonly record struct Input(int Action, int Age, float AuthoredTime, bool Blending,
-        bool Landed, bool HasApexed, float Scalar, Vector3 ContactMotion, float Yaw, float Pitch,
+        bool Unsupported, bool HasApexed, float Scalar, Vector3 ContactMotion, float Yaw, float Pitch,
         float FloorHeight, float ControlHeading);
     private int _jetState = 1, _jetAge, _hydroDelay;
     private float _jetStrength, _scroll;
@@ -56,7 +56,9 @@ public sealed class Rac1ClankPackEffects(Rac1ClankPackAssets assets, Rac1PickupR
             >= 0xb and <= 0xe => !input.HasApexed,
             0x1c => !input.Blending && input.AuthoredTime is >= 6 and <= 16 && !input.HasApexed,
             0x10 => input.Age < 44,
-            0x22 => input.Age < 15 || input.Age > 33 && input.Landed,
+            // 2b42d8 tests P+30e != 0: jets run during the dive, then
+            // decay on solid contact rather than reigniting during recovery.
+            0x22 => input.Age < 15 || input.Age > 33 && input.Unsupported,
             8 or 0x81 => true,
             _ => false,
         });

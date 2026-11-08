@@ -375,7 +375,12 @@ public sealed partial class Rac1RatchetMovementController
             Rac1AirborneJumpKind.WallJump) &&
             (session.Profile.Kind != Rac1AirborneJumpKind.HeliPackLong || !vertical.HasLaunched))
             resolveNativeFacingYaw?.Invoke(YawMode);
-        if (!contact.IsGrounded && Rac1MovementEquipmentGlide.CanEnter(context.ActivePackId,
+        // 22edd4..22ee2c's scripted-arc branch returns before glide admission
+        // tail while P+3d0 <= action age < P+3d4. Thruster high jump must
+        // finish its ages 9..43 impulse script even when Cross stays held.
+        int motionAge = _specialAge - 1;
+        bool scriptedArc = motionAge >= session.Profile.ScriptStartAge && motionAge < session.Profile.ScriptEndAge;
+        if (!scriptedArc && !contact.IsGrounded && Rac1MovementEquipmentGlide.CanEnter(context.ActivePackId,
                 context.ClankAvailable, context.PackDisabled, input.JumpHeld, _specialAge,
                 session.Profile.GlideAdmissionAge, context.GroundClearance, (int)session.Profile.Kind,
                 recentCrossPress: _crossPressSerial > _launchPressSerial &&

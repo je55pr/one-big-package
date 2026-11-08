@@ -123,6 +123,10 @@ Ground actions 7/9 require clearance >1,
 boost 0x0e >1.5, other admitted families >0.6. Shared minimum age is >20,
 Thruster stretch uses >8, and aerial boost uses >17 when clearance exceeds 4.
 The Heli boost P+0x4a6 gate is 85; its separate timer of 70 is not this gate.
+The earlier scripted-arc branch (`22edd4..22ee2c`) returns before this tail
+while `P+3d0 <= action age < P+3d4`. For Thruster high jump that is ages
+9..43 inclusive: holding Cross must not replace the active rise with glide
+at age 20. The glide tail is reachable again at age 44.
 Ledge/mud/flip and other explicit earlier caller exclusions are preserved.
 
 ## Ground crouch and directional input admission
