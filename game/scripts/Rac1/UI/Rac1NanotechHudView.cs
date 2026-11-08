@@ -17,6 +17,7 @@ public partial class Rac1NanotechHudView : Control
     private Rac1NanotechOrbSpin _spin = new();
     private Rac1ParticleSession? _particles;
     private Rac1ParticleView? _particleView;
+    private Camera3D? _camera;
     private CanvasItemMaterial? _composite;
     private double _animationTime;
     private float _framingScale = 1;
@@ -83,15 +84,15 @@ public partial class Rac1NanotechHudView : Control
             Mesh = _mesh,
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
         });
-        var camera = new Camera3D
+        _camera = new Camera3D
         {
             Projection = Camera3D.ProjectionType.Orthogonal,
             Size = width,
             Position = ToGodot(Eye),
             Current = true,
         };
-        _viewport.AddChild(camera);
-        camera.LookAt(new Vector3(0, .5f, 0), Vector3.Up);
+        _viewport.AddChild(_camera);
+        _camera.LookAt(new Vector3(0, .5f, 0), Vector3.Up);
         _particleView = new Rac1ParticleView { Name = "RecoveredNanotechParticles" };
         _viewport.AddChild(_particleView);
         StepAnimation();
@@ -120,12 +121,16 @@ public partial class Rac1NanotechHudView : Control
         // and sparkle trails as an intact world crate, without a pickup route.
         _sphere!.Step(new(NVector3.Zero, NVector3.Zero, NVector3.UnitZ, true));
         _particles!.Hero = NVector3.Zero;
-        _particles.Step(Eye, enforceLevelBounds: false);
+        _particles.Step(Eye + NVector3.UnitZ * _sphere.Bob, enforceLevelBounds: false);
     }
 
     private void Present()
     {
-        _materials!.Write(_mesh!, _sphere!.Build(Eye), ToGodot);
+        // Follow the source bob with the HUD camera so the displayed centre
+        // stays fixed while the native halo pulse and orbit animations continue.
+        var eye = Eye + NVector3.UnitZ * _sphere!.Bob;
+        _camera!.Position = ToGodot(eye);
+        _materials!.Write(_mesh!, _sphere.Build(eye), ToGodot);
         _particleView!.Render(_particles!, _assets!.Particles.PartTextures);
         _viewport!.RenderTargetUpdateMode = SubViewport.UpdateMode.Once;
     }
@@ -163,6 +168,7 @@ public partial class Rac1NanotechHudView : Control
         _particles = null;
         _viewport?.Free();
         _viewport = null;
+        _camera = null;
         _particleView = null;
         _mesh?.Dispose();
         _mesh = null;

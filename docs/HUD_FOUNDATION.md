@@ -10,13 +10,15 @@ Each filled sphere represents one current health unit; empty spheres appear only
 when the snapshot supplies a capacity. Spheres use the recovered RAC1 class-806
 mesh, UVs, vertex colours, Fx textures and halo via the existing source draw
 callback and material adapter. The same riding-cluster session, shared orbit spin
-and particle renderer used by intact world crates drive its bob, halo pulse,
+and particle renderer used by intact world crates drive its halo pulse,
 orbiting orb sprites and sparkle trails at 60 native ticks per second. A transparent
 viewport renders that effect into the row; nominal sphere size and spacing are
 50 percent larger than the initial recovered-asset HUD. The HUD
 uses premultiplied-alpha compositing for the transparent viewport so its already
 weighted halo colours are not multiplied by alpha a second time. Empty-slot tint
 RGB includes its opacity for the same reason. Source pulse amplitudes are unchanged.
+The HUD camera follows the source's vertical bob to keep each displayed sphere
+centred in its slot; the world effect and all other recovered animations are unchanged.
 The HUD placement, scale and dimming of empty slots are OBP choices. Ammo displays
 `current/max` whenever the owning snapshot supplies a capacity.
 The white weapon glyph uses the snapshot's typed `SourceWeaponKey`, without
