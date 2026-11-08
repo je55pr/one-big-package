@@ -84,7 +84,10 @@ public sealed class EffectSceneView : IDisposable
             {
                 var p = sprites[i];
                 var position = RuntimeWorldScene.ToScene(p.Position.X, p.Position.Y, p.Position.Z);
-                batch.Instances.SetInstanceTransform(i, new(Basis.Identity.Scaled(Vector3.One * p.Size), position));
+                var basis = key.Projection == RuntimeEffectSpriteProjection.SurfaceFlat
+                    ? new Basis(Vector3.Up, p.Rotation) * new Basis(Vector3.Right, -Mathf.Pi / 2f) * Basis.Identity.Scaled(Vector3.One * p.Size)
+                    : Basis.Identity.Scaled(Vector3.One * p.Size);
+                batch.Instances.SetInstanceTransform(i, new(basis, position));
                 batch.Instances.SetInstanceColor(i, new(p.Color.X, p.Color.Y, p.Color.Z, p.Color.W));
                 batch.Instances.SetInstanceCustomData(i, new(p.ProjectedAxes.X, p.ProjectedAxes.Y, p.Rotation, 0));
             }
@@ -130,7 +133,9 @@ public sealed class EffectSceneView : IDisposable
             string blend = state.Blend == RuntimeBlendEquation.AdditiveSourceAlpha ? "blend_add" : "blend_mix";
             string depth = state.DepthWrite ? "depth_draw_always" : "depth_draw_never";
             string test = state.DepthTest ? "" : ", depth_test_disabled";
-            string vertex = projection == RuntimeEffectSpriteProjection.ProjectedBillboard ? """
+            string vertex = projection == RuntimeEffectSpriteProjection.SurfaceFlat ? """
+                particle_depth = -MODELVIEW_MATRIX[3].z;
+                """ : projection == RuntimeEffectSpriteProjection.ProjectedBillboard ? """
                 vec4 center = PROJECTION_MATRIX * MODELVIEW_MATRIX * vec4(0.0, 0.0, 0.0, 1.0);
                 vec2 axes = INSTANCE_CUSTOM.xy;
                 vec2 offset = mat2(vec2(axes.x, axes.y), vec2(-axes.y, axes.x)) * (VERTEX.xy * 2.0);
@@ -161,7 +166,8 @@ public sealed class EffectSceneView : IDisposable
                 """ };
             _shaders.Add(shaderKey, shader);
         }
-        var material = new ShaderMaterial { Shader = shader };
+        // Surface decals draw after the transparent water (render priority 1), as the original draws its particle pass after the water callbacks.
+        var material = new ShaderMaterial { Shader = shader, RenderPriority = projection == RuntimeEffectSpriteProjection.SurfaceFlat ? 2 : 0 };
         material.SetShaderParameter("art", Texture(source, texture)); material.SetShaderParameter("near_depth", state.NearFade);
         material.SetShaderParameter("far_depth", state.FarFade); return material;
     }

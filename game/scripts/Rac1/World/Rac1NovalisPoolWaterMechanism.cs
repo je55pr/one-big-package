@@ -1,6 +1,9 @@
 using Godot;
 using OBP.Godot;
 using OBP.IO;
+using OBP.Core;
+using OBP.RAC1;
+using OBP.RAC1.Gameplay;
 using OBP.RAC1.Level;
 using OBP.RAC1.Player;
 using OBP.Runtime;
@@ -48,6 +51,11 @@ internal sealed class Rac1NovalisPoolWaterMechanism(Rac1AuthoredMechanismPorts p
     private double _carry;
     private long _frame;
     private Rac1WaterDomain _previousWater;
+    private Rac1NovalisPoolBubbles? _bubbleEmitter;
+    private Rac1EffectAssets? _bubbleAssets;
+    private Rac1ParticleSession? _bubbles;
+    private Rac1ParticleView? _bubbleView;
+    private readonly Rac1PickupRandom _bubbleRandom = Rac1PickupRandom.FromSeed(0x4e4f5643);
 
     internal override void Configure(RuntimeWorld world, RuntimeWorldScene.Result scene)
     {
@@ -69,7 +77,10 @@ internal sealed class Rac1NovalisPoolWaterMechanism(Rac1AuthoredMechanismPorts p
                 if (zone.ClipVolume >= _volumes.Count)
                     throw new InvalidDataException($"Pool zone {zone.Index} names missing clip volume {zone.ClipVolume}.");
             var wanted = _water.Tiles.SelectMany(tile => new[] { tile.Texture, tile.SecondTexture }).ToHashSet();
-            fx = Rac1FxTextures.Read(Rac1LevelCore.Open(reader, level), wanted);
+            var core = Rac1LevelCore.Open(reader, level);
+            fx = Rac1FxTextures.Read(core, wanted);
+            _bubbleEmitter = Rac1NovalisPoolBubbles.Read(Rac1ExecutableOverlay.Read(reader, level));
+            _bubbleAssets = Rac1EffectAssets.DecodePoolBubbles(core);
         }
         catch (Exception exception) when (exception is InvalidDataException or IOException or InvalidOperationException or OverflowException)
         {
@@ -83,6 +94,13 @@ internal sealed class Rac1NovalisPoolWaterMechanism(Rac1AuthoredMechanismPorts p
         _masks = new ushort[_water.Tiles.Count];
         _root = new Node3D { Name = "Rac1NovalisPoolWater", TopLevel = true };
         scene.Root.AddChild(_root);
+        _bubbles = new Rac1ParticleSession(_bubbleAssets!, Rac1PickupRandom.FromSeed(0x4e4f5642));   // host RNG, visual only
+        _bubbleView = new Rac1ParticleView
+        {
+            Name = "Rac1NovalisPoolBubbles",
+            SourceBank = new ObpSourceRef(ObpSourceGame.Rac1, Rac1Authority.Primary.BuildId, "LEVEL1"),
+        };
+        _root.AddChild(_bubbleView);
         _shader = new Shader { Code = ShaderCode };
         foreach (var tile in _water.Tiles)
         {
@@ -180,6 +198,8 @@ internal sealed class Rac1NovalisPoolWaterMechanism(Rac1AuthoredMechanismPorts p
             }
         }
         if (found >= 0) underwaterLook.SelectZone(found);   // the controller rewrites the underwater colours each frame it finds a zone
+        if (found == Rac1NovalisPoolBubbles.Zone) _bubbleEmitter!.Emit(_bubbles!, _bubbleRandom, _frame);
+        _bubbles!.Step(camera, enforceLevelBounds: false);
         _simulation!.Flush(_tileActive ??= index => _masks[index] != 0);
     }
 
@@ -188,6 +208,7 @@ internal sealed class Rac1NovalisPoolWaterMechanism(Rac1AuthoredMechanismPorts p
         // The light heading the controller samples from the level key light when it first runs is not
         // recovered; it only tilts highlights on rippled water (flat water is lit by the vertical term alone).
         const float sun = 0f;
+        _bubbleView!.Render(_bubbles!, _bubbleAssets!.PartTextures);
         foreach (var view in _tiles)
         {
             ushort mask = _masks[view.Source.Index];
@@ -257,6 +278,11 @@ internal sealed class Rac1NovalisPoolWaterMechanism(Rac1AuthoredMechanismPorts p
         _textures.Clear();
         _shader?.Dispose();
         _shader = null;
+        _bubbles?.Clear();
+        _bubbles = null;
+        _bubbleView = null;
+        _bubbleAssets = null;
+        _bubbleEmitter = null;
         _simulation = null;
         _water = null;
     }
