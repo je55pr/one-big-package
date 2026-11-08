@@ -9,7 +9,7 @@ public sealed record PlayerWeaponMenuFamily(string Id, string Name, IReadOnlyLis
     public EquipmentCatalogEntry? Recipient(IReadOnlyList<EquipmentCatalogEntry> catalog) => catalog
         .Where(entry => entry.Definition.Category == EquipmentCategory.Weapon &&
             entry.Definition.Item is { } key && Members.Contains(key))
-        .OrderByDescending(entry => entry.Selectable).ThenByDescending(entry => entry.State.Equipped)
+        .OrderByDescending(entry => entry.Usable).ThenByDescending(entry => entry.Selectable).ThenByDescending(entry => entry.State.Equipped)
         .ThenByDescending(entry => entry.State.Selected).ThenByDescending(entry => entry.State.Owned)
         .ThenBy(entry => entry.Definition.SourceGame).FirstOrDefault();
 }

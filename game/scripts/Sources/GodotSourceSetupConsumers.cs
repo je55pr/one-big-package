@@ -34,6 +34,8 @@ internal sealed class GodotSourceSetupConsumers(Node owner, Action<ObpSourceGame
         }
         catch (Exception error)
         {
+            if (source is not null) WeaponMenuIcons.Clear(source.Game);
+            if (source is null || source.Game == ObpSourceGame.Rac1) Rac1RetailUiAssets.Clear();
             string problem = "Required source UI assets could not be read: " + error.Message;
             GD.PrintErr(problem);
             ApplicationLifecycle.RequestQuit(owner, "required-source-ui-unavailable", 2);
