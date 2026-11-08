@@ -45,19 +45,20 @@ public static class PauseLoadoutSmoke
             owner.AddChild(menu); owner.GetTree().Paused = true;
             await Frames();
             VerifyOrdinarySurface(menu);
-            Require(menu.UniversalEnabled && Buttons().Count(button => button.Name.ToString().StartsWith("ObpItem_")) == 6, "Catalogue did not paginate.");
+            Require(menu.UniversalEnabled && menu.FindChild("ObpWeaponGrid", true, false) is GridContainer { Columns: 7 } grid && grid.GetChildCount() == 49,
+                "Weapons did not occupy one 7x7 board.");
             var card = Buttons().First(button => button.Name.ToString().StartsWith("ObpItem_"));
             card.GrabFocus(); await Pad(JoyButton.A);
-            Require(Focus() is Button { Text: "EQUIP" }, "Inspect did not focus the primary action.");
-            await Pad(JoyButton.A);
             Require(equips == 1 && owner.GetTree().Paused, "Controller equip doubled or resumed gameplay.");
             failEquip = true;
             Buttons().Single(button => button.Text == "EQUIP").GrabFocus(); await Pad(JoyButton.A);
-            Require(actionErrors.Count == 1 && menu.FindChild("ObpCatalogStatus", true, false) is Label { Text: "The change could not be applied." },
+            Require(actionErrors.Count == 1 && menu.FindChild("ObpCatalogStatus", true, false) is Label { Text: "This weapon could not be equipped." },
                 "Failed catalogue action was not reported.");
             failEquip = false;
             Buttons().Single(button => button.Text == "EQUIP").GrabFocus(); await Pad(JoyButton.A);
             Require(equips == 2, "Failed catalogue action permanently locked subsequent actions.");
+            // Other catalogue sections retain their existing paging, including future registrations.
+            menu.ShowUniversalSection("Quick Select"); await Frames();
             var next = Buttons().Single(button => button.Text == "NEXT");
             next.GrabFocus(); await Pad(JoyButton.A);
             Require(menu.UniversalPage == 1, "Controller could not reach the next catalogue page.");
@@ -67,6 +68,7 @@ public static class PauseLoadoutSmoke
                 await Click(next.GetGlobalRect().GetCenter());
             }
             Require(menu.UniversalPage >= 8 && Buttons().Any(button => button.Name.ToString().Contains("fixture_weapon_")), "Large future catalogue lost entries.");
+            menu.ShowUniversalSection("Weapons"); await Frames();
             await Pad(JoyButton.RightShoulder);
             Require(menu.UniversalSection == "Gadgets", "Shoulder did not select gadget section.");
             var gadget = Buttons().First(button => button.Text.StartsWith("Heli-Pack", StringComparison.Ordinal));
@@ -89,7 +91,7 @@ public static class PauseLoadoutSmoke
             sourceAvailable = false;
             menu.ShowUniversalSection("Weapons"); await Frames();
             Require(Buttons().Single(button => button.Text == "EQUIP").Disabled &&
-                menu.FindChild("ObpCatalogDetails", true, false) is Label { Text: var detail } && detail.Contains("temporarily unavailable"),
+                menu.FindChild("ObpWeaponDescription", true, false) is Label { Text: var detail } && detail.Contains("temporarily unavailable"),
                 "Lost source did not disable equip with a reason.");
             owner.GetWindow().Size = new(640, 360); await Frames(5);
             var scroll = (ScrollContainer)menu.FindChild("ObpCatalogScroll", true, false);

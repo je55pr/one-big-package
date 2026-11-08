@@ -34,6 +34,7 @@ public sealed partial class PauseMenuUi : CanvasLayer
             CatalogGadget = equip.SetGadget,
             CatalogAssign = equip.AssignSlot,
             CatalogPreview = bindings.Avatar().CreateAppearancePreview,
+            WeaponFamilyIcon = WeaponMenuIcons.ForFamily,
             ActorStatusReader = bindings.Actors().ReadStatus,
             SharedProfileStatusReader = bindings.ProfileStatus,
             SaveNoticeReader = bindings.SaveNotice,

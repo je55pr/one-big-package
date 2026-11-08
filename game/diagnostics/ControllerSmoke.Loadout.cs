@@ -11,8 +11,8 @@ public partial class ControllerSmoke
         await Frames(20);
         Require(GetTree().Paused && player.GlobalPosition == position, "Loadout navigation advanced the player.");
         var menu = Find<PauseMenuUi>()!;
-        for (int page = 0; page < 2; page++) { await FocusButton("NEXT"); await Press(JoyButton.A); }
-        Require(menu.UniversalPage == 2, "Mixed weapon catalogue has no controller-accessible third page.");
+        Require(menu.FindChild("ObpWeaponGrid", true, false) is GridContainer { Columns: 7 } grid && grid.GetChildCount() == 49,
+            "Trilogy weapons are not on one 7x7 board.");
         var args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
         string id = args.Rac2Iso is null ? "rac1/item/10" : "rac2/item/30";
         if (args.Rac2Iso is not null)
@@ -21,15 +21,14 @@ public partial class ControllerSmoke
             while (!_game.ReadPlayerEquipment().Single(entry => entry.Definition.Id == id).Selectable && Time.GetTicksMsec() < deadline)
             { await Task.Delay(10); await Frames(1); }
             menu.ShowUniversalSection("Weapons");
-            for (int page = 0; page < 2; page++) { await FocusButton("NEXT"); await Press(JoyButton.A); }
-            await FocusButton("Lancer", contains: true); await Press(JoyButton.A);
         }
         else
         {
             menu.ShowUniversalSection("Weapons");
-            await FocusButton("Bomb Glove", contains: true); await Press(JoyButton.A);
         }
-        await FocusButton("EQUIP"); await Press(JoyButton.A);
+        await Capture("weapon-grid");
+        await NavigateWeaponGridAsync(menu, id);
+        await Press(JoyButton.A);
         Require(_game.ReadPlayerEquipment().Single(entry => entry.Definition.Id == id).State.Selected, "Pause equip did not select the real controller.");
         for (int tab = 0; tab < 3; tab++) await Press(JoyButton.RightShoulder);
         Require(menu.UniversalSection == "Quick Select", "Controller cannot select Quick Select assignments.");
@@ -71,5 +70,29 @@ public partial class ControllerSmoke
         await FocusButton("RETURN TO WORLDS"); await Press(JoyButton.A);
         Require(Find<DestinationSelectorUi>() is not null && !GetTree().Paused, "Common pause could not return to worlds.");
         GD.Print("[controller-smoke] common pause, mixed equipment, eight-direction assignment, settings/focus, debug toggle and retained wheel PASS");
+    }
+
+    private async Task NavigateWeaponGridAsync(PauseMenuUi menu, string id)
+    {
+        var target = (Button)menu.FindChild("ObpItem_" + id.Replace('/', '_'), true, false);
+        var board = (GridContainer)menu.FindChild("ObpWeaponGrid", true, false);
+        Require(Focus() is Button start && start.GetParent() == board, "Weapons did not focus a grid cell.");
+        int index = Focus()!.GetIndex();
+        int destination = target.GetIndex();
+        while (index / 7 != destination / 7)
+        {
+            int step = index < destination ? 7 : -7;
+            await Press(step > 0 ? JoyButton.DpadDown : JoyButton.DpadUp);
+            index += step;
+            Require(ReferenceEquals(Focus(), board.GetChild(index)), "Vertical weapon-grid navigation skipped a row.");
+        }
+        while (index != destination)
+        {
+            int step = index < destination ? 1 : -1;
+            await Press(step > 0 ? JoyButton.DpadRight : JoyButton.DpadLeft);
+            index += step;
+            Require(ReferenceEquals(Focus(), board.GetChild(index)), "Horizontal weapon-grid navigation skipped a cell.");
+        }
+        Require(ReferenceEquals(Focus(), target), "D-pad navigation did not reach the intended weapon.");
     }
 }
