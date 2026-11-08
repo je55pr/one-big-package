@@ -104,6 +104,12 @@ internal sealed partial class Rac2WorldModule : IDisposable
             try { ConfigureCrateFamily(family.Key, family.ToArray()); }
             catch (Exception ex) when (ex is InvalidDataException or IOException or NotSupportedException or InvalidOperationException)
             {
+                if (_ports.Ordinary() && family.Key == Rac2CrateSupply.AmmoClass)
+                {
+                    GD.PrintErr($"[rac2-crates] Required ammo assets could not be prepared: {ex}");
+                    ApplicationLifecycle.RequestQuit(_scene.Root, "required-ammo-assets-unavailable", 2);
+                    throw;
+                }
                 CrateSupply.RetireFamily(family.Key);
                 if (family.Key == Rac2ExplosiveCrateSession.NativeClass) Explosives.Dispose();
                 foreach (var node in family)

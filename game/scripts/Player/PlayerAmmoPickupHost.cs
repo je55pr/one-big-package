@@ -54,8 +54,8 @@ internal sealed class PlayerAmmoPickupHost(RuntimeWorld world, RuntimeWorldScene
         if (_disposed || !ports.Current() || ports.Player() is not { } player || !GodotObject.IsInstanceValid(player)) return;
         if (_sourcePath != ports.VisualSourcePath())
         {
-            GD.PrintErr("[ammo-family] retired: pickup presentation source changed or became unavailable");
-            Dispose();
+            GD.PrintErr("[ammo-family] Required pickup presentation source changed or became unavailable.");
+            ApplicationLifecycle.RequestQuit(scene.Root, "required-ammo-source-unavailable", 2);
             return;
         }
         _accumulator = Math.Min(.2, _accumulator + Math.Clamp(delta, 0, .25));

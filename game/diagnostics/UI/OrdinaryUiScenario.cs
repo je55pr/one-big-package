@@ -48,13 +48,13 @@ public sealed class OrdinaryUiScenario(DiagnosticScenarioDefinition definition, 
         Require(repair.Detach(ObpSourceGame.Rac3), "The repair test requires three configured games.");
         menus.ShowTitle();
         state = menus.ReadNavigation();
-        Require(state.SourceManagerPresent && state.RepairActive && !state.TitlePresent, "Genuine source loss did not replace the title with repair.");
+        Require(!state.SourceManagerPresent && !state.RepairActive && !state.TitlePresent, "Source loss opened recovery UI instead of terminating play.");
         var after = player.Capture();
         Require(before == after,
             "Repair reset the persistent player session.");
         Require(!profile.TrySave("ordinary UI repair check"), "Repair allowed a profile write.");
         if (saved is not null) Require(saved == profile.ReadDigest(), "Repair rewrote the saved game.");
-        log("[ordinary-ui-smoke] PASS: title, resume, World Select/back, Lab, pause/focus and repair preserve ordinary UI and player state");
+        log("[ordinary-ui-smoke] PASS: title, resume, World Select/back, Lab, pause/focus and fatal source loss preserve player state");
     }
 
     private async Task CheckStartupAsync(DiagnosticRunContext run)

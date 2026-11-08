@@ -1,5 +1,7 @@
 # Authored ammunition families
 
+Normal play requires all three supported game sources. Only first-run source setup may be incomplete. A required source disappearing after setup, or required ammo assets failing to prepare, is a fatal error (exit 2), not a source-local visual fallback or permission to retire ammo crates and continue. Explicit retail diagnostics retain their own source-scoped paths.
+
 Ordinary OBP ammo crates use the persistent player's owned, implemented, attached-source equipment. They choose uniformly among families with missing ammunition when each piece is emitted. If every admitted weapon is full, a piece may still be emitted for an owned family and wait for ammunition to be spent. No eligible owned weapon means no ammunition piece; crates never manufacture ownership or enable an unrecovered weapon.
 
 The visible family stays fixed. At collection, a piece chooses one currently eligible, non-full recipient **within that family**, using that weapon's own source-provided refill amount and capacity. A family does not refill every weapon at once. A full, removed, or unavailable recipient does not consume the piece. Selection is not based on the current world, equipped weapon or shared native numbers.
