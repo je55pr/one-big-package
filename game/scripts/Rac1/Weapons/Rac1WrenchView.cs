@@ -64,16 +64,18 @@ public sealed partial class Rac1WrenchView : Node3D
     private void AdvanceAttachedAnimation(Rac1WrenchAttackSession.Frame attack, bool wasThrown, bool cranking)
     {
         bool recovery = attack.ProfileId == 3 && attack.WrenchReleased;
+        bool attachedAttack = attack.Active && !wasThrown;
+        bool attackPose = attachedAttack && !recovery;
         int sequence = 1;
         if (cranking) sequence = Rac1BoltCrankSession.WrenchSequence;
-        else if (attack.Active && !wasThrown && !recovery)
+        else if (attackPose)
             sequence = Rac1WrenchAttackProfile.Profiles[attack.ProfileId].WrenchSequence;
-        long generation = attack.Active && !wasThrown ? attack.Generation : 0;
+        long generation = attachedAttack ? attack.Generation : 0;
         if (_sequence != sequence || _generation != generation)
         {
             _blendSource = _localPositions;
             _tipBlendSource = CurrentLocalTip();
-            var profile = attack.Active && !wasThrown && !recovery ? Rac1WrenchAttackProfile.Profiles[attack.ProfileId] : null;
+            var profile = attackPose ? Rac1WrenchAttackProfile.Profiles[attack.ProfileId] : null;
             _clock.Select(sequence, profile?.EntryFrame ?? 0, cranking ? 13 : profile?.BlendTicks ?? 5);
             _sequence = sequence;
             _generation = generation;
