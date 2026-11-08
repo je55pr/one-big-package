@@ -46,7 +46,7 @@ internal sealed class Rac1WeaponPlayerInputHost(
     {
         // Circle uses equipment; Square retains its independent wrench path.
         var fusion = selection.Fusion();
-        if (!state.Alive() ||
+        if (!state.Alive() || state.Player()?.Rac1CrankActive == true ||
             fusion.Session?.Selected.SourceGame is not (ObpSourceGame.Rac2 or ObpSourceGame.Rac3) &&
             state.Weapons().Equipped == Rac1WeaponId.Wrench) return;
         if (state.Player()?.Rac1WrenchFrame.Active == true || state.World()?.Wrench.ThrowActive == true) return;
@@ -65,7 +65,7 @@ internal sealed class Rac1WeaponPlayerInputHost(
         var player = state.Player();
         bool admitted = player is not null && state.Alive() &&
             !player.Rac1WrenchFrame.Active && !world.Wrench.ThrowActive &&
-            !player.Rac1SwingshotActive && !player.Rac1Hanging;
+            !player.Rac1SwingshotActive && !player.Rac1Hanging && !player.Rac1CrankActive;
         if (fusion.Session is { Selected.SourceGame: not ObpSourceGame.Rac1 })
         {
             if (pressed && admitted && !selection.QuickSelectOpen() &&
@@ -87,6 +87,7 @@ internal sealed class Rac1WeaponPlayerInputHost(
 
     public void Select(Rac1WeaponId weapon)
     {
+        if (state.Player()?.Rac1CrankActive == true) return;
         var admission = selection.ValidateSelection(weapon);
         if (!admission.Selectable)
         {

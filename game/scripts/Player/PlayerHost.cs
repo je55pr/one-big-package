@@ -104,6 +104,19 @@ public partial class PlayerHost : CharacterBody3D
     /// <summary>Optional source-specific interaction admission before ordinary Square attacks.</summary>
     public Func<bool, Vector2, bool>? Rac1CrankInput { get; set; }
     private bool _rac1CrankInputActive;
+    private Rac1MovementAnimationSelection? _rac1CrankAnimation;
+    private bool _rac1CrankReleased;
+    public bool Rac1CrankActive => _rac1CrankInputActive;
+    internal bool Rac1CrankWrenchAvailable { get; set; }
+    internal int? Rac1CrankAnimationSequence { get; set; }
+    internal double Rac1CrankControlYaw => GetRac1ControlYaw();
+
+    internal void ApplyRac1CrankFrame(Rac1BoltCrankSession.Frame frame)
+    {
+        GlobalPosition = new(-frame.PlayerPosition.X, GlobalPosition.Y, frame.PlayerPosition.Y);
+        Rac1CurrentYaw = frame.PlayerYaw;
+        _rac1CrankAnimation = frame.Animation;
+    }
 
     /// <summary>Host-only keyboard selection seam for the bounded R&amp;C1 weapon inventory.</summary>
     public event Action<Rac1WeaponId>? Rac1WeaponSelectionRequested;
@@ -440,11 +453,14 @@ public partial class PlayerHost : CharacterBody3D
                     ActionJustPressed = false,
                     EquippedUseJustPressed = false
                 };
+            bool crankWasActive = _rac1CrankInputActive;
+            _rac1CrankAnimation = null;
             _rac1CrankInputActive = HasNativeTraversal && !DevelopmentControls.FlyEnabled && !Rac1RemoteControlActive &&
-                (Rac1CrankInput?.Invoke(_liveInput.ActionHeld, _liveInput.Move) ?? false);
+                (Rac1CrankInput?.Invoke(_liveInput.ActionJustPressed, _liveInput.Move) ?? false);
+            _rac1CrankReleased = crankWasActive && !_rac1CrankInputActive;
             if (!HasActiveRecoveredCamera)
                 ApplyGamepadCamera((float)delta, _liveInput.CameraIntent);
-            if (_liveInput.ActionJustPressed && !_rac1CrankInputActive && !Rac1SwimmingActive)
+            if (_liveInput.ActionJustPressed && !_rac1CrankInputActive && !_rac1CrankReleased && !Rac1SwimmingActive)
             {
                 if (CanWrenchAttack && !Rac1Hanging && !Rac1SwingshotActive)
                     NotifyRac1WrenchAttackAccepted();
@@ -452,7 +468,7 @@ public partial class PlayerHost : CharacterBody3D
                     RequestPrimaryAction();
             }
             if (CanUseEquipment && _liveInput.EquippedUseJustPressed && !DevelopmentControls.FlyEnabled &&
-                !Rac1DevelopmentSwingshotPreview)
+                !Rac1DevelopmentSwingshotPreview && !_rac1CrankInputActive && !_rac1CrankReleased)
                 RequestPrimaryAction();
         }
 

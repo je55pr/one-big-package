@@ -26,15 +26,30 @@ public partial class PlayerHost : CharacterBody3D
     {
         _locomotionAnimationInput = default;
         _ordinaryContactRequest = null;
+        _rac1SmallStepEligible = false;
+        _rac1TetherRequest = null;
+        _rac1SurfaceRequest = null;
         if (_rac1CrankInputActive)
         {
             ResetRac1WrenchAttack();
             Velocity = Vector3.Zero;
+            _rac1JumpWasHeld = jump;
+            _rac1PresentationGrounded = true;
+            _locomotionAnimationInput = new(false, true, 0, Traversal: _rac1CrankAnimation);
             return;
         }
-        _rac1SmallStepEligible = false;
-        _rac1TetherRequest = null;
-        _rac1SurfaceRequest = null;
+        if (_rac1CrankReleased)
+        {
+            _rac1CrankReleased = false;
+            ResetRac1WrenchAttack();
+            _rac1Movement.Reset();
+            _rac1JumpWasHeld = jump;
+            _rac1PresentationGrounded = true;
+            Velocity = Vector3.Zero;
+            _locomotionAnimationInput = new(false, true, 0,
+                GroundEntry: new(0, 0, 0, BlendTicks: -2));
+            return;
+        }
         if (HasNativeTraversal && TryStepRac1Swimming(move, jump, crouch))
         {
             _rac1JumpWasHeld = jump;

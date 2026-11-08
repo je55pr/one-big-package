@@ -12,7 +12,7 @@ public partial class PlayerHost
     public bool HasNativeCamera => ControlProfile.CameraAdapterId == PlayerHostProfiles.Camera;
     public bool CanWrenchAttack => ControlProfile.Actions.HasFlag(PlayerActionCapabilities.Wrench);
     public bool CanUseEquipment => ControlProfile.Actions.HasFlag(PlayerActionCapabilities.Equipment);
-    public bool CanQuickSelect => ControlProfile.Interfaces.HasFlag(PlayerInterfaceCapabilities.QuickSelect);
+    public bool CanQuickSelect => !_rac1CrankInputActive && ControlProfile.Interfaces.HasFlag(PlayerInterfaceCapabilities.QuickSelect);
     public bool CanDevelopEquipment => ControlProfile.Interfaces.HasFlag(PlayerInterfaceCapabilities.EquipmentDevelopment);
     public bool CanSaveMovementState => ControlProfile.Interfaces.HasFlag(PlayerInterfaceCapabilities.MovementBookmarks);
     public bool HasRetailPresentation => ControlProfile.Interfaces.HasFlag(PlayerInterfaceCapabilities.RetailPresentation);

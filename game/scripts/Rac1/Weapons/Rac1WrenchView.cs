@@ -32,7 +32,7 @@ public sealed partial class Rac1WrenchView : Node3D
     public Rac1WrenchView(Rac1WrenchAsset.Asset asset, PlayerAvatar avatar)
     {
         _avatar = avatar;
-        _clips = new[] { 1, 3, 4, 5, 6, 10 }.ToDictionary(sequence => sequence,
+        _clips = new[] { 1, 3, 4, 5, 6, 10, Rac1BoltCrankSession.WrenchSequence }.ToDictionary(sequence => sequence,
             sequence => Rac1WrenchAsset.DecodeAnimation(asset, sequence));
         _clock = new(_clips.ToDictionary(pair => pair.Key, pair => pair.Value.Durations), 1, 0, 1);
         _localPositions = _clips[1].Frames[0];
@@ -42,24 +42,30 @@ public sealed partial class Rac1WrenchView : Node3D
         BuildSurfaces(asset, avatar.Axes);
     }
 
-    public void StepAttached(PlayerAvatarAttachmentPose hand, Rac1WrenchAttackSession.Frame attack, bool wasThrown)
+    public void StepAttached(PlayerAvatarAttachmentPose hand, Rac1WrenchAttackSession.Frame attack, bool wasThrown,
+        bool cranking = false)
     {
         Transform = Transform3D.Identity;
         bool recovery = attack.ProfileId == 3 && attack.WrenchReleased;
-        int sequence = attack.Active && !wasThrown && !recovery ? Rac1WrenchAttackProfile.Profiles[attack.ProfileId].WrenchSequence : 1;
+        int sequence = cranking ? Rac1BoltCrankSession.WrenchSequence :
+            attack.Active && !wasThrown && !recovery ? Rac1WrenchAttackProfile.Profiles[attack.ProfileId].WrenchSequence : 1;
         long generation = attack.Active && !wasThrown ? attack.Generation : 0;
         if (_sequence != sequence || _generation != generation)
         {
             _blendSource = _localPositions;
             _tipBlendSource = CurrentLocalTip();
             var profile = attack.Active && !wasThrown && !recovery ? Rac1WrenchAttackProfile.Profiles[attack.ProfileId] : null;
-            _clock.Select(sequence, profile?.EntryFrame ?? 0, profile?.BlendTicks ?? 5);
+            _clock.Select(sequence, profile?.EntryFrame ?? 0, cranking ? 13 : profile?.BlendTicks ?? 5);
             _sequence = sequence;
             _generation = generation;
         }
         else
             _clock.Advance();
-        _clock.PlaybackMultiplier = attack.Animation?.PlaybackMultiplier ?? 1;
+        // Native crank entry uses mode 2 for both Ratchet and the wrench:
+        // keep the inserted wrench's terminal pose until this action releases it.
+        bool inserted = cranking && !_clock.Current.IsBlending && _clock.Current.NextFrame == 0;
+        if (inserted) _clock.ResumePlayback(sequence, _clips[sequence].Frames.Count - 1, 0, 0);
+        _clock.PlaybackMultiplier = inserted ? 0 : attack.Animation?.PlaybackMultiplier ?? 1;
         _localPositions = SampleLocal();
         var localTip = CurrentLocalTip();
         var positions = new double[_localPositions.Length];

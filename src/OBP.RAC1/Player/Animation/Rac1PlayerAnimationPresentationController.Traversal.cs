@@ -87,7 +87,8 @@ public sealed partial class Rac1PlayerAnimationPresentationController
             LocomotionClip(selected.Sequence).FrameTimelinePositions!);
         _traversalAuthoredAdvance = entering ? 0 : previousTime <= time ? time - previousTime :
             _traversalClock.FractionAdvanceThisUpdate;
-        var semantic = selected.NativeAction is 0x13 or 0x14 or 0x15 or 0x23 ? PlayerAnimationState.Attack :
+        var semantic = selected.NativeAction == Gameplay.Rac1BoltCrankSession.NativeAction ? PlayerAnimationState.Idle :
+            selected.NativeAction is 0x13 or 0x14 or 0x15 or 0x23 ? PlayerAnimationState.Attack :
             state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.Idle
             ? PlayerAnimationState.Fall : state;
         Current = Presentation(semantic, selected.Sequence, selected.NativeAction,
