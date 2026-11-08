@@ -22,34 +22,37 @@ public static class Rac2WeaponMenuAssets
     }
 
     // Descriptor +0x3C, corroborated by the native HUD animation directory.
-    public static ushort? Icon(int item) => item switch
+    private static readonly IReadOnlyDictionary<int, ushort> Icons =
+        new (ushort Animation, int[] Items)[]
     {
-        9 or 73 => 0xea99,
-        12 or 115 => 0xea79,
-        14 or 117 => 0xea7d,
-        16 or 72 or 109 or 110 => 0xea77,
-        17 or 118 => 0xea7b,
-        18 or 114 => 0xea7a,
-        22 or 65 or 83 or 84 => 0xea66,
-        23 or 66 or 87 or 88 => 0xea68,
-        24 or 67 or 85 or 86 => 0xea6b,
-        25 or 70 or 103 or 104 => 0xea72,
-        26 or 68 or 91 or 92 => 0xea67,
-        27 or 69 or 99 or 100 => 0xea70,
-        28 or 62 or 101 or 102 => 0xea71,
-        29 or 63 or 95 or 96 => 0xea69,
-        30 or 60 or 79 or 80 => 0xea64,
-        31 or 61 or 93 or 94 => 0xea6d,
-        32 or 78 or 105 or 106 => 0xea6e,
-        37 or 76 or 97 or 98 => 0xea73,
-        41 or 64 or 89 or 90 => 0xea6a,
-        42 or 71 or 81 or 82 => 0xea65,
-        43 => 0xea76,
-        44 => 0xea6c,
-        45 or 77 or 107 or 108 => 0xea74,
-        53 or 116 => 0xea7c,
-        _ => null,
-    };
+        (0xea99, [9, 73]),
+        (0xea79, [12, 115]),
+        (0xea7d, [14, 117]),
+        (0xea77, [16, 72, 109, 110]),
+        (0xea7b, [17, 118]),
+        (0xea7a, [18, 114]),
+        (0xea66, [22, 65, 83, 84]),
+        (0xea68, [23, 66, 87, 88]),
+        (0xea6b, [24, 67, 85, 86]),
+        (0xea72, [25, 70, 103, 104]),
+        (0xea67, [26, 68, 91, 92]),
+        (0xea70, [27, 69, 99, 100]),
+        (0xea71, [28, 62, 101, 102]),
+        (0xea69, [29, 63, 95, 96]),
+        (0xea64, [30, 60, 79, 80]),
+        (0xea6d, [31, 61, 93, 94]),
+        (0xea6e, [32, 78, 105, 106]),
+        (0xea73, [37, 76, 97, 98]),
+        (0xea6a, [41, 64, 89, 90]),
+        (0xea65, [42, 71, 81, 82]),
+        (0xea76, [43]),
+        (0xea6c, [44]),
+        (0xea74, [45, 77, 107, 108]),
+        (0xea7c, [53, 116]),
+    }.SelectMany(binding => binding.Items.Select(item => (Item: item, binding.Animation)))
+        .ToDictionary(binding => binding.Item, binding => binding.Animation);
+
+    public static ushort? Icon(int item) => Icons.TryGetValue(item, out ushort icon) ? icon : null;
 
     private static uint U32(byte[] data, int at) => BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(at, 4));
 }

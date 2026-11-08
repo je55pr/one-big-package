@@ -2,11 +2,13 @@
 
 The ordinary player Weapons menu is an OBP-authored 7 by 7 board: 47 weapon families, one OmniWrench family and one spare cell. All families remain visible. Returning copies and native upgrade forms share a display cell; RYNO, RYNO II and RY3NO remain separate families. Glove of Doom includes the Agents of Doom/Dread line, and Lava Gun includes Meteor Gun and Liquid Nitrogen Gun.
 
-`PlayerWeaponMenuRoster` is presentation grouping over existing `SourceWeaponKey` identities. It does not register weapons, create ownership, combine ammunition, unlock unavailable implementations, or replace source inventories. Equipping re-reads the real equipment catalog and calls its existing port with the resolved source-qualified catalog ID. Unregistered families show “Not implemented yet”; registered unavailable entries retain their existing admission reason. The currently implemented RAC3 V5 Shock Cannon appears under Shock Blaster, with its actual name in the inspector.
+`PlayerWeaponMenuRoster` is presentation grouping over existing `SourceWeaponKey` identities. It does not register weapons, create ownership, combine ammunition, unlock unavailable implementations, or replace source inventories. Equipping re-reads the real equipment catalog and calls its existing port with the resolved source-qualified catalog ID, preferring usable members before equipped/selected members. Unregistered families show “Not implemented yet”; registered unavailable entries use generic availability messages, with detailed admission reasons in debug mode. The currently implemented RAC3 V5 Shock Cannon appears under Shock Blaster, with its actual name in the inspector.
 
 The board has directional controller neighbors across seven columns. Unavailable cells remain focusable for inspection; the spare cell is not focusable. Cross/Enter equips an admitted weapon, and the inspector offers the same action. Other sections retain their existing paging and the eight-direction Quick Select remains independent of board positions. Native retail diagnostic menus retain their recovered layouts.
 
 ## Icons and provenance
+
+All three supported sources are required in normal play. Missing expected glyphs or failed source UI decoding are fatal errors, not partial-icon fallback cases. The RAC1 adapter retains its source-specific bank admission (0/1/4 to chunks 1/2/5); other bank references are rejected.
 
 No recovered PNGs or exported sprites are distributed. Source-owned readers locate the supported RAC2 global HUD and RAC3 boot HUD; RAC1 retains its existing global HUD reader. `Ps2HudSpriteBank` owns only the shared bounded animation/frame/palette/image codec, returning neutral decoded PS2 pixels. Disc identity, container addresses and native item-to-glyph bindings remain in the respective source projects.
 

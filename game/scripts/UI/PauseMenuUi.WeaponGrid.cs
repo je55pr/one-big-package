@@ -27,56 +27,7 @@ public sealed partial class PauseMenuUi
             _inspectedWeaponFamily = families.FirstOrDefault(family => family.Recipient(catalog)?.State.Equipped == true)?.Id ?? families[0].Id;
         foreach (var family in families)
         {
-            var entry = family.Recipient(catalog);
-            bool available = entry?.Selectable == true;
-            bool held = entry?.State.Equipped == true;
-            var cell = new Button
-            {
-                Name = entry is null ? "ObpFamily_" + family.Id : "ObpItem_" + entry.Definition.Id.Replace('/', '_'),
-                CustomMinimumSize = new(44, 60),
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-                FocusMode = Control.FocusModeEnum.All,
-                TooltipText = family.Name + "\n" + (entry is null ? "Not implemented yet." : EquipmentNotice(entry) ?? "Press to equip."),
-                AccessibilityName = family.Name,
-            };
-            cell.AddThemeStyleboxOverride("normal", WeaponCellStyle(held ? new(.12f, .25f, .25f) : new(.045f, .075f, .12f), held ? new(.4f, .9f, .75f) : new(.14f, .21f, .3f)));
-            cell.AddThemeStyleboxOverride("hover", WeaponCellStyle(new(.1f, .17f, .24f), new(.35f, .6f, .7f)));
-            cell.AddThemeStyleboxOverride("pressed", WeaponCellStyle(new(.1f, .24f, .25f), new(.45f, .9f, .8f)));
-            cell.AddThemeStyleboxOverride("focus", WeaponCellStyle(new(0, 0, 0, 0), new(.6f, .95f, .85f)));
-            var column = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-            column.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect); column.OffsetLeft = 3; column.OffsetRight = -3; column.OffsetTop = 3; column.OffsetBottom = -3;
-            column.AddThemeConstantOverride("separation", 0); cell.AddChild(column);
-            var icon = WeaponFamilyIcon?.Invoke(family);
-            column.AddChild(new TextureRect
-            {
-                Texture = icon,
-                CustomMinimumSize = new(0, 26),
-                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
-                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-                TextureFilter = Control.TextureFilterEnum.Linear,
-                MouseFilter = Control.MouseFilterEnum.Ignore,
-                Modulate = available ? Colors.White : new(.43f, .48f, .54f),
-            });
-            var label = new Label
-            {
-                Text = family.Name,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                AutowrapMode = TextServer.AutowrapMode.WordSmart,
-                MaxLinesVisible = 2,
-                TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis,
-                CustomMinimumSize = new(0, 24),
-                MouseFilter = Control.MouseFilterEnum.Ignore,
-                Modulate = available ? new(.93f, .97f, 1) : new(.55f, .61f, .68f),
-            };
-            // The retail bitmap font has a fixed native size. Use the scalable
-            // host face for these compact two-line captions so they cannot clip.
-            label.AddThemeFontOverride("font", ThemeDB.FallbackFont);
-            label.AddThemeFontSizeOverride("font_size", 10); column.AddChild(label);
-            cell.FocusEntered += () => InspectWeaponFamily(family);
-            cell.MouseEntered += () => InspectWeaponFamily(family);
-            cell.Pressed += () => { InspectWeaponFamily(family); EquipWeaponFamily(family); };
+            var cell = CreateWeaponFamilyCell(family, catalog);
             grid.AddChild(cell); _weaponCells.Add(cell); _universalFocus.Add(cell);
         }
         for (int i = families.Count; i < 49; i++)
@@ -100,6 +51,61 @@ public sealed partial class PauseMenuUi
         _universalReturnFocus = _weaponCells[Array.IndexOf(families.ToArray(), selected)];
     }
 
+    private Button CreateWeaponFamilyCell(PlayerWeaponMenuFamily family, IReadOnlyList<EquipmentCatalogEntry> catalog)
+    {
+        var entry = family.Recipient(catalog);
+        bool available = entry?.Selectable == true;
+        bool held = catalog.Any(item => item.State.Equipped && item.Definition.Item is { } key && family.Members.Contains(key));
+        var cell = new Button
+        {
+            Name = entry is null ? "ObpFamily_" + family.Id : "ObpItem_" + entry.Definition.Id.Replace('/', '_'),
+            CustomMinimumSize = new(44, 60),
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            FocusMode = Control.FocusModeEnum.All,
+            TooltipText = family.Name + "\n" + (entry is null ? "Not implemented yet." : EquipmentNotice(entry) ?? "Press to equip."),
+            AccessibilityName = family.Name,
+        };
+        cell.AddThemeStyleboxOverride("normal", WeaponCellStyle(held ? new(.12f, .25f, .25f) : new(.045f, .075f, .12f), held ? new(.4f, .9f, .75f) : new(.14f, .21f, .3f)));
+        cell.AddThemeStyleboxOverride("hover", WeaponCellStyle(new(.1f, .17f, .24f), new(.35f, .6f, .7f)));
+        cell.AddThemeStyleboxOverride("pressed", WeaponCellStyle(new(.1f, .24f, .25f), new(.45f, .9f, .8f)));
+        cell.AddThemeStyleboxOverride("focus", WeaponCellStyle(new(0, 0, 0, 0), new(.6f, .95f, .85f)));
+        var column = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        column.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect); column.OffsetLeft = 3; column.OffsetRight = -3; column.OffsetTop = 3; column.OffsetBottom = -3;
+        column.AddThemeConstantOverride("separation", 0); cell.AddChild(column);
+        var icon = WeaponFamilyIcon?.Invoke(family);
+        column.AddChild(new TextureRect
+        {
+            Texture = icon,
+            CustomMinimumSize = new(0, 26),
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+            TextureFilter = Control.TextureFilterEnum.Linear,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            Modulate = available ? Colors.White : new(.43f, .48f, .54f),
+        });
+        var label = new Label
+        {
+            Text = family.Name,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            MaxLinesVisible = 2,
+            TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis,
+            CustomMinimumSize = new(0, 24),
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            Modulate = available ? new(.93f, .97f, 1) : new(.55f, .61f, .68f),
+        };
+        // The retail bitmap font has a fixed native size. Use the scalable
+        // host face for these compact two-line captions so they cannot clip.
+        label.AddThemeFontOverride("font", ThemeDB.FallbackFont);
+        label.AddThemeFontSizeOverride("font_size", 10); column.AddChild(label);
+        cell.FocusEntered += () => InspectWeaponFamily(family);
+        cell.MouseEntered += () => InspectWeaponFamily(family);
+        cell.Pressed += () => { InspectWeaponFamily(family); EquipWeaponFamily(family); };
+        return cell;
+    }
+
     private static StyleBoxFlat WeaponCellStyle(Color background, Color border)
     {
         var style = new StyleBoxFlat { BgColor = background, BorderColor = border, CornerRadiusTopLeft = 5, CornerRadiusTopRight = 5, CornerRadiusBottomLeft = 5, CornerRadiusBottomRight = 5 };
@@ -113,14 +119,21 @@ public sealed partial class PauseMenuUi
         var entry = family.Recipient(CatalogReader!());
         _inspectedCatalogId = entry?.Definition.Id;
         _weaponName.Text = family.Name;
-        _weaponDescription.Text = entry is null ? "Not implemented yet." : EquipmentNotice(entry) ??
-            (entry.State.Equipped ? "Currently held." : entry.State.Selected ? "Selected in your loadout." : "Available in your loadout.");
+        _weaponDescription.Text = WeaponFamilyDescription(entry);
         if (entry is not null && entry.Definition.DisplayName != family.Name) _weaponDescription.Text += "\n" + entry.Definition.DisplayName;
         _weaponResource.Text = entry?.State.Ammo is { } ammo ? $"AMMO  {ammo} / {entry.State.Capacity}" : "";
         if (WeaponFamilyIcon?.Invoke(family) is null) _weaponResource.Text += "\nIcon unavailable.";
         _weaponEquip.Disabled = entry?.Selectable != true;
         _weaponEquip.Text = entry?.State.Equipped == true ? "EQUIPPED" : "EQUIP";
         if (_weaponCells.Count > 0 && IsInsideTree()) WireWeaponGridFocus();
+    }
+
+    private string WeaponFamilyDescription(EquipmentCatalogEntry? entry)
+    {
+        if (entry is null) return "Not implemented yet.";
+        if (EquipmentNotice(entry) is { } notice) return notice;
+        if (entry.State.Equipped) return "Currently held.";
+        return entry.State.Selected ? "Selected in your loadout." : "Available in your loadout.";
     }
 
     private void EquipWeaponFamily(PlayerWeaponMenuFamily family)
@@ -131,7 +144,8 @@ public sealed partial class PauseMenuUi
         EquipmentChangeResult result;
         try { result = CatalogEquip?.Invoke(entry.Definition.Id) ?? new(false, "Equipment action is unavailable."); }
         catch (Exception error) { CatalogErrorReporter(error); result = new(false, "Equipment action failed."); }
-        _catalogStatus.Text = result.Accepted ? "Weapon equipped." : (DebugOutputEnabled ? result.Reason : "This weapon could not be equipped.");
+        string failure = (DebugOutputEnabled ? result.Reason : null) ?? "This weapon could not be equipped.";
+        _catalogStatus.Text = result.Accepted ? "Weapon equipped." : failure;
         Callable.From(() =>
         {
             if (!IsInsideTree() || IsQueuedForDeletion()) return;

@@ -27,7 +27,8 @@ public partial class ControllerSmoke
             menu.ShowUniversalSection("Weapons");
         }
         await Capture("weapon-grid");
-        ((Button)menu.FindChild("ObpItem_" + id.Replace('/', '_'), true, false)).GrabFocus(); await Frames(3); await Press(JoyButton.A);
+        await NavigateWeaponGridAsync(menu, id);
+        await Press(JoyButton.A);
         Require(_game.ReadPlayerEquipment().Single(entry => entry.Definition.Id == id).State.Selected, "Pause equip did not select the real controller.");
         for (int tab = 0; tab < 3; tab++) await Press(JoyButton.RightShoulder);
         Require(menu.UniversalSection == "Quick Select", "Controller cannot select Quick Select assignments.");
@@ -69,5 +70,29 @@ public partial class ControllerSmoke
         await FocusButton("RETURN TO WORLDS"); await Press(JoyButton.A);
         Require(Find<DestinationSelectorUi>() is not null && !GetTree().Paused, "Common pause could not return to worlds.");
         GD.Print("[controller-smoke] common pause, mixed equipment, eight-direction assignment, settings/focus, debug toggle and retained wheel PASS");
+    }
+
+    private async Task NavigateWeaponGridAsync(PauseMenuUi menu, string id)
+    {
+        var target = (Button)menu.FindChild("ObpItem_" + id.Replace('/', '_'), true, false);
+        var board = (GridContainer)menu.FindChild("ObpWeaponGrid", true, false);
+        Require(Focus() is Button start && start.GetParent() == board, "Weapons did not focus a grid cell.");
+        int index = Focus()!.GetIndex();
+        int destination = target.GetIndex();
+        while (index / 7 != destination / 7)
+        {
+            int step = index < destination ? 7 : -7;
+            await Press(step > 0 ? JoyButton.DpadDown : JoyButton.DpadUp);
+            index += step;
+            Require(ReferenceEquals(Focus(), board.GetChild(index)), "Vertical weapon-grid navigation skipped a row.");
+        }
+        while (index != destination)
+        {
+            int step = index < destination ? 1 : -1;
+            await Press(step > 0 ? JoyButton.DpadRight : JoyButton.DpadLeft);
+            index += step;
+            Require(ReferenceEquals(Focus(), board.GetChild(index)), "Horizontal weapon-grid navigation skipped a cell.");
+        }
+        Require(ReferenceEquals(Focus(), target), "D-pad navigation did not reach the intended weapon.");
     }
 }

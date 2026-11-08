@@ -33,9 +33,11 @@ public sealed class Rac1HudBank
         return Decode(chunks);
     }
 
-    public static Rac1HudBank Decode(IReadOnlyList<byte[]> chunks) => new(Ps2HudSpriteBank.Decode(chunks));
+    public static Rac1HudBank Decode(IReadOnlyList<byte[]> chunks) => new(Ps2HudSpriteBank.Decode(chunks, [1, 2, -1, -1, 5, -1, -1, -1]));
 
-    public RuntimeTexture? DecodeFrame(ushort animationId, int localFrame = 0) =>
+    public RuntimeTexture? DecodeFrame(ushort animationId) => DecodeFrame(animationId, 0);
+
+    public RuntimeTexture? DecodeFrame(ushort animationId, int localFrame) =>
         _bank.DecodeFrame(animationId, localFrame) is { } texture
             ? new("hud", _bank.Animations[animationId].FirstFrame + localFrame, texture.Width, texture.Height, texture.Rgba) : null;
 }

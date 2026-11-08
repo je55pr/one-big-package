@@ -4,32 +4,39 @@ using OBP.PS2.Textures;
 namespace OBP.PS2.Graphics;
 
 /// <summary>Shared native HUD animation/frame/page tables, independently of any host image format.</summary>
+[System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "S3453", Justification = "Only Decode may publish a bank, after validating its source tables and page ranges.")]
 public sealed class Ps2HudSpriteBank
 {
     public sealed record Animation(ushort Id, int FrameCount, int FirstFrame, byte Flags);
-    private readonly record struct Page(int Offset, int Width, int Height);
+    private readonly record struct Page(int DataOffset, int Width, int Height);
     private readonly record struct Frame(int Palette, int Image);
 
     private readonly IReadOnlyList<byte[]> _chunks;
     private readonly Frame[] _frames;
     private readonly Page[] _palettes, _images;
     private readonly int[] _paletteEnds, _imageEnds;
-    public IReadOnlyDictionary<ushort, Animation> Animations { get; }
+    private readonly int[] _bankChunks;
+    private readonly Dictionary<ushort, Animation> _animations = [];
+    public IReadOnlyDictionary<ushort, Animation> Animations => _animations;
     public int FrameCount => _frames.Length;
     public int PalettePageCount => _palettes.Length;
     public int ImagePageCount => _images.Length;
 
-    private Ps2HudSpriteBank(IReadOnlyList<byte[]> chunks, Dictionary<ushort, Animation> animations,
-        Frame[] frames, Page[] palettes, Page[] images, int[] paletteEnds, int[] imageEnds)
+    private Ps2HudSpriteBank(IReadOnlyList<byte[]> chunks, Frame[] frames, Page[] palettes, Page[] images,
+        int[] paletteEnds, int[] imageEnds, int[] bankChunks)
     {
-        _chunks = chunks; Animations = animations; _frames = frames;
+        _chunks = chunks; _frames = frames; _bankChunks = bankChunks;
         _palettes = palettes; _images = images; _paletteEnds = paletteEnds; _imageEnds = imageEnds;
     }
 
-    public static Ps2HudSpriteBank Decode(IReadOnlyList<byte[]> chunks)
+    public static Ps2HudSpriteBank Decode(IReadOnlyList<byte[]> chunks) => Decode(chunks, [1, 2, 3, 4, 5, -1, -1, -1]);
+
+    public static Ps2HudSpriteBank Decode(IReadOnlyList<byte[]> chunks, IReadOnlyList<int> bankChunks)
     {
         if (chunks.Count != 6 || chunks[0].Length is < 0x100 or > 256 * 1024)
             throw new InvalidDataException("PS2 HUD bank has an invalid header/chunk count.");
+        if (bankChunks.Count != 8 || bankChunks.Any(chunk => chunk != -1 && (chunk < 1 || chunk >= chunks.Count)))
+            throw new ArgumentException("HUD banks need eight validated source-specific chunk bindings.", nameof(bankChunks));
         var header = chunks[0];
         int a = Offset(header, 4), f = Offset(header, 8), p = Offset(header, 12), im = Offset(header, 16);
         if (a < 0xb0 || a >= f || f >= p || p >= im || im > header.Length || (f - a) % 8 != 0 || (p - f) % 4 != 0)
@@ -44,31 +51,39 @@ public sealed class Ps2HudSpriteBank
             frames[i] = new(U16(header, f + i * 4), U16(header, f + i * 4 + 2));
         var palettes = Enumerable.Range(0, paletteCount).Select(i => ReadPage(header, p + i * 8)).ToArray();
         var images = Enumerable.Range(0, imageCount).Select(i => ReadPage(header, im + i * 8)).ToArray();
-        var animations = new Dictionary<ushort, Animation>();
+        var bank = new Ps2HudSpriteBank(chunks, frames, palettes, images, paletteEnds, imageEnds, bankChunks.ToArray());
+        bank.ReadAnimations(header, a, f);
+        return bank;
+    }
+
+    private void ReadAnimations(byte[] header, int startOffset, int endOffset)
+    {
         bool sentinel = false;
-        for (int at = a; at < f; at += 8)
+        for (int at = startOffset; at < endOffset; at += 8)
         {
             ushort id = U16(header, at);
             if (id == 0xffff) { sentinel = true; break; }
             int count = U16(header, at + 2), start = U16(header, at + 4);
-            if (count == 0 || start + count > frames.Length || !animations.TryAdd(id, new(id, count, start, header[at + 6])))
+            if (count == 0 || start + count > _frames.Length || !_animations.TryAdd(id, new(id, count, start, header[at + 6])))
                 throw new InvalidDataException("PS2 HUD animation has invalid or duplicate frame references.");
-            for (int i = start; i < start + count; i++)
-            {
-                var frame = frames[i];
-                if (frame.Palette >= paletteCount || frame.Image >= imageCount)
-                    throw new InvalidDataException("PS2 HUD frame references an absent page.");
-                ValidatePage(chunks, paletteEnds, frame.Palette, palettes[frame.Palette], 1024);
-                var image = images[frame.Image];
-                ValidatePage(chunks, imageEnds, frame.Image, image, image.Width * image.Height);
-            }
+            for (int i = start; i < start + count; i++) ValidateFrame(_frames[i]);
         }
         if (!sentinel) throw new InvalidDataException("PS2 HUD animation sentinel is missing.");
-        return new(chunks, animations, frames, palettes, images, paletteEnds, imageEnds);
+    }
+
+    private void ValidateFrame(Frame frame)
+    {
+        if (frame.Palette >= _palettes.Length || frame.Image >= _images.Length)
+            throw new InvalidDataException("PS2 HUD frame references an absent page.");
+        ValidatePage(_paletteEnds, frame.Palette, _palettes[frame.Palette], 1024);
+        var image = _images[frame.Image];
+        ValidatePage(_imageEnds, frame.Image, image, image.Width * image.Height);
     }
 
     /// <summary>Frame identities are animation-local; an absent animation/variant is not a substitute icon.</summary>
-    public Ps2Texture.Decoded? DecodeFrame(ushort animationId, int localFrame = 0)
+    public Ps2Texture.Decoded? DecodeFrame(ushort animationId) => DecodeFrame(animationId, 0);
+
+    public Ps2Texture.Decoded? DecodeFrame(ushort animationId, int localFrame)
     {
         if (!Animations.TryGetValue(animationId, out var animation) || (uint)localFrame >= animation.FrameCount) return null;
         int frameIndex = animation.FirstFrame + localFrame;
@@ -76,23 +91,23 @@ public sealed class Ps2HudSpriteBank
         var palette = _palettes[frame.Palette]; var image = _images[frame.Image];
         byte[] paletteData = _chunks[ChunkFor(_paletteEnds, frame.Palette)];
         uint[] colors = Enumerable.Range(0, 256).Select(i =>
-            BinaryPrimitives.ReadUInt32LittleEndian(paletteData.AsSpan(palette.Offset + i * 4, 4))).ToArray();
-        var pixels = _chunks[ChunkFor(_imageEnds, frame.Image)].AsMemory(image.Offset, image.Width * image.Height);
+            BinaryPrimitives.ReadUInt32LittleEndian(paletteData.AsSpan(palette.DataOffset + i * 4, 4))).ToArray();
+        var pixels = _chunks[ChunkFor(_imageEnds, frame.Image)].AsMemory(image.DataOffset, image.Width * image.Height);
         var decoded = Ps2Texture.DecodePaletted8(new(image.Width, image.Height, pixels, colors));
         return new(image.Width, image.Height, decoded.Rgba);
     }
 
-    private static void ValidatePage(IReadOnlyList<byte[]> chunks, int[] ends, int index, Page page, int length)
+    private void ValidatePage(int[] ends, int index, Page page, int length)
     {
-        byte[] data = chunks[ChunkFor(ends, index)];
-        if (page.Offset > data.Length || length > data.Length - page.Offset)
+        byte[] data = _chunks[ChunkFor(ends, index)];
+        if (page.DataOffset > data.Length || length > data.Length - page.DataOffset)
             throw new InvalidDataException("PS2 HUD image/palette lies outside its texture bank.");
     }
 
-    private static int ChunkFor(int[] ends, int index)
+    private int ChunkFor(int[] ends, int index)
     {
         int bank = Array.FindIndex(ends, end => end != 0 && index < end);
-        return bank is >= 0 and < 5 ? bank + 1 : throw new InvalidDataException("Unsupported PS2 HUD texture bank.");
+        return bank >= 0 && _bankChunks[bank] >= 1 ? _bankChunks[bank] : throw new InvalidDataException("Unsupported source HUD texture bank.");
     }
 
     private static int[] BankEnds(byte[] data, int at)

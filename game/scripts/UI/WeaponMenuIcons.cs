@@ -24,27 +24,7 @@ internal static class WeaponMenuIcons
     internal static void Load(ObpSourceGame game, IRandomAccessReader? reader)
     {
         Clear(game);
-        var frames = new Dictionary<ushort, RuntimeTexture>();
-        if (game == ObpSourceGame.Rac1)
-        {
-            foreach (var weapon in Enum.GetValues<Rac1WeaponId>())
-                if (Rac1WeaponIconCatalog.Ordinary(weapon) is { } icon &&
-                    Rac1RetailUiAssets.HudFrame(icon.AnimationId) is { } texture)
-                    frames.TryAdd(icon.AnimationId, texture);
-        }
-        else
-        {
-            if (reader is null) throw new InvalidOperationException("Weapon icons need the attached source reader.");
-            var bank = game switch
-            {
-                ObpSourceGame.Rac2 => Rac2WeaponMenuAssets.Read(reader),
-                ObpSourceGame.Rac3 => Rac3WeaponMenuAssets.Read(reader),
-                _ => throw new ArgumentOutOfRangeException(nameof(game)),
-            };
-            foreach (var key in PlayerWeaponMenuRoster.Families.SelectMany(family => family.Members).Where(key => key.SourceGame == game))
-                if (Animation(key) is { } id && !frames.ContainsKey(id) && bank.DecodeFrame(id) is { } decoded)
-                    frames.Add(id, new("weapon-menu", id, decoded.Width, decoded.Height, decoded.Rgba));
-        }
+        var frames = game == ObpSourceGame.Rac1 ? ReadRac1Frames() : ReadLaterFrames(game, reader);
         var background = game == ObpSourceGame.Rac1 ? SharedBlueTile(frames.Values.ToArray()) : null;
         foreach (var (id, frame) in frames)
         {
@@ -55,6 +35,41 @@ internal static class WeaponMenuIcons
         GD.Print($"[weapon-menu] {SourceIdentityWire.FormatSource(game)}: prepared {frames.Count} white weapon glyphs from attached source");
     }
 
+    private static Dictionary<ushort, RuntimeTexture> ReadRac1Frames()
+    {
+        var frames = new Dictionary<ushort, RuntimeTexture>();
+        foreach (var weapon in Enum.GetValues<Rac1WeaponId>())
+        {
+            if (Rac1WeaponIconCatalog.Ordinary(weapon) is not { } icon) continue;
+            var texture = Rac1RetailUiAssets.HudFrame(icon.AnimationId)
+                ?? throw new InvalidDataException($"Required RAC1 weapon glyph {icon.AnimationId:X4} is missing.");
+            frames.TryAdd(icon.AnimationId, texture);
+        }
+        return frames;
+    }
+
+    private static Dictionary<ushort, RuntimeTexture> ReadLaterFrames(ObpSourceGame game, IRandomAccessReader? reader)
+    {
+        if (reader is null) throw new InvalidOperationException("Weapon icons need the attached source reader.");
+        var bank = game switch
+        {
+            ObpSourceGame.Rac2 => Rac2WeaponMenuAssets.Read(reader),
+            ObpSourceGame.Rac3 => Rac3WeaponMenuAssets.Read(reader),
+            _ => throw new ArgumentOutOfRangeException(nameof(game)),
+        };
+        var frames = new Dictionary<ushort, RuntimeTexture>();
+        var ids = PlayerWeaponMenuRoster.Families.SelectMany(family => family.Members)
+            .Where(key => key.SourceGame == game).Select(Animation).OfType<ushort>().Distinct();
+        foreach (ushort id in ids)
+        {
+            var decoded = bank.DecodeFrame(id)
+                ?? throw new InvalidDataException($"Required {SourceIdentityWire.FormatSource(game)} weapon glyph {id:X4} is missing.");
+            frames.Add(id, new("weapon-menu", id, decoded.Width, decoded.Height, decoded.Rgba));
+        }
+        return frames;
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "S1075", Justification = "res:// is Godot's portable project-resource scheme, not an absolute machine path.")]
     internal static Texture2D? ForFamily(PlayerWeaponMenuFamily family)
     {
         // The authored board has a wrench cell; RAC1's native icon catalog correctly
