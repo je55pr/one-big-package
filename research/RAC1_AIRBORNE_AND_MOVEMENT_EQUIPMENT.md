@@ -29,7 +29,7 @@ timing context, `dt = float(1/60)` and `dtSquared = float(1/3600)`; computing
 | 0x0d | Thruster-Pack boost jump | 0.1 / 0.2 | 9 | 14 | 29.7 | 17 / 0 / 5 |
 | 0x0f | Heli-Pack boost jump | 1.9 / 1.95 | 9 | 5 | 29.7 | 21 / 0 / 5 |
 | 0x10 | Thruster-Pack stretch jump | 0.4 / 0.9 | 1, or 4 after native air/recent-crouch history | 1 | 8.5 | 38 / 0 / 5; history override blend 8 |
-| 0x11 | wall jump | 3.3 / 3.35 | 9 | 12 | 29 | 35 / 0 / 7 |
+| 0x11 | wall jump | 3.3 / 3.35 | 9 | 12 | 29 | 35 / 2 / 7 |
 | 0x1c | jump from ledge | 2 / 2.05 | 10 | 1 | 25 | 34 / 0 / 4 |
 | 0x69 | mud escape jump | mud depth + 1.7 / depth + 1.75 | 5 | 19 | 29.7 | 7 / 0 / 5 |
 
@@ -241,7 +241,178 @@ yaw smoothing starts only after age 9 and is separate from this direction.
 The host static-ray executor and use of the existing ledge candidate probe
 for the future ledge-continuation callback remain OBP adapter boundaries;
 the controller's current-domain-only admission is conservative relative to
-native three-domain history. Unknown world surface classes are rejected.
+native three-domain history. Unidentified and special high-bit hits are rejected;
+an identified static class-31 face has the native query sentinel -1 and remains
+eligible, since this producer excludes only classes 10 and 12.
+
+### 8 November 2026: playable wall-jump corrections
+
+The local Lombyte reference at revision
+`be4134e4c9f559f6f0a022c59a443c5f6cc64d70` supplied cross-checks in
+`hero_idle_sequence.c` (`probe_hero_airborne_wall_contact`),
+`hero_set_state.c` (`update_hero_motion_and_collision_probes`),
+`ui/help/00214658.c`, and the directed angle/damping helpers
+`math/interpolation/0025bb38.c` and `gameplay/entities/find_moby_hit.c`.
+The supported local NTSC-U Veldin overlay above remains authority. Its actual
+instructions were independently read through `Rac1ExecutableOverlay`, including:
+
+| Virtual interval (end exclusive) | SHA-256 of the bounded instruction block |
+| --- | --- |
+| `0x20b5b8..0x20b914` | `0bf9df330340f1bd393ff35886491e9f17b57166ebdc45a33217337cd1050a59` |
+| `0x214b04..0x214c40` | `319ae303dce2d1ccfff3c94c948e9818d0b4a29714e58aecd81d672cf095c955` |
+| `0x25bc98..0x25be00` | `e71b711dd6215fa63f5b662b4f21d427b981d5d1a45aaef6989bf20bd9295400` |
+| `0x25b798..0x25b8c0` | `7c5656c775a17f265355045238dc6e6781a52edb5defaac2313dde1992a0c2a8` |
+
+Three host/controller discrepancies are corrected:
+
+- The host filtered out every negative surface class, including the valid
+  static class-31 sentinel returned by the native material query. This blocked
+  the actual wall-jump panels: Kerwan's panels use raw face type 95, and the
+  Novalis waterworks shaft uses 63; both have low class 31. The adapter now
+  distinguishes these identified faces from unidentified or high-bit contacts.
+- P+0x255 means the forward query hit a **Moby**, not that it hit anything.
+  `0x20b714..0x20b730` selects the 1.7-height upper ray only for a non-crate Moby
+  (or action 0x11); static walls require height 3.0 outside action 0x11. The host
+  passes a separate Moby-hit fact instead of substituting obstruction distance.
+  Hosted actor contact bodies explicitly bind their presentation/source owner,
+  including bodies placed beside the model rather than beneath it. Query cadence
+  and Godot's dynamic-object membership remain host approximations.
+- After native action age 9, `0x214b40..0x214b7c` invokes the facing helper with
+  direction **-1**, error gain `0.042f`, damping `0.2f`, and velocity cap
+  `11.868238f * dt`. The directed angle helper chooses the negative route,
+  allowing the long turn when necessary. The damping helper also bounds speed
+  by absolute remaining error; the angle helper snaps within one percent of the
+  velocity cap. Body yaw now follows that recurrence instead of resetting
+  instantly to the launch normal. Motion still preserves its separate age-9
+  outward launch, regardless of body yaw or analogue steering.
+
+Manual staged checks used the genuine Ratchet avatar, no aerial pack, the
+existing InputMap, and the imported retail collision in the Godot host at 60
+native updates per second. The player was placed at each shaft's base before
+starting; subsequent climbing and walking used movement/jump inputs only.
+Local frame-stepping and inspection controls, captures, and source paths were
+excluded from the change. Coordinates below are native **X/Y/Z**, not scene
+coordinates.
+
+| Route | Staged start | Observed result |
+| --- | --- | --- |
+| Kerwan, first fitness-course island | `(200.08,142,62.05)`, facing 0 | Four alternating wall jumps reached the upper ledge; ledge jump and forward input landed at `(201.716,141.045,75.047)`. An ordinary jump to the rear grass finished grounded at `(202.012,144.920,76.002)`, beside the cable departure. |
+| Novalis, waterworks Gold Bolt | `(237.69,116.65,75.55)`, facing 2.583 | Five alternating wall jumps reached the upper walkway at `(241.675,114.248,87.513)`. Walking around its outer edge collected original class-1134 instance **959**; the ordinary gold-bolt session reported `Novalis gold bolts 1/3`. |
+
+For reproducing either shaft climb, hold the initial Cross for 13 updates,
+release for 2, then press again near the facing wall. Keep each wall-jump press
+held for 39 updates and release for 2 before pressing at the opposite wall.
+These are witnessed input timings, not new admission constants. Novalis's five
+wall-jump peaks were approximately `79.373,82.007,84.641,87.271,89.910`; after
+the fifth press, neutral input for 44 updates completed the walkway landing.
+On Kerwan the fourth crossing admits the upper ledge; use Cross to jump from
+the hang and steer onto the platform, then jump onto the higher grass.
+
+These checks establish both playable routes in OBP. They do not establish
+bit-exact equivalence of Godot's contact solver to the native query masks,
+alternate gravity frames, or the still-bounded predicted-ledge continuation.
+No new wall markers, planet-specific admission, extra jump impulse, equipment
+grant, or relaxed opposing-normal/action-age gate is used for either route.
+
+### Wall-jump animation and sound follow-up
+
+The same authorised NTSC-U Veldin overlay selects animation 35 with a
+seven-update blend in `0x225a84..0x225aa8`, then branches to `0x227264`,
+whose call to `0x2323b8` sets argument `a1` to **2** in the delay slot.
+`0x23248c` stores that argument into the target keyframe byte at Moby+0x51;
+it is a keyframe index, not an authored motion-timeline time. Lombyte's
+`hero_set_state.c` and `set_hero_animation.c` corroborate this selection.
+OBP previously started this animation at keyframe 0; the source-owned jump
+profile now starts at keyframe 2. The bounded `0x227264..0x227274` block has
+SHA-256 `bf52c08d4cacc21e6c4430766605157588ca71d346243b937e7b049fc8cc1c32`.
+
+Animation 35 has no direct loop sound. Its retail timed cues are class-0
+local sound **37** at keyframe **3.0** and local sound **30** at **10.5**
+(packed cue words `0x00300025` and `0x00a8001e`). Veldin, Novalis and Kerwan
+all contain these cues and decode non-silent PCM for both sounds through
+their own class-to-bank remaps:
+
+| Level | Bank IDs for local 37 / 30 | Decoded frames for 37 / 30 |
+| --- | --- | --- |
+| Veldin (0) | 57 / 50 | 3304 / 4648 |
+| Novalis (1) | 50 / 44 | 3304 / 4648 |
+| Kerwan (3) | 40 / 35 | 3304 / 4648 |
+
+The existing animation sound cursor and selected-player audio presenter own
+dispatch and playback, retaining source gain and pitch selection. No additional
+button-triggered sound or destination-specific audio rule is needed. A local
+manual frame-stepping check on Novalis's imported shaft recorded sound 37
+once on each of three consecutive action-17 entries (native player audio ticks
+68, 109, 150); letting the third animation continue also recorded sound 30 at
+tick 180. The Godot host allocated PCM one-shot voices, with no missing-sound
+errors. A new jump may interrupt the old animation before its later cue.
+That entry correction initially retained fixed-speed playback. The follow-up
+below adds native apex/descent playback for wall and Heli-Pack long jumps;
+their cues consequently follow the retimed clock, including landing recovery.
+
+### Airborne landing-pose correction
+
+Wall jump (action `0x11`, sequence 35) and Heli-Pack long jump (action `0x0a`,
+sequence 18) previously ran at multiplier 1 until their clip ended. The baked
+terminal-pose fallback then held the landing/recovery pose even during a long
+unsupported descent. Grounded crouch input was not selecting that pose.
+
+The same local NTSC-U overlay, cross-checked against Lombyte's
+`hero_update_transitions.c`, `hero_idle_sequence.c` and `hero_set_state.c`,
+supplies these controls:
+
+| Action | Launch age | Authored apex / airborne target | Landing keyframe threshold |
+| --- | --- | --- | --- |
+| `0x11` wall jump | 9 | 12 / 20 | 10 |
+| `0x0a` Heli-Pack long jump | 5 | 18 / 29 | 10 |
+
+At launch age + 1, truncate vertical step / gravity to predict apex updates.
+`0x208f20` retimes the authored frame distance with scale 0.5, the transition
+rate and that update count; the caller caps speed at 1.5. After apex, while
+the next keyframe is below 10, retime toward the airborne target with a 0.2
+speed step and bounds 0.2..2.7. Speed above 1.8 selects keyframe 12 with
+predicted landing updates + 3 blend updates. Matching the target's truncated
+authored time stops playback. First landing can select keyframe 12 with blend
+7 when animation time is below target - 1.5; landing restores speed 1.
+
+`Rac1AirborneAnimationSession` owns this bounded selector. The movement owner
+provides vertical step, gravity per update, ground clearance, action age and
+landing updates through the existing source animation selection. The presentation
+owner retains the native frame clock and blend snapshot. A new action generation
+creates a new selector, so held playback cannot leak into a repeated jump or a
+ground action.
+
+| Independently read executable interval (end exclusive) | SHA-256 |
+| --- | --- |
+| `0x224f20..0x224fd0` | `0237d5d2dda6fa083b7caa08c8340046b2e33336b4921f9840983cdae3b61b88` |
+| `0x225278..0x225338` | `25b9964b2c382de34cb873786736910efadfb058543cc23a92818f1a55f66e65` |
+| `0x208f20..0x209018` | `5c7d3b1a61b24ed3dafdf8d111a08e37fc66794cc607df0dba964f7a51d0deb4` |
+| `0x22ed84..0x22f224` | `3473516adbf30d8f4b61270511b4ae4c9991ddd2a2a1d6a2ee3db3728872f612` |
+| `0x233c30..0x233d30` | `08de1f0f08dc79147b634f0dc23688c5ee20235e522113473207653d95b89833` |
+
+Manual frame-stepping on imported retail worlds observed:
+
+- Novalis wall jump: authored time 12.785 at action age 39 and 16.908 at
+  age 55, rather than advancing into the landing tail at fixed speed. A late
+  sample reached target interval 20.5; recovery resumed on support, sound 30
+  played, and the player returned to standing. Sound 37 remained present on
+  each of five alternating wall jumps, ending grounded on the upper walkway
+  at native `(241.675,114.248,87.513)`.
+- Heli-Pack long jump from that walkway: action 10 remained airborne at age
+  112, clearance 4.593, authored time 27.138. The rendered pose retained its
+  extended airborne posture. At age 130 authored time reached 29; landing
+  handed off to stop/standing instead of retaining a crouched clip ending.
+  Crouch stayed held through the first 112 updates to cover the reported input.
+- Kerwan: four alternating wall jumps still reached the ledge. Ledge jumps
+  and ordinary steering/jumping reached the highest grass, grounded at native
+  `(200.537,146.231,75.997)`, beside the cable.
+
+Landing prediction uses the host's floor clearance with the native discrete
+gravity equation and 60-update horizon. It does **not** reproduce the native
+forward trajectory collision ray, so predicted landing timing can differ near
+edges. Other jump families, alternate gravity and native timed fall-action
+handoffs retain their existing adapter limitations. No jump impulse, wall
+admission gate, contact solver or player capability is changed by this fix.
 
 ## Implementation and limits
 

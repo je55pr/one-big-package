@@ -133,6 +133,24 @@ internal sealed partial class Rac1EnemyHost
         enemy.Node.Root.GlobalPosition = enemy.Body.GlobalPosition;
     }
 
+    // Every enemy body plus the player. Rebuilding this (one engine call per body, then marshalling the array)
+    // for each ground probe made every enemy's step cost grow with the whole level's enemy count.
+    private global::Godot.Collections.Array<Rid>? _groundExclusions;
+    private int _groundExclusionVersion = -1;
+    private Rid _groundExclusionPlayer;
+
+    private global::Godot.Collections.Array<Rid> GroundExclusions()
+    {
+        var player = _player!.GetRid();
+        if (_groundExclusions is null || _groundExclusionVersion != _rac1Enemies.Version || _groundExclusionPlayer != player)
+        {
+            _groundExclusions = new(_rac1Enemies.Values.Select(other => other.Body.GetRid()).Append(player));
+            _groundExclusionVersion = _rac1Enemies.Version;
+            _groundExclusionPlayer = player;
+        }
+        return _groundExclusions;
+    }
+
     internal bool TryGroundRac1Enemy(Rac1HostedEnemy enemy, float upwardReach, float downwardReach)
     {
         if (!Owns(enemy)) return false;
@@ -149,7 +167,7 @@ internal sealed partial class Rac1EnemyHost
             Margin = enemy.Body.SafeMargin,
             RecoveryAsCollision = true,
             MaxCollisions = 4,
-            ExcludeBodies = new global::Godot.Collections.Array<Rid>(_rac1Enemies.Values.Select(other => other.Body.GetRid()).Append(_player!.GetRid())),
+            ExcludeBodies = GroundExclusions(),
         };
         using var result = new PhysicsTestMotionResult3D();
         if (!PhysicsServer3D.BodyTestMotion(enemy.Body.GetRid(), parameters, result)) return false;

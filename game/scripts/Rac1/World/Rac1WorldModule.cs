@@ -156,7 +156,7 @@ internal sealed class Rac1WorldModule : IDisposable
     private void BindSourcePlayerContacts(PlayerHost player)
     {
         if (_world.Game != ObpSourceGame.Rac1) return;
-        player.Rac1CrankInput = (held, stick) => !_playerPorts.Health().Probe().IsDead && Mechanisms.TryTurnCrank(held, stick);
+        player.Rac1CrankInput = (pressed, stick) => Mechanisms.TryTurnCrank(pressed, stick);
         player.Rac1WaterSurfaceHeight = Mechanisms.SampleWaterHeight;
         player.Rac1NovalisDrowned += _contacts.Drowned;
         player.Rac1WaterSoundRequested += _contacts.WaterSound;

@@ -14,7 +14,10 @@ public readonly record struct Vec3(double X, double Y, double Z)
     public static Vec3 operator *(Vec3 a, double s) => new(a.X * s, a.Y * s, a.Z * s);
 
     /// <summary>Native PS2 Z-up <c>(x, y, z)</c> to OBP Y-up <c>(x, z, y)</c>.</summary>
-    public Vec3 NativeZUpToObpYUp() => new(X, Z, Y);
+    public Vec3 NativeZUpToObpYUp() => new(X: X, Y: Z, Z: Y);
+
+    /// <summary>OBP Y-up <c>(x, y, z)</c> to native PS2 Z-up <c>(x, z, y)</c>.</summary>
+    public Vec3 ObpYUpToNativeZUp() => new(X: X, Y: Z, Z: Y);
 }
 
 /// <summary>Axis-aligned bounds in OBP world space.</summary>

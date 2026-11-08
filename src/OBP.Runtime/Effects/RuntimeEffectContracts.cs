@@ -49,7 +49,8 @@ public readonly record struct RuntimeEffectView(Vector3 Eye, Vector3 Forward, Ve
     private static bool Finite(Vector3 value) => float.IsFinite(value.X) && float.IsFinite(value.Y) && float.IsFinite(value.Z);
 }
 
-public enum RuntimeEffectSpriteProjection { WorldBillboard, ProjectedBillboard }
+/// <summary>WorldBillboard faces the camera; ProjectedBillboard uses native screen axes; SurfaceFlat lies horizontally (spin about the vertical) like a decal on a surface.</summary>
+public enum RuntimeEffectSpriteProjection { WorldBillboard, ProjectedBillboard, SurfaceFlat }
 public readonly record struct RuntimeEffectDrawState(RuntimeBlendEquation Blend, bool DepthTest = true,
     bool DepthWrite = false, float NearFade = 0, float FarFade = 0, bool DepthFade = false);
 public sealed record RuntimeEffectTexture(ObpSourceRef Source, RuntimeTexture Texture);

@@ -63,6 +63,7 @@ public sealed class EffectWorldSession : IDisposable
         catch (NotSupportedException error) { return new(EffectAdmission.Unavailable, null, new(RuntimeEffectAvailability.UnsupportedContext, error.Message)); }
         catch (InvalidDataException error) { return new(EffectAdmission.Unavailable, null, new(RuntimeEffectAvailability.MissingAssets, error.Message)); }
         _instances.Add(handle, new(request, factory, native));
+        _texturesStale = true;
         _lastSequence = request.Sequence; LastProblem = null; return new(EffectAdmission.Ready, handle);
     }
     public bool SetPose(EffectHandle handle, RuntimeEffectPose pose)
@@ -102,14 +103,28 @@ public sealed class EffectWorldSession : IDisposable
     {
         view.Validate(); return [.. _instances.Select(p => new EffectDraw(p.Key, p.Value.Native.Capture(view)))];
     }
-    public IReadOnlyList<RuntimeEffectTexture> Textures => _instances.Values.SelectMany(e => e.Factory.Textures).DistinctBy(t => t.Source).ToArray();
+    // Renderers compare this list by reference to decide whether to rebuild their texture bindings, so it is only rebuilt
+    // when an instance is added or removed, and the previous list is kept when the set of textures did not change.
+    private IReadOnlyList<RuntimeEffectTexture> _textures = [];
+    private bool _texturesStale;
+    public IReadOnlyList<RuntimeEffectTexture> Textures
+    {
+        get
+        {
+            if (!_texturesStale) return _textures;
+            _texturesStale = false;
+            var rebuilt = _instances.Values.SelectMany(e => e.Factory.Textures).DistinctBy(t => t.Source).ToArray();
+            if (!rebuilt.Select(t => t.Source).SequenceEqual(_textures.Select(t => t.Source))) _textures = rebuilt;
+            return _textures;
+        }
+    }
     private bool OwnerAlive(ActorInstanceKey actor) => actor.WorldInstanceId == WorldInstanceId && actor.Generation == LeaseGeneration && _actorAlive(actor);
-    private void Remove(EffectHandle handle, Entry entry) { _instances.Remove(handle); entry.Native.Dispose(); }
+    private void Remove(EffectHandle handle, Entry entry) { _instances.Remove(handle); _texturesStale = true; entry.Native.Dispose(); }
     public void Reset()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         foreach (var entry in _instances.Values) entry.Native.Dispose();
-        _instances.Clear(); _lastSequence = 0; ResetGeneration = checked(ResetGeneration + 1); LastProblem = null;
+        _instances.Clear(); _texturesStale = true; _lastSequence = 0; ResetGeneration = checked(ResetGeneration + 1); LastProblem = null;
     }
     public void Dispose()
     {

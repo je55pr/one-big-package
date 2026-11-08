@@ -5,7 +5,7 @@ public readonly record struct Rac1AirborneWallProbeInput(
     double RequestedVertical, double FacingYaw, double GroundClearance,
     double GravityPerUpdate, int CurrentAction,
     int CurrentDomain, int PreviousDomain, int SecondPreviousDomain,
-    bool ForwardContactFlag, bool ForwardCrateFamily,
+    bool ForwardHitMoby, bool ForwardCrateFamily,
     bool ExistingLedgeCandidate, bool HasWallJumped,
     double PreviousWallNormalYaw, double BodyRadius = 0.45f);
 
@@ -81,7 +81,7 @@ public static class Rac1AirborneWallProbe
         if (raycast(low) is null)
             return default;
 
-        double height = input.CurrentAction == 0x11 || input.ForwardContactFlag && !input.ForwardCrateFamily
+        double height = input.CurrentAction == 0x11 || input.ForwardHitMoby && !input.ForwardCrateFamily
             ? 1.7f : 3f;
         var high = new Rac1TraversalRay(LocalPoint(input, 0, height),
             LocalPoint(input, input.BodyRadius + 1.4f, height), Rac1TraversalRayMask.Support);

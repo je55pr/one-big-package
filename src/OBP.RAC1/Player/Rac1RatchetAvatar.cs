@@ -1,5 +1,6 @@
 using OBP.RAC1.Animation;
 using OBP.RAC1.Geometry;
+using OBP.RAC1.Gameplay;
 using OBP.RAC1.Level;
 
 namespace OBP.RAC1.Player;
@@ -180,6 +181,10 @@ public static class Rac1RatchetAvatar
             (73, 1, 0x00000000u),
             (81, 5, 0x3e800000u),
             (103, 17, 0x3e800000u),
+            (Rac1BoltCrankSession.IdleSequence, 13, 0x3e800000u),
+            (Rac1BoltCrankSession.SlowSequence, 60, null),
+            (Rac1BoltCrankSession.FastSequence, 46, null),
+            (Rac1BoltCrankSession.InsertSequence, 13, 0x3e800000u),
         ];
         // Contextual clips are not present in every world's animation table.
         // The playable provider deliberately uses its verified LEVEL0 carrier;
