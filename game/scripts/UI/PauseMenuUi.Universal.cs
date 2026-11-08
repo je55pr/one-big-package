@@ -36,6 +36,7 @@ public sealed partial class PauseMenuUi
     private string? _inspectedCatalogId;
     private VBoxContainer _universalBody = null!;
     private Label _catalogDetails = null!, _catalogStatus = null!, _catalogPage = null!;
+    private Label _universalHelp = null!;
     private HFlowContainer _catalogActions = null!;
     private Button _catalogPrevious = null!, _catalogNext = null!;
     private readonly List<Control> _universalFocus = [];
@@ -82,7 +83,8 @@ public sealed partial class PauseMenuUi
         _catalogPage = new Label { HorizontalAlignment = HorizontalAlignment.Center, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill }; paging.AddChild(_catalogPage);
         _catalogNext = MakeButton("NEXT"); _catalogNext.Pressed += () => ChangeUniversalPage(1); paging.AddChild(_catalogNext);
         _catalogStatus = new Label { Name = "ObpCatalogStatus", AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = UiTheme.TextDim }; content.AddChild(_catalogStatus);
-        column.AddChild(new Label { Text = "L1 / R1  Sections    Page Up / Down  Pages    Cross  Inspect / Confirm    Start  Resume    Circle  Back", AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = UiTheme.TextDim });
+        _universalHelp = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = UiTheme.TextDim };
+        column.AddChild(_universalHelp);
         ShowUniversalSection("Weapons");
     }
 
@@ -113,9 +115,17 @@ public sealed partial class PauseMenuUi
         ClearUniversalChildren(_universalBody); ClearUniversalChildren(_catalogActions);
         _universalFocus.Clear(); _universalFocus.Add(_resume!); _universalFocus.AddRange(_universalTabs);
         _catalogDetails.Text = "";
+        _catalogDetails.Visible = _catalogActions.Visible = _universalSection != "Weapons";
+        _universalHelp.Text = _universalSection == "Weapons"
+            ? "L1 / R1  Sections    D-pad / Arrows  Browse    Cross / Enter  Equip    Start  Resume    Circle  Back"
+            : "L1 / R1  Sections    Page Up / Down  Pages    Cross  Inspect / Confirm    Start  Resume    Circle  Back";
         bool catalog = _universalSection is "Weapons" or "Gadgets" or "Appearance" or "Quick Select";
-        _catalogPrevious.Visible = _catalogNext.Visible = _catalogPage.Visible = catalog;
+        _catalogPrevious.Visible = _catalogNext.Visible = _catalogPage.Visible = catalog && _universalSection != "Weapons";
         if (!catalog) { BuildUniversalOptions(); WireUniversalFocus(); return; }
+        if (_universalSection == "Weapons")
+        {
+            _universalPage = 0; BuildWeaponGrid(); WireUniversalFocus(); RestoreUniversalFocus(); return;
+        }
         var entries = UniversalEntries();
         int pages = Math.Max(1, (entries.Length + UniversalPageSize - 1) / UniversalPageSize);
         _universalPage = Math.Clamp(_universalPage, 0, pages - 1);
@@ -292,12 +302,14 @@ public sealed partial class PauseMenuUi
     {
         var order = _universalFocus.Concat(new Control[] { _catalogPrevious, _catalogNext }).Where(MenuFocus.Available).ToArray();
         MenuFocus.WireVertical(order);
+        if (_universalSection == "Weapons") WireWeaponGridFocus();
     }
 
     private void RestoreUniversalFocus() => MenuFocus.Restore(_universalReturnFocus, _universalFocus);
 
     private void ChangeUniversalPage(int direction)
     {
+        if (_universalSection == "Weapons") return;
         _universalPage += direction; _inspectedCatalogId = null; RebuildUniversalPage();
     }
 
