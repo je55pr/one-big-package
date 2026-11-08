@@ -72,7 +72,9 @@ public sealed record Rac1AirborneJumpProfile(
                 21, 0, 5, 85, alternateHeliTiming ? 34 : 35, alternateHeliTiming ? 70 : 71),
             Rac1AirborneJumpKind.ThrusterPackLong => new(kind, 0.4f, 0.9f,
                 fastEntry ? 4 : 1, 1, 8.5f, 38, 0, fastEntry ? 8 : 5, 0),
-            Rac1AirborneJumpKind.WallJump => new(kind, 3.3f, 3.35f, 9, 12, 29f, 35, 0, 7, 0),
+            // 0x225a84..0x225aa8 -> 0x227264: sequence 35, keyframe 2, blend 7.
+            // Preserve the authored keyframe-3/10.5 sound cue windows.
+            Rac1AirborneJumpKind.WallJump => new(kind, 3.3f, 3.35f, 9, 12, 29f, 35, 2, 7, 0),
             // Novalis 23e7e8: P+22a4 is water depth, not ground clearance.
             Rac1AirborneJumpKind.WaterExit when environmentDepth < 1.25f =>
                 new(kind, 1.95f, 1.98f, 15, 10, 29.7f, 114, 1, -1, 0,

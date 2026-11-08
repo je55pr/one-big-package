@@ -53,12 +53,13 @@ public partial class PlayerHost
             _rac1Movement.VerticalStep, _rac1Yaw.CurrentYaw, context.GroundClearance,
             _rac1Movement.CurrentAirGravityPerUpdate, action,
             _rac1Movement.CurrentMovementDomain, 0, 0,
-            // OBP adapter: P+0x255's exact producer is not reproduced. The
-            // existing forward ray supplies its bounded static-hit substitute.
-            context.ForwardClearance < 4f, context.ForwardCrateFamily,
+            context.ForwardHitMoby, context.ForwardCrateFamily,
             Rac1Hanging, _rac1Movement.HasWallJumped, _rac1Movement.PreviousWallNormalYaw);
         return Rac1AirborneWallProbe.Probe(input,
-            ray => CastRac1TraversalRay(ray) is { SurfaceClass: >= 0 } hit ? hit : null,
+            // Native class 31 is the identified static-face sentinel -1. It
+            // is eligible here; the producer excludes only classes 10 and 12.
+            // TraversalAllowed keeps unidentified and high-bit hits closed.
+            ray => CastRac1TraversalRay(ray) is { TraversalAllowed: true } hit ? hit : null,
             predicted => ProbeRac1Ledge(supportHeight, predictMotion: false, positionOverride: predicted) is not null);
     }
 }

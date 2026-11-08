@@ -120,6 +120,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
             _traversalClock is { PlaybackMultiplier: 0, Current: { IsBlending: false, NextFrame: 0 } });
         _traversalClock = null;
         _traversalSelection = null;
+        _airborneAnimation = null;
         _traversalBlendSource = null;
         _traversalCycleCompleted = false;
         _locomotionClock = null;
