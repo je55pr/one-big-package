@@ -272,9 +272,11 @@ Three host/controller discrepancies are corrected:
   distinguishes these identified faces from unidentified or high-bit contacts.
 - P+0x255 means the forward query hit a **Moby**, not that it hit anything.
   `0x20b714..0x20b730` selects the 1.7-height upper ray only for a non-crate Moby
-  (or action 0x11); static walls require height 3.0. The host passes a separate
-  Moby-hit fact instead of substituting obstruction distance. Query cadence and
-  Godot's dynamic-object membership remain host approximations.
+  (or action 0x11); static walls require height 3.0 outside action 0x11. The host
+  passes a separate Moby-hit fact instead of substituting obstruction distance.
+  Hosted actor contact bodies explicitly bind their presentation/source owner,
+  including bodies placed beside the model rather than beneath it. Query cadence
+  and Godot's dynamic-object membership remain host approximations.
 - After native action age 9, `0x214b40..0x214b7c` invokes the facing helper with
   direction **-1**, error gain `0.042f`, damping `0.2f`, and velocity cap
   `11.868238f * dt`. The directed angle helper chooses the negative route,

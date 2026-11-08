@@ -9,9 +9,9 @@ public static class Rac1AirborneWallJump
 {
     public const float OutwardStep = 4.9f * (1f / 60f);
     public const int LaunchAge = 9;
-    public const float FacingErrorGain = 0.042f;
-    public const float FacingVelocityDamping = 0.2f;
-    public const float FacingMaximumStep = 11.868238f * (1f / 60f);
+    private const float FacingErrorGain = 0.042f;
+    private const float FacingVelocityDamping = 0.2f;
+    private const float FacingMaximumStep = 11.868238f * (1f / 60f);
 
     public readonly record struct FacingStep(float Yaw, float Velocity);
 
@@ -28,6 +28,8 @@ public static class Rac1AirborneWallJump
         float error = DirectedError(cachedWallNormalYaw, yaw);
         velocity += FacingErrorGain * error - FacingVelocityDamping * velocity;
         velocity = Math.Clamp(velocity, -FacingMaximumStep, FacingMaximumStep);
+        // 0x25b798 caps both signs by absolute error. Direction -1 selects
+        // the target route; it does not discard inherited positive yaw speed.
         velocity = Math.Clamp(velocity, -MathF.Abs(error), MathF.Abs(error));
         yaw = Wrap(yaw + velocity);
         return MathF.Abs(DirectedError(cachedWallNormalYaw, yaw)) < FacingMaximumStep * 0.01f
