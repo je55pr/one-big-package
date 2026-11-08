@@ -39,7 +39,7 @@ public static class PlayerEquipmentRegistrations
                 implemented ? EquipmentImplementation.Implemented : EquipmentImplementation.Unimplemented, new(ObpSourceGame.Rac1, (int)item),
                 ConflictGroup: item is Rac1TraversalEquipmentId.HeliPack or Rac1TraversalEquipmentId.ThrusterPack ? "backpack" : null,
                 UnsupportedReason: implemented ? null : "The source-owned traversal controller is not implemented.",
-                Usage: item is Rac1TraversalEquipmentId.HeliPack or Rac1TraversalEquipmentId.ThrusterPack
+                Usage: item is Rac1TraversalEquipmentId.HeliPack or Rac1TraversalEquipmentId.ThrusterPack or Rac1TraversalEquipmentId.HydroPack
                     ? EquipmentUsage.Backpack : item == Rac1TraversalEquipmentId.Swingshot ? EquipmentUsage.ContextAction : EquipmentUsage.Passive);
         yield return Appearance(ObpSourceGame.Rac1, Rac1Authority.Primary.BuildId, Rac1PlayerAvatarProvider.Instance.DefaultAvatarId,
             "rac1:ratchet:moby-class-0", true);

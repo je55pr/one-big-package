@@ -55,6 +55,9 @@ Clank's run head spring (`215ef8`, `205168`) retains its own angular and
 translation velocities. Blink (`2059d8`) reads the four absolute eye layers
 at `17c1e0..17c2a0` and the 22-step weight curve at `17c2a0..17c2f8`
 (exclusive end), with 50..200-update intervals.
+`2059d8` multiplies the absolute blink-node translation by Moby scale before
+the ordinary local-to-world conversion. These tables therefore use
+`Mesh.Scale * Mesh.Scale / 1024`; ordinary joint translations use one factor.
 
 ## Effects, audio and ownership
 

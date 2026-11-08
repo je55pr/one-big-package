@@ -58,7 +58,7 @@ public sealed record Rac1ClankPackAssets(
         var ratchet = classes.Mobies[0];
         if (Rac1MobyAttachment.ReadJoint(core.Assets.AsSpan(ratchet.AssetOffset, ratchet.AssetLength), SemanticJoint) != RatchetJoint)
             throw new InvalidDataException("R&C1 Clank attachment differs from retail.");
-        var ids = models.Values.SelectMany(model => model.Surfaces).Select(surface => surface.TextureId).ToHashSet();
+        var ids = models.Values.SelectMany(model => model.Surfaces).Select(surface => surface.TextureId).Where(id => id >= 0).ToHashSet();
         var textures = RcLevelTextureTable.Read(core.Index, core.Assets, core.GsRam, core.Header.TexturesBaseOffset,
                 new(core.Header.MobyTextures.Count, core.Header.MobyTextures.Offset))
             .Where(texture => ids.Contains(texture.Index))
@@ -115,6 +115,9 @@ public sealed record Rac1ClankPackAssets(
             var q = overlay.Read(0x17c1e0 + i * 16, 16);
             var s = overlay.Read(0x17c220 + i * 16, 16);
             var t = overlay.Read(0x17c260 + i * 16, 16);
+            // 2059d8 first multiplies the absolute node table by Moby+2c.
+            // Convert that resulting native local translation to world units
+            // with the same scale/1024 used by the ordinary joint channels.
             blink.Add(new(models[ClankClass].Skeletal.Skeleton.Attachments[socket].Joint, new(
                 new(BinaryPrimitives.ReadSingleLittleEndian(q), BinaryPrimitives.ReadSingleLittleEndian(q[4..]),
                     BinaryPrimitives.ReadSingleLittleEndian(q[8..]), BinaryPrimitives.ReadSingleLittleEndian(q[12..])),
