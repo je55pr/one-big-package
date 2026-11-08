@@ -12,6 +12,9 @@ namespace OBP.RAC1.Presentation;
 public sealed record Rac1UiAssets(Rac1HudBank Hud, IReadOnlyDictionary<string, Rac1BitmapFont> Fonts,
     IReadOnlyList<IReadOnlyDictionary<uint, byte[]>> Languages)
 {
+    /// <summary>Silver regular-bolt glyph, visually identified in the resident NTSC-U HUD bank.</summary>
+    public const ushort RegularBoltAnimationId = 0x754F;
+
     // Original level-local Moby class 0x472. Projected panel geometry and
     // animation frames stay source-owned, not invented Godot meshes.
     public Rac1MenuPanelModel? NativeMenuPanels { get; init; }

@@ -2,6 +2,17 @@
 
 Status: foundation contract, engine-independent state adapter, R&C1 projection and a non-interactive Godot renderer are implemented. This document defines the smallest player-HUD presentation model needed by the current playable slices. Retail-faithful artwork, layout and timing remain unresolved.
 
+The current OBP-authored gameplay layout places weapon/ammo at the top left,
+health at the top centre, and Bolts at the top right. Weapon names are omitted;
+the renderer uses the weapons menu's white glyph for the snapshot's typed
+`SourceWeaponKey`, without borrowing another source's family member. The regular
+silver Bolt uses R&C1 resident HUD animation `0x754F`, frame 0. The HUD requires
+these attached-source glyphs and reports missing resources explicitly, without
+substitute labels or artwork. This asset identification was
+visually checked against the authorised NTSC-U bank; the placement and sizing
+are OBP choices, not recovered retail HUD behaviour. No retail images are stored
+in the repository. Oxygen and interaction prompts retain their lower placement.
+
 ## Purpose and ownership
 
 The HUD is an observer. Gameplay authority stays where it already lives: source-game/session code owns health, economy, inventory, damage, pickups, interaction eligibility and every transition that changes those values. The HUD consumes a read-only projection of that state.

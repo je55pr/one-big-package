@@ -1,4 +1,5 @@
 using Godot;
+using OBP.RAC1.Presentation;
 using OBP.Runtime.Presentation;
 
 namespace OBP.Game;
@@ -24,12 +25,13 @@ public partial class PlayerHud : Control
     private Label _healthValue = null!;
     private Label _healthState = null!;
     private Label _healthDelta = null!;
-    private Label _boltsKicker = null!;
     private Label _boltsValue = null!;
     private Label _boltsDelta = null!;
-    private Label _weaponName = null!;
+    private TextureRect _weaponIcon = null!;
+    private TextureRect _boltsIcon = null!;
     private Label _weaponStatus = null!;
     private Label _ammo = null!;
+    private Label _ammoKicker = null!;
     private Label _ammoDelta = null!;
     private Label _promptAction = null!;
     private Label _promptMessage = null!;
@@ -113,9 +115,14 @@ public partial class PlayerHud : Control
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
         });
         outer.AddChild(top);
-        top.AddChild(Passive(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill }));
         _weaponPanel = BuildWeaponPanel();
-        top.AddChild(_weaponPanel);
+        _healthPanel = BuildHealthPanel();
+        _boltsPanel = BuildBoltsPanel();
+        // Equal slots keep health on the viewport centre regardless of which
+        // optional counters are present or how many digits they display.
+        top.AddChild(TopSlot("AmmoSlot", _weaponPanel, SizeFlags.ShrinkBegin));
+        top.AddChild(TopSlot("HealthSlot", _healthPanel, SizeFlags.ShrinkCenter));
+        top.AddChild(TopSlot("BoltsSlot", _boltsPanel, SizeFlags.ShrinkEnd));
 
         outer.AddChild(Passive(new Control { SizeFlagsVertical = SizeFlags.ExpandFill }));
 
@@ -152,10 +159,6 @@ public partial class PlayerHud : Control
         airBox.AddChild(_airLabel);
         airBox.AddChild(_airProgress);
         stats.AddChild(_airPanel);
-        _healthPanel = BuildHealthPanel();
-        _boltsPanel = BuildBoltsPanel();
-        stats.AddChild(_healthPanel);
-        stats.AddChild(_boltsPanel);
         bottom.AddChild(stats);
         bottom.AddChild(Passive(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill }));
         outer.AddChild(bottom);
@@ -168,9 +171,13 @@ public partial class PlayerHud : Control
 
         _healthKicker = Kicker("NANOTECH");
         _healthValue = ValueLabel();
+        _healthKicker.HorizontalAlignment = HorizontalAlignment.Center;
+        _healthValue.HorizontalAlignment = HorizontalAlignment.Center;
         _healthState = SecondaryLabel();
+        _healthState.HorizontalAlignment = HorizontalAlignment.Center;
         _healthState.Name = "HealthStateDebug";
         _healthDelta = SecondaryLabel();
+        _healthDelta.HorizontalAlignment = HorizontalAlignment.Center;
         _healthDelta.Visible = false;
         box.AddChild(_healthKicker);
         box.AddChild(_healthValue);
@@ -182,11 +189,17 @@ public partial class PlayerHud : Control
     private PanelContainer BuildBoltsPanel()
     {
         var panel = Card("Bolts", 250);
-        var box = Stack(panel);
-        _boltsKicker = Kicker("BOLTS");
-        box.AddChild(_boltsKicker);
+        var row = Passive(new HBoxContainer());
+        row.AddThemeConstantOverride("separation", 10);
+        panel.AddChild(row);
+        _boltsIcon = Icon("BoltIcon", 44);
+        row.AddChild(_boltsIcon);
+        var box = Passive(new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill });
+        row.AddChild(box);
         _boltsValue = ValueLabel();
+        _boltsValue.HorizontalAlignment = HorizontalAlignment.Right;
         _boltsDelta = SecondaryLabel();
+        _boltsDelta.HorizontalAlignment = HorizontalAlignment.Right;
         _boltsDelta.Visible = false;
         box.AddChild(_boltsValue);
         box.AddChild(_boltsDelta);
@@ -197,14 +210,20 @@ public partial class PlayerHud : Control
     {
         var panel = Card("Weapon", 260);
         var box = Stack(panel);
-        box.AddChild(Kicker("EQUIPPED"));
-        _weaponName = ValueLabel();
-        _ammo = SecondaryLabel();
+        var row = Passive(new HBoxContainer());
+        row.AddThemeConstantOverride("separation", 10);
+        box.AddChild(row);
+        _weaponIcon = Icon("WeaponIcon", 56);
+        row.AddChild(_weaponIcon);
+        var ammoBox = Passive(new VBoxContainer { SizeFlagsVertical = SizeFlags.ShrinkCenter });
+        row.AddChild(ammoBox);
+        _ammoKicker = Kicker("AMMO");
+        ammoBox.AddChild(_ammoKicker);
+        _ammo = ValueLabel();
         _ammoDelta = SecondaryLabel();
         _ammoDelta.Visible = false;
-        box.AddChild(_weaponName);
-        box.AddChild(_ammo);
-        box.AddChild(_ammoDelta);
+        ammoBox.AddChild(_ammo);
+        ammoBox.AddChild(_ammoDelta);
         _weaponStatus = SecondaryLabel();
         _weaponStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         box.AddChild(_weaponStatus);
@@ -278,7 +297,7 @@ public partial class PlayerHud : Control
             return;
         }
 
-        _boltsKicker.Text = SemanticLabel(bolts.CurrencyKey);
+        RenderBoltIcon();
         _boltsValue.Text = $"{bolts.Balance:N0}";
     }
 
@@ -291,17 +310,17 @@ public partial class PlayerHud : Control
             return;
         }
 
-        _weaponName.Text = WeaponName(weapon);
+        _weaponIcon.Texture = WeaponMenuIcons.ForWeapon(weapon.Weapon
+            ?? throw new InvalidOperationException("The gameplay HUD requires a source-qualified weapon identity."));
         _weaponStatus.Text = weapon.Status ?? "";
         _weaponStatus.Visible = weapon.Status is not null;
-        if (weapon.Status is not null) _weaponName.AddThemeFontSizeOverride("font_size", 22);
-        else _weaponName.RemoveThemeFontSizeOverride("font_size");
         _ammo.Visible = weapon.Ammo is not null;
+        _ammoKicker.Visible = _ammo.Visible;
         if (weapon.Ammo is { } ammo)
         {
             _ammo.Text = ammo.Capacity is { } capacity
-                ? $"AMMO  {ammo.Current:N0} / {capacity:N0}"
-                : $"AMMO  {ammo.Current:N0}";
+                ? $"{ammo.Current:N0} / {capacity:N0}"
+                : $"{ammo.Current:N0}";
         }
     }
 
@@ -358,7 +377,7 @@ public partial class PlayerHud : Control
         {
             if (!_hasBolts)
             {
-                _boltsKicker.Text = SemanticLabel(feedback.PickupResourceKey ?? "bolts");
+                RenderBoltIcon();
                 _boltsValue.Visible = false;
             }
             _boltsDelta.Text = SignedDelta(boltDelta);
@@ -445,30 +464,31 @@ public partial class PlayerHud : Control
         return control;
     }
 
-    private static string WeaponName(HudWeapon weapon)
+    private static MarginContainer TopSlot(string name, Control panel, SizeFlags alignment)
     {
-        string key = weapon.NameKey ?? weapon.PresentationKey;
-        return key switch
+        var slot = Passive(new MarginContainer
         {
-            "weapon.wrench" or "rac1.weapon.wrench" => "Wrench",
-            "weapon.bomb-glove" or "rac1.weapon.bomb-glove" => "Bomb Glove",
-            "weapon.pyrocitor" or "rac1.weapon.pyrocitor" => "Pyrocitor",
-            "weapon.blaster" or "rac1.weapon.blaster" => "Blaster",
-            "weapon.glove-of-doom" or "rac1.weapon.glove-of-doom" => "Glove of Doom",
-            "weapon.mine-glove" or "rac1.weapon.mine-glove" => "Mine Glove",
-            "weapon.suck-cannon" or "rac1.weapon.suck-cannon" => "Suck Cannon",
-            "weapon.devastator" => "Devastator",
-            "weapon.visibomb" => "Visibomb Gun",
-            "weapon.taunter" => "Taunter",
-            "weapon.walloper" => "Walloper",
-            "weapon.tesla-claw" => "Tesla Claw",
-            "weapon.morph-o-ray" => "Morph-o-Ray",
-            "weapon.ryno" => "RYNO",
-            "weapon.drone-device" => "Drone Device",
-            "weapon.decoy-glove" => "Decoy Glove",
-            _ => DisplayText(key),
-        };
+            Name = name,
+            CustomMinimumSize = new Vector2(280, 0),
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+        });
+        panel.SizeFlagsHorizontal = alignment;
+        panel.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        slot.AddChild(panel);
+        return slot;
     }
+
+    private static TextureRect Icon(string name, float size) => Passive(new TextureRect
+    {
+        Name = name,
+        CustomMinimumSize = new Vector2(size, size),
+        SizeFlagsVertical = SizeFlags.ShrinkCenter,
+        ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+        StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+    });
+
+    private void RenderBoltIcon() => _boltsIcon.Texture = Rac1RetailUiAssets.Sprite(Rac1UiAssets.RegularBoltAnimationId)
+        ?? throw new InvalidOperationException("The gameplay HUD requires the attached R&C1 regular Bolt glyph.");
 
     private static string SemanticLabel(string key) => key switch
     {

@@ -80,6 +80,14 @@ internal static class WeaponMenuIcons
         return null;
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "S1075", Justification = "res:// is Godot's portable project-resource scheme, not an absolute machine path.")]
+    internal static Texture2D ForWeapon(SourceWeaponKey key)
+    {
+        if (key == PlayerEquipmentRegistrations.Wrench) return GD.Load<Texture2D>("res://assets/ui/obp-wrench.svg");
+        return Animation(key) is { } id && Icons.TryGetValue((key.SourceGame, id), out var texture)
+            ? texture : throw new InvalidOperationException($"The gameplay HUD requires the attached source glyph for {key}.");
+    }
+
     private static ushort? Animation(SourceWeaponKey key) => key.SourceGame switch
     {
         ObpSourceGame.Rac1 => Rac1WeaponIconCatalog.Ordinary((Rac1WeaponId)key.NativeItemId)?.AnimationId,

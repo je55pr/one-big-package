@@ -207,6 +207,7 @@ internal sealed class FusionWeaponHost(Node owner, FusionWeaponPlayerPorts playe
                 CurrentWeapon = new(entry.Definition.Item!.Value.ToString(), entry.Definition.DisplayName,
                     entry.State.Capacity is { } capacity ? new HudAmmo(entry.State.Ammo!.Value, capacity) : null)
                 {
+                    Weapon = native.Selected,
                     Status = entry.Reason ?? (native.Hand.WrenchHeld && entry.Definition.Item != PlayerEquipmentRegistrations.Wrench
                         ? "Wrench held · use to draw" : native.Status(entry.Definition.Item.Value).State)
                 }
@@ -218,6 +219,7 @@ internal sealed class FusionWeaponHost(Node owner, FusionWeaponPlayerPorts playe
         {
             CurrentWeapon = new(status.Weapon.ToString(), $"{WeaponName(status.Weapon)} [{SourceIdentityWire.FormatSource(status.Weapon.SourceGame)}]", new(status.Ammo, status.Capacity))
             {
+                Weapon = status.Weapon,
                 Status = Problem(status.Weapon) ?? (Session.Hand.WrenchHeld && Session.Selected.SourceGame != ObpSourceGame.Rac1
                     ? "Wrench held · use to draw" : $"{(TestActive ? "Fusion test · " : "")}{status.State}")
             }

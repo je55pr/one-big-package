@@ -1,6 +1,8 @@
+using OBP.Core;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.Runtime.Presentation;
+using OBP.Runtime.Gameplay;
 
 namespace OBP.RAC1.Presentation;
 
@@ -63,7 +65,7 @@ public static class Rac1HudProjection
         return new HudPresentationState(
             Health: hudHealth,
             Bolts: wallet is null ? null : new HudCurrency(BoltsResourceKey, wallet.Balance),
-            CurrentWeapon: weapon,
+            CurrentWeapon: weapon with { Weapon = new SourceWeaponKey(ObpSourceGame.Rac1, (int)weapons.Equipped) },
             ContextPrompt: null,
             Air: CaptureAir(swimming, ownsOxygenMask));
     }

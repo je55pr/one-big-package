@@ -1,3 +1,5 @@
+using OBP.Runtime.Gameplay;
+
 namespace OBP.Runtime.Presentation;
 
 public enum HudLifeState
@@ -31,6 +33,7 @@ public sealed record HudWeapon(
     string? NameKey = null,
     HudAmmo? Ammo = null)
 {
+    public SourceWeaponKey? Weapon { get; init; }
     public string? Status { get; init; }
 }
 

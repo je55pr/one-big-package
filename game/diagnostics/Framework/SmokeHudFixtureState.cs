@@ -1,3 +1,5 @@
+using OBP.Core;
+using OBP.Runtime.Gameplay;
 using OBP.Runtime.Presentation;
 
 namespace OBP.Game;
@@ -13,7 +15,8 @@ internal static class SmokeHudFixtureState
             CurrentWeapon: new HudWeapon(
                 PresentationKey: "hud.fixture.vector-blaster",
                 NameKey: "Vector Blaster",
-                Ammo: new HudAmmo(7, 12)),
+                Ammo: new HudAmmo(7, 12))
+            { Weapon = new SourceWeaponKey(ObpSourceGame.Rac1, 15) },
             ContextPrompt: new HudContextPrompt(
                 PromptId: "hud-fixture-console",
                 ActionId: "interact",
