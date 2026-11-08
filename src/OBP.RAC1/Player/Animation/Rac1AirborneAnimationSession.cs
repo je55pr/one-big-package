@@ -17,15 +17,15 @@ public readonly record struct Rac1AirborneAnimationInput(
 public sealed class Rac1AirborneAnimationSession
 {
     private readonly int _launchAge;
-    private readonly float _apexFrame, _targetFrame;
+    private readonly float _apexFrame, _landingTargetFrame;
     private const int LandingFrame = 10;
     private float _speed = 1;
     private bool _pastApex, _landing;
-    public bool AirbornePoseCompleted { get; private set; }
+    public bool GlideHandoffReady { get; private set; }
 
     public Rac1AirborneAnimationSession(int nativeAction)
     {
-        (_launchAge, _apexFrame, _targetFrame) = nativeAction switch
+        (_launchAge, _apexFrame, _landingTargetFrame) = nativeAction switch
         {
             0x0a => (5, 18f, 29f),
             0x11 => (9, 12f, 20f),
@@ -43,7 +43,10 @@ public sealed class Rac1AirborneAnimationSession
             return new(_speed);
 
         _pastApex |= input.VerticalStep < 0.001f;
-        AirbornePoseCompleted |= _pastApex && authoredTime >= _targetFrame;
+        // OBP's held-long-jump handoff follows the completed rise/apex pose.
+        // The landing target is retimed towards the floor and can be much
+        // later over a drop; it must not delay deployment of the Heli-Pack.
+        GlideHandoffReady |= _pastApex && authoredTime >= _apexFrame;
         if (input.NativeActionAge == _launchAge + 1)
         {
             // 0x233c30 truncates velocity/gravity; 0x208f20 retimes the
@@ -54,7 +57,7 @@ public sealed class Rac1AirborneAnimationSession
         }
         if (input.LandingUpdates > 0)
         {
-            bool selectRecovery = !_landing && _targetFrame - 1.5f > authoredTime;
+            bool selectRecovery = !_landing && _landingTargetFrame - 1.5f > authoredTime;
             _landing = true;
             _speed = 1;
             return selectRecovery ? new(_speed, LandingFrame + 2, 7) : new(_speed);
@@ -67,7 +70,7 @@ public sealed class Rac1AirborneAnimationSession
         if (sample.NextFrame < LandingFrame)
         {
             int landingSteps = PredictLandingSteps(input);
-            float target = Retime(_targetFrame, landingSteps, sample, authoredTime, playbackRate, frameCount);
+            float target = Retime(_landingTargetFrame, landingSteps, sample, authoredTime, playbackRate, frameCount);
             _speed += Math.Clamp(target - _speed, -0.2f, 0.2f);
             if (_speed > 1.8f)
             {
@@ -77,7 +80,7 @@ public sealed class Rac1AirborneAnimationSession
             }
             _speed = Math.Clamp(_speed, 0.2f, 2.7f);
         }
-        if ((int)authoredTime == (int)_targetFrame)
+        if ((int)authoredTime == (int)_landingTargetFrame)
             _speed = 0;
         return new(_speed, recovery, blend);
     }

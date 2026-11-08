@@ -129,21 +129,27 @@ while `P+3d0 <= action age < P+3d4`. For Thruster high jump that is ages
 at age 20. The glide tail is reachable again at age 44.
 Ledge/mud/flip and other explicit earlier caller exclusions are preserved.
 
-OBP long-jump exit policy: once the airborne animation portion completes,
+OBP long-jump exit policy: once the launch and rise animation completes,
 either pack enters glide if Cross is currently held, including an uninterrupted
 hold from launch or release/re-hold during flight. This is an explicit authored
 handoff, separate from the recovered retail jump-tail press-history branch
-above. Heli completion uses its source-retimed target pose at authored time 29,
-before landing recovery; Thruster completion uses sequence 38's terminal key.
-Completion is an observed animation fact supplied to the movement owner, not
+above. Heli completion uses its rise/apex pose at authored time 18 after the
+physical apex. Its separate authored-time-29 landing target is retimed towards
+the floor and must not gate glide over a drop. Thruster completion uses
+sequence 38's terminal key.
+Readiness is an observed animation fact supplied to the movement owner, not
 a second age timer. Ground contact, pack readiness, Clank and glide clearance
 still gate the transition. Ordinary jumps keep their existing press admission.
 Manual inspection on an explicitly staged platform/gap confirmed continuous
-hold and release/re-hold enter sequence 19 on the same update for each pack:
-Heli after authored time 29, Thruster after terminal authored time 33. Released
+hold and release/re-hold enter sequence 19 immediately after their handoff pose:
+Heli after its rise/apex pose, Thruster after terminal authored time 33. Released
 input stayed in the long-jump/fall path. The existing airborne diagnostic also
 checks high jumps, glide and Power Slam; temporary inspection changes are not
 retained as new automated tests.
+Source-controller/animation inspection over 5-, 20- and 50-unit drops confirmed
+Heli deployment timing no longer depends on the floor below. Deployment was
+within 0.04 units of the apex, rather than the previous roughly 14-unit fall
+over deep drops; Thruster's terminal-key transition was unchanged.
 
 ## Ground crouch and directional input admission
 
