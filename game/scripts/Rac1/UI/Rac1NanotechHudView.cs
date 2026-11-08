@@ -17,6 +17,7 @@ public partial class Rac1NanotechHudView : Control
     private Rac1NanotechOrbSpin _spin = new();
     private Rac1ParticleSession? _particles;
     private Rac1ParticleView? _particleView;
+    private CanvasItemMaterial? _composite;
     private double _animationTime;
     private float _framingScale = 1;
     private static readonly NVector3 Eye = new(10, 0, .5f);
@@ -28,6 +29,10 @@ public partial class Rac1NanotechHudView : Control
         MouseFilter = MouseFilterEnum.Ignore;
         AnchorRight = 1;
         OffsetBottom = 84;
+        // Transparent viewport RGB already includes coverage. Applying alpha
+        // again exaggerates the recovered halo's brightness pulse.
+        _composite = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.PremultAlpha };
+        Material = _composite;
         Resized += QueueRedraw;
     }
 
@@ -136,10 +141,17 @@ public partial class Rac1NanotechHudView : Control
         var texture = _viewport.GetTexture();
         for (int i = 0; i < count; i++)
             DrawTextureRect(texture, new Rect2(left + i * spacing - size * .5f, 42 - size * .5f, size, size),
-                false, i < health.Current ? Colors.White : new Color(.2f, .2f, .2f, .4f));
+                // With premultiplied blending, tint RGB must include its opacity too.
+                false, i < health.Current ? Colors.White : new Color(.08f, .08f, .08f, .4f));
     }
 
-    public override void _ExitTree() => Release();
+    public override void _ExitTree()
+    {
+        Release();
+        Material = null;
+        _composite?.Dispose();
+        _composite = null;
+    }
 
     private static Vector3 ToGodot(NVector3 point) => new(-point.X, point.Z, point.Y);
 
