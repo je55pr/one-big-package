@@ -93,7 +93,9 @@ public partial class PlayerHost : CharacterBody3D
             ? _rac1Movement.StepExtended(intent, contact, movementContext, resolveFacing)
             : _rac1Movement.Step(intent, contact.MovementFacts, resolveFacing);
         _rac1PresentationGrounded = contact.MovementFacts.IsGrounded || _rac1Movement.IsOrdinaryEdgeFall;
-        if (_rac1Movement.TraversalFacingTargetYaw is double facingTarget)
+        if (_rac1Movement.WallJumpFacingTargetYaw is double wallFacingTarget)
+            _rac1Yaw.StepWallJump(wallFacingTarget);
+        else if (_rac1Movement.TraversalFacingTargetYaw is double facingTarget)
             _rac1Yaw.Reset(facingTarget);
 
         _locomotionAnimationInput = new Rac1LocomotionAnimationInput(

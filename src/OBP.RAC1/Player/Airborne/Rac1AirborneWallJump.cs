@@ -9,6 +9,45 @@ public static class Rac1AirborneWallJump
 {
     public const float OutwardStep = 4.9f * (1f / 60f);
     public const int LaunchAge = 9;
+    public const float FacingErrorGain = 0.042f;
+    public const float FacingVelocityDamping = 0.2f;
+    public const float FacingMaximumStep = 11.868238f * (1f / 60f);
+
+    public readonly record struct FacingStep(float Yaw, float Velocity);
+
+    /// <summary>
+    /// 0x214b30 calls 0x211e30 with direction -1 strictly after age 9.
+    /// The regular-axis 0x25bb38/0x25bc98 helpers retain that directed turn,
+    /// damp/cap its velocity and snap within one percent of the turn cap.
+    /// This is independent of analogue input and the outward launch request.
+    /// </summary>
+    public static FacingStep StepFacing(float yaw, float velocity, float cachedWallNormalYaw)
+    {
+        if (!float.IsFinite(yaw) || !float.IsFinite(velocity) || !float.IsFinite(cachedWallNormalYaw))
+            throw new ArgumentOutOfRangeException(nameof(yaw));
+        float error = DirectedError(cachedWallNormalYaw, yaw);
+        velocity += FacingErrorGain * error - FacingVelocityDamping * velocity;
+        velocity = Math.Clamp(velocity, -FacingMaximumStep, FacingMaximumStep);
+        velocity = Math.Clamp(velocity, -MathF.Abs(error), MathF.Abs(error));
+        yaw = Wrap(yaw + velocity);
+        return MathF.Abs(DirectedError(cachedWallNormalYaw, yaw)) < FacingMaximumStep * 0.01f
+            ? new(cachedWallNormalYaw, 0) : new(yaw, velocity);
+    }
+
+    private static float DirectedError(float target, float yaw)
+    {
+        float error = Wrap(target - yaw);
+        if (error < 0) return error;
+        return MathF.Abs(error) <= 0.0017453292f ? 0 : error - MathF.Tau;
+    }
+
+    private static float Wrap(float yaw)
+    {
+        yaw %= MathF.Tau;
+        if (yaw > MathF.PI) yaw -= MathF.Tau;
+        if (yaw < -MathF.PI) yaw += MathF.Tau;
+        return yaw;
+    }
 
     public static Rac1AirbornePlanarMotion.PlanarStep Step(
         int nativeActionAge, float cachedWallNormalYaw,

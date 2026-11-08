@@ -12,7 +12,7 @@ public readonly record struct Rac1MovementContext(
     float GroundClearance, float ForwardClearance = 0, float ForwardNormalAngle = 1.5707964f,
     bool ForwardCrateFamily = false, bool PackDisabled = false, float NativePositionHeight = 0,
     bool NativeAnimationExitRequested = false, Rac1AirborneWallProbeResult? WallProbe = null,
-    float AuthoredAnimationTime = 0);
+    float AuthoredAnimationTime = 0, bool ForwardHitMoby = false);
 
 public sealed partial class Rac1RatchetMovementController
 {
@@ -61,8 +61,10 @@ public sealed partial class Rac1RatchetMovementController
     public int TraversalAge => _gliding || _specialAir is not null || _airBoost is not null || _powerSlam is not null
         ? _specialAge : _ordinaryAirAge;
     public double? TraversalFacingTargetYaw => _specialAir?.Profile.Kind == Rac1AirborneJumpKind.DirectionalFlip
-        ? _flipPlanar?.FacingTargetYaw : _specialAir?.Profile.Kind == Rac1AirborneJumpKind.WallJump && _specialAge > 9
-            ? _wallLaunchNormalYaw : null;
+        ? _flipPlanar?.FacingTargetYaw : null;
+    // _specialAge is incremented after the native motion age is sampled.
+    public double? WallJumpFacingTargetYaw => _specialAir?.Profile.Kind == Rac1AirborneJumpKind.WallJump &&
+        _specialAge > Rac1AirborneWallJump.LaunchAge + 1 ? _wallLaunchNormalYaw : null;
     public int CurrentNativeMovementAction => _landing?.NativeAction ?? TraversalAction ?? _ordinaryAirAnimation?.NativeAction ??
         _postLandingGroundAction ??
         (Phase != Rac1RatchetMovementPhase.Grounded && !IsOrdinaryEdgeFall ? 7 : _crouchAge > 0 ? 4 : 2);
