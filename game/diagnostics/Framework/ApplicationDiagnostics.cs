@@ -74,7 +74,7 @@ internal sealed class ApplicationDiagnostics(ApplicationComponents components) :
             new GodotDiagnosticInputActions(), new GodotMovementPhysicalInput(), clock, message => GD.Print(message), message => GD.PrintErr(message));
         var water = new GodotMovementWater(() => [.. Rac1World.Enemies.Roster.Values.Select(enemy => ((Node3D)enemy.Node.Root, (Node3D)enemy.Body))],
             position => _worldScenes?.Current?.Resources.Rac1Gameplay?.Mechanisms.SampleWaterHeight(GodotMovementPlayer.Engine(position)),
-            () => _playerHud?.FindChild("Air", true, false) is Control air ? air.Visible : null, _rac1Nanotech.Probe);
+            () => _playerHud is null ? null : _playerHud.FindChild("Air", true, false) is Control { Visible: true }, _rac1Nanotech.Probe);
         var environment = new DiagnosticEnvironmentalDeathFixture(() => new(_rac1Nanotech.EnvironmentalDeathGeneration,
             _rac1Nanotech.EnvironmentalRestartGeneration, _rac1Nanotech.Probe(), Rac1World.Context.LastEnvironmentalDeathBoundary,
             GodotMovementPlayer.Copy(Rac1World.Presentation.LastEnvironmentalDeathPosition), Rac1World.Context.LastEnvironmentalDeathContactSeparation,

@@ -18,6 +18,8 @@ public static class Rac1RetailUiAssets
     private static Rac1UiAssets? _assets;
     public static bool IsLoaded => _assets is not null;
     internal static OBP.Runtime.RuntimeTexture? HudFrame(ushort animation) => _assets?.Hud.DecodeFrame(animation);
+    internal static OBP.RAC1.Gameplay.Rac1NanotechOrbAssets NativeNanotech => _assets?.Nanotech
+        ?? throw new InvalidOperationException("The gameplay HUD requires the attached R&C1 Nanotech sphere assets.");
     public static Rac1MenuPanelModel? NativeMenuPanels => _assets?.NativeMenuPanels;
     public static Rac1MenuPanelPages? NativeMenuPages => _assets?.NativeMenuPages;
     public static Rac1BitmapFont? NativeRootFont =>

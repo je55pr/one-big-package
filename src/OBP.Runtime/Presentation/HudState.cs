@@ -1,3 +1,5 @@
+using OBP.Runtime.Gameplay;
+
 namespace OBP.Runtime.Presentation;
 
 public enum HudLifeState
@@ -27,6 +29,7 @@ public sealed record HudAmmo(
     int? Capacity = null);
 public sealed record HudResourceMeter(string UnitKey, int Current, int Capacity);
 public sealed record HudWeapon(
+    SourceWeaponKey Weapon,
     string PresentationKey,
     string? NameKey = null,
     HudAmmo? Ammo = null)

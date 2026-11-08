@@ -3,6 +3,7 @@ using System.Text;
 using OBP.IO;
 using OBP.PS2;
 using OBP.PS2.Elf;
+using OBP.RAC1.Gameplay;
 using OBP.RAC1.Level;
 using OBP.Runtime;
 
@@ -12,6 +13,10 @@ namespace OBP.RAC1.Presentation;
 public sealed record Rac1UiAssets(Rac1HudBank Hud, IReadOnlyDictionary<string, Rac1BitmapFont> Fonts,
     IReadOnlyList<IReadOnlyDictionary<uint, byte[]>> Languages)
 {
+    /// <summary>Silver regular-bolt glyph, visually identified in the resident NTSC-U HUD bank.</summary>
+    public static ushort RegularBoltAnimationId => 0x754F;
+    public required Rac1NanotechOrbAssets Nanotech { get; init; }
+
     // Original level-local Moby class 0x472. Projected panel geometry and
     // animation frames stay source-owned, not invented Godot meshes.
     public Rac1MenuPanelModel? NativeMenuPanels { get; init; }
@@ -39,6 +44,8 @@ public sealed record Rac1UiAssets(Rac1HudBank Hud, IReadOnlyDictionary<string, R
             Elf32Reader.ReadVirtualRange(boot.BootExecutable, segments, t.Address, Rac1BitmapFont.GlyphCount * 4)));
         return new Rac1UiAssets(hud, fonts, DecodeLanguages(ReadArchive(disc, index, 0x1528, 2 * 1024 * 1024)))
         {
+            Nanotech = Rac1NanotechOrbAssets.Decode(Rac1ExecutableOverlay.Read(disc,
+                catalogue.Levels.Single(level => level.LevelId == 0)), core),
             MenuEffects = atlases.Where(pair => pair.Key is 0x19 or 0x1A or 0x1C)
                 .ToDictionary(pair => pair.Key, pair => pair.Value),
             MenuSounds = Rac1MenuAudioBank.Read(disc, index),

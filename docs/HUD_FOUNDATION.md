@@ -2,6 +2,38 @@
 
 Status: foundation contract, engine-independent state adapter, R&C1 projection and a non-interactive Godot renderer are implemented. This document defines the smallest player-HUD presentation model needed by the current playable slices. Retail-faithful artwork, layout and timing remain unresolved.
 
+The current OBP-authored gameplay HUD contains only weapon icon/current/max ammo at
+the top left, Bolt icon/balance at the top right, and Nanotech spheres centred at
+the top. There are no cards, headings, weapon names, status messages, pickup/damage
+text, prompts or oxygen widgets. Snapshot feedback never creates extra HUD content.
+Each filled sphere represents one current health unit; empty spheres appear only
+when the snapshot supplies a capacity. Spheres use the recovered RAC1 class-806
+mesh, UVs, vertex colours, Fx textures and halo via the existing source draw
+callback and material adapter. The same riding-cluster session, shared orbit spin
+and particle renderer used by intact world crates drive its halo pulse,
+orbiting orb sprites and sparkle trails at 60 native ticks per second. A transparent
+viewport renders that effect into the row; nominal sphere size and spacing are
+50 percent larger than the initial recovered-asset HUD. The HUD
+uses premultiplied-alpha compositing for the transparent viewport so its already
+weighted halo colours are not multiplied by alpha a second time. Empty-slot tint
+RGB includes its opacity for the same reason. Source pulse amplitudes are unchanged.
+The HUD camera follows the source's vertical bob to keep each displayed sphere
+centred in its slot; the world effect and all other recovered animations are unchanged.
+The HUD placement, scale and dimming of empty slots are OBP choices. Ammo displays
+`current/max` whenever the owning snapshot supplies a capacity.
+The white weapon glyph uses the snapshot's typed `SourceWeaponKey`, without
+borrowing another source's family member. The regular Bolt glyph uses R&C1 HUD
+animation `0x754F`, frame 0, converted with the same white-mask and fitting path
+as weapon icons. Its source image was visually checked against the authorised
+NTSC-U bank. The Bolt is already transparent, so it uses alpha coverage directly;
+RAC1 weapon tiles additionally need blue-background matte recovery. Required glyphs
+have no substitute text or artwork; no retail images are stored in the repository.
+These choices do not claim retail HUD equivalence.
+The wrench uses the existing authored weapons-menu glyph as its explicit icon;
+R&C1 has no corresponding native quick-select glyph. It is not selected in
+response to a missing source. The standalone `hud` fixture requires `--rac1-iso`
+and prepares its icons before rendering its synthetic observations.
+
 ## Purpose and ownership
 
 The HUD is an observer. Gameplay authority stays where it already lives: source-game/session code owns health, economy, inventory, damage, pickups, interaction eligibility and every transition that changes those values. The HUD consumes a read-only projection of that state.

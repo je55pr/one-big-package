@@ -36,7 +36,7 @@ internal sealed class GodotMovementWater(Func<ImmutableArray<(Node3D Root, Node3
         });
     }
     public float? SampleHeight(NVector3 position) => height(position);
-    public bool AirMeterVisible => airVisible() ?? throw new DiagnosticUnavailableException("The native water HUD air panel is unavailable.");
+    public bool AirMeterVisible => airVisible() ?? throw new DiagnosticUnavailableException("The player HUD is unavailable.");
     public Rac1RatchetNanotechSnapshot ReadNanotech() => nanotech();
 }
 internal sealed class DiagnosticEnvironmentalDeathFixture(Func<DiagnosticEnvironmentalDeath> read) : IDiagnosticEnvironmentalDeath

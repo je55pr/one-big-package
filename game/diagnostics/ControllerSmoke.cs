@@ -373,7 +373,7 @@ public partial class ControllerSmoke : Node
         // waits can miss it on a rendered run even though input is correct.
         await Press(JoyButton.Y, frames: 1); await Press(JoyButton.Y, frames: 1);
         Require(Find<WeaponQuickSelectUi>() is null && !GetTree().Paused, "Double Triangle did not quick-swap the previous item");
-        Require(Descendants(_game).OfType<Label>().Any(label => label.Text == "Bomb Glove"), "Quick swap did not actually equip the previous weapon");
+        Require(_game.ReadPlayerEquipment().Any(entry => entry.Definition.Id == "rac1/item/10" && entry.State.Selected), "Quick swap did not actually equip the previous weapon");
         await Button(JoyButton.Y, true); await Press(JoyButton.Start); await Button(JoyButton.Y, false);
         Require(Find<WeaponQuickSelectUi>() is null && Find<PauseMenuUi>() is not null && GetTree().Paused, "Start nested an invalid pause over quick select");
         await EnterRetailPageAsync(Rac1RetailMenuPage.Options, "Options");
@@ -426,13 +426,12 @@ public partial class ControllerSmoke : Node
             Require(world?.Visible == enabled && movement?.Visible == enabled && player.DebugOutputEnabled == enabled,
                 "World/player debug output disagrees with the pause checkbox");
             Require(enabled || world!.Text.Length == 0 && movement!.Text.Length == 0, "Hidden diagnostics are still being rebuilt");
-            Require(DebugLabel("HealthStateDebug")?.Visible == enabled, "Player life-state diagnostics escaped the debug toggle");
             var authoredRatchet = Descendants(_game).OfType<MeshInstance3D>()
                 .Where(mesh => mesh.Name.ToString().StartsWith("ratchet_i", StringComparison.Ordinal)).ToArray();
             Require(authoredRatchet.Length > 0 && authoredRatchet.All(mesh => !mesh.Visible),
                 "Inspection overlays revealed the hidden authored Ratchet model");
             Require(Find<PlayerHud>() is { } hud && hud.IsVisibleInTree() &&
-                Descendants(hud).OfType<Label>().Any(label => label.IsVisibleInTree() && label.Text.StartsWith("AMMO", StringComparison.Ordinal)),
+                Descendants(hud).OfType<Label>().Any(label => label.IsVisibleInTree() && label.Name == "AmmoCount"),
                 "Debug toggle hid the gameplay HUD/ammo");
         }
         bool HasBoundsOverlay() => Descendants(_game).OfType<MeshInstance3D>().Any(node =>

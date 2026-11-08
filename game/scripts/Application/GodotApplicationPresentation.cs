@@ -59,7 +59,7 @@ internal sealed class GodotApplicationPresentation(Node3D host, Func<bool> debug
             return;
         }
 
-        _playerHud = new PlayerHud { DebugOutputEnabled = _debug() };
+        _playerHud = new PlayerHud();
         _ui.AddChild(_playerHud);
     }
 
@@ -177,7 +177,6 @@ internal sealed class GodotApplicationPresentation(Node3D host, Func<bool> debug
     internal void SetDebugOutputEnabled(bool enabled, Action hideMovementNotice)
     {
         _player?.SetDebugOutputEnabled(enabled);
-        if (_playerHud is not null && GodotObject.IsInstanceValid(_playerHud)) _playerHud.DebugOutputEnabled = enabled;
         if (!enabled)
         {
             if (_inspector is { IsOpen: true }) _inspector.Toggle();

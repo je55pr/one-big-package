@@ -62,8 +62,8 @@ public sealed class Rac1NovalisSwimScenario(MovementDiagnosticContext context, I
             int underwaterOxygen = submerged.Oxygen;
             Require(underwaterOxygen < OBP.RAC1.Player.Rac1TraversalEquipmentWater.MaximumOxygen,
                 "Underwater did not drain oxygen");
-            Require(water.AirMeterVisible,
-                "Underwater air meter is missing from the normal HUD");
+            Require(!water.AirMeterVisible,
+                "The minimal gameplay HUD showed an oxygen widget underwater");
             Log($"[novalis-swim-smoke] dive playerY={player.Read().GlobalPosition.Y:F3} oxygen={underwaterOxygen}");
             Vector3 beforeSwim = player.Read().GlobalPosition;
             SetAnalogueSmokeInput(1f, 0f);

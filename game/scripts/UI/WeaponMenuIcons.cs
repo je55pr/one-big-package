@@ -15,9 +15,11 @@ namespace OBP.Game;
 internal static class WeaponMenuIcons
 {
     private static readonly Dictionary<(ObpSourceGame, ushort), Texture2D> Icons = [];
+    private static Texture2D? _regularBolt;
 
     internal static void Clear(ObpSourceGame game)
     {
+        if (game == ObpSourceGame.Rac1) _regularBolt = null;
         foreach (var key in Icons.Keys.Where(key => key.Item1 == game).ToArray()) Icons.Remove(key);
     }
 
@@ -78,6 +80,23 @@ internal static class WeaponMenuIcons
         foreach (var key in family.Members)
             if (Animation(key) is { } id && Icons.TryGetValue((key.SourceGame, id), out var texture)) return texture;
         return null;
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "S1075", Justification = "res:// is Godot's portable project-resource scheme, not an absolute machine path.")]
+    internal static Texture2D ForWeapon(SourceWeaponKey key)
+    {
+        if (key == PlayerEquipmentRegistrations.Wrench) return GD.Load<Texture2D>("res://assets/ui/obp-wrench.svg");
+        return Animation(key) is { } id && Icons.TryGetValue((key.SourceGame, id), out var texture)
+            ? texture : throw new InvalidOperationException($"The gameplay HUD requires the attached source glyph for {key}.");
+    }
+
+    internal static Texture2D RegularBolt()
+    {
+        if (_regularBolt is not null) return _regularBolt;
+        var frame = Rac1RetailUiAssets.HudFrame(Rac1UiAssets.RegularBoltAnimationId)
+            ?? throw new InvalidOperationException("The gameplay HUD requires the attached R&C1 regular Bolt glyph.");
+        using var image = Image.CreateFromData(128, 128, false, Image.Format.Rgba8, WhiteMask(frame, null));
+        return _regularBolt = ImageTexture.CreateFromImage(image);
     }
 
     private static ushort? Animation(SourceWeaponKey key) => key.SourceGame switch
