@@ -9,10 +9,11 @@ namespace OBP.Game;
 
 /// <summary>
 /// Engine-only ports for authored R&C1 objects. Source rules stay in OBP.RAC1;
-/// these ports may only present a source object, play a source sound or report status.
+/// these ports borrow selected-player hand availability and present source objects/audio/status.
 /// </summary>
 internal sealed record Rac1AuthoredMechanismPorts(
     Func<string?> SourcePath,
+    Func<bool> WrenchAvailable,
     Action<int, int, Vector3> PlaySourceSound,
     Func<RuntimeAudioPlaybackIntent, int> StartLevelMusic,
     Action StopLevelMusic,

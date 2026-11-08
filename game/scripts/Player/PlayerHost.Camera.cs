@@ -16,9 +16,23 @@ namespace OBP.Game;
 public partial class PlayerHost : CharacterBody3D
 {
     private CameraGeometry? _cameraGeometry;
+    private Rac1BoltCrankCameraController? _rac1CrankCamera;
+
+    internal void BeginRac1CrankCamera(Rac1BoltCrankCameraDefinition definition)
+    {
+        if (!HasNativeCamera) return; // Explicit diagnostic profiles may disable native camera ownership.
+        EnsureRac1CameraInitialized();
+        _rac1CrankCamera = new(definition, _rac1RuntimeCameraState ??
+            throw new InvalidOperationException("Crank camera requires the selected player's camera pose."),
+            ScenePlayerToNative(GlobalPosition));
+    }
+
+    private void ResetRac1CrankCamera() => _rac1CrankCamera = null;
+
     /// <summary>Host camera reset binding; not a reconstruction of the native L1 aim state.</summary>
     public void CenterCameraBehindPlayer()
     {
+        if (_rac1CrankInputActive) return;
         if (HasActiveRecoveredCamera && !Rac1RemoteControlActive)
         {
             _rac1Camera.Reset(ScenePlayerToNative(GlobalPosition), Rac1CurrentYaw);
@@ -55,6 +69,16 @@ public partial class PlayerHost : CharacterBody3D
     private void StepRac1Camera(Vector2 rawCameraIntent)
     {
         Vec3 nativePlayer = ScenePlayerToNative(GlobalPosition);
+        if (_rac1CrankCamera is { Returning: false } mounted)
+        {
+            if (_rac1CrankInputActive)
+            {
+                ApplyRac1RuntimeCameraState(mounted.StepMounted(nativePlayer));
+                return;
+            }
+            _rac1Camera.ResumeFromScriptedCamera(nativePlayer, mounted.Current);
+            mounted.BeginReturn();
+        }
         _cameraGeometry ??= new CameraGeometry(this);
         _cameraGeometry.BeginFrame();
         var state = _rac1Camera.Step(new Rac1OrdinaryCameraController.Input(
@@ -63,7 +87,12 @@ public partial class PlayerHost : CharacterBody3D
             -rawCameraIntent.Y,
             default,
             Options: CameraSettingsStore.Current), _cameraGeometry);
-        ApplyRac1CameraState(state);
+        if (_rac1CrankCamera is { Returning: true } returning)
+        {
+            ApplyRac1RuntimeCameraState(returning.StepReturn(state.ToRuntimeState(), nativePlayer));
+            if (returning.ReturnCompleted) _rac1CrankCamera = null;
+        }
+        else ApplyRac1CameraState(state);
     }
 
     private static Vec3 ScenePlayerToNative(Vector3 scene) =>
@@ -77,7 +106,12 @@ public partial class PlayerHost : CharacterBody3D
     public void ApplyRac1CameraState(Rac1CameraState state)
     {
         ArgumentNullException.ThrowIfNull(state);
-        _rac1RuntimeCameraState = state.ToRuntimeState();
+        ApplyRac1RuntimeCameraState(state.ToRuntimeState());
+    }
+
+    private void ApplyRac1RuntimeCameraState(RuntimeCameraState state)
+    {
+        _rac1RuntimeCameraState = state.Validate();
         if (HasActiveRecoveredCamera)
             ApplyRecoveredCameraPresentation();
     }
@@ -85,6 +119,7 @@ public partial class PlayerHost : CharacterBody3D
     /// <summary>Drop recovered camera ownership and return to the debug host camera.</summary>
     public void ClearRac1CameraState()
     {
+        ResetRac1CrankCamera();
         _rac1RuntimeCameraState = null;
         RestoreHostCameraPresentation();
     }

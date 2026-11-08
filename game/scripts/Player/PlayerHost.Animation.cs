@@ -80,7 +80,7 @@ public partial class PlayerHost : CharacterBody3D
         _rac1CrankInputActive = _rac1CrankReleased = false;
         _rac1CrankAnimation = null;
         Rac1CrankAnimationSequence = null;
-        Rac1CrankWrenchAvailable = false;
+        ResetRac1CrankCamera();
         _locomotionAnimationInput = default;
         AnimationPhysicsReset?.Invoke();
         _animationStateMachine = new PlayerAnimationStateMachine();

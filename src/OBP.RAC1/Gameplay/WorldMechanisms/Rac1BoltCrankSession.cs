@@ -6,7 +6,7 @@ namespace OBP.RAC1.Gameplay;
 
 /// <summary>
 /// Class-280 turning and animation rules, Novalis NTSC-U updater 0x002e0c68.
-/// Host support/collision, camera mounting and engagement observations are separate.
+/// Host support/collision and engagement observations are separate from this controller.
 /// </summary>
 public sealed class Rac1BoltCrankSession
 {
@@ -22,7 +22,6 @@ public sealed class Rac1BoltCrankSession
     private const float Acceleration = Dt * Dt * 5.5f;
     private const float MaximumSpeed = Dt * 3.7f;
     private readonly float _turns;
-    private readonly bool _reusable;
     private float _speed, _turned, _radialVelocity;
     private int _age, _idleTicks;
     private int _squarePressAge = 7;
@@ -37,7 +36,8 @@ public sealed class Rac1BoltCrankSession
         int reusable = BinaryPrimitives.ReadInt32LittleEndian(pvar.Slice(0x38));
         if (!float.IsFinite(_turns) || _turns <= 0 || reusable is not (0 or 1))
             throw new InvalidDataException("Unsupported crank turn count or reuse flag.");
-        _reusable = reusable != 0;
+        if (reusable != 0)
+            throw new NotSupportedException("Reusable crank callbacks are outside the admitted Novalis crank pair.");
         Yaw = initialYaw;
     }
 
@@ -45,6 +45,7 @@ public sealed class Rac1BoltCrankSession
     public float Progress { get; private set; }
     public float Yaw { get; private set; }
     public float Lowering { get; private set; }
+    // TickIdle clamps the native height offset to exact zero; this is a state sentinel.
     public bool CanEngage => !Active && Progress < 1 && _idleTicks > 30 && Lowering == 0;
     public bool SquareBuffered => _squarePressAge < 7;
 
@@ -75,7 +76,7 @@ public sealed class Rac1BoltCrankSession
         if (Active) return;
         if (Progress >= 1)
         {
-            if (!_reusable) Lowering = MathF.Min(.5f, Lowering + Dt * .5f);
+            Lowering = MathF.Min(.5f, Lowering + Dt * .5f);
             return;
         }
         _idleTicks++;
@@ -89,6 +90,7 @@ public sealed class Rac1BoltCrankSession
         if (!CanEngage) return false;
         Active = true;
         _age = _idleTicks = 0;
+        // Native entry preserves PVar +0x1c speed; neutral re-entry decelerates it normally.
         _radialVelocity = 0;
         _turned = Progress * (_turns * MathF.Tau);
         _animation = new(NativeAction, InsertSequence, ++_generation, BlendTicks: 8);
@@ -131,6 +133,8 @@ public sealed class Rac1BoltCrankSession
                 case IdleSequence when _speed > 0: Select(SlowSequence, 14); break;
                 case SlowSequence when _speed > MaximumSpeed * .6f: Select(FastSequence, 14); break;
                 case FastSequence when _speed < MaximumSpeed * .4f: Select(SlowSequence, 16); break;
+                case IdleSequence or SlowSequence or FastSequence: break;
+                default: throw new InvalidOperationException("Unsupported crank animation sequence.");
             }
         }
 

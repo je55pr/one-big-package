@@ -128,6 +128,7 @@ internal sealed class Rac1WeaponPlayerInputHost(
 
     public void Cycle(int direction)
     {
+        if (state.Player()?.Rac1CrankActive == true) return;
         var fusion = selection.Fusion();
         if (fusion.Session is not null)
         {

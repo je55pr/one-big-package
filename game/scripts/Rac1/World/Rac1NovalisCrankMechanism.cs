@@ -1,5 +1,6 @@
 using Godot;
 using OBP.Godot;
+using OBP.RAC1.Camera;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
 using NVector2 = System.Numerics.Vector2;
@@ -15,6 +16,8 @@ internal sealed class Rac1NovalisCrankMechanism(
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _cranks = [];
     private readonly Dictionary<int, Rac1BoltCrankSession> _controllers = [];
     private readonly Dictionary<int, Transform3D> _crankRest = [];
+    private IReadOnlyDictionary<int, Rac1BoltCrankCameraDefinition> _cameras =
+        new Dictionary<int, Rac1BoltCrankCameraDefinition>();
     private int? _engaged;
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _doors = [];
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _caveDoors = [];
@@ -28,6 +31,8 @@ internal sealed class Rac1NovalisCrankMechanism(
     internal override void Configure(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
         if (world.LevelId != Rac1NovalisCrankDoorSession.NativeLevelId) return;
+        _cameras = Rac1BoltCrankCameraDefinition.Load(ports.SourcePath() ??
+            throw new InvalidDataException("Novalis crank camera requires its registered retail source."), world.LevelId);
         foreach (var source in world.DynamicObjects ?? [])
         {
             if (source.NativeClassId != Rac1NovalisCrankDoorSession.CrankClass) continue;
@@ -37,6 +42,8 @@ internal sealed class Rac1NovalisCrankMechanism(
             _cranks.Add(source.InstanceIndex, node);
             byte[] pvar = source.NativePayloads?.SingleOrDefault(item => item.Format == "rac1-pvar")?.Data
                 ?? throw new InvalidDataException("Novalis crank has no authored PVar.");
+            // Native Z yaw equals scene Y yaw: the native/OBP Y-Z swap and
+            // ToSceneTransform's X conjugation each reverse the planar angle.
             _controllers.Add(source.InstanceIndex, new(pvar, node.Root.Rotation.Y));
             _crankRest.Add(source.InstanceIndex, node.Root.Transform);
         }
@@ -125,7 +132,7 @@ internal sealed class Rac1NovalisCrankMechanism(
             PresentCrank(id, previous);
         }
         if (!player.Rac1GameplayAlive || player.Rac1SwimmingActive || player.Rac1Hanging ||
-            player.Rac1SwingshotActive || player.Rac1EquipmentActionActive || !player.Rac1CrankWrenchAvailable)
+            player.Rac1SwingshotActive || player.Rac1EquipmentActionActive || !ports.WrenchAvailable())
         {
             Release();
             return false;
@@ -145,6 +152,9 @@ internal sealed class Rac1NovalisCrankMechanism(
                 new(-center.X, center.Z, center.Y), new(-playerPosition.X, playerPosition.Z, playerPosition.Y),
                 (float)player.Rac1CurrentYaw)) return false;
             _engaged = closest.Source.InstanceIndex;
+            if (!_cameras.TryGetValue(_engaged.Value, out var camera))
+                throw new InvalidDataException("Novalis crank has no admitted authored camera.");
+            player.BeginRac1CrankCamera(camera);
             _controllers[_engaged.Value].TryEngage();
         }
 

@@ -107,7 +107,6 @@ public partial class PlayerHost : CharacterBody3D
     private Rac1MovementAnimationSelection? _rac1CrankAnimation;
     private bool _rac1CrankReleased;
     public bool Rac1CrankActive => _rac1CrankInputActive;
-    internal bool Rac1CrankWrenchAvailable { get; set; }
     internal int? Rac1CrankAnimationSequence { get; set; }
     internal double Rac1CrankControlYaw => GetRac1ControlYaw();
 
@@ -219,7 +218,9 @@ public partial class PlayerHost : CharacterBody3D
 
     /// <summary>Which camera source currently owns ordinary presentation and control heading.</summary>
     public string CameraControllerLabel =>
-        HasActiveRecoveredCamera ? "rac1-native-type0" : "host-debug-fallback";
+        !HasActiveRecoveredCamera ? "host-debug-fallback" :
+        _rac1CrankCamera is { Returning: false } ? "rac1-native-type5-crank" :
+        _rac1CrankCamera is { Returning: true } ? "rac1-native-type0-crank-return" : "rac1-native-type0";
 
     /// <summary>True when a recovered RAC1 camera snapshot is actively driving Godot.</summary>
     public bool HasActiveRecoveredCamera =>

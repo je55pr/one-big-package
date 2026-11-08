@@ -376,7 +376,6 @@ internal sealed class PlayerAvatarPresentationHost
         player.Rac1WaterAnimationFacts = controller.WaterAnimationFacts;
         player.Rac1WrenchAnimationBlending = controller.TraversalSample?.IsBlending ?? false;
         player.Rac1CrankAnimationSequence = controller.TraversalSample?.Sequence;
-        player.Rac1CrankWrenchAvailable = WrenchView is { Visible: true } && !wrenchThrown;
         if (WrenchView is not null && controller.CurrentAttachmentPose(Rac1WrenchAttachment.SocketKey) is { } hand)
             WrenchView.StepAttached(hand, wrench, wrenchThrown, player.Rac1CrankActive);
         if (GloveView is not null &&
