@@ -1,4 +1,6 @@
 using Godot;
+using OBP.Core;
+using OBP.IO;
 
 namespace OBP.Game;
 
@@ -15,6 +17,16 @@ internal static class GodotSmokeSceneFixture
         Build(root, application.WorldRoot, application.Ui, application.Camera, scene);
         if (scene.Equals("hud", StringComparison.OrdinalIgnoreCase))
         {
+            application.Ui.GetNode<Label>("Banner").QueueFree();
+            if (!Rac1RetailUiAssets.IsLoaded)
+            {
+                string source = CommandLineArgs.Parse(OS.GetCmdlineUserArgs()).Rac1Iso
+                    ?? throw new ArgumentException("The HUD fixture requires --rac1-iso for its source icons.");
+                using var disc = new FileRandomAccessReader(source);
+                Rac1RetailUiAssets.Load(disc);
+                WeaponMenuIcons.Load(ObpSourceGame.Rac1, disc);
+                UiTheme.Apply(root.GetTree().Root);
+            }
             application.EnsurePlayerHud();
             application.PlayerHud!.Render(hud.BeginSession(SmokeHudFixtureState.Create()));
         }

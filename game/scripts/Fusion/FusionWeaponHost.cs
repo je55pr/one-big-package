@@ -204,10 +204,9 @@ internal sealed class FusionWeaponHost(Node owner, FusionWeaponPlayerPorts playe
             var entry = player.Equipment().Single(entry => entry.Definition.Item == native.Selected);
             return state with
             {
-                CurrentWeapon = new(entry.Definition.Item!.Value.ToString(), entry.Definition.DisplayName,
+                CurrentWeapon = new(native.Selected, entry.Definition.Item!.Value.ToString(), entry.Definition.DisplayName,
                     entry.State.Capacity is { } capacity ? new HudAmmo(entry.State.Ammo!.Value, capacity) : null)
                 {
-                    Weapon = native.Selected,
                     Status = entry.Reason ?? (native.Hand.WrenchHeld && entry.Definition.Item != PlayerEquipmentRegistrations.Wrench
                         ? "Wrench held · use to draw" : native.Status(entry.Definition.Item.Value).State)
                 }
@@ -217,9 +216,8 @@ internal sealed class FusionWeaponHost(Node owner, FusionWeaponPlayerPorts playe
         var status = Session.Status(Session.Selected);
         return state with
         {
-            CurrentWeapon = new(status.Weapon.ToString(), $"{WeaponName(status.Weapon)} [{SourceIdentityWire.FormatSource(status.Weapon.SourceGame)}]", new(status.Ammo, status.Capacity))
+            CurrentWeapon = new(status.Weapon, status.Weapon.ToString(), $"{WeaponName(status.Weapon)} [{SourceIdentityWire.FormatSource(status.Weapon.SourceGame)}]", new(status.Ammo, status.Capacity))
             {
-                Weapon = status.Weapon,
                 Status = Problem(status.Weapon) ?? (Session.Hand.WrenchHeld && Session.Selected.SourceGame != ObpSourceGame.Rac1
                     ? "Wrench held · use to draw" : $"{(TestActive ? "Fusion test · " : "")}{status.State}")
             }

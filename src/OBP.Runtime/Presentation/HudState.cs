@@ -29,11 +29,11 @@ public sealed record HudAmmo(
     int? Capacity = null);
 public sealed record HudResourceMeter(string UnitKey, int Current, int Capacity);
 public sealed record HudWeapon(
+    SourceWeaponKey Weapon,
     string PresentationKey,
     string? NameKey = null,
     HudAmmo? Ammo = null)
 {
-    public SourceWeaponKey? Weapon { get; init; }
     public string? Status { get; init; }
 }
 

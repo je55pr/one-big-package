@@ -42,19 +42,23 @@ public static class Rac1HudProjection
                 _ => null,
             });
 
+        var key = new SourceWeaponKey(ObpSourceGame.Rac1, (int)weapons.Equipped);
         HudWeapon weapon = weapons.Equipped switch
         {
             Rac1WeaponId.Wrench => new HudWeapon(
+                Weapon: key,
                 PresentationKey: WrenchPresentationKey,
                 NameKey: WrenchNameKey,
                 Ammo: null),
             Rac1WeaponId.FirstRanged => new HudWeapon(
+                Weapon: key,
                 PresentationKey: BombGlovePresentationKey,
                 NameKey: BombGloveNameKey,
                 Ammo: new HudAmmo(
                     Current: weapons.FirstRangedAmmo,
                     Capacity: Rac1BombGlove.MaxAmmo)),
             var additional when Rac1WeaponProfiles.IsAdditional(additional) => new HudWeapon(
+                key,
                 $"rac1.weapon.{Rac1WeaponProfiles.Get(additional).Key}",
                 $"weapon.{Rac1WeaponProfiles.Get(additional).Key}",
                 additional != Rac1WeaponId.SuckCannon && !Rac1ItemAmmoDescriptors.Get((int)additional).UsesAmmo ? null :
@@ -65,7 +69,7 @@ public static class Rac1HudProjection
         return new HudPresentationState(
             Health: hudHealth,
             Bolts: wallet is null ? null : new HudCurrency(BoltsResourceKey, wallet.Balance),
-            CurrentWeapon: weapon with { Weapon = new SourceWeaponKey(ObpSourceGame.Rac1, (int)weapons.Equipped) },
+            CurrentWeapon: weapon,
             ContextPrompt: null,
             Air: CaptureAir(swimming, ownsOxygenMask));
     }

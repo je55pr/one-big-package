@@ -2,16 +2,22 @@
 
 Status: foundation contract, engine-independent state adapter, R&C1 projection and a non-interactive Godot renderer are implemented. This document defines the smallest player-HUD presentation model needed by the current playable slices. Retail-faithful artwork, layout and timing remain unresolved.
 
-The current OBP-authored gameplay layout places weapon/ammo at the top left,
-health at the top centre, and Bolts at the top right. Weapon names are omitted;
-the renderer uses the weapons menu's white glyph for the snapshot's typed
-`SourceWeaponKey`, without borrowing another source's family member. The regular
-silver Bolt uses R&C1 resident HUD animation `0x754F`, frame 0. The HUD requires
-these attached-source glyphs and reports missing resources explicitly, without
-substitute labels or artwork. This asset identification was
-visually checked against the authorised NTSC-U bank; the placement and sizing
-are OBP choices, not recovered retail HUD behaviour. No retail images are stored
-in the repository. Oxygen and interaction prompts retain their lower placement.
+The current OBP-authored gameplay HUD contains only weapon icon/current ammo at
+the top left, Bolt icon/balance at the top right, and Nanotech spheres centred at
+the top. There are no cards, headings, weapon names, status messages, pickup/damage
+text, prompts or oxygen widgets. Snapshot feedback never creates extra HUD content.
+Each filled sphere represents one current health unit; empty spheres appear only
+when the snapshot supplies a capacity. Sphere artwork and layout are OBP choices.
+The white weapon glyph uses the snapshot's typed `SourceWeaponKey`, without
+borrowing another source's family member. The regular Bolt glyph uses R&C1 HUD
+animation `0x754F`, frame 0, converted with the same white-mask and fitting path
+as weapon icons. Its source image was visually checked against the authorised
+NTSC-U bank. Required glyphs have no substitute text or artwork; no retail images
+are stored in the repository. These choices do not claim retail HUD equivalence.
+The wrench uses the existing authored weapons-menu glyph as its explicit icon;
+R&C1 has no corresponding native quick-select glyph. It is not selected in
+response to a missing source. The standalone `hud` fixture requires `--rac1-iso`
+and prepares its icons before rendering its synthetic observations.
 
 ## Purpose and ownership
 

@@ -1,50 +1,20 @@
 using Godot;
-using OBP.RAC1.Presentation;
 using OBP.Runtime.Presentation;
 
 namespace OBP.Game;
 
-/// <summary>
-/// Non-interactive Godot renderer for the engine-neutral HUD snapshot.
-/// It never queries gameplay systems and hides fields that the snapshot does not own.
-/// </summary>
+/// <summary>OBP's minimal gameplay HUD: two icon/count pairs and Nanotech spheres.</summary>
 public partial class PlayerHud : Control
 {
-    public bool DebugOutputEnabled { get; set; }
-    private PanelContainer _healthPanel = null!;
-    private PanelContainer _boltsPanel = null!;
-    private PanelContainer _weaponPanel = null!;
-    private PanelContainer _promptPanel = null!;
-    // Both source-driven HelpDesk and the newer native air HUD are retained.
-    private Rac1HelpDeskView _retailHelpDesk = null!;
-    private PanelContainer _airPanel = null!;
-    private ProgressBar _airProgress = null!;
-    private Label _airLabel = null!;
-
-    private Label _healthKicker = null!;
-    private Label _healthValue = null!;
-    private Label _healthState = null!;
-    private Label _healthDelta = null!;
-    private Label _boltsValue = null!;
-    private Label _boltsDelta = null!;
+    private HBoxContainer _weaponRow = null!;
+    private HBoxContainer _boltsRow = null!;
     private TextureRect _weaponIcon = null!;
     private TextureRect _boltsIcon = null!;
-    private Label _weaponStatus = null!;
-    private Label _ammo = null!;
-    private Label _ammoKicker = null!;
-    private Label _ammoDelta = null!;
-    private Label _promptAction = null!;
-    private Label _promptMessage = null!;
-    private ProgressBar _promptProgress = null!;
-
-    private readonly HudTransientFeedbackAnimator _feedback = new();
+    private Label _ammoCount = null!;
+    private Label _boltCount = null!;
+    private HudHealth? _health;
     private long _epoch = -1;
     private long _revision = -1;
-    private bool _hasHealth;
-    private bool _hasBolts;
-    private bool _hasWeapon;
-    private bool _hasPrompt;
-    private string? _boltsResourceKey;
 
     public override void _Ready()
     {
@@ -52,469 +22,123 @@ public partial class PlayerHud : Control
         MouseFilter = MouseFilterEnum.Ignore;
         AnchorRight = 1f;
         AnchorBottom = 1f;
-        BuildLayout();
+        Resized += QueueRedraw;
+
+        var weaponSlot = Passive(new MarginContainer
+        {
+            Name = "WeaponSlot",
+            OffsetLeft = 24,
+            OffsetTop = 20,
+        });
+        var boltSlot = Passive(new MarginContainer
+        {
+            Name = "BoltSlot",
+            AnchorLeft = 1f,
+            AnchorRight = 1f,
+            OffsetLeft = -244,
+            OffsetRight = -24,
+            OffsetTop = 20,
+        });
+        AddChild(weaponSlot);
+        AddChild(boltSlot);
+        _weaponRow = Counter("WeaponAmmo", "WeaponIcon", "AmmoCount", out _weaponIcon, out _ammoCount);
+        _boltsRow = Counter("Bolts", "BoltIcon", "BoltCount", out _boltsIcon, out _boltCount);
+        weaponSlot.AddChild(_weaponRow);
+        boltSlot.AddChild(_boltsRow);
         Visible = false;
     }
 
     public void Render(HudSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-
-        if (snapshot.Epoch < _epoch ||
-            (snapshot.Epoch == _epoch && snapshot.Revision < _revision))
-        {
-            return;
-        }
-
+        if (snapshot.Epoch < _epoch || snapshot.Epoch == _epoch && snapshot.Revision < _revision) return;
         _epoch = snapshot.Epoch;
         _revision = snapshot.Revision;
-        _feedback.Accept(snapshot);
+        _health = snapshot.Health;
 
-        RenderHealth(snapshot.Health);
-        RenderBolts(snapshot.Bolts);
-        RenderWeapon(snapshot.CurrentWeapon);
-        RenderPrompt(snapshot.ContextPrompt);
-        RenderAir(snapshot.Air);
-        ApplyTransientFeedback();
-        UpdateVisibility();
-    }
-
-    public override void _Process(double delta)
-    {
-        _feedback.Advance(delta);
-        ApplyTransientFeedback();
-        UpdateVisibility();
-    }
-
-    private void BuildLayout()
-    {
-        var margin = Passive(new MarginContainer
+        _weaponRow.Visible = snapshot.CurrentWeapon is not null;
+        if (snapshot.CurrentWeapon is { } weapon)
         {
-            Name = "SafeMargin",
-            AnchorRight = 1f,
-            AnchorBottom = 1f,
+            _weaponIcon.Texture = WeaponMenuIcons.ForWeapon(weapon.Weapon);
+            _ammoCount.Visible = weapon.Ammo is not null;
+            _ammoCount.Text = weapon.Ammo?.Current.ToString("N0") ?? string.Empty;
+        }
+
+        _boltsRow.Visible = snapshot.Bolts is not null;
+        if (snapshot.Bolts is { } bolts)
+        {
+            _boltsIcon.Texture = WeaponMenuIcons.RegularBolt();
+            _boltCount.Text = bolts.Balance.ToString("N0");
+        }
+
+        // Feedback events, status, prompts and oxygen never add HUD text or widgets.
+        Visible = _health is not null || _weaponRow.Visible || _boltsRow.Visible;
+        QueueRedraw();
+    }
+
+    public override void _Draw()
+    {
+        if (_health is not { } health) return;
+        int count = Math.Max(health.Current, health.Capacity ?? health.Current);
+        if (count <= 0) return;
+        float spacing = Math.Min(34f, Size.X * .36f / count);
+        float radius = Math.Min(12f, spacing * .38f);
+        float left = Size.X * .5f - (count - 1) * spacing * .5f;
+        for (int i = 0; i < count; i++)
+            DrawNanotechSphere(new Vector2(left + i * spacing, 42), radius, i < health.Current);
+    }
+
+    // Authored glossy spheres, not a claim about recovered retail HUD rendering.
+    private void DrawNanotechSphere(Vector2 centre, float radius, bool filled)
+    {
+        DrawCircle(centre + new Vector2(0, 2), radius + 2, new Color(0, 0, 0, .55f), true, -1, true);
+        if (filled)
+            DrawCircle(centre, radius + 4, new Color(.1f, .7f, 1, .14f), true, -1, true);
+        Color edge = filled ? new Color(.025f, .18f, .38f) : new Color(.025f, .055f, .08f, .8f);
+        Color light = filled ? new Color(.35f, .9f, 1) : new Color(.08f, .15f, .2f, .8f);
+        DrawCircle(centre, radius, edge, true, -1, true);
+        for (int ring = 1; ring <= 16; ring++)
+        {
+            float t = ring / 16f;
+            DrawCircle(centre + new Vector2(-radius * .22f, -radius * .25f) * t,
+                radius * (1 - t * .8f), edge.Lerp(light, t), true, -1, true);
+        }
+        if (filled)
+            DrawCircle(centre + new Vector2(-radius * .32f, -radius * .38f), radius * .18f,
+                new Color(.9f, 1, 1, .9f), true, -1, true);
+    }
+
+    private static HBoxContainer Counter(string name, string iconName, string countName,
+        out TextureRect icon, out Label count)
+    {
+        var row = Passive(new HBoxContainer { Name = name, Alignment = BoxContainer.AlignmentMode.End });
+        row.AddThemeConstantOverride("separation", 12);
+        icon = Passive(new TextureRect
+        {
+            Name = iconName,
+            CustomMinimumSize = new Vector2(44, 44),
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
         });
-        margin.AddThemeConstantOverride("margin_left", 24);
-        margin.AddThemeConstantOverride("margin_top", 20);
-        margin.AddThemeConstantOverride("margin_right", 24);
-        margin.AddThemeConstantOverride("margin_bottom", 20);
-        AddChild(margin);
-
-        var outer = Passive(new VBoxContainer
+        count = Passive(new Label
         {
-            Name = "HudLayout",
-            SizeFlagsHorizontal = SizeFlags.ExpandFill,
-            SizeFlagsVertical = SizeFlags.ExpandFill,
+            Name = countName,
+            ThemeTypeVariation = "HudValue",
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Center,
         });
-        outer.AddThemeConstantOverride("separation", 12);
-        margin.AddChild(outer);
-
-        var top = Passive(new HBoxContainer
-        {
-            Name = "TopRow",
-            SizeFlagsHorizontal = SizeFlags.ExpandFill,
-        });
-        outer.AddChild(top);
-        _weaponPanel = BuildWeaponPanel();
-        _healthPanel = BuildHealthPanel();
-        _boltsPanel = BuildBoltsPanel();
-        // Equal slots keep health on the viewport centre regardless of which
-        // optional counters are present or how many digits they display.
-        top.AddChild(TopSlot("AmmoSlot", _weaponPanel, SizeFlags.ShrinkBegin));
-        top.AddChild(TopSlot("HealthSlot", _healthPanel, SizeFlags.ShrinkCenter));
-        top.AddChild(TopSlot("BoltsSlot", _boltsPanel, SizeFlags.ShrinkEnd));
-
-        outer.AddChild(Passive(new Control { SizeFlagsVertical = SizeFlags.ExpandFill }));
-
-        var promptRow = Passive(new HBoxContainer
-        {
-            Name = "PromptRow",
-            SizeFlagsHorizontal = SizeFlags.ExpandFill,
-        });
-        promptRow.AddChild(Passive(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill }));
-        _promptPanel = BuildPromptPanel();
-        promptRow.AddChild(_promptPanel);
-        _retailHelpDesk = Passive(new Rac1HelpDeskView { ExpandOnPrompt = true });
-        promptRow.AddChild(_retailHelpDesk);
-        promptRow.AddChild(Passive(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill }));
-        outer.AddChild(promptRow);
-
-        var bottom = Passive(new HBoxContainer
-        {
-            Name = "BottomRow",
-            SizeFlagsHorizontal = SizeFlags.ExpandFill,
-        });
-        var stats = Passive(new VBoxContainer { Name = "PlayerStats" });
-        stats.AddThemeConstantOverride("separation", 8);
-        _airPanel = Card("Air", 250);
-        var airBox = Stack(_airPanel);
-        _airLabel = Kicker("OXYGEN");
-        _airProgress = Passive(new ProgressBar
-        {
-            MinValue = 0,
-            MaxValue = 1,
-            ShowPercentage = false,
-            CustomMinimumSize = new Vector2(0, 12)
-        });
-        airBox.AddChild(_airLabel);
-        airBox.AddChild(_airProgress);
-        stats.AddChild(_airPanel);
-        bottom.AddChild(stats);
-        bottom.AddChild(Passive(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill }));
-        outer.AddChild(bottom);
+        count.AddThemeColorOverride("font_color", Colors.White);
+        count.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, .85f));
+        count.AddThemeConstantOverride("shadow_offset_x", 2);
+        count.AddThemeConstantOverride("shadow_offset_y", 2);
+        row.AddChild(icon);
+        row.AddChild(count);
+        return row;
     }
-
-    private PanelContainer BuildHealthPanel()
-    {
-        var panel = Card("Health", 250);
-        var box = Stack(panel);
-
-        _healthKicker = Kicker("NANOTECH");
-        _healthValue = ValueLabel();
-        _healthKicker.HorizontalAlignment = HorizontalAlignment.Center;
-        _healthValue.HorizontalAlignment = HorizontalAlignment.Center;
-        _healthState = SecondaryLabel();
-        _healthState.HorizontalAlignment = HorizontalAlignment.Center;
-        _healthState.Name = "HealthStateDebug";
-        _healthDelta = SecondaryLabel();
-        _healthDelta.HorizontalAlignment = HorizontalAlignment.Center;
-        _healthDelta.Visible = false;
-        box.AddChild(_healthKicker);
-        box.AddChild(_healthValue);
-        box.AddChild(_healthState);
-        box.AddChild(_healthDelta);
-        return panel;
-    }
-
-    private PanelContainer BuildBoltsPanel()
-    {
-        var panel = Card("Bolts", 250);
-        var row = Passive(new HBoxContainer());
-        row.AddThemeConstantOverride("separation", 10);
-        panel.AddChild(row);
-        _boltsIcon = Icon("BoltIcon", 44);
-        row.AddChild(_boltsIcon);
-        var box = Passive(new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill });
-        row.AddChild(box);
-        _boltsValue = ValueLabel();
-        _boltsValue.HorizontalAlignment = HorizontalAlignment.Right;
-        _boltsDelta = SecondaryLabel();
-        _boltsDelta.HorizontalAlignment = HorizontalAlignment.Right;
-        _boltsDelta.Visible = false;
-        box.AddChild(_boltsValue);
-        box.AddChild(_boltsDelta);
-        return panel;
-    }
-
-    private PanelContainer BuildWeaponPanel()
-    {
-        var panel = Card("Weapon", 260);
-        var box = Stack(panel);
-        var row = Passive(new HBoxContainer());
-        row.AddThemeConstantOverride("separation", 10);
-        box.AddChild(row);
-        _weaponIcon = Icon("WeaponIcon", 56);
-        row.AddChild(_weaponIcon);
-        var ammoBox = Passive(new VBoxContainer { SizeFlagsVertical = SizeFlags.ShrinkCenter });
-        row.AddChild(ammoBox);
-        _ammoKicker = Kicker("AMMO");
-        ammoBox.AddChild(_ammoKicker);
-        _ammo = ValueLabel();
-        _ammoDelta = SecondaryLabel();
-        _ammoDelta.Visible = false;
-        ammoBox.AddChild(_ammo);
-        ammoBox.AddChild(_ammoDelta);
-        _weaponStatus = SecondaryLabel();
-        _weaponStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        box.AddChild(_weaponStatus);
-        return panel;
-    }
-
-    private PanelContainer BuildPromptPanel()
-    {
-        var panel = Card("ContextPrompt", 360);
-        var box = Stack(panel);
-        _promptAction = Kicker(string.Empty);
-        _promptAction.HorizontalAlignment = HorizontalAlignment.Center;
-        _promptMessage = SecondaryLabel();
-        _promptMessage.HorizontalAlignment = HorizontalAlignment.Center;
-        _promptMessage.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        _promptProgress = Passive(new ProgressBar
-        {
-            MinValue = 0,
-            MaxValue = 1,
-            ShowPercentage = false,
-            CustomMinimumSize = new Vector2(0, 7),
-        });
-        box.AddChild(_promptAction);
-        box.AddChild(_promptMessage);
-        box.AddChild(_promptProgress);
-        return panel;
-    }
-
-    private void RenderHealth(HudHealth? health)
-    {
-        _hasHealth = health is not null;
-        _healthPanel.Visible = _hasHealth;
-        if (health is null)
-        {
-            return;
-        }
-
-        _healthKicker.Text = SemanticLabel(health.UnitKey);
-        _healthValue.Text = health.Capacity is { } capacity
-            ? $"{health.Current:N0} / {capacity:N0}"
-            : $"{health.Current:N0}";
-        _healthState.Visible = DebugOutputEnabled && health.LifeState is not null;
-        _healthState.Text = health.LifeState switch
-        {
-            HudLifeState.Dead => "DOWN",
-            HudLifeState.Alive => "ACTIVE",
-            _ => string.Empty,
-        };
-        _healthState.Modulate = health.LifeState == HudLifeState.Dead
-            ? UiTheme.Warning
-            : UiTheme.TextDim;
-    }
-
-    private void RenderAir(HudResourceMeter? air)
-    {
-        // Plain OBP layout; the native oxygen-bar renderer is not recovered.
-        _airPanel.Visible = air is not null;
-        if (air is null) return;
-        _airLabel.Text = SemanticLabel(air.UnitKey);
-        _airProgress.Value = air.Capacity > 0 ? Math.Clamp((double)air.Current / air.Capacity, 0, 1) : 0;
-    }
-
-    private void RenderBolts(HudCurrency? bolts)
-    {
-        _hasBolts = bolts is not null;
-        _boltsResourceKey = bolts?.CurrencyKey;
-        _boltsPanel.Visible = _hasBolts;
-        _boltsValue.Visible = _hasBolts;
-        if (bolts is null)
-        {
-            return;
-        }
-
-        RenderBoltIcon();
-        _boltsValue.Text = $"{bolts.Balance:N0}";
-    }
-
-    private void RenderWeapon(HudWeapon? weapon)
-    {
-        _hasWeapon = weapon is not null;
-        _weaponPanel.Visible = _hasWeapon;
-        if (weapon is null)
-        {
-            return;
-        }
-
-        _weaponIcon.Texture = WeaponMenuIcons.ForWeapon(weapon.Weapon
-            ?? throw new InvalidOperationException("The gameplay HUD requires a source-qualified weapon identity."));
-        _weaponStatus.Text = weapon.Status ?? "";
-        _weaponStatus.Visible = weapon.Status is not null;
-        _ammo.Visible = weapon.Ammo is not null;
-        _ammoKicker.Visible = _ammo.Visible;
-        if (weapon.Ammo is { } ammo)
-        {
-            _ammo.Text = ammo.Capacity is { } capacity
-                ? $"{ammo.Current:N0} / {capacity:N0}"
-                : $"{ammo.Current:N0}";
-        }
-    }
-
-    private void RenderPrompt(HudContextPrompt? prompt)
-    {
-        _hasPrompt = prompt is not null;
-        if (Rac1RetailUiAssets.IsLoaded) _retailHelpDesk.Prompt(prompt is null ? null : DisplayText(prompt.MessageKey));
-        else _retailHelpDesk.Dismiss();
-        if (prompt is null)
-        {
-            return;
-        }
-
-        _promptAction.Text = SemanticLabel(prompt.ActionId);
-        _promptMessage.Text = DisplayText(prompt.MessageKey);
-        _promptProgress.Visible = prompt.Progress is not null;
-        if (prompt.Progress is { } progress)
-        {
-            _promptProgress.Value = Math.Clamp(progress, 0d, 1d);
-        }
-    }
-
-    private void ApplyTransientFeedback()
-    {
-        HudTransientFeedbackState feedback = _feedback.Current;
-
-        _healthPanel.Visible = _hasHealth;
-        _healthPanel.Modulate = _hasHealth
-            ? FeedbackTint(
-                feedback.HealthPulse,
-                feedback.HealthDelta is < 0 ? UiTheme.Warning : UiTheme.Ready,
-                0.30d)
-            : Colors.White;
-        _healthDelta.Visible = _hasHealth &&
-            feedback.HealthPulse > 0d &&
-            feedback.HealthDelta is not null;
-        if (feedback.HealthDelta is { } healthDelta)
-        {
-            _healthDelta.Text = $"NANOTECH {SignedDelta(healthDelta)}";
-            _healthDelta.Modulate = healthDelta < 0 ? UiTheme.Warning : UiTheme.Ready;
-        }
-
-        bool boltFeedback =
-            feedback.PickupPulse > 0d &&
-            feedback.PickupDelta is not null &&
-            (feedback.PickupResourceKey == _boltsResourceKey ||
-             feedback.PickupResourceKey == "bolts");
-        _boltsPanel.Visible = _hasBolts || boltFeedback;
-        _boltsPanel.Modulate = boltFeedback
-            ? FeedbackTint(feedback.PickupPulse, UiTheme.Accent, 0.28d)
-            : Colors.White;
-        _boltsDelta.Visible = boltFeedback;
-        if (boltFeedback && feedback.PickupDelta is { } boltDelta)
-        {
-            if (!_hasBolts)
-            {
-                RenderBoltIcon();
-                _boltsValue.Visible = false;
-            }
-            _boltsDelta.Text = SignedDelta(boltDelta);
-            _boltsDelta.Modulate = boltDelta < 0 ? UiTheme.Warning : UiTheme.Accent;
-        }
-
-        _weaponPanel.Visible = _hasWeapon;
-        _weaponPanel.Modulate = _hasWeapon
-            ? FeedbackTint(feedback.WeaponPulse, UiTheme.Accent, 0.20d)
-            : Colors.White;
-        _ammoDelta.Visible = _hasWeapon &&
-            feedback.WeaponPulse > 0d &&
-            feedback.AmmoDelta is not null;
-        if (feedback.AmmoDelta is { } ammoDelta)
-        {
-            _ammoDelta.Text = $"AMMO {SignedDelta(ammoDelta)}";
-            _ammoDelta.Modulate = ammoDelta < 0 ? UiTheme.Warning : UiTheme.Ready;
-        }
-
-        Color promptTint = FeedbackTint(
-            feedback.PromptPulse,
-            UiTheme.Accent,
-            0.15d);
-        promptTint.A = (float)Math.Clamp(feedback.PromptOpacity, 0d, 1d);
-        _promptPanel.Modulate = promptTint;
-        _promptPanel.Visible = !Rac1RetailUiAssets.IsLoaded && feedback.PromptOpacity > 0.001d;
-    }
-
-    private void UpdateVisibility()
-    {
-        Visible = _airPanel.Visible || _healthPanel.Visible ||
-                  _boltsPanel.Visible ||
-                  _weaponPanel.Visible ||
-                  _promptPanel.Visible ||
-                  _retailHelpDesk.Visible;
-    }
-
-    private static string SignedDelta(int delta) =>
-        delta > 0 ? $"+{delta:N0}" : $"{delta:N0}";
-
-    private static Color FeedbackTint(double intensity, Color accent, double strength) =>
-        Colors.White.Lerp(
-            accent,
-            (float)Math.Clamp(intensity * strength, 0d, 1d));
-
-    private static PanelContainer Card(string name, float minimumWidth)
-    {
-        return Passive(new PanelContainer
-        {
-            Name = name,
-            ThemeTypeVariation = "HudCard",
-            CustomMinimumSize = new Vector2(minimumWidth, 0),
-            Visible = false,
-        });
-    }
-
-    private static VBoxContainer Stack(PanelContainer panel)
-    {
-        var box = Passive(new VBoxContainer());
-        box.AddThemeConstantOverride("separation", 3);
-        panel.AddChild(box);
-        return box;
-    }
-
-    private static Label Kicker(string text) => Passive(new Label
-    {
-        Text = text,
-        ThemeTypeVariation = "HudKicker",
-    });
-
-    private static Label ValueLabel() => Passive(new Label
-    {
-        ThemeTypeVariation = "HudValue",
-    });
-
-    private static Label SecondaryLabel() => Passive(new Label
-    {
-        ThemeTypeVariation = "HudSecondary",
-    });
 
     private static T Passive<T>(T control) where T : Control
     {
         control.MouseFilter = MouseFilterEnum.Ignore;
         return control;
-    }
-
-    private static MarginContainer TopSlot(string name, Control panel, SizeFlags alignment)
-    {
-        var slot = Passive(new MarginContainer
-        {
-            Name = name,
-            CustomMinimumSize = new Vector2(280, 0),
-            SizeFlagsHorizontal = SizeFlags.ExpandFill,
-        });
-        panel.SizeFlagsHorizontal = alignment;
-        panel.SizeFlagsVertical = SizeFlags.ShrinkBegin;
-        slot.AddChild(panel);
-        return slot;
-    }
-
-    private static TextureRect Icon(string name, float size) => Passive(new TextureRect
-    {
-        Name = name,
-        CustomMinimumSize = new Vector2(size, size),
-        SizeFlagsVertical = SizeFlags.ShrinkCenter,
-        ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-        StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-    });
-
-    private void RenderBoltIcon() => _boltsIcon.Texture = Rac1RetailUiAssets.Sprite(Rac1UiAssets.RegularBoltAnimationId)
-        ?? throw new InvalidOperationException("The gameplay HUD requires the attached R&C1 regular Bolt glyph.");
-
-    private static string SemanticLabel(string key) => key switch
-    {
-        "nanotech" => "NANOTECH",
-        "oxygen" => "OXYGEN",
-        "bolts" => "BOLTS",
-        _ => DisplayText(key).ToUpperInvariant(),
-    };
-
-    private static string DisplayText(string key)
-    {
-        if (string.IsNullOrWhiteSpace(key))
-        {
-            return string.Empty;
-        }
-
-        if (key.Any(char.IsWhiteSpace))
-        {
-            return key;
-        }
-
-        int dot = key.LastIndexOf('.');
-        string text = dot >= 0 ? key[(dot + 1)..] : key;
-        text = text.Replace('-', ' ').Replace('_', ' ');
-        return string.Join(' ', text
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .Select(word => char.ToUpperInvariant(word[0]) + word[1..].ToLowerInvariant()));
     }
 }
