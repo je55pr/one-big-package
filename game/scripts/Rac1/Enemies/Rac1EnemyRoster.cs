@@ -11,6 +11,8 @@ internal sealed class Rac1EnemyRoster<T>(Func<T, (ObpSourceGame Source, int Inst
     private readonly HashSet<int> _previouslyOwned = [];
     private bool _disposed;
     internal int Count => _entries.Count;
+    /// <summary>Changes whenever an entry is added or removed, so caches keyed on the roster notice a replacement that keeps the count.</summary>
+    internal int Version { get; private set; }
     internal IReadOnlyCollection<T> Values => _entries.Values;
     internal T this[int index] => _entries[index];
     internal bool ContainsKey(int index) => _entries.ContainsKey(index);
@@ -31,12 +33,19 @@ internal sealed class Rac1EnemyRoster<T>(Func<T, (ObpSourceGame Source, int Inst
             throw new InvalidDataException("Enemy contacts require the matching source-qualified R&C1 placement.");
         _entries.Add(index, value);
         _previouslyOwned.Add(index);
+        Version++;
     }
 
-    internal bool Remove(int index, out T value) => _entries.Remove(index, out value!);
+    internal bool Remove(int index, out T value)
+    {
+        bool removed = _entries.Remove(index, out value!);
+        if (removed) Version++;
+        return removed;
+    }
     internal bool Remove(T expected, out T value)
     {
         if (!Contains(expected)) { value = null!; return false; }
+        Version++;
         return _entries.Remove(identity(expected).Instance, out value!);
     }
     public IEnumerator<KeyValuePair<int, T>> GetEnumerator() => ((IEnumerable<KeyValuePair<int, T>>)_entries.ToArray()).GetEnumerator();
@@ -46,6 +55,7 @@ internal sealed class Rac1EnemyRoster<T>(Func<T, (ObpSourceGame Source, int Inst
     {
         var entries = _entries.Values.ToArray();
         _entries.Clear();
+        Version++;
         List<Exception> failures = [];
         foreach (var entry in entries)
             try { retire(entry); }

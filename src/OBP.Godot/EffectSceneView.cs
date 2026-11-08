@@ -17,6 +17,12 @@ public sealed class EffectSceneView : IDisposable
     private readonly Dictionary<(ObpSourceRef Texture, RuntimeEffectDrawState State, RuntimeEffectSpriteProjection Projection), Batch> _batches = [];
     private readonly Dictionary<(ObpSourceRef Texture, RuntimeMaterialPresentation? State), StandardMaterial3D> _meshMaterials = [];
     private readonly List<OmniLight3D> _lights = [];
+    private readonly Dictionary<(ObpSourceRef Texture, RuntimeEffectDrawState Draw, RuntimeEffectSpriteProjection Projection), List<RuntimeEffectSprite>> _groups = [];
+    private readonly List<(ObpSourceRef Texture, RuntimeEffectDrawState Draw, RuntimeEffectSpriteProjection Projection)> _groupOrder = [];
+    private IReadOnlyList<RuntimeEffectTexture>? _boundResources;
+    private int _boundCount;
+    private Dictionary<ObpSourceRef, RuntimeTexture>? _bindings;
+    private bool _cleanupPending;
     private bool _disposed;
     public int RenderedCount { get; private set; }
     public int DrawCalls { get; private set; }
@@ -29,13 +35,37 @@ public sealed class EffectSceneView : IDisposable
     }
     public void Render(IEnumerable<RuntimeEffectFrame> frames, IReadOnlyList<RuntimeEffectTexture> resources, float aspect = 1)
     {
-        var bindings = resources.ToDictionary(t => t.Source, t => t.Texture);
+        // Callers keep one resource list for a whole level; rebuilding the lookup (and rehashing every source record)
+        // on every call was most of this method's cost. A new list or a changed count rebuilds it and re-runs the cleanup.
+        if (!ReferenceEquals(resources, _boundResources) || resources.Count != _boundCount || _bindings is null)
+        {
+            _bindings = resources.ToDictionary(t => t.Source, t => t.Texture);
+            (_boundResources, _boundCount, _cleanupPending) = (resources, resources.Count, true);
+        }
+        var bindings = _bindings;
         foreach (var batch in _batches.Values) batch.Instances.VisibleInstanceCount = 0;
         RenderedCount = DrawCalls = 0;
         var output = frames.ToArray();
-        foreach (var group in output.SelectMany(f => f.Sprites).GroupBy(p => (p.Texture, p.Draw, p.Projection)))
+        // Group sprites by (texture, state, projection) in first-appearance order without LINQ; lists are reused.
+        foreach (var list in _groups.Values) list.Clear();
+        _groupOrder.Clear();
+        (ObpSourceRef Texture, RuntimeEffectDrawState Draw, RuntimeEffectSpriteProjection Projection) previousKey = default;
+        List<RuntimeEffectSprite>? previousList = null;
+        foreach (var frame in output)
+            foreach (var sprite in frame.Sprites)
+            {
+                if (previousList is null || !ReferenceEquals(sprite.Texture, previousKey.Texture) ||
+                    !sprite.Draw.Equals(previousKey.Draw) || sprite.Projection != previousKey.Projection)
+                {
+                    var candidate = (sprite.Texture, sprite.Draw, sprite.Projection);
+                    if (!_groups.TryGetValue(candidate, out previousList)) _groups.Add(candidate, previousList = []);
+                    previousKey = candidate;
+                }
+                if (previousList.Count == 0) _groupOrder.Add(previousKey);
+                previousList.Add(sprite);
+            }
+        foreach (var key in _groupOrder)
         {
-            var key = group.Key;
             if (!bindings.TryGetValue(key.Texture, out var art)) throw new InvalidDataException("Effect texture is unavailable: " + key.Texture);
             if (!_batches.TryGetValue(key, out var batch))
             {
@@ -46,19 +76,22 @@ public sealed class EffectSceneView : IDisposable
                 _root.AddChild(node); _batches.Add(key, batch = new(node, instances, mesh, material));
             }
             batch.Material.SetShaderParameter("aspect", aspect);
-            var sprites = group.ToArray();
-            if (batch.Instances.InstanceCount < sprites.Length)
-                batch.Instances.InstanceCount = Math.Max(16, (int)System.Numerics.BitOperations.RoundUpToPowerOf2((uint)sprites.Length));
-            batch.Instances.VisibleInstanceCount = sprites.Length;
-            for (int i = 0; i < sprites.Length; i++)
+            var sprites = _groups[key];
+            if (batch.Instances.InstanceCount < sprites.Count)
+                batch.Instances.InstanceCount = Math.Max(16, (int)System.Numerics.BitOperations.RoundUpToPowerOf2((uint)sprites.Count));
+            batch.Instances.VisibleInstanceCount = sprites.Count;
+            for (int i = 0; i < sprites.Count; i++)
             {
                 var p = sprites[i];
                 var position = RuntimeWorldScene.ToScene(p.Position.X, p.Position.Y, p.Position.Z);
-                batch.Instances.SetInstanceTransform(i, new(Basis.Identity.Scaled(Vector3.One * p.Size), position));
+                var basis = key.Projection == RuntimeEffectSpriteProjection.SurfaceFlat
+                    ? new Basis(Vector3.Up, p.Rotation) * new Basis(Vector3.Right, -Mathf.Pi / 2f) * Basis.Identity.Scaled(Vector3.One * p.Size)
+                    : Basis.Identity.Scaled(Vector3.One * p.Size);
+                batch.Instances.SetInstanceTransform(i, new(basis, position));
                 batch.Instances.SetInstanceColor(i, new(p.Color.X, p.Color.Y, p.Color.Z, p.Color.W));
                 batch.Instances.SetInstanceCustomData(i, new(p.ProjectedAxes.X, p.ProjectedAxes.Y, p.Rotation, 0));
             }
-            RenderedCount += sprites.Length; DrawCalls++;
+            RenderedCount += sprites.Count; DrawCalls++;
         }
         var meshOutput = output.SelectMany(f => f.Meshes).ToArray();
         _meshes.Sample(meshOutput.Select(m => m.Surface).ToArray(), (i, _) => MeshMaterial(meshOutput[i], bindings)); DrawCalls += _meshes.SurfaceCount;
@@ -72,12 +105,16 @@ public sealed class EffectSceneView : IDisposable
             var fact = lights[i]; light.Position = RuntimeWorldScene.ToScene(fact.Position.X, fact.Position.Y, fact.Position.Z);
             light.LightColor = new(fact.Color.X, fact.Color.Y, fact.Color.Z); light.LightEnergy = fact.Energy; light.OmniRange = fact.Range;
         }
-        foreach (var key in _batches.Keys.Where(k => !bindings.ContainsKey(k.Texture)).ToArray())
-        { Release(_batches[key]); _batches.Remove(key); }
-        foreach (var key in _meshMaterials.Keys.Where(k => !bindings.ContainsKey(k.Texture)).ToArray())
-        { _meshMaterials[key].Dispose(); _meshMaterials.Remove(key); }
-        foreach (var key in _textures.Keys.Where(k => !bindings.ContainsKey(k)).ToArray())
-        { _textures[key].Dispose(); _textures.Remove(key); }
+        if (_cleanupPending)
+        {
+            _cleanupPending = false;
+            foreach (var key in _batches.Keys.Where(k => !bindings.ContainsKey(k.Texture)).ToArray())
+            { Release(_batches[key]); _batches.Remove(key); }
+            foreach (var key in _meshMaterials.Keys.Where(k => !bindings.ContainsKey(k.Texture)).ToArray())
+            { _meshMaterials[key].Dispose(); _meshMaterials.Remove(key); }
+            foreach (var key in _textures.Keys.Where(k => !bindings.ContainsKey(k)).ToArray())
+            { _textures[key].Dispose(); _textures.Remove(key); }
+        }
         if (_batches.Count == 0) { foreach (var shader in _shaders.Values) shader.Dispose(); _shaders.Clear(); }
     }
     private ImageTexture Texture(ObpSourceRef source, RuntimeTexture data)
@@ -96,7 +133,9 @@ public sealed class EffectSceneView : IDisposable
             string blend = state.Blend == RuntimeBlendEquation.AdditiveSourceAlpha ? "blend_add" : "blend_mix";
             string depth = state.DepthWrite ? "depth_draw_always" : "depth_draw_never";
             string test = state.DepthTest ? "" : ", depth_test_disabled";
-            string vertex = projection == RuntimeEffectSpriteProjection.ProjectedBillboard ? """
+            string vertex = projection == RuntimeEffectSpriteProjection.SurfaceFlat ? """
+                particle_depth = -MODELVIEW_MATRIX[3].z;
+                """ : projection == RuntimeEffectSpriteProjection.ProjectedBillboard ? """
                 vec4 center = PROJECTION_MATRIX * MODELVIEW_MATRIX * vec4(0.0, 0.0, 0.0, 1.0);
                 vec2 axes = INSTANCE_CUSTOM.xy;
                 vec2 offset = mat2(vec2(axes.x, axes.y), vec2(-axes.y, axes.x)) * (VERTEX.xy * 2.0);
@@ -127,7 +166,8 @@ public sealed class EffectSceneView : IDisposable
                 """ };
             _shaders.Add(shaderKey, shader);
         }
-        var material = new ShaderMaterial { Shader = shader };
+        // Surface decals draw after the transparent water (render priority 1), as the original draws its particle pass after the water callbacks.
+        var material = new ShaderMaterial { Shader = shader, RenderPriority = projection == RuntimeEffectSpriteProjection.SurfaceFlat ? 2 : 0 };
         material.SetShaderParameter("art", Texture(source, texture)); material.SetShaderParameter("near_depth", state.NearFade);
         material.SetShaderParameter("far_depth", state.FarFade); return material;
     }
@@ -160,6 +200,9 @@ public sealed class EffectSceneView : IDisposable
         foreach (var texture in _textures.Values) texture.Dispose();
         foreach (var light in _lights) { light.Visible = false; light.QueueFree(); }
         _batches.Clear(); _meshMaterials.Clear(); _shaders.Clear(); _textures.Clear(); _lights.Clear(); RenderedCount = DrawCalls = 0;
+        // The per-call caches would otherwise keep the previous frame's texture bindings and sprite records alive.
+        _groups.Clear(); _groupOrder.Clear();
+        (_boundResources, _boundCount, _bindings, _cleanupPending) = (null, 0, null, false);
     }
     private static void Release(Batch batch)
     { batch.Node.Visible = false; batch.Node.QueueFree(); batch.Instances.Dispose(); batch.Mesh.Dispose(); batch.Material.Dispose(); }

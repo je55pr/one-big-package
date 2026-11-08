@@ -50,6 +50,18 @@ public sealed record Rac1EffectAssets(
         return new(choices, parts, new Dictionary<int, RuntimeTexture>());
     }
 
+    /// <summary>Part textures of the Novalis pool bubble (type 0x38) and foam (type 0x39) particles: one choice each.</summary>
+    public static Rac1EffectAssets DecodePoolBubbles(Rac1LevelCore.Core core)
+    {
+        var choices = new Dictionary<int, int[]>
+        {
+            [Rac1ParticleSession.PoolBubbleType] = Rac1ParticleAssets.TextureChoices(core, Rac1ParticleSession.PoolBubbleType, 1),
+            [Rac1ParticleSession.PoolFoamType] = Rac1ParticleAssets.TextureChoices(core, Rac1ParticleSession.PoolFoamType, 1),
+        };
+        var parts = Rac1ParticleAssets.ReadTextures(core, choices.Values.SelectMany(ids => ids).ToHashSet()).ToDictionary(texture => texture.TextureId);
+        return new(choices, parts, new Dictionary<int, RuntimeTexture>());
+    }
+
     public static IReadOnlyDictionary<int, RuntimeTexture> ReadFxTextures(Rac1LevelCore.Core core, IReadOnlySet<int> ids) =>
         Rac1FxTextures.Read(core, ids);
 }
