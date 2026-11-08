@@ -63,7 +63,7 @@ the ordinary local-to-world conversion. These tables therefore use
 
 Thruster admission/ramp is `2b4198`: native action, apex, authored-frame and
 support predicates; two-update rise and eight-update decay.
-Slam's post-age-33 predicate is **unsupported** (`P+30e != 0`, `2b42d8`),
+Slam's post-age-33 predicate tests time off solid support (`P+30e != 0`, `2b42d8`),
 so the jets decay on contact and remain off during grounded recovery. Effects
 read the current movement action; a retained animation label is not authority
 for the action or its age after recovery ends. The procedural

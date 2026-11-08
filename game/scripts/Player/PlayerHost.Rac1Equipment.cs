@@ -29,7 +29,7 @@ public partial class PlayerHost
     public int Rac1PresentedPackId => ActiveRac1Pack;
     internal Rac1ClankPackEffects.Input ClankPackEffectsInput(Rac1PlayerAnimationPresentationController animation) => new(
         Rac1AudioMovementAction, Math.Max(0, _rac1Movement.TraversalAge - 1), (float)animation.TraversalAuthoredAnimationTime,
-        animation.AnimationSoundSample.IsBlending, !IsOnFloor(),
+        animation.AnimationSoundSample.IsBlending, !Rac1RecoveredSupportGrounded,
         _rac1Movement.Phase == Rac1RatchetMovementPhase.Falling || _rac1Movement.IsLanding,
         _rac1Swimming.Scalar, new((float)_rac1PackWaterContact.X, (float)_rac1PackWaterContact.Y, (float)_rac1PackWaterContact.Z),
         (float)Rac1CurrentYaw, _rac1SwimMotion.Pitch, _rac1PackWaterFloor, (float)Rac1ControlYaw);
@@ -99,7 +99,8 @@ public partial class PlayerHost
             NativePositionHeight: GlobalPosition.Y,
             NativeAnimationExitRequested: Rac1TraversalAnimationCycleCompleted,
             AuthoredAnimationTime: (float)Rac1TraversalAuthoredAnimationTime,
-            ForwardHitMoby: hitMoby);
+            ForwardHitMoby: hitMoby,
+            LongJumpAnimationCompleted: Rac1LongJumpAnimationCompleted);
         context = context with { PackDisabled = !Rac1BackpackReady };
         return context with { WallProbe = ProbeRac1Wall(context) };
     }

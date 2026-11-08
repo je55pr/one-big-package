@@ -401,6 +401,7 @@ internal sealed class PlayerAvatarPresentationHost
         if (_physicsPlayer is not { } player) return;
         player.Rac1TraversalAuthoredAnimationTime = controller.TraversalAuthoredAnimationTime;
         player.Rac1TraversalAnimationCycleCompleted = controller.TraversalAnimationCycleCompleted;
+        player.Rac1LongJumpAnimationCompleted = controller.LongJumpAnimationCompleted;
         player.Rac1WaterAnimationFacts = controller.WaterAnimationFacts;
         player.Rac1WrenchAnimationBlending = controller.TraversalSample?.IsBlending ?? false;
         player.Rac1CrankAnimationSequence = controller.TraversalSample?.Sequence;

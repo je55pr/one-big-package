@@ -17,6 +17,14 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         Rac1OrdinaryStopAnimation.EvaluateAnimationTime(_traversalClock.Current,
             CurrentClip.FrameTimelinePositions ?? throw new InvalidDataException("Traversal timeline is absent."));
     public bool TraversalAnimationCycleCompleted => _traversalCycleCompleted;
+    // The Heli airborne portion ends at its held target pose, before the
+    // landing recovery keys. Thruster long jump plays to its terminal key.
+    public bool LongJumpAnimationCompleted => _traversalSelection?.NativeAction switch
+    {
+        0x0a => _airborneAnimation?.AirbornePoseCompleted == true,
+        0x10 => _traversalClock is { Current.IsBlending: false, Current.NextFrame: 0 },
+        _ => false,
+    };
     public Rac1AnimationFrameClock.Sample? TraversalSample => _traversalClock?.Current;
 
     private bool StepTraversalAnimation(PlayerAnimationState state, Rac1MovementAnimationSelection? selection)

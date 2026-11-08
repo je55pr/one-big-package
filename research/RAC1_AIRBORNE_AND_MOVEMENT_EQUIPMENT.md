@@ -129,6 +129,22 @@ while `P+3d0 <= action age < P+3d4`. For Thruster high jump that is ages
 at age 20. The glide tail is reachable again at age 44.
 Ledge/mud/flip and other explicit earlier caller exclusions are preserved.
 
+OBP long-jump exit policy: once the airborne animation portion completes,
+either pack enters glide if Cross is currently held, including an uninterrupted
+hold from launch or release/re-hold during flight. This is an explicit authored
+handoff, separate from the recovered retail jump-tail press-history branch
+above. Heli completion uses its source-retimed target pose at authored time 29,
+before landing recovery; Thruster completion uses sequence 38's terminal key.
+Completion is an observed animation fact supplied to the movement owner, not
+a second age timer. Ground contact, pack readiness, Clank and glide clearance
+still gate the transition. Ordinary jumps keep their existing press admission.
+Manual inspection on an explicitly staged platform/gap confirmed continuous
+hold and release/re-hold enter sequence 19 on the same update for each pack:
+Heli after authored time 29, Thruster after terminal authored time 33. Released
+input stayed in the long-jump/fall path. The existing airborne diagnostic also
+checks high jumps, glide and Power Slam; temporary inspection changes are not
+retained as new automated tests.
+
 ## Ground crouch and directional input admission
 
 `0x229660..0x229910` prioritizes the directional flip chord when the crouch

@@ -11,6 +11,7 @@ public partial class PlayerHost
     private bool _rac1LedgeCrouchWasHeld;
     public double Rac1TraversalAuthoredAnimationTime { get; set; }
     public bool Rac1TraversalAnimationCycleCompleted { get; set; }
+    public bool Rac1LongJumpAnimationCompleted { get; set; }
     public bool Rac1Hanging => _rac1Ledge.Active;
 
     private bool TryStepRac1Ledge(Vector2 move, bool jump, bool jumpPressed, bool crouch,
@@ -77,5 +78,6 @@ public partial class PlayerHost
         _rac1LedgeCrouchWasHeld = false;
         Rac1TraversalAuthoredAnimationTime = 0;
         Rac1TraversalAnimationCycleCompleted = false;
+        Rac1LongJumpAnimationCompleted = false;
     }
 }

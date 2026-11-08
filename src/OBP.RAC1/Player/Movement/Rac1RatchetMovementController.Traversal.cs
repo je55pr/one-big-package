@@ -12,7 +12,8 @@ public readonly record struct Rac1MovementContext(
     float GroundClearance, float ForwardClearance = 0, float ForwardNormalAngle = 1.5707964f,
     bool ForwardCrateFamily = false, bool PackDisabled = false, float NativePositionHeight = 0,
     bool NativeAnimationExitRequested = false, Rac1AirborneWallProbeResult? WallProbe = null,
-    float AuthoredAnimationTime = 0, bool ForwardHitMoby = false);
+    float AuthoredAnimationTime = 0, bool ForwardHitMoby = false,
+    bool LongJumpAnimationCompleted = false);
 
 public sealed partial class Rac1RatchetMovementController
 {
@@ -380,7 +381,11 @@ public sealed partial class Rac1RatchetMovementController
         // finish its ages 9..43 impulse script even when Cross stays held.
         int motionAge = _specialAge - 1;
         bool scriptedArc = motionAge >= session.Profile.ScriptStartAge && motionAge < session.Profile.ScriptEndAge;
-        if (!scriptedArc && !contact.IsGrounded && Rac1MovementEquipmentGlide.CanEnter(context.ActivePackId,
+        // OBP's completed-animation handoff uses the current held button,
+        // regardless of whether Cross was released/repressed during flight.
+        bool longJumpWaiting = (session.Profile.Kind is Rac1AirborneJumpKind.HeliPackLong or
+            Rac1AirborneJumpKind.ThrusterPackLong) && !context.LongJumpAnimationCompleted;
+        if (!scriptedArc && !longJumpWaiting && !contact.IsGrounded && Rac1MovementEquipmentGlide.CanEnter(context.ActivePackId,
                 context.ClankAvailable, context.PackDisabled, input.JumpHeld, _specialAge,
                 session.Profile.GlideAdmissionAge, context.GroundClearance, (int)session.Profile.Kind,
                 recentCrossPress: _crossPressSerial > _launchPressSerial &&

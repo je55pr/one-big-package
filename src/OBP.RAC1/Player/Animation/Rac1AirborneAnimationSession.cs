@@ -21,6 +21,7 @@ public sealed class Rac1AirborneAnimationSession
     private const int LandingFrame = 10;
     private float _speed = 1;
     private bool _pastApex, _landing;
+    public bool AirbornePoseCompleted { get; private set; }
 
     public Rac1AirborneAnimationSession(int nativeAction)
     {
@@ -42,6 +43,7 @@ public sealed class Rac1AirborneAnimationSession
             return new(_speed);
 
         _pastApex |= input.VerticalStep < 0.001f;
+        AirbornePoseCompleted |= _pastApex && authoredTime >= _targetFrame;
         if (input.NativeActionAge == _launchAge + 1)
         {
             // 0x233c30 truncates velocity/gravity; 0x208f20 retimes the
