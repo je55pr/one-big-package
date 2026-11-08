@@ -145,6 +145,8 @@ internal static class Rac1AuthoredMechanismCatalog
             registry.Register(new Rac1NovalisCrankMechanism(ports, registry.SelectAuthoredMusicCrank));
             registry.Register(new Rac1NovalisRouteMechanism(ports));
             registry.Register(new Rac1NovalisWaterMechanism());
+            registry.Register(new Rac1NovalisScrollingWaterMechanism(ports));
+            registry.Register(new Rac1NovalisPoolWaterMechanism(ports));
             registry.Register(new Rac1NovalisMusicMechanism(ports));
         }
         if (world.LevelId == Rac1RedPlantSession.NativeLevelId)
