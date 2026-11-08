@@ -161,7 +161,10 @@ public sealed partial class Rac1ParticleSession(Rac1EffectAssets assets, Rac1Pic
         }
     }
 
-    public void Step(Vector3 camera, bool enforceLevelBounds = true, float controlHeading = 0)
+    public void Step(Vector3 camera) => Step(camera, true, 0);
+    public void Step(Vector3 camera, bool enforceLevelBounds) => Step(camera, enforceLevelBounds, 0);
+
+    public void Step(Vector3 camera, bool enforceLevelBounds, float controlHeading)
     {
         _tick++;
         // Native traversal fixes its end before dispatch. Children in later

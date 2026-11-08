@@ -158,13 +158,12 @@ internal sealed partial class Rac1ClankPackView : Node3D
     private Vector3[] AttachedVertices(double[] positions, PlayerAvatarAttachmentPose back)
     {
         back = Rac1ClankPackSession.AttachmentPose(back);
+        var vertices = new Vector3[positions.Length / 3];
         for (int i = 0; i < positions.Length; i += 3)
         {
             var point = back.Transform(new(positions[i], positions[i + 1], positions[i + 2]));
-            positions[i] = point.X; positions[i + 1] = point.Y; positions[i + 2] = point.Z;
+            vertices[i / 3] = PlayerAvatarView.ToGodotLocal(point, _avatar.Axes, _avatar.BaseHeight, true);
         }
-        var vertices = new Vector3[positions.Length / 3];
-        PlayerAvatarView.ConvertFrameInto(positions, _avatar.Axes, _avatar.BaseHeight, true, vertices);
         return vertices;
     }
 }

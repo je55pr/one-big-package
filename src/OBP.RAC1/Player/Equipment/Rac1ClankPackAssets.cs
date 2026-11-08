@@ -22,10 +22,12 @@ public sealed record Rac1ClankPackAssets(
     Rac1EffectAssets Effects, IReadOnlyList<Vector3> JetVertices, IReadOnlyList<Vector2> JetUvs,
     IReadOnlyList<Vector3> JetQuads, IReadOnlyList<Rac1ClankPackAssets.BlinkLayer> BlinkLayers, IReadOnlyList<float> BlinkWeights)
 {
+#pragma warning disable S2339 // Fixed source IDs also serve as constant patterns in source-owned selectors.
     public const string SocketKey = "rac1:clank-back";
     public const int SemanticJoint = 5;
     public const int RatchetJoint = 5;
     public const int ClankClass = 601;
+#pragma warning restore S2339
     public sealed record Pair(int RatchetSequence, int PackSequence, int ClankSequence);
     public sealed record BlinkLayer(int Joint, PlayerJointChannels Target);
     public sealed record Model(int NativeClass, PlayerSkeletalAsset Skeletal,
@@ -70,16 +72,17 @@ public sealed record Rac1ClankPackAssets(
         foreach (var (pack, address) in new[] { (2, 0x17bbf0), (3, 0x17bbd0), (4, 0x15f6b8) })
         {
             var entries = new List<Pair>();
-            for (int i = 0; ; i++)
+            bool terminated = false;
+            for (int i = 0; i <= 20; i++)
             {
-                if (i > 20) throw new InvalidDataException("R&C1 Clank animation table is unterminated.");
                 var row = overlay.Read(address + i * 4, 4);
                 int sequence = BinaryPrimitives.ReadInt16LittleEndian(row);
-                if (sequence == -1) break;
+                if (sequence == -1) { terminated = true; break; }
                 if (!models[605 + pack].Sequences.ContainsKey(row[2]) || !models[ClankClass].Sequences.ContainsKey(row[3]))
                     throw new InvalidDataException("R&C1 Clank animation pair is absent.");
                 entries.Add(new(sequence, row[2], row[3]));
             }
+            if (!terminated) throw new InvalidDataException("R&C1 Clank animation table is unterminated.");
             pairs.Add(pack, entries);
         }
         var choices = new[] { 10, 11, 12, 21, 34 }.ToDictionary(type => type,

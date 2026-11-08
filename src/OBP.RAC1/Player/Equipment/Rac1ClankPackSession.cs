@@ -90,8 +90,10 @@ public sealed class Rac1ClankPackSession
         }
         var pack = Upgrade!;
         _actionAge = _previous?.NativeAction == input.NativeAction ? _actionAge + 1 : 0;
+#pragma warning disable S1244 // BodySelection is an unchanged selection identity stamp, not a measured duration.
         bool selection = !changed && (_previous is not { } old || old.Body.Sequence != input.Body.Sequence ||
             old.BodySelection != input.BodySelection || !old.Body.IsBlending && input.Body.IsBlending);
+#pragma warning restore S1244
         if (selection)
         {
             var pairs = _assets.AnimationPairs[Pack].Where(pair => pair.RatchetSequence == input.Body.Sequence).ToArray();
@@ -233,7 +235,9 @@ public sealed class Rac1ClankPackAnimation
     public void Advance()
     {
         Wrapped = false;
+#pragma warning disable S1244 // EE 250480 freezes at exact zero; near-zero rates must continue advancing.
         if (_rate == 0 || Multiplier == 0) return;
+#pragma warning restore S1244
         var sample = Sample;
         float fraction = sample.Fraction + (sample.IsBlending ? _rate : Multiplier * _rate);
         int bits = BitConverter.SingleToInt32Bits(fraction);

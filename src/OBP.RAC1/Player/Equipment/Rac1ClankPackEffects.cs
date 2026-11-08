@@ -43,6 +43,8 @@ public sealed class Rac1ClankPackEffects(Rac1ClankPackAssets assets, Rac1PickupR
                 if (--_jetAge == 0) { _jetState = 1; _jetStrength = 0; }
                 else _jetStrength -= .125f;
                 break;
+            case 1 or 3: break; // Remain inactive/steady when the guarded transition is absent.
+            default: throw new InvalidOperationException("Invalid RAC1 Thruster jet state.");
         }
         if (pack.Pack != 3 || pack.Upgrade is null || _jetStrength <= 0) return [];
         _scroll -= .025f;
