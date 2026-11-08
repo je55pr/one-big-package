@@ -81,11 +81,16 @@ public static class Rac1ParticlePresentation
         IReadOnlyDictionary<int, OBP.Runtime.RuntimeTexture> textures, Vector3 placement = default, Func<uint, uint>? palette = null)
     {
         var sprites = ImmutableArray.CreateBuilder<RuntimeEffectSprite>();
+        // A frame can hold hundreds of particles that share a handful of textures: build each source record once.
+        var sources = new Dictionary<int, ObpSourceRef>();
         foreach (var p in session.Live)
         {
             if (p.Size <= 0 || p.Remaining <= 0) continue;
-            if (!textures.TryGetValue(p.Texture, out var texture)) throw new InvalidDataException("R&C1 particle texture is unavailable.");
-            var source = bank with { AssetKind = texture.AssetKind, OriginalId = p.Texture.ToString(CultureInfo.InvariantCulture) };
+            if (!sources.TryGetValue(p.Texture, out var source))
+            {
+                if (!textures.TryGetValue(p.Texture, out var texture)) throw new InvalidDataException("R&C1 particle texture is unavailable.");
+                sources.Add(p.Texture, source = bank with { AssetKind = texture.AssetKind, OriginalId = p.Texture.ToString(CultureInfo.InvariantCulture) });
+            }
             uint rgba = palette?.Invoke(p.Color) ?? p.Color;
             var color = new Vector4((rgba & 255) / 128f, (rgba >> 8 & 255) / 128f, (rgba >> 16 & 255) / 128f, (rgba >> 24) / 128f);
             var draw = new RuntimeEffectDrawState(p.Blending == Rac1ParticleSession.Blend.Additive ? RuntimeBlendEquation.AdditiveSourceAlpha : RuntimeBlendEquation.SourceAlpha,

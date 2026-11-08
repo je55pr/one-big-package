@@ -112,10 +112,41 @@ internal sealed partial class Rac1EnemyHost : IDisposable
         }
     }
 
+    // Enemy ticks run on the 60 Hz physics step, which Godot repeats when a frame is late. Re-uploading an animated
+    // mesh on every repeat costs as much as the AI step but only the last upload before drawing is ever seen, so
+    // the pose is queued and applied once per rendered frame.
+    private readonly Dictionary<RuntimeWorldScene.DynamicObjectNode, RuntimeObjectAnimationSample> _pendingPoses = [];
+    private SceneTree? _poseTree;
+
+    private void QueuePose(RuntimeWorldScene.DynamicObjectNode node, RuntimeObjectAnimationSample sample)
+    {
+        if (_poseTree is null && _player is not null)
+        {
+            _poseTree = _player.GetTree();
+            _poseTree.ProcessFrame += FlushPoses;
+        }
+        _pendingPoses[node] = sample;
+    }
+
+    private void FlushPoses()
+    {
+        foreach (var (node, sample) in _pendingPoses)
+            if (IsInstanceValid(node.Root)) node.ApplyAnimationSample(sample);
+        _pendingPoses.Clear();
+    }
+
+    private void UnhookPoseFlush()
+    {
+        if (_poseTree is not null && IsInstanceValid(_poseTree)) _poseTree.ProcessFrame -= FlushPoses;
+        _poseTree = null;
+        _pendingPoses.Clear();
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
+        UnhookPoseFlush();
         try { ResetOwned(); }
         finally { Aridia.Dispose(); Roster.Dispose(); }
     }
@@ -247,6 +278,17 @@ internal sealed partial class Rac1EnemyHost : IDisposable
     internal static Vector3 EnemyForward(RuntimeWorldScene.DynamicObjectNode node) =>
         (node.Root.ToGlobal(FromEffectNative(NVector3.UnitX)) - node.Root.GlobalPosition).Normalized();
 
+    private global::Godot.Collections.Array<Plane>? _viewFrustum;
+    private const float EnemyViewMargin = 5f;
+
+    private bool IsRac1EnemyNearView(Vector3 position)
+    {
+        if (_viewFrustum is not { } planes) return true;
+        foreach (var plane in planes)
+            if (plane.DistanceTo(position) > EnemyViewMargin) return false;   // Godot frustum planes face outward
+        return true;
+    }
+
     internal void TickRac1Hostiles(double delta)
     {
         if (_disposed || !_ports.Neighbors.Current() || _player is null) return;
@@ -258,6 +300,7 @@ internal sealed partial class Rac1EnemyHost : IDisposable
     private bool TickNativeActors()
     {
         if (!Current || _player is null) return false;
+        _viewFrustum = _player.GetViewport().GetCamera3D()?.GetFrustum();
         if (!_ports.Player.Persistent()) _rac1Nanotech.UpdateNative();
         _amoeboids.TickGates();
         Frogs.TickRac1FrogShuttleSwitch();
@@ -334,9 +377,12 @@ internal sealed partial class Rac1EnemyHost : IDisposable
             // All known Aridia attacks occur within the native-candidate
             // host encounter region. Preserve gameplay ticks at 24 units,
             // but avoid CPU skinning/GPU buffer uploads beyond 18 units.
-            if (!aridia || node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition) <=
-                AridiaAnimatedPresentationRadius * AridiaAnimatedPresentationRadius)
-                node.ApplyAnimationSample(enemy.Animation.Sample);
+            // Uploading an animated mesh costs about as much as the enemy's whole AI step; an enemy clearly
+            // outside the view needs no new pose until it returns (its current sample is applied then).
+            if ((!aridia || node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition) <=
+                AridiaAnimatedPresentationRadius * AridiaAnimatedPresentationRadius) &&
+                (aridia || IsRac1EnemyNearView(node.Root.GlobalPosition)))
+                QueuePose(node, enemy.Animation.Sample);
             SynchronizeRac1Enemy(enemy);
             if (Rac1AridiaEnemies.IsEnemyClass(node.Source.NativeClassId))
                 Aridia.Show(enemy);

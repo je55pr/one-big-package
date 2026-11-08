@@ -120,6 +120,8 @@ public static partial class RuntimeWorldScene
         public void ConfigureAnimations(RuntimeObjectAnimationSet animations) =>
             _configuredAnimations = animations ?? throw new ArgumentNullException(nameof(animations));
 
+        private readonly System.Collections.Generic.Dictionary<(int Surface, int Depth), double[]> _evaluationBuffers = [];
+
         public void ApplyAnimationSample(RuntimeObjectAnimationSample sample)
         {
             if (sample == AnimationSample) return;
@@ -146,13 +148,20 @@ public static partial class RuntimeWorldScene
                 if (depth > 64 || !float.IsFinite(pose.Fraction) || pose.Fraction is < 0 or > 1 ||
                     !float.IsFinite(pose.BlendFraction) || pose.BlendFraction is < 0 or > 1)
                     throw new InvalidDataException("Object animation sample has invalid interpolation/blend state.");
-                var clip = animations.Clips.Single(clip => clip.Id == pose.ClipId);
-                var frames = clip.Surfaces.Single(surface => surface.SurfaceIndex == surfaceIndex).LocalFrames;
+                // Plain loops: this runs per enemy per rendered frame and LINQ closures allocated on every call.
+                RuntimeObjectAnimationClip? clip = null;
+                foreach (var candidate in animations.Clips) if (candidate.Id == pose.ClipId) { clip = candidate; break; }
+                if (clip is null) throw new InvalidOperationException("Object animation sample references a missing clip.");
+                IReadOnlyList<double[]>? frames = null;
+                foreach (var candidate in clip.Surfaces) if (candidate.SurfaceIndex == surfaceIndex) { frames = candidate.LocalFrames; break; }
+                if (frames is null) throw new InvalidOperationException("Object animation clip has no frames for the surface.");
                 if ((uint)pose.Frame >= frames.Count || (uint)pose.NextFrame >= frames.Count)
                     throw new InvalidDataException("Object animation sample references a missing frame.");
                 var from = frames[pose.Frame];
                 var to = frames[pose.NextFrame];
-                var result = new double[from.Length];
+                // One scratch array per (surface, blend depth): each result is consumed before the next call at its depth.
+                if (!_evaluationBuffers.TryGetValue((surfaceIndex, depth), out var result) || result.Length != from.Length)
+                    _evaluationBuffers[(surfaceIndex, depth)] = result = new double[from.Length];
                 for (int at = 0; at < result.Length; at++) result[at] = from[at] + (to[at] - from[at]) * pose.Fraction;
                 if (pose.BlendFrom is { } previous && pose.BlendFraction < 1)
                 {
