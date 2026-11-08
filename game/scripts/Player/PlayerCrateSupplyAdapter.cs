@@ -12,24 +12,28 @@ namespace OBP.Game;
 internal static class PlayerCrateSupplyAdapter
 {
     internal static IReadOnlyList<PlayerAmmoSupply> Read(PlayerSessionNativeState? player,
-        IReadOnlyList<EquipmentCatalogEntry> equipment, int lancerAmount)
+        IReadOnlyList<EquipmentCatalogEntry> equipment)
     {
         if (player is null) return [];
         var result = new List<PlayerAmmoSupply>();
-        foreach (var entry in equipment.Where(entry => entry.State.Owned && entry.Definition.Category == EquipmentCategory.Weapon &&
-            entry.Definition.Implementation == EquipmentImplementation.Implemented &&
-            entry.Usability is not (EquipmentUsability.MissingSource or EquipmentUsability.UnsupportedBuild)))
+        foreach (var entry in equipment.Where(entry => entry.Selectable && entry.State.Owned &&
+            entry.Definition.Category == EquipmentCategory.Weapon))
         {
             if (entry.Definition.Item is not { } key) continue;
-            int amount = key.SourceGame == ObpSourceGame.Rac1
-                ? Rac1CrateSupply.AmmoDefinitions.FirstOrDefault(definition => definition.Item == key.NativeItemId)?.Amount ?? 0
-                : key == FusionWeaponSession.Lancer ? lancerAmount
-                : key == FusionWeaponSession.ShockCannon ? Rac3ShockCannonProfile.AmmoPickupAmount : 0;
-            if (amount <= 0) continue;
+            int amount = PickupAmount(key);
+            if (amount <= 0 || PlayerAmmoFamilies.ForWeapon(key) is not { } family) continue;
             var status = player.Weapons.Status(key);
-            if (status.Capacity > 0) result.Add(new(key, status.Ammo, status.Capacity, amount));
+            if (status.Capacity > 0) result.Add(new(key, status.Ammo, status.Capacity, amount, family));
         }
         return result;
+    }
+
+    private static int PickupAmount(SourceWeaponKey key)
+    {
+        if (key.SourceGame == ObpSourceGame.Rac1)
+            return Rac1CrateSupply.AmmoDefinitions.FirstOrDefault(definition => definition.Item == key.NativeItemId)?.Amount ?? 0;
+        if (key == FusionWeaponSession.Lancer) return Rac2LancerProfile.AmmoPickupAmount;
+        return key == FusionWeaponSession.ShockCannon ? Rac3ShockCannonProfile.AmmoPickupAmount : 0;
     }
 
     internal static int Grant(PlayerSessionNativeState? player, SourceWeaponKey weapon, int amount)

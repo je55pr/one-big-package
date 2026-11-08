@@ -36,8 +36,8 @@ internal sealed class SourceSetupController(Node owner, SourceSetupCoordinator s
     public void ShowForStartup()
     {
         Initialize();
-        if (Setup.RequireOrdinary(out _) && Setup.Access == SourceAccessMode.OrdinaryPlay) navigation.ShowTitle();
-        else Show();
+        if (Setup.Access == SourceAccessMode.ExplicitDiagnostic) Show();
+        else if (RequireOrdinary("startup")) navigation.ShowTitle();
     }
     public bool RequireOrdinary(string reason)
     {
@@ -47,7 +47,13 @@ internal sealed class SourceSetupController(Node owner, SourceSetupCoordinator s
             readiness.Entries.Where(entry => !entry.Ready).Select(entry => entry.DisplayName + ": " + entry.Problem)) +
             (Setup.RepairNeeded ? "; remembered configuration needs explicit repair" : "") +
             (Setup.ConsumersInvalidated ? "; sources changed; confirm setup to continue" : ""));
-        navigation.AbandonTravel(); Show();
+        navigation.AbandonTravel();
+        if (Setup.SetupCompleted && !readiness.Ready)
+        {
+            navigation.Quit("required-source-unavailable", 2);
+            return false;
+        }
+        Show();
         if (automated) navigation.Quit("trilogy-setup-required", 2);
         return false;
     }
@@ -72,6 +78,11 @@ internal sealed class SourceSetupController(Node owner, SourceSetupCoordinator s
     private void Forget(ObpSourceGame game)
     {
         var result = Setup.Forget(game);
+        if (result.Accepted && Setup.SetupCompleted && Setup.Access == SourceAccessMode.OrdinaryPlay)
+        {
+            RequireOrdinary("source detachment");
+            return;
+        }
         if (HasView) _view!.Refresh(Setup.Library);
         if (result.Message.Length > 0) SetStatus(result.Message, !result.Accepted);
     }

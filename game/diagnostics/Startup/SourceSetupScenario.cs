@@ -21,12 +21,13 @@ public sealed class SourceSetupScenario(DiagnosticScenarioDefinition definition,
         Require(repair.Detach(ObpSourceGame.Rac2), "The source-loss check requires the complete trilogy at entry.");
         Require(!repair.RequireReady("source-loss check"), "A detached required source did not block play.");
         state = menus.ReadNavigation();
-        Require(!state.WorldLoaded && state.RepairActive, "World resources were not retired for repair.");
+        Require(!state.SourceManagerPresent && !state.RepairActive && !state.TitlePresent,
+            "Source loss opened a recovery flow instead of terminating play.");
         var campaign = repair.ReadCampaignTravel();
         Require(!campaign.TransitionActive && campaign.Level == level, "Repair retained or committed an interrupted source-campaign transfer.");
         Require(before == player.Capture(), "Source loss reset player-global state.");
         Require(!profile.TrySave("source-loss check") && saved == profile.ReadDigest(), "Repair flow rewrote the persistent profile.");
-        log("[source-setup-check] PASS: required source detachment retires the world, retains player state/profile and requests exit 2");
+        log("[source-setup-check] PASS: required source detachment terminates play without repair UI, retains player state/profile and requests exit 2");
     }
     private static void Require(bool condition, string detail) { if (!condition) throw new InvalidOperationException(detail); }
 }
