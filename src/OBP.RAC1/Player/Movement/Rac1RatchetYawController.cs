@@ -64,6 +64,17 @@ public sealed class Rac1RatchetYawController
         return Snapshot();
     }
 
+    /// <summary>Action 0x11 owns facing after its launch anticipation.</summary>
+    public void StepWallJump(double cachedWallNormalYaw)
+    {
+        if (!double.IsFinite(cachedWallNormalYaw)) throw new ArgumentOutOfRangeException(nameof(cachedWallNormalYaw));
+        TargetYaw = WrapPi(cachedWallNormalYaw);
+        var next = Rac1AirborneWallJump.StepFacing((float)CurrentYaw, (float)YawVelocity, (float)TargetYaw);
+        CurrentYaw = next.Yaw;
+        YawVelocity = next.Velocity;
+        Mode = Rac1RatchetYawMode.Air;
+    }
+
     public void Reset(double currentYaw = 0d)
     {
         if (!double.IsFinite(currentYaw)) throw new ArgumentOutOfRangeException(nameof(currentYaw));

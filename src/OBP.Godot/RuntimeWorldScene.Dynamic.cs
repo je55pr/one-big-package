@@ -9,6 +9,8 @@ namespace OBP.Godot;
 
 public static partial class RuntimeWorldScene
 {
+    private const string DynamicContactOwnerMeta = "obp_dynamic_contact_owner";
+
     // Authored dynamic entity presentation and its mesh construction.
     public sealed class RuntimeDynamicObjectRoot3D : Node3D
     {
@@ -26,9 +28,22 @@ public static partial class RuntimeWorldScene
         {
             if (current is RuntimeDynamicObjectRoot3D root)
                 return root;
+            if (current is CollisionObject3D && current.HasMeta(DynamicContactOwnerMeta) &&
+                current.GetMeta(DynamicContactOwnerMeta).AsGodotObject() is RuntimeDynamicObjectRoot3D owner &&
+                GodotObject.IsInstanceValid(owner))
+                return owner;
         }
 
         return null;
+    }
+
+    /// <summary>Identify a Moby contact body hosted beside its presentation root.</summary>
+    public static void BindDynamicObjectContactBody(CollisionObject3D body, Node3D dynamicRoot)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        if (dynamicRoot is not RuntimeDynamicObjectRoot3D { Source: not null } owner)
+            throw new ArgumentException("A configured dynamic-object root is required.", nameof(dynamicRoot));
+        body.SetMeta(DynamicContactOwnerMeta, owner);
     }
 
     public static RuntimeDynamicObject? FindDynamicObjectOwner(Node? node) =>

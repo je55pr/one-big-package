@@ -82,11 +82,15 @@ public partial class PlayerHost
         bool crate = forwardHit.TryGetValue("collider", out var collider) &&
             collider.AsGodotObject() is Node node &&
             RuntimeWorldScene.FindDynamicObjectRoot(node) is { Source.NativeClassId: >= 500 and <= 540 };
+        bool hitMoby = forwardHit.TryGetValue("collider", out var forwardCollider) &&
+            forwardCollider.AsGodotObject() is Node forwardNode &&
+            RuntimeWorldScene.FindDynamicObjectRoot(forwardNode) is not null;
         var context = new Rac1MovementContext(ActiveRac1Pack, Rac1ClankAvailable || Rac1DevelopmentPackPreview.HasValue,
             _rac1Yaw.CurrentYaw, controlYaw, clearance, forwardClearance, normalAngle, crate,
             NativePositionHeight: GlobalPosition.Y,
             NativeAnimationExitRequested: Rac1TraversalAnimationCycleCompleted,
-            AuthoredAnimationTime: (float)Rac1TraversalAuthoredAnimationTime);
+            AuthoredAnimationTime: (float)Rac1TraversalAuthoredAnimationTime,
+            ForwardHitMoby: hitMoby);
         return context with { WallProbe = ProbeRac1Wall(context) };
     }
 }

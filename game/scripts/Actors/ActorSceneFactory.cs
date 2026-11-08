@@ -67,6 +67,7 @@ internal sealed class ActorSceneBinding(RuntimeWorldScene.Result scene, RuntimeW
         { var next = mesh.GlobalTransform * mesh.GetAabb(); bounds = bounds?.Merge(next) ?? next; }
         var box = bounds ?? throw new InvalidDataException("Actor has no genuine model contact bounds.");
         _body = new() { Name = "ActorContact_" + Node.Source.InstanceIndex, CollisionLayer = 1, CollisionMask = 1 };
+        RuntimeWorldScene.BindDynamicObjectContactBody(_body, Node.Root);
         _body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = box.Size.Max(Vector3.One * .1f) }, Position = box.GetCenter() - Node.Root.GlobalPosition });
         scene.Root.AddChild(_body); _body.GlobalPosition = Node.Root.GlobalPosition;
         bodies.Add(Target, _body);

@@ -6,6 +6,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
 {
     private Rac1AnimationFrameClock? _traversalClock;
     private Rac1MovementAnimationSelection? _traversalSelection;
+    private Rac1AirborneAnimationSession? _airborneAnimation;
     private double[]? _traversalBlendSource;
     private bool _traversalCycleCompleted;
     private float _traversalAuthoredAdvance;
@@ -27,6 +28,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         {
             _traversalClock = null;
             _traversalSelection = null;
+            _airborneAnimation = null;
             _traversalBlendSource = null;
             return false;
         }
@@ -40,6 +42,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
             previous.EntryGeneration != selected.EntryGeneration;
         if (entering)
         {
+            _airborneAnimation = selected.Airborne.HasValue ? new(selected.NativeAction) : null;
             var source = Current.SampledPose?.LocalPositions ??
                 CurrentClip.LocalFrames[CurrentClip.FrameIndexAt(Current.ElapsedAt(_clockSeconds), Current.Loop)];
             _traversalBlendSource = source;
@@ -80,8 +83,23 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         if (selected.ExitLoopFrame is null)
             _traversalClock!.SetLoopWindow(selected.LoopStartFrame, selected.LoopEndFrame);
         var sample = _traversalClock!.Current;
+        float multiplier = selected.PlaybackMultiplier;
+        if (selected.Airborne is { } airborne)
+        {
+            var clip = LocomotionClip(selected.Sequence);
+            float rate = (float)(1d / (60d * clip.FrameDurationsSeconds[sample.IsBlending ? sample.NextFrame : sample.CurrentFrame]));
+            float authored = Rac1OrdinaryStopAnimation.EvaluateAnimationTime(sample, clip.FrameTimelinePositions!);
+            var playback = _airborneAnimation!.Step(airborne, sample, authored, rate, clip.FrameCount);
+            multiplier = playback.PlaybackMultiplier;
+            if (playback.EntryFrame is int recovery)
+            {
+                _traversalBlendSource = SampleVertices(sample, _traversalBlendSource);
+                _traversalClock.Select(selected.Sequence, recovery, playback.BlendTicks);
+                sample = _traversalClock.Current;
+            }
+        }
         bool terminal = !selected.Loop && !sample.IsBlending && sample.NextFrame == 0;
-        _traversalClock.PlaybackMultiplier = terminal ? 0 : selected.PlaybackMultiplier;
+        _traversalClock.PlaybackMultiplier = terminal ? 0 : multiplier;
         _currentSequenceId = selected.Sequence;
         float time = Rac1OrdinaryStopAnimation.EvaluateAnimationTime(sample,
             LocomotionClip(selected.Sequence).FrameTimelinePositions!);
