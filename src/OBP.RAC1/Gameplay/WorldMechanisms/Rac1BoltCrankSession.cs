@@ -125,22 +125,7 @@ public sealed class Rac1BoltCrankSession
         _speed = Math.Clamp(_speed + Math.Clamp(demand - _speed, -Acceleration, Acceleration), 0, MaximumSpeed);
         if (_speed < Acceleration * .25f) _speed = 0;
 
-        if (_animation.Sequence == InsertSequence)
-        {
-            if (animationCompleted) Select(IdleSequence, 7);
-        }
-        else if (!animationBlending)
-        {
-            switch (_animation.Sequence)
-            {
-                case SlowSequence when _speed == 0: Select(IdleSequence, 14); break;
-                case IdleSequence when _speed > 0: Select(SlowSequence, 14); break;
-                case SlowSequence when _speed > MaximumSpeed * .6f: Select(FastSequence, 14); break;
-                case FastSequence when _speed < MaximumSpeed * .4f: Select(SlowSequence, 16); break;
-                case IdleSequence or SlowSequence or FastSequence: break;
-                default: throw new InvalidOperationException("Unsupported crank animation sequence.");
-            }
-        }
+        StepAnimation(animationCompleted, animationBlending);
 
         float oldAngle = MathF.Atan2(position.Y - center.Y, position.X - center.X);
         position += facing * _speed;
@@ -164,6 +149,25 @@ public sealed class Rac1BoltCrankSession
         _turned += MathF.Abs(Wrap(angle - oldAngle));
         Progress = Math.Clamp(_turned / (_turns * MathF.Tau), 0, 1);
         return new(position, facingYaw, _animation);
+    }
+
+    private void StepAnimation(bool animationCompleted, bool animationBlending)
+    {
+        if (_animation.Sequence == InsertSequence)
+        {
+            if (animationCompleted) Select(IdleSequence, 7);
+            return;
+        }
+        if (animationBlending) return;
+        switch (_animation.Sequence)
+        {
+            case SlowSequence when _speed == 0: Select(IdleSequence, 14); break;
+            case IdleSequence when _speed > 0: Select(SlowSequence, 14); break;
+            case SlowSequence when _speed > MaximumSpeed * .6f: Select(FastSequence, 14); break;
+            case FastSequence when _speed < MaximumSpeed * .4f: Select(SlowSequence, 16); break;
+            case IdleSequence or SlowSequence or FastSequence: break;
+            default: throw new InvalidOperationException("Unsupported crank animation sequence.");
+        }
     }
 
     private void Select(int sequence, int blendTicks) =>

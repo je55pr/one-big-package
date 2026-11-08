@@ -217,10 +217,19 @@ public partial class PlayerHost : CharacterBody3D
     public bool QuickSelectOwnsGameplayInput { get; set; }
 
     /// <summary>Which camera source currently owns ordinary presentation and control heading.</summary>
-    public string CameraControllerLabel =>
-        !HasActiveRecoveredCamera ? "host-debug-fallback" :
-        _rac1CrankCamera is { Returning: false } ? "rac1-native-type5-crank" :
-        _rac1CrankCamera is { Returning: true } ? "rac1-native-type0-crank-return" : "rac1-native-type0";
+    public string CameraControllerLabel
+    {
+        get
+        {
+            if (!HasActiveRecoveredCamera) return "host-debug-fallback";
+            return _rac1CrankCamera switch
+            {
+                { Returning: false } => "rac1-native-type5-crank",
+                { Returning: true } => "rac1-native-type0-crank-return",
+                _ => "rac1-native-type0",
+            };
+        }
+    }
 
     /// <summary>True when a recovered RAC1 camera snapshot is actively driving Godot.</summary>
     public bool HasActiveRecoveredCamera =>

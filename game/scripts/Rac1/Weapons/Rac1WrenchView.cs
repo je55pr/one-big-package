@@ -46,9 +46,28 @@ public sealed partial class Rac1WrenchView : Node3D
         bool cranking = false)
     {
         Transform = Transform3D.Identity;
+        AdvanceAttachedAnimation(attack, wasThrown, cranking);
+        _localPositions = SampleLocal();
+        var localTip = CurrentLocalTip();
+        var positions = new double[_localPositions.Length];
+        for (int i = 0; i < positions.Length; i += 3)
+        {
+            var point = hand.Transform(new(_localPositions[i], _localPositions[i + 1], _localPositions[i + 2]));
+            positions[i] = point.X; positions[i + 1] = point.Y; positions[i + 2] = point.Z;
+        }
+        HandLocal = Convert(hand.Origin, true);
+        TipLocal = Convert(hand.Transform(localTip), true);
+        PlayerAvatarView.ConvertFrameInto(positions, _avatar.Axes, _avatar.BaseHeight, true, _convertedPositions);
+        UpdateSurfaces(_convertedPositions);
+    }
+
+    private void AdvanceAttachedAnimation(Rac1WrenchAttackSession.Frame attack, bool wasThrown, bool cranking)
+    {
         bool recovery = attack.ProfileId == 3 && attack.WrenchReleased;
-        int sequence = cranking ? Rac1BoltCrankSession.WrenchSequence :
-            attack.Active && !wasThrown && !recovery ? Rac1WrenchAttackProfile.Profiles[attack.ProfileId].WrenchSequence : 1;
+        int sequence = 1;
+        if (cranking) sequence = Rac1BoltCrankSession.WrenchSequence;
+        else if (attack.Active && !wasThrown && !recovery)
+            sequence = Rac1WrenchAttackProfile.Profiles[attack.ProfileId].WrenchSequence;
         long generation = attack.Active && !wasThrown ? attack.Generation : 0;
         if (_sequence != sequence || _generation != generation)
         {
@@ -66,18 +85,6 @@ public sealed partial class Rac1WrenchView : Node3D
         bool inserted = cranking && !_clock.Current.IsBlending && _clock.Current.NextFrame == 0;
         if (inserted) _clock.ResumePlayback(sequence, _clips[sequence].Frames.Count - 1, 0, 0);
         _clock.PlaybackMultiplier = inserted ? 0 : attack.Animation?.PlaybackMultiplier ?? 1;
-        _localPositions = SampleLocal();
-        var localTip = CurrentLocalTip();
-        var positions = new double[_localPositions.Length];
-        for (int i = 0; i < positions.Length; i += 3)
-        {
-            var point = hand.Transform(new(_localPositions[i], _localPositions[i + 1], _localPositions[i + 2]));
-            positions[i] = point.X; positions[i + 1] = point.Y; positions[i + 2] = point.Z;
-        }
-        HandLocal = Convert(hand.Origin, true);
-        TipLocal = Convert(hand.Transform(localTip), true);
-        PlayerAvatarView.ConvertFrameInto(positions, _avatar.Axes, _avatar.BaseHeight, true, _convertedPositions);
-        UpdateSurfaces(_convertedPositions);
     }
 
     public void StepThrown(Vector3 worldPosition, float spin)

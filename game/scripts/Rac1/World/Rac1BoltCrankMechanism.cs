@@ -21,14 +21,14 @@ internal sealed class Rac1BoltCrankMechanism(
     internal IReadOnlyDictionary<int, RuntimeWorldScene.DynamicObjectNode> CrankNodes => _cranks;
     internal float Progress(int id) => _controllers[id].Progress;
 
-    internal override void Configure(RuntimeWorld world, RuntimeWorldScene.Result result)
+    internal override void Configure(RuntimeWorld world, RuntimeWorldScene.Result scene)
     {
         _cameras = Rac1BoltCrankCameraDefinition.Load(ports.SourcePath() ??
             throw new InvalidDataException("Bolt crank camera requires its registered retail source."), world.LevelId);
         foreach (var source in world.DynamicObjects ?? [])
         {
             if (source.NativeClassId != Rac1BoltCrankSession.NativeClass) continue;
-            var node = Rac1WorldPresentation.FindPresentedDynamic(result, source)
+            var node = Rac1WorldPresentation.FindPresentedDynamic(scene, source)
                 ?? throw new InvalidDataException("Bolt crank lacks its imported visual.");
             _cranks.Add(source.InstanceIndex, node);
             byte[] pvar = source.NativePayloads?.SingleOrDefault(item => item.Format == "rac1-pvar")?.Data
@@ -61,34 +61,8 @@ internal sealed class Rac1BoltCrankMechanism(
             Release();
             return false;
         }
-        if (_engaged is null)
-        {
-            if (!player.IsOnFloor()) return false;
-            var closest = _cranks.Values
-                .Where(node => _controllers[node.Source.InstanceIndex] is { CanEngage: true, SquareBuffered: true })
-                .OrderBy(node => node.Root.GlobalPosition.DistanceSquaredTo(player.GlobalPosition))
-                .FirstOrDefault();
-            if (closest is null || closest.Root.GlobalPosition.DistanceTo(player.GlobalPosition) >= Rac1BoltCrankSession.Reach)
-                return false;
-            Vector3 center = closest.Root.GlobalPosition;
-            Vector3 playerPosition = player.GlobalPosition;
-            var controller = _controllers[closest.Source.InstanceIndex];
-            var nativeCenter = new System.Numerics.Vector3(-center.X, center.Z, center.Y);
-            var nativePlayer = new System.Numerics.Vector3(-playerPosition.X, playerPosition.Z, playerPosition.Y);
-            // OBP contact approximation: the foot capsule can settle across the
-            // native .3 support offset on imported geometry. Check both endpoints
-            // of that host interval; the source distance/facing/height gates stay exact.
-            var supportedOrigin = nativePlayer + System.Numerics.Vector3.UnitZ * Rac1BoltCrankSession.HeroOriginAboveSupport;
-            if (!controller.CanEngageFrom(nativeCenter, nativePlayer, (float)player.Rac1CurrentYaw) &&
-                !controller.CanEngageFrom(nativeCenter, supportedOrigin, (float)player.Rac1CurrentYaw)) return false;
-            _engaged = closest.Source.InstanceIndex;
-            if (!_cameras.TryGetValue(_engaged.Value, out var camera))
-                throw new InvalidDataException("Bolt crank has no admitted authored camera.");
-            player.BeginRac1CrankCamera(camera);
-            _controllers[_engaged.Value].TryEngage();
-        }
-
-        int crankId = _engaged.Value;
+        _engaged ??= TryEngage(player);
+        if (_engaged is not int crankId) return false;
         var crank = _controllers[crankId];
         var root = _cranks[crankId].Root;
         Vector3 position = player.GlobalPosition;
@@ -106,6 +80,34 @@ internal sealed class Rac1BoltCrankMechanism(
         }
         player.ApplyRac1CrankFrame(frame);
         return true;
+    }
+
+    private int? TryEngage(PlayerHost player)
+    {
+        if (!player.IsOnFloor()) return null;
+        var closest = _cranks.Values
+            .Where(node => _controllers[node.Source.InstanceIndex] is { CanEngage: true, SquareBuffered: true })
+            .OrderBy(node => node.Root.GlobalPosition.DistanceSquaredTo(player.GlobalPosition))
+            .FirstOrDefault();
+        if (closest is null || closest.Root.GlobalPosition.DistanceTo(player.GlobalPosition) >= Rac1BoltCrankSession.Reach)
+            return null;
+        Vector3 center = closest.Root.GlobalPosition;
+        Vector3 playerPosition = player.GlobalPosition;
+        var controller = _controllers[closest.Source.InstanceIndex];
+        var nativeCenter = new System.Numerics.Vector3(-center.X, center.Z, center.Y);
+        var nativePlayer = new System.Numerics.Vector3(-playerPosition.X, playerPosition.Z, playerPosition.Y);
+        // OBP contact approximation: the foot capsule can settle across the
+        // native .3 support offset on imported geometry. Check both endpoints
+        // of that host interval; the source distance/facing/height gates stay exact.
+        var supportedOrigin = nativePlayer + System.Numerics.Vector3.UnitZ * Rac1BoltCrankSession.HeroOriginAboveSupport;
+        if (!controller.CanEngageFrom(nativeCenter, nativePlayer, (float)player.Rac1CurrentYaw) &&
+            !controller.CanEngageFrom(nativeCenter, supportedOrigin, (float)player.Rac1CurrentYaw)) return null;
+        int crankId = closest.Source.InstanceIndex;
+        if (!_cameras.TryGetValue(crankId, out var camera))
+            throw new InvalidDataException("Bolt crank has no admitted authored camera.");
+        player.BeginRac1CrankCamera(camera);
+        controller.TryEngage();
+        return crankId;
     }
 
     private void Release()

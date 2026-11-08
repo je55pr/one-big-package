@@ -163,7 +163,7 @@ public sealed partial class Rac1OrdinaryCameraController
     {
         outgoing.Validate();
         Reset(playerNative, outgoing.ControlHeadingRadians);
-        Vec3 eye = new(outgoing.Eye.X, outgoing.Eye.Z, outgoing.Eye.Y);
+        Vec3 eye = outgoing.Eye.ObpYUpToNativeZUp();
         _actualOffset = _desiredOffset = eye - playerNative - new Vec3(0, 0, OrdinaryEyeHeight);
         _currentRadius = Length(_actualOffset);
         if (_currentRadius <= 1e-8) throw new ArgumentException("Scripted eye coincides with the follow anchor.", nameof(outgoing));

@@ -103,7 +103,8 @@ public sealed class Rac1BoltCrankCameraController
         return Current;
     }
 
-    internal static Vector3 Native(Vec3 value) => Vector(new(value.X, value.Z, value.Y));
+    internal static Vector3 Native(Vec3 value) => Vector(value.ObpYUpToNativeZUp());
+    private static Vec3 ToObp(Vector3 value) => new Vec3(value.X, value.Y, value.Z).NativeZUpToObpYUp();
     private static Vector3 Vector(Vec3 value)
     {
         var result = new Vector3((float)value.X, (float)value.Y, (float)value.Z);
@@ -146,10 +147,10 @@ public sealed class Rac1BoltCrankCameraController
         Vector3 forward = Vector3.Transform(Vector3.UnitX, rotation);
         Vector3 up = Vector3.Transform(Vector3.UnitZ, rotation);
         float distance = Vector3.Distance(eye, player);
-        return new RuntimeCameraState(new(eye.X, eye.Z, eye.Y), new(forward.X, forward.Z, forward.Y),
+        return new RuntimeCameraState(ToObp(eye), ToObp(forward),
             MathF.Atan2(forward.Y, forward.X), distance, distance)
         {
-            Up = new(up.X, up.Z, up.Y),
+            Up = ToObp(up),
             VerticalFieldOfViewRadians = Rac1CameraProjection.VerticalFieldOfViewRadians,
         }.Validate();
     }
