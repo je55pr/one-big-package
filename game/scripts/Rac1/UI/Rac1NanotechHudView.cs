@@ -23,6 +23,7 @@ public partial class Rac1NanotechHudView : Control
     private float _framingScale = 1;
     private static readonly NVector3 Eye = new(10, 0, .5f);
     private const double NativeTick = 1d / 60d;
+    private const int MaxAnimationStepsPerFrame = 4;
 
     public override void _Ready()
     {
@@ -102,9 +103,11 @@ public partial class Rac1NanotechHudView : Control
     public override void _Process(double delta)
     {
         if (_sphere is null || !IsVisibleInTree() || GetTree().Paused) return;
-        _animationTime += delta;
+        // This cosmetic clock drops time after a stall instead of replaying
+        // an unbounded backlog of particle generation on the next frame.
+        _animationTime = Math.Min(_animationTime + delta, NativeTick * MaxAnimationStepsPerFrame);
         bool advanced = false;
-        while (_animationTime >= NativeTick)
+        for (int step = 0; step < MaxAnimationStepsPerFrame && _animationTime >= NativeTick; step++)
         {
             _animationTime -= NativeTick;
             StepAnimation();

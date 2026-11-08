@@ -65,10 +65,18 @@ public partial class PlayerHud : Control
         if (snapshot.CurrentWeapon is { } weapon)
         {
             _weaponIcon.Texture = WeaponMenuIcons.ForWeapon(weapon.Weapon);
-            _ammoCount.Visible = weapon.Ammo is not null;
-            _ammoCount.Text = weapon.Ammo is { } ammo
-                ? ammo.Capacity is { } capacity ? $"{ammo.Current:N0}/{capacity:N0}" : $"{ammo.Current:N0}"
-                : string.Empty;
+            if (weapon.Ammo is { } ammo)
+            {
+                _ammoCount.Visible = true;
+                _ammoCount.Text = ammo.Capacity is { } capacity
+                    ? $"{ammo.Current:N0}/{capacity:N0}"
+                    : $"{ammo.Current:N0}";
+            }
+            else
+            {
+                _ammoCount.Visible = false;
+                _ammoCount.Text = string.Empty;
+            }
         }
 
         _boltsRow.Visible = snapshot.Bolts is not null;
