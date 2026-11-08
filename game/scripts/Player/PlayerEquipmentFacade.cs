@@ -102,11 +102,12 @@ internal sealed class PlayerEquipmentFacade(PlayerEquipmentPorts ports) : IDispo
                 {
                     { SourceGame: ObpSourceGame.Rac1, NativeItemId: (int)Rac1TraversalEquipmentId.Swingshot } when !context.SwingshotTargets =>
                         "No admitted source-native Swingshot target is present.",
-                    { SourceGame: ObpSourceGame.Rac1, NativeItemId: (int)Rac1TraversalEquipmentId.HydroPack or (int)Rac1TraversalEquipmentId.OxygenMask } when !context.Water =>
+                    { SourceGame: ObpSourceGame.Rac1, NativeItemId: (int)Rac1TraversalEquipmentId.OxygenMask } when !context.Water =>
                         "No admitted source-native water context is present.",
                     _ => null,
                 };
-                return new(owned, enabled, enabled && reason is null, EquipmentResourceStatus.NotRequired,
+                bool hydro = key is { SourceGame: ObpSourceGame.Rac1, NativeItemId: (int)Rac1TraversalEquipmentId.HydroPack };
+                return new(owned, enabled, enabled && reason is null && (!hydro || context.Water), EquipmentResourceStatus.NotRequired,
                     EquipmentResourceStatus.Unavailable, ContextAllowed: reason is null, ContextReason: reason);
             }
             var presentation = Ports.Presentation(key!.Value);

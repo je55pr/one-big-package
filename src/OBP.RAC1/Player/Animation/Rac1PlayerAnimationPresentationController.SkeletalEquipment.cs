@@ -69,6 +69,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         var positions = _equipmentRig.SampleLayers(target, plan.Skeleton, plan.Layers, _sourceTransition,
             body?.BlendKey, body?.Progress ?? 1, initial);
         var sockets = _attachments.GetOrCreateValue(positions);
+        sockets[Rac1ClankPackAssets.SocketKey] = _equipmentRig.Attachment(Rac1ClankPackAssets.RatchetJoint);
         sockets[PlayerEquipmentPose.HandAttachmentKey] = _equipmentRig.Attachment(plan.HandJoint);
         _sourceHandJoint = plan.HandJoint;
         sockets[Rac1WrenchAttachment.SocketKey] = _equipmentRig.Attachment(56);

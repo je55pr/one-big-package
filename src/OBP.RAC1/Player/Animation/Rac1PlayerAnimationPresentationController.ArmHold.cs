@@ -63,6 +63,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         if (_attachments.TryGetValue(baseline, out var source))
             foreach (var (key, pose) in source) sockets[key] = pose;
         sockets[Rac1WrenchAttachment.SocketKey] = rig.Attachment(56);
+        sockets[Rac1ClankPackAssets.SocketKey] = rig.Attachment(Rac1ClankPackAssets.RatchetJoint);
         sockets[Gameplay.Rac1BombProjectileSession.GloveSocketKey] = rig.Attachment(54);
         sockets[Gameplay.Rac1WeaponProfiles.HandSocket(0)] = rig.Attachment(56);
         sockets[Gameplay.Rac1WeaponProfiles.HandSocket(1)] = rig.Attachment(55);

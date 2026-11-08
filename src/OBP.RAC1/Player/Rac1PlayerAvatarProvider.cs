@@ -231,6 +231,7 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
                     [Gameplay.Rac1WeaponProfiles.HandSocket(0)] = clip.WrenchSocketFrames,
                     [Gameplay.Rac1WeaponProfiles.HandSocket(1)] = clip.LeftHandSocketFrames!,
                     [Gameplay.Rac1WeaponProfiles.HandSocket(6)] = clip.BombGloveSocketFrames!,
+                    [Rac1ClankPackAssets.SocketKey] = clip.ClankSocketFrames!,
                 });
     }
 

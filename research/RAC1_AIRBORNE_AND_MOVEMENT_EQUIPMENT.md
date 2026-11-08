@@ -1,5 +1,8 @@
 # R&C1 airborne actions and movement equipment
 
+Clank's back attachment, three upgrade models, Moby animation clock, switching,
+effects and validation are documented in [RAC1_CLANK_PACKS.md](RAC1_CLANK_PACKS.md).
+
 This recovery uses the canonical original NTSC-U gameplay overlay, not the
 boot executable at the same virtual addresses. Veldin range 0 SHA-256 is
 `eaa4b0c0065e4a72e72ea4c6746c2a53169340501996077023353f12bfdb3804`.

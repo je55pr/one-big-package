@@ -49,6 +49,7 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
         Assignments = new(defaultSlots);
         var imported = Rac1MovementCapabilities.FromInventory(Inventory);
         foreach (var gadget in new Rac1TraversalEquipmentId?[] { imported.RememberedBackpack(Inventory),
+            imported.HydroPack ? Rac1TraversalEquipmentId.HydroPack : null,
             imported.OxygenMask ? Rac1TraversalEquipmentId.OxygenMask : null, imported.Swingshot ? Rac1TraversalEquipmentId.Swingshot : null }.OfType<Rac1TraversalEquipmentId>())
             Assignments.Enable(PlayerEquipmentRegistrations.Catalog.Find(new SourceWeaponKey(ObpSourceGame.Rac1, (int)gadget))!, true, PlayerEquipmentRegistrations.Catalog);
         Life = new(new("obp/rac1-derived-health/v1", [new(ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId, Rac1DamageAdapter, Rac1DamageDescriptor),
@@ -81,7 +82,7 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
             entry.SourceGame == ObpSourceGame.Rac1 && entry.Item.HasValue && entry.Implementation == EquipmentImplementation.Implemented))
             if (!Inventory.OwnsNativeItem(entry.Item!.Value.NativeItemId)) Inventory.AcquireNativeItem(entry.Item.Value.NativeItemId);
         if (firstPack)
-            foreach (int id in new[] { 2, 6, 12 }) Assignments.Enable(PlayerEquipmentRegistrations.Catalog.Find(new SourceWeaponKey(ObpSourceGame.Rac1, id))!, true, PlayerEquipmentRegistrations.Catalog);
+            foreach (int id in new[] { 2, 4, 6, 12 }) Assignments.Enable(PlayerEquipmentRegistrations.Catalog.Find(new SourceWeaponKey(ObpSourceGame.Rac1, id))!, true, PlayerEquipmentRegistrations.Catalog);
     }
 
     public bool GadgetEnabled(Rac1TraversalEquipmentId item) => Inventory.OwnsNativeItem((int)item) &&
