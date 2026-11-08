@@ -168,8 +168,7 @@ public sealed partial class Rac1OrdinaryCameraController
         _currentRadius = Length(_actualOffset);
         if (_currentRadius <= 1e-8) throw new ArgumentException("Scripted eye coincides with the follow anchor.", nameof(outgoing));
         _previousDesiredEye = eye;
-        double planarRadius = Math.Sqrt(_actualOffset.X * _actualOffset.X + _actualOffset.Y * _actualOffset.Y);
-        _obstructionCorrection = Math.Max(0, OrdinaryPreferredRadius - planarRadius);
+        _obstructionCorrection = Math.Max(0, OrdinaryPreferredRadius - _currentRadius);
     }
 
     public Rac1CameraState Step(Input input, IRac1CameraGeometry? geometry = null)

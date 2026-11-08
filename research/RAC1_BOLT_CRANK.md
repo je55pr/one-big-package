@@ -1,9 +1,26 @@
-# R&C1 bolt crank animation and turning
+# R&C1 bolt crank animation, turning and cameras
 
 Authority is the supported original NTSC-U `SCUS-97199` disc. Novalis class
 280 is updated at `0x002e0c68`; its 64-byte PVar supplies turns at `+0x30`
 and the reusable flag at `+0x38`. Authored instances 296 and 297 both specify
-one turn and are non-reusable.
+one turn and are non-reusable. The same updater is present in Eudora at
+`0x002bfd30` and Batalia at `0x002d8270` (3672 bytes each). A census of all
+19 retail level entries finds 16 class-280 placements: Novalis 296/297;
+Eudora 146 through 154; Batalia 296 through 300. These are placement counts,
+not a claim that every placement is reachable before its surrounding machinery works.
+
+| Level | Turn counts | Reusable placements |
+|---|---|---|
+| Novalis | 1 for both | none |
+| Eudora | 3.5 except 152/153, which use 1.5 | 154 |
+| Batalia | 3.5 except 300, which uses 1 | none |
+
+Additional retail identities, reproduced using the bounded overlay reader:
+
+| Level | Overlay SHA-256 | Crank updater SHA-256 |
+|---|---|---|
+| Eudora | `036dbc3ddad404de223be0d2fe68903d58c04aaf4687874f669d8d6cefbd1094` | `c43d8eba5a07764397d022db7b601a68d0e212ee5db6770980f632400b8c4ab8` |
+| Batalia | `1f42f19b5484033224b4287fe67ae5b91adb5a94a75a4a46796216c30a3325da` | `8c2bc5863e593ecde8c864e2ff62830a8fa7c860c94f218a216a8ff6ec70b223` |
 
 The local read used overlay SHA-256
 `81673b8dcf5930c7313a7c83d0f76e5e1948691dc09af63dd8c8f6a04f9a72ae`.
@@ -53,13 +70,21 @@ The fast/slow thresholds are .6/.4 of the native maximum `3.7 / 60` movement
 step; acceleration is `5.5 / 3600`. Square after the first sixty action ticks
 or completed progress releases the interaction. Releasing the stick stops
 turning while retaining the grip. Completed non-reusable cranks lower .5 units
-at .5 units per second.
+at .5 units per second. Eudora's reusable crank also releases and lowers at
+full progress, but returns to native idle rather than setting the permanent
+completion state. Its connected mechanism owns subsequent progress reset:
+there is no invented automatic reset timer. The animation/camera slice admits
+this variant without implementing those external reset/save callbacks.
 
 The existing player animation clock samples the clips and their hand socket.
 The wrench retains its insertion terminal pose. Existing linked-door and
 music mechanisms consume the same progress/completion; unwind updates door
 positions and restores host door collision too. Cranking blocks equipment use
 and Quick Select, and reset/world retirement releases scene-local ownership.
+`Rac1BoltCrankMechanism` owns crank nodes and interaction on every RAC1 world
+containing class 280. The separate Novalis adapter consumes progress for its
+already implemented doors and music. Eudora and Batalia publish no new machinery
+movement, collision removal or completion rewards.
 
 ## Native crank camera
 
@@ -83,7 +108,11 @@ this mount, so ordinary follow-camera obstruction cannot retract it.
 Release calls the mode-4 handoff at `0x00317070`. Type-0 setup starts from the
 outgoing eye, and the global position/quaternion blend uses cosine easing.
 Novalis's `switch_active_camera_record` default is `.01` for both blend rates,
-overriding the general `.018` setting. The renderer accepts an optional neutral
+overriding the general `.018` setting used by Eudora and Batalia. The rate is
+carried by the source-authored camera definition, not inferred by the player
+from world identity. Every crank reads its own point and radius references,
+including Eudora 153's `-1,0` references and Batalia's end references up to 3.
+The renderer accepts an optional neutral
 camera-up vector so quaternion interpolation retains its orientation, including
 transient roll. The player owns the camera controller; the world lends only
 the source-qualified authored definition. Placement/reset clears that context.
@@ -114,15 +143,40 @@ orientation, targeting point 0's fixed transform, with zero platform carry
 and both rates `.01`. These are controlled function observations, not a live
 retail camera playthrough or a claim of moving-support equivalence.
 
+The expanded sweep executes the original camera updater at `0x002eeb88`
+(Eudora) and `0x00313c80` (Batalia), in addition to Novalis, for every authored
+definition with stationary and moving inputs: 5920 mount samples. Maximum
+eye error is .000454 units and heading error .00000406 radians. The 1664
+return samples across all definitions have maximum eye error .009761 units
+and forward/up error .000493. These are numerical observations, not EE
+bit-equivalence. The Eudora/Batalia publication blend entry points are
+`0x001dea60` / `0x001feaf8`.
+
+Expanded comparison inputs use each authored crank position plus
+`(1.05,0,.39)` as the player; eye is player plus `(6,0,2)`. Initial rotation
+is `(0,.0831412,atan2(sin(float(pi)),cos(float(pi))))` in both implementations,
+so the exactly opposite heading chooses the same side of the wrap boundary.
+Moving inputs use the same .5-amplitude trajectory above. The return comparison
+uses the initial eye with identity orientation and each fixed authored target,
+zero platform carry and the level's .01/.018 rates. Return completes after
+102/57 updates, respectively, including the initial zero-weight publication.
+
 ## Boundaries and manual checks
 
 Godot supplies held-wrench availability, support, camera-relative input and
 scene transforms. Planar crank motion follows the source controller while
 vertical support remains the existing Godot contact adapter. The mirror-animation
 option, nearby-hostile clearance scan and native save-bit/callback machinery are
-outside this change. Only the two authored non-reusable Novalis cranks are
-admitted; reusable callback variants fail explicitly. Native EE floating-point
+outside this change. All 16 authored crank interactions and cameras are
+admitted; reusable machinery callbacks remain outside this slice. Native EE floating-point
 bit equivalence and complete ordinary-camera collision parity are not claimed.
+
+The source height predicate remains `abs(heroZ - .3 - crankZ) < .2`.
+OBP's existing foot capsule settles at different heights on imported supports:
+the Godot engagement adapter checks that predicate at both ends of the .3
+foot-to-origin interval while grounded. This is an explicit OBP contact
+approximation, not a recovered second native height rule. Source distance,
+facing, buffer and cooldown predicates are retained.
 
 Manual retail-loaded inspection exercised both authored cranks through
 68 -> 63 -> 64 -> 65 -> 64 -> 63, resumed turning, completion, standing
@@ -136,5 +190,17 @@ SceneTree exit printed out-of-tree transform warnings from the existing
 Rendered camera checks also covered both authored views and restored ordinary
 control. The second view used a local version-2 bookmark with hostile placements
 already cleared so combat would not interrupt the camera observation.
+The expanded retail-loaded Godot inspection checks insertion, turning,
+completion/release and authored camera targets for all 16 placements, including
+Eudora 154's reusable flag. Rendered checks include Eudora 153's negative radius
+reference and Batalia 299. Cancellation/re-entry was also exercised on Eudora
+154; toggling diagnostic fly during a Batalia grip invalidates the old follow
+camera before ordinary control resumes. The follow handoff seeds obstruction
+correction from the full offset length, consistent with subsequent updates.
+Eudora placements 147 and 150 have no usable support
+at their authored initial positions in the current imported world; those two
+interaction checks use explicitly temporary local support. No substitute floor,
+crank relocation or new connected mechanism is added to production. Normal
+access to unsupported placements remains a world/mechanism dependency.
 Local capture/inspection drivers stay outside the repository; no test infrastructure
 or retail evidence payload is added.

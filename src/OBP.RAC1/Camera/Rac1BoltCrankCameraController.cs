@@ -5,7 +5,7 @@ using OBP.Runtime.Camera;
 namespace OBP.RAC1.Camera;
 
 /// <summary>
-/// Native Novalis type-5 mode-3 camera (0x00317278), followed by the type-0
+/// Native type-5 mode-3 crank camera, followed by the type-0
 /// handoff publication blend. One step is one NTSC update, with native Z-up inputs.
 /// </summary>
 public sealed class Rac1BoltCrankCameraController
@@ -99,7 +99,7 @@ public sealed class Rac1BoltCrankCameraController
         Quaternion rotation = Quaternion.Lerp(_releaseRotation, Rotation(Euler(follow)), amount);
         Current = Publish(eye, rotation, Vector(playerNative));
         if (_returnFraction >= 1) ReturnCompleted = true;
-        _returnFraction = MathF.Min(1, _returnFraction + NovalisReturnRate);
+        _returnFraction = MathF.Min(1, _returnFraction + _definition.ReturnBlendRate);
         return Current;
     }
 

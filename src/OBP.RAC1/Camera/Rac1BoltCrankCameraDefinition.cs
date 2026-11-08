@@ -10,15 +10,20 @@ namespace OBP.RAC1.Camera;
 public sealed record Rac1BoltCrankCameraDefinition(Vector3 EyeNative, Vector3 RotationNative,
     float RadiusStartReference, float RadiusEndReference)
 {
+    public float ReturnBlendRate { get; init; } = .018f;
+
     public static IReadOnlyDictionary<int, Rac1BoltCrankCameraDefinition> Load(string sourcePath, int levelId)
     {
         using var reader = new FileRandomAccessReader(sourcePath);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(level => level.LevelId == levelId);
         byte[] gameplay = Rac1LevelSettings.ReadGameplay(reader, level);
         return Rac1Instances.Parse(gameplay).MobyInstances
-            .Where(moby => moby.OClass == Rac1NovalisCrankDoorSession.CrankClass)
+            .Where(moby => moby.OClass == Rac1BoltCrankSession.NativeClass)
             .ToDictionary(moby => moby.Index, moby => Decode(gameplay,
-                moby.PVar ?? throw new InvalidDataException("Crank camera requires its authored PVar.")));
+                moby.PVar ?? throw new InvalidDataException("Crank camera requires its authored PVar.")) with
+            {
+                ReturnBlendRate = levelId == 1 ? Rac1BoltCrankCameraController.NovalisReturnRate : .018f,
+            });
     }
 
     public static Rac1BoltCrankCameraDefinition Decode(byte[] gameplay, ReadOnlySpan<byte> pvar)
@@ -44,8 +49,9 @@ public sealed record Rac1BoltCrankCameraDefinition(Vector3 EyeNative, Vector3 Ro
     public Rac1BoltCrankCameraDefinition Validate()
     {
         if (!Finite(EyeNative) || !Finite(RotationNative) ||
-            !float.IsFinite(RadiusStartReference) || !float.IsFinite(RadiusEndReference))
-            throw new InvalidDataException("Crank camera contains non-finite data.");
+            !float.IsFinite(RadiusStartReference) || !float.IsFinite(RadiusEndReference) ||
+            !float.IsFinite(ReturnBlendRate) || ReturnBlendRate is <= 0 or > 1)
+            throw new InvalidDataException("Crank camera contains invalid coordinates or blend parameters.");
         return this;
     }
 

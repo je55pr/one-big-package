@@ -137,7 +137,7 @@ internal sealed class CaptureComposition(ApplicationComponents components) : Com
             Rac1World.Weapons.Projectiles.DoomAgents.Where(v => IsInstanceValid(v.Body)).Select(v => new CaptureBodyCheckpoint(v.Id, ToNumerics(v.Body.GlobalPosition), ToNumerics(v.Body.Velocity))).ToArray(),
             Rac1World.Presentation.PickupNodes.Where(v => IsInstanceValid(v.Value)).Select(v => new CapturePositionCheckpoint(v.Key, ToNumerics(v.Value.GlobalPosition))).ToArray(),
             Rac1World.Mechanisms.Cranks is { } cranks
-                ? cranks.CrankNodes.Keys.Select(v => new CaptureCrankCheckpoint(v, cranks.Session.Progress(v))).ToArray()
+                ? cranks.CrankNodes.Keys.Select(v => new CaptureCrankCheckpoint(v, cranks.Progress(v))).ToArray()
                 : []),
         () => new(ProfilePlayer.Capture(_playerSession!.Capture()), CaptureProfileSources(), ActorHost.ReadActors().Select(actor => new CaptureActorCheckpoint(
             actor.Registration.Instance.Target, actor.State.Position, actor.State.Alive, actor.State.Retired, actor.State.Health ?? -1, actor.State.NativeState, actor.State.NativeSequence ?? -1)).ToArray(), ActorHost.TickCount),

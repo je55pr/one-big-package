@@ -27,7 +27,11 @@ public partial class PlayerHost : CharacterBody3D
             ScenePlayerToNative(GlobalPosition));
     }
 
-    private void ResetRac1CrankCamera() => _rac1CrankCamera = null;
+    private void ResetRac1CrankCamera()
+    {
+        if (_rac1CrankCamera is not null) _rac1CameraInitialized = false;
+        _rac1CrankCamera = null;
+    }
 
     /// <summary>Host camera reset binding; not a reconstruction of the native L1 aim state.</summary>
     public void CenterCameraBehindPlayer()

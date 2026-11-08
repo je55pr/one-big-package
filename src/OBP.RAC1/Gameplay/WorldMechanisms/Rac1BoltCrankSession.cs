@@ -5,11 +5,12 @@ using OBP.RAC1.Player;
 namespace OBP.RAC1.Gameplay;
 
 /// <summary>
-/// Class-280 turning and animation rules, Novalis NTSC-U updater 0x002e0c68.
+/// Class-280 turning and animation rules shared by Novalis, Eudora and Batalia.
 /// Host support/collision and engagement observations are separate from this controller.
 /// </summary>
 public sealed class Rac1BoltCrankSession
 {
+    public const int NativeClass = 280;
     public const int NativeAction = Rac1PlayerActionDomain.BoltCrank;
     public const int InsertSequence = 0x44;
     public const int IdleSequence = 0x3f;
@@ -18,6 +19,7 @@ public sealed class Rac1BoltCrankSession
     public const int WrenchSequence = 0x0b;
     public const float Reach = 1.75f;
     public const float Radius = 1.05f;
+    public const float HeroOriginAboveSupport = .3f;
     private const float Dt = 1f / 60f;
     private const float Acceleration = Dt * Dt * 5.5f;
     private const float MaximumSpeed = Dt * 3.7f;
@@ -36,11 +38,13 @@ public sealed class Rac1BoltCrankSession
         int reusable = BinaryPrimitives.ReadInt32LittleEndian(pvar.Slice(0x38));
         if (!float.IsFinite(_turns) || _turns <= 0 || reusable is not (0 or 1))
             throw new InvalidDataException("Unsupported crank turn count or reuse flag.");
-        if (reusable != 0)
-            throw new NotSupportedException("Reusable crank callbacks are outside the admitted Novalis crank pair.");
+        Reusable = reusable != 0;
         Yaw = initialYaw;
     }
 
+    // Reusable cranks also release and lower at full progress. Their connected
+    // mechanism owns subsequent reset callbacks; they never reset on a timer.
+    public bool Reusable { get; }
     public bool Active { get; private set; }
     public float Progress { get; private set; }
     public float Yaw { get; private set; }
@@ -60,7 +64,7 @@ public sealed class Rac1BoltCrankSession
         float targetYaw = MathF.Atan2(center.Y - player.Y, center.X - player.X);
         return Vector3.Distance(center, player) < Reach &&
             MathF.Abs(Wrap(targetYaw - facingYaw)) < MathF.PI / 2 &&
-            MathF.Abs(player.Z - .3f - center.Z) < .2f;
+            MathF.Abs(player.Z - HeroOriginAboveSupport - center.Z) < .2f;
     }
 
     /// <summary>Native right/forward input rotated by the supplied camera/control heading.</summary>
