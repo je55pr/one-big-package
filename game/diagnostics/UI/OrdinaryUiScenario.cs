@@ -48,7 +48,8 @@ public sealed class OrdinaryUiScenario(DiagnosticScenarioDefinition definition, 
         Require(repair.Detach(ObpSourceGame.Rac3), "The repair test requires three configured games.");
         menus.ShowTitle();
         state = menus.ReadNavigation();
-        Require(!state.SourceManagerPresent && !state.RepairActive && !state.TitlePresent, "Source loss opened recovery UI instead of terminating play.");
+        Require(!state.SourceManagerPresent && !state.RepairActive && !state.TitlePresent && !state.WorldLoaded && !state.WorldActive,
+            "Source loss opened recovery UI or left a world active.");
         var after = player.Capture();
         Require(before == after,
             "Repair reset the persistent player session.");

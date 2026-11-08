@@ -27,8 +27,17 @@ internal sealed class PlayerAmmoPickupHost(RuntimeWorld world, RuntimeWorldScene
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (_visuals is not null) return;
-        _sourcePath = ports.VisualSourcePath() ?? throw new InvalidDataException("Ammo-family presentation needs the attached, supported RAC1 source.");
-        _visuals = new(world, existing ?? Rac1PickupAssets.Load(_sourcePath, 0));
+        try
+        {
+            _sourcePath = ports.VisualSourcePath() ?? throw new InvalidDataException("Ammo-family presentation needs the attached, supported RAC1 source.");
+            _visuals = new(world, existing ?? Rac1PickupAssets.Load(_sourcePath, 0));
+        }
+        catch (Exception error)
+        {
+            GD.PrintErr($"[ammo-family] Required pickup assets could not be prepared: {error}");
+            ApplicationLifecycle.RequestQuit(scene.Root, "required-ammo-assets-unavailable", 2);
+            throw;
+        }
     }
 
     internal void Spawn(Vector3 origin, int count, int crateIndex)

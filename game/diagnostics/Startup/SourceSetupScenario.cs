@@ -21,7 +21,8 @@ public sealed class SourceSetupScenario(DiagnosticScenarioDefinition definition,
         Require(repair.Detach(ObpSourceGame.Rac2), "The source-loss check requires the complete trilogy at entry.");
         Require(!repair.RequireReady("source-loss check"), "A detached required source did not block play.");
         state = menus.ReadNavigation();
-        Require(!state.RepairActive, "Source loss opened a recovery flow instead of terminating play.");
+        Require(!state.SourceManagerPresent && !state.RepairActive && !state.TitlePresent,
+            "Source loss opened a recovery flow instead of terminating play.");
         var campaign = repair.ReadCampaignTravel();
         Require(!campaign.TransitionActive && campaign.Level == level, "Repair retained or committed an interrupted source-campaign transfer.");
         Require(before == player.Capture(), "Source loss reset player-global state.");
