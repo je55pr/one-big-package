@@ -100,6 +100,9 @@ internal sealed class Rac1WorldComposition(ApplicationComponents components) : C
             status => Rac1World.Context.CombatStatus = status, () => RefreshRac1HudState()), sound => _playerAudio?.Play(new(0, sound))),
         new Rac1AuthoredMechanismPorts(
             () => Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Path,
+            () => (_rac1HeldItem.Hand.WrenchHeld || _player?.Rac1WrenchFrame.Active == true) &&
+                _player?.Rac1WaterHandItemHidden != true && _player?.Rac1WrenchThrown != true &&
+                _worldScenes?.Current?.Resources.Rac1Gameplay?.Wrench.ThrowActive != true,
             (nativeClass, sound, position) => Rac1World.Loot.PlayRac1PickupSound(nativeClass, sound, position),
             intent => _worldHost.StartLevelAudio([intent]),
             _worldHost.StopLevelAudio,

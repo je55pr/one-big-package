@@ -6,36 +6,23 @@ using NVector3 = System.Numerics.Vector3;
 
 namespace OBP.Game;
 
-/// <summary>Novalis's source-linked crank, door halves and cave door, within one scene lease.</summary>
+/// <summary>Novalis's existing crank followers, separate from the shared crank interaction.</summary>
 internal sealed class Rac1NovalisCrankMechanism(
     Rac1AuthoredMechanismPorts ports, Action<int> completedCrank) : Rac1AuthoredMechanism
 {
-    // OBP host policy until crank engagement/turn cadence and easing are recovered.
-    // Linkage, class IDs and target positions come from the original authored data.
-    private const float HostReach = 2.5f;
-    private const double HostProgressPerTick = 1d / 100d;
     private readonly Rac1NovalisCrankDoorSession _session = new();
-    private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _cranks = [];
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _doors = [];
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _caveDoors = [];
     private readonly Dictionary<int, StaticBody3D> _colliders = [];
     private readonly Dictionary<int, Vector3> _originalPositions = [];
     private readonly Dictionary<int, Vector3> _originalRotations = [];
 
-    internal Rac1NovalisCrankDoorSession Session => _session;
-    internal IReadOnlyDictionary<int, RuntimeWorldScene.DynamicObjectNode> CrankNodes => _cranks;
-
     internal override void Configure(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
         if (world.LevelId != Rac1NovalisCrankDoorSession.NativeLevelId) return;
         foreach (var source in world.DynamicObjects ?? [])
-        {
-            if (source.NativeClassId != Rac1NovalisCrankDoorSession.CrankClass) continue;
-            _session.RegisterCrank(source.InstanceIndex);
-            var node = Rac1WorldPresentation.FindPresentedDynamic(result, source)
-                ?? throw new InvalidDataException("Novalis bolt crank lacks its imported visual.");
-            _cranks.Add(source.InstanceIndex, node);
-        }
+            if (source.NativeClassId == Rac1BoltCrankSession.NativeClass)
+                _session.RegisterCrank(source.InstanceIndex);
 
         foreach (var source in world.DynamicObjects ?? [])
         {
@@ -49,7 +36,7 @@ internal sealed class Rac1NovalisCrankMechanism(
             var node = Rac1WorldPresentation.FindPresentedDynamic(result, source)
                 ?? throw new InvalidDataException("Novalis crank door lacks its imported visual.");
             _doors.Add(source.InstanceIndex, node);
-            _originalPositions.Add(source.InstanceIndex, node.Root.GlobalPosition);
+            _originalPositions.Add(source.InstanceIndex, node.Root.Position);
             AddCollider(source.InstanceIndex, node);
         }
         foreach (var source in world.DynamicObjects ?? [])
@@ -106,64 +93,37 @@ internal sealed class Rac1NovalisCrankMechanism(
         _colliders.Add(id, collider);
     }
 
-    /// <summary>
-    /// Hold Square at a crank and move the left stick. Stick cadence/contact
-    /// bounds are provisional host rules, not fabricated PS2 behaviour.
-    /// </summary>
-    internal bool TryTurn(bool actionHeld, Vector2 stick, PlayerHost player)
+    internal void ApplyCrankProgress(int crankId, float previous, float progress)
     {
-        if (!actionHeld) return false;
-        var closest = _cranks.Values
-            .OrderBy(node => node.Root.GlobalPosition.DistanceSquaredTo(player.GlobalPosition))
-            .FirstOrDefault();
-        if (closest is null ||
-            closest.Root.GlobalPosition.DistanceTo(player.GlobalPosition) > HostReach)
-            return false;
-
-        int crankId = closest.Source.InstanceIndex;
-        float magnitude = Mathf.Clamp(stick.Length(), 0f, 1f);
-        if (magnitude > .2f)
+        _session.SetProgress(crankId, progress);
+        if (progress > previous && previous <= 0)
         {
-            double previous = _session.Progress(crankId);
-            // Progress is clamped to [0, 1]; the lower bound marks the first turn.
-            bool starting = previous <= 0d;
-            double progress = _session.Turn(crankId, HostProgressPerTick * magnitude);
-            if (starting)
-            {
-                ports.PlaySourceSound(Rac1NovalisCrankDoorSession.CrankClass, 0, closest.Root.GlobalPosition);
-                var movingDoor = _session.Doors.FirstOrDefault(item => item.CrankInstanceIndex == crankId);
-                if (movingDoor != default)
-                    ports.PlaySourceSound(Rac1NovalisCrankDoorSession.DoorClass, 0,
-                        _doors[movingDoor.InstanceIndex].Root.GlobalPosition);
-            }
-            foreach (var door in _session.Doors.Where(door => door.CrankInstanceIndex == crankId))
-            {
-                NVector3 target = _session.DoorPosition(door.InstanceIndex);
-                _doors[door.InstanceIndex].Root.GlobalPosition =
-                    new Vector3(-target.X, target.Z, target.Y);
-                if (_colliders.TryGetValue(door.InstanceIndex, out var collider) && progress >= .98d)
-                    collider.CollisionLayer = 0;
-            }
-            foreach (var cave in _session.CaveDoors.Where(item => item.CrankInstanceIndex == crankId))
-            {
-                var node = _caveDoors[cave.InstanceIndex];
-                Vector3 rotation = node.Root.Rotation;
-                rotation.Y = _session.CaveDoorYaw(cave.InstanceIndex);
-                node.Root.Rotation = rotation;
-            }
-            if (progress >= 1d)
-            {
-                if (previous < 1d)
-                {
-                    completedCrank(crankId);
-                    var door = _session.Doors.First(item => item.CrankInstanceIndex == crankId);
-                    ports.PlaySourceSound(Rac1NovalisCrankDoorSession.DoorClass, 1,
-                        _doors[door.InstanceIndex].Root.GlobalPosition);
-                }
-                ports.ReportCombatStatus($"Novalis crank {crankId} opened its paired doors");
-            }
+            var movingDoor = _session.Doors.FirstOrDefault(item => item.CrankInstanceIndex == crankId);
+            if (movingDoor != default)
+                ports.PlaySourceSound(Rac1NovalisCrankDoorSession.DoorClass, 0, _doors[movingDoor.InstanceIndex].Root.GlobalPosition);
         }
-        return true;
+        foreach (var door in _session.Doors.Where(door => door.CrankInstanceIndex == crankId))
+        {
+            NVector3 target = _session.DoorPosition(door.InstanceIndex);
+            _doors[door.InstanceIndex].Root.GlobalPosition = new(-target.X, target.Z, target.Y);
+            if (_colliders.TryGetValue(door.InstanceIndex, out var collider))
+                collider.CollisionLayer = progress >= .98f ? 0u : 1u;
+        }
+        foreach (var cave in _session.CaveDoors.Where(item => item.CrankInstanceIndex == crankId))
+        {
+            var node = _caveDoors[cave.InstanceIndex];
+            Vector3 caveRotation = node.Root.Rotation;
+            caveRotation.Y = _session.CaveDoorYaw(cave.InstanceIndex);
+            node.Root.Rotation = caveRotation;
+        }
+        if (progress >= 1 && previous < 1)
+        {
+            completedCrank(crankId);
+            var door = _session.Doors.FirstOrDefault(item => item.CrankInstanceIndex == crankId);
+            if (door != default)
+                ports.PlaySourceSound(Rac1NovalisCrankDoorSession.DoorClass, 1, _doors[door.InstanceIndex].Root.GlobalPosition);
+            ports.ReportCombatStatus($"Novalis crank {crankId} opened its paired doors");
+        }
     }
 
     public override void Dispose()
@@ -176,11 +136,10 @@ internal sealed class Rac1NovalisCrankMechanism(
             collider.Free();
         }
         foreach (var (id, position) in _originalPositions)
-            if (GodotObject.IsInstanceValid(_doors[id].Root)) _doors[id].Root.GlobalPosition = position;
+            if (GodotObject.IsInstanceValid(_doors[id].Root)) _doors[id].Root.Position = position;
         foreach (var (id, rotation) in _originalRotations)
             if (GodotObject.IsInstanceValid(_caveDoors[id].Root)) _caveDoors[id].Root.Rotation = rotation;
         _colliders.Clear();
-        _cranks.Clear();
         _doors.Clear();
         _caveDoors.Clear();
         _originalPositions.Clear();

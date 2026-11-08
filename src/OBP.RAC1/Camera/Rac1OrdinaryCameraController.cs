@@ -158,6 +158,19 @@ public sealed partial class Rac1OrdinaryCameraController
         _pipelineInitialized = true;
     }
 
+    /// <summary>Type-0 setup with handoff state 2: seed the orbit from the outgoing scripted eye.</summary>
+    public void ResumeFromScriptedCamera(Vec3 playerNative, RuntimeCameraState outgoing)
+    {
+        outgoing.Validate();
+        Reset(playerNative, outgoing.ControlHeadingRadians);
+        Vec3 eye = outgoing.Eye.ObpYUpToNativeZUp();
+        _actualOffset = _desiredOffset = eye - playerNative - new Vec3(0, 0, OrdinaryEyeHeight);
+        _currentRadius = Length(_actualOffset);
+        if (_currentRadius <= 1e-8) throw new ArgumentException("Scripted eye coincides with the follow anchor.", nameof(outgoing));
+        _previousDesiredEye = eye;
+        _obstructionCorrection = Math.Max(0, OrdinaryPreferredRadius - _currentRadius);
+    }
+
     public Rac1CameraState Step(Input input, IRac1CameraGeometry? geometry = null)
     {
         ValidateFinite(input.PlayerNativeZUp, nameof(input.PlayerNativeZUp));

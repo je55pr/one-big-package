@@ -6,8 +6,8 @@ namespace OBP.RAC1.Gameplay;
 /// <summary>
 /// Novalis class-280 crank and its two native followers: class-665 sliding
 /// door halves and class-641 rotating cave door. The retail follower updates
-/// consume the crank's PVar +0 progress (0..1). Host crank input cadence and
-/// collision geometry remain explicitly provisional.
+/// consume the crank's PVar +0 progress (0..1). Collision geometry remains
+/// explicitly provisional; Rac1BoltCrankSession owns turning cadence.
 /// </summary>
 public sealed class Rac1NovalisCrankDoorSession
 {
@@ -126,6 +126,16 @@ public sealed class Rac1NovalisCrankDoorSession
     }
 
     public double Progress(int crankInstanceIndex) => _cranks[crankInstanceIndex];
+
+    /// <summary>Publish the source crank controller's progress, including idle unwind.</summary>
+    public void SetProgress(int crankInstanceIndex, float progress)
+    {
+        if (!_cranks.ContainsKey(crankInstanceIndex))
+            throw new ArgumentOutOfRangeException(nameof(crankInstanceIndex));
+        if (!float.IsFinite(progress) || progress is < 0 or > 1)
+            throw new ArgumentOutOfRangeException(nameof(progress));
+        _cranks[crankInstanceIndex] = progress;
+    }
 
     public float CaveDoorYaw(int instanceIndex) =>
         _caveDoors[instanceIndex].Interpolate(Progress(_caveDoors[instanceIndex].CrankInstanceIndex));

@@ -103,11 +103,15 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         _currentSequenceId = selected.Sequence;
         float time = Rac1OrdinaryStopAnimation.EvaluateAnimationTime(sample,
             LocomotionClip(selected.Sequence).FrameTimelinePositions!);
-        _traversalAuthoredAdvance = entering ? 0 : previousTime <= time ? time - previousTime :
-            _traversalClock.FractionAdvanceThisUpdate;
-        var semantic = selected.NativeAction is 0x13 or 0x14 or 0x15 or 0x23 ? PlayerAnimationState.Attack :
-            state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.Idle
-            ? PlayerAnimationState.Fall : state;
+        if (!entering)
+            _traversalAuthoredAdvance = previousTime <= time ? time - previousTime : _traversalClock.FractionAdvanceThisUpdate;
+        var semantic = selected.NativeAction switch
+        {
+            Gameplay.Rac1BoltCrankSession.NativeAction => PlayerAnimationState.Idle,
+            0x13 or 0x14 or 0x15 or 0x23 => PlayerAnimationState.Attack,
+            _ when state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.Idle => PlayerAnimationState.Fall,
+            _ => state,
+        };
         Current = Presentation(semantic, selected.Sequence, selected.NativeAction,
             selected.Loop, entering ? _clockSeconds : Current.ClipStartedAtSeconds) with
         {
