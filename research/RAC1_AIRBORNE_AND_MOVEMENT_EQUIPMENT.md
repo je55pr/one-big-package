@@ -376,10 +376,11 @@ authored time stops playback. First landing can select keyframe 12 with blend
 7 when animation time is below target - 1.5; landing restores speed 1.
 
 `Rac1AirborneAnimationSession` owns this bounded selector. The movement owner
-provides regular-axis velocity, gravity, action age and landing counter through
-the existing source animation selection; the presentation owner retains the
-native frame clock and blend snapshot. A new action generation creates a new
-selector, so held playback cannot leak into a repeated jump or a ground action.
+provides vertical step, gravity per update, ground clearance, action age and
+landing updates through the existing source animation selection. The presentation
+owner retains the native frame clock and blend snapshot. A new action generation
+creates a new selector, so held playback cannot leak into a repeated jump or a
+ground action.
 
 | Independently read executable interval (end exclusive) | SHA-256 |
 | --- | --- |
