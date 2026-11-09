@@ -12,7 +12,10 @@ namespace OBP.Godot.Player;
 /// </summary>
 public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
 {
-    private sealed record SurfaceState(ArrayMesh Mesh, int[] Indices, Vector2[] Uvs);
+    private sealed record SurfaceState(ArrayMesh Mesh, int[] Indices, Vector2[] Uvs)
+    {
+        public int[] Visible { get; set; } = Indices;
+    }
 
     /// <summary>
     /// Pure playback of an already resolved, engine-neutral animation decision.
@@ -295,6 +298,33 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
         }
     }
 
+    private bool[]? _hiddenVertices;
+
+    /// <summary>
+    /// Omit every triangle whose three vertices are flagged, for example Ratchet's own hand while a
+    /// held glove weapon replaces it. Passing null restores the whole mesh.
+    /// </summary>
+    public void SetHiddenVertices(bool[]? hidden)
+    {
+        if (ReferenceEquals(hidden, _hiddenVertices)) return;
+        _hiddenVertices = hidden;
+        foreach (var surface in _surfaces)
+        {
+            if (hidden is null) { surface.Visible = surface.Indices; continue; }
+            var kept = new List<int>(surface.Indices.Length);
+            for (int i = 0; i < surface.Indices.Length; i += 3)
+            {
+                int a = surface.Indices[i], b = surface.Indices[i + 1], c = surface.Indices[i + 2];
+                if (hidden[a] && hidden[b] && hidden[c]) continue;
+                kept.Add(a); kept.Add(b); kept.Add(c);
+            }
+            surface.Visible = kept.ToArray();
+        }
+        // Rebuild with the same pose; the frame cache must not swallow it.
+        _currentClipId = null;
+        ApplyPresentation();
+    }
+
     private void ApplyPresentation() => ApplyFrame(
         _playback.CurrentClip.Id, _playback.CurrentFrame, _playback.CurrentAnimationPresentation.SampledPose);
 
@@ -318,12 +348,13 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
         }
         foreach (var surface in _surfaces)
         {
+            surface.Mesh.ClearSurfaces();
+            if (surface.Visible.Length == 0) continue;
             var arrays = new global::Godot.Collections.Array();
             arrays.Resize((int)Mesh.ArrayType.Max);
             arrays[(int)Mesh.ArrayType.Vertex] = vertices;
             arrays[(int)Mesh.ArrayType.TexUV] = surface.Uvs;
-            arrays[(int)Mesh.ArrayType.Index] = surface.Indices;
-            surface.Mesh.ClearSurfaces();
+            arrays[(int)Mesh.ArrayType.Index] = surface.Visible;
             surface.Mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
         }
         if (_profileMeshUpdates)

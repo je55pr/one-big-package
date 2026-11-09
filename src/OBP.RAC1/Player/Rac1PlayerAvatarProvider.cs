@@ -132,6 +132,7 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
             rig = new Rac1RatchetEquipmentRig(native, layerJoints, armHold)
             {
                 GloveJoints = gloveJoints,
+                LeftArmJoints = leftArm,
                 ArmHoldStatus = armHold is null ? "Held-gun arm hold unavailable: one of arm classes 1 and 2 is absent." : null,
             };
         }
@@ -140,6 +141,7 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
             rig = new Rac1RatchetEquipmentRig(native, layerJoints)
             {
                 GloveJoints = gloveJoints,
+                LeftArmJoints = leftArm,
                 ArmHoldStatus = $"Held-gun arm hold unavailable: {ex.Message.TrimEnd('.')}.",
             };
         }

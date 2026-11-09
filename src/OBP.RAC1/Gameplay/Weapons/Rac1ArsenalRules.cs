@@ -59,6 +59,13 @@ public static class Rac1ArsenalRules
         _ => 0,
     };
 
+    /// <summary>
+    /// OBP presentation choice, not retail: the Tesla Claw's retail use pose is the shared two-handed
+    /// sequence 51, which makes its left hand reach for a handle it does not have. Its left arm keeps the ordinary
+    /// body pose instead.
+    /// </summary>
+    public static bool LeavesLeftArmFree(Rac1WeaponId weapon) => weapon == Rac1WeaponId.TeslaClaw;
+
     public static bool HasArmSlotAnimations(Rac1WeaponId weapon) => ArmSlotCount(weapon) != 0;
 
     public static int FireTicks(Rac1WeaponId weapon) => weapon switch

@@ -105,3 +105,26 @@ An isolated run of the existing arsenal scenario also checks Devastator,
 Visibomb, RYNO, Decoy, Drone, Tesla, Morph, Walloper and Taunter before reaching
 the same retired-world fixture failure after reload on both baseline and fix.
 These individual phases passed; the full scenario remains failed, not waived.
+
+## OBP presentation choices (not recovered retail behaviour)
+
+These follow playtest feedback and are kept apart from the native corrections above.
+
+- **Glove weapons and the Walloper hide Ratchet's own right hand.** While the Bomb, Mine, Doom or Decoy glove or the Walloper is held, triangles
+  whose three vertices are mostly weighted to the glove-socket joint list (attachment chain 6, joints 54..71) are
+  not drawn. Retail draws both and relies on its glove shell covering the hand.
+- **Tesla Claw leaves the left arm on the ordinary body pose.** Retail item 19 selects the shared use sequence 51
+  (`start_equipped_item_animation`, `0x20e4c8`, reads item-table `+0x24`), which includes a left-hand support
+  grip. The claw has no second handle, so the whole-body use pose skips the left-arm joint list (list 13).
+  Taunter selects the same sequence and is unchanged.
+
+## Open
+
+- **Morph-o-Ray grip.** Its item record is identical to the Blaster's in every field that places it (hand
+  semantic 0, joint 56, body poses 56/57/62), so the hand attachment is the same. The decoded model's rear sits
+  about 0.11 units ahead of its origin, whereas the Blaster's straddles it, which leaves Ratchet's fist behind the
+  grip. No retail source for a class-specific offset has been found.
+- **Walloper alignment.** Chain 1 (joint 55) matches the item record. No defect was identified from the
+  records; hiding Ratchet's own hand (above) removes the visible misfit. Retail comparison still outstanding.
+- The retail condition-animation layer (`0x20da68`: set `0x76` at weight 0.8 while a Blaster, Pyrocitor or Tesla
+  is in use) is not implemented.
