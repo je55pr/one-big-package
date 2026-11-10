@@ -18,7 +18,10 @@ public static class Rac1BombGloveAssets
     public sealed record Clip(int Sequence, double[][] Frames, double[] Durations, Vector3[] BombOrigins);
     public sealed record Asset(IReadOnlyList<RuntimeObjectMesh> Surfaces, IReadOnlyList<RuntimeTexture> Textures,
         IReadOnlyDictionary<int, Clip> Clips, int BombOriginJoint, int VertexCount, int TriangleCount,
-        IReadOnlyDictionary<int, RuntimeTexture> ParticleTexturesByPoolType);
+        IReadOnlyDictionary<int, RuntimeTexture> ParticleTexturesByPoolType)
+    {
+        public Rac1GloveSkin? GloveSkin { get; init; }
+    }
 
     public static Asset Load(string path)
     {
@@ -82,6 +85,7 @@ public static class Rac1BombGloveAssets
         var textureByType = types.ToDictionary(type => type, type => Rac1ParticleAssets.InitialTexture(core, type));
         var particleTextures = Rac1ParticleAssets.ReadTextures(core, textureByType.Values.ToHashSet()).ToDictionary(texture => texture.TextureId);
         return new(surfaces, textures, clips, originJoint, 1140, 1200,
-            textureByType.ToDictionary(pair => pair.Key, pair => particleTextures[pair.Value]));
+            textureByType.ToDictionary(pair => pair.Key, pair => particleTextures[pair.Value]))
+        { GloveSkin = Rac1GloveSkin.Decode(source.Payload, mesh, originJoint, new(0, -.09f, -.02f)) };
     }
 }

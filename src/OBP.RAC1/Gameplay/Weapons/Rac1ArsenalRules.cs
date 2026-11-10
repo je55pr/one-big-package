@@ -14,6 +14,7 @@ public static class Rac1ArsenalRules
     public const int RynoMissilesPerUse = 7; // reviewed firing-state exit, 0x2ccd..
     public const int RynoMissileInterval = 9;
     public const int VisibombLifetime = 3000; // 0x2b59c0.
+    public const float VisibombLaunchForward = .6f; // 0x2b32c0..2b32e4: held Moby origin + level-facing offset.
     public const int RocketLifetime = 300; // 0x2afddc.
     public const int RynoRocketLifetime = 250; // 0x2ccff8.
     public const float RynoInitialSpeed = 8; // 0x2cd09c.
@@ -57,6 +58,13 @@ public static class Rac1ArsenalRules
         Rac1WeaponId.Taunter or Rac1WeaponId.Blaster or Rac1WeaponId.TeslaClaw or Rac1WeaponId.MorphORay => 1,
         _ => 0,
     };
+
+    /// <summary>
+    /// OBP presentation choice, not retail: the Tesla Claw's retail use pose is the shared two-handed
+    /// sequence 51, which makes its left hand reach for a handle it does not have. Its left arm keeps the ordinary
+    /// body pose instead.
+    /// </summary>
+    public static bool LeavesLeftArmFree(Rac1WeaponId weapon) => weapon == Rac1WeaponId.TeslaClaw;
 
     public static bool HasArmSlotAnimations(Rac1WeaponId weapon) => ArmSlotCount(weapon) != 0;
 

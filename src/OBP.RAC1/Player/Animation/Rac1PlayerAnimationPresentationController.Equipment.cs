@@ -6,6 +6,9 @@ public sealed partial class Rac1PlayerAnimationPresentationController
 {
     private readonly IReadOnlyList<float>? _equipmentMask;
     private readonly Rac1RatchetEquipmentRig? _equipmentRig;
+
+    /// <summary>Ratchet's own right-hand vertices, or null when the rig is unavailable.</summary>
+    public bool[]? RightHandVertexMask => _equipmentRig?.RightHandVertexMask;
     private PlayerAnimationPresentation? _equipmentBase;
     private float _equipmentAmount;
     private int? _equipmentSequence;
@@ -37,9 +40,12 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     /// Equipment channels compose before skinning over the source joint lists.
     /// The ordinary animation clock and its unmodified vertices stay intact.
     /// </summary>
-    public PlayerAnimationPresentation ApplyEquipmentPose(int? sourceSequence, double? phaseSeconds = null, bool loop = true, bool fullBody = false)
+    public PlayerAnimationPresentation ApplyEquipmentPose(int? sourceSequence, double? phaseSeconds = null, bool loop = true,
+        bool fullBody = false, bool leftArmFree = false)
     {
         BeginArmHoldTick();
+        // A fading release keeps the arrangement it was using.
+        if (sourceSequence is not null && _equipmentRig is not null) _equipmentRig.LeftArmFree = leftArmFree;
         ApplyEquipmentPoseCore(sourceSequence, phaseSeconds, loop, fullBody);
         ApplyArmHold();
         return ApplyJointEases();

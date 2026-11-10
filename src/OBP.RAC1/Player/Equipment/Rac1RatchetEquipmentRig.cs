@@ -12,6 +12,8 @@ public sealed class Rac1RatchetEquipmentRig
     private readonly IReadOnlyDictionary<int, PlayerSkeletalClip> _armClips;
     public PlayerSkeletalAsset Asset { get; }
     public IReadOnlyList<int> LayerJoints { get; }
+    public IReadOnlyList<int>? GloveJoints { get; init; }
+    private readonly float _coordinateScale;
     /// <summary>Retail procedural joint table; absent for rigs built without the original overlay.</summary>
     public Rac1HeroEaseTable? HeroEases { get; private set; }
 
@@ -55,6 +57,7 @@ public sealed class Rac1RatchetEquipmentRig
         Rac1RatchetArmHoldSource? armHold = null)
     {
         LayerJoints = layerJoints;
+        _coordinateScale = asset.Mesh.Scale / 1024;
         Asset = Convert(asset);
         _sampler = new(Asset.Skeleton, Asset.Skin);
         _armClips = Asset.Clips.ToDictionary(p => p.Key, p => Subset(p.Value, layerJoints));
@@ -227,20 +230,76 @@ public sealed class Rac1RatchetEquipmentRig
     {
         _sampler.Reset(Asset.Clips[basis.Sequence], Sample(basis));
         ApplyArmHold(basis.Sequence, Sample(basis), record: true);
+        var bodyClips = UseClips(ref _bodyClipsLeftFree, Asset.Clips,
+            Enumerable.Range(0, Asset.Skeleton.Joints.Count));
+        var armClips = UseClips(ref _armClipsLeftFree, _armClips, LayerJoints);
         if (fullBodyBlend is { } blend)
         {
             blend = Math.Clamp(blend, 0, 1);
             // A complete whole-body pose is exactly the old all-or-nothing result.
-            if (blend >= 1) _sampler.Apply(Asset.Clips[layer.Sequence], Sample(layer), amount);
+            if (blend >= 1) _sampler.Apply(bodyClips[layer.Sequence], Sample(layer), amount);
             else
             {
-                _sampler.Apply(_armClips[layer.Sequence], Sample(layer), amount);
-                if (blend > 0) _sampler.Apply(Asset.Clips[layer.Sequence], Sample(layer), amount * blend);
+                _sampler.Apply(armClips[layer.Sequence], Sample(layer), amount);
+                if (blend > 0) _sampler.Apply(bodyClips[layer.Sequence], Sample(layer), amount * blend);
             }
             return _sampler.Skin(baseline, blend > 0 ? null : LayerJoints.ToArray());
         }
-        _sampler.Apply((fullBody ? Asset.Clips : _armClips)[layer.Sequence], Sample(layer), amount);
+        _sampler.Apply((fullBody ? bodyClips : armClips)[layer.Sequence], Sample(layer), amount);
         return _sampler.Skin(baseline, fullBody ? null : LayerJoints.ToArray());
+    }
+
+    private bool[]? _rightHandVertices;
+
+    /// <summary>
+    /// Vertices of Ratchet's own right hand (the glove-socket chain, native joint list for attachment 6),
+    /// for hiding it while a glove weapon brings its own. OBP presentation choice: retail draws both.
+    /// </summary>
+    public bool[]? RightHandVertexMask
+    {
+        get
+        {
+            if (_rightHandVertices is not null) return _rightHandVertices;
+            if (!Asset.Skeleton.Attachments.TryGetValue(6, out var chain)) return null;
+            var hand = chain.LayerJoints.ToHashSet();
+            if (Asset.Skin is not { } skin) return null;
+            var mask = new bool[skin.Joints.Length / 3];
+            for (int vertex = 0; vertex < mask.Length; vertex++)
+            {
+                float weight = 0;
+                for (int influence = 0; influence < 3; influence++)
+                    if (hand.Contains(skin.Joints[vertex * 3 + influence])) weight += skin.Weights[vertex * 3 + influence];
+                mask[vertex] = weight >= .5f;
+            }
+            return _rightHandVertices = mask;
+        }
+    }
+
+    /// <summary>
+    /// OBP presentation choice, not recovered retail behaviour: a one-handed weapon whose retail
+    /// use pose is the shared two-handed one (item table +0x24 = 51) leaves the left arm on the
+    /// ordinary body pose, so it does not reach for a handle the weapon does not have.
+    /// </summary>
+    public bool LeftArmFree { get; set; }
+
+    /// <summary>The joints of the left arm hold list (list 13); only read while <see cref="LeftArmFree"/>.</summary>
+    public IReadOnlyList<int>? LeftArmJoints { get; init; }
+
+    private Dictionary<int, PlayerSkeletalClip>? _bodyClipsLeftFree, _armClipsLeftFree;
+
+    /// <summary>
+    /// The clips to apply: <paramref name="unrestricted"/> normally, or while <see cref="LeftArmFree"/> a copy
+    /// restricted to <paramref name="joints"/> without the left arm. The copy is always cut from
+    /// <see cref="Asset"/> clips on purpose: <see cref="Subset"/> indexes frame channels by absolute joint id,
+    /// whereas <c>_armClips</c> is already narrowed to its layer joints and cannot be sliced again.
+    /// </summary>
+    private IReadOnlyDictionary<int, PlayerSkeletalClip> UseClips(ref Dictionary<int, PlayerSkeletalClip>? cache,
+        IReadOnlyDictionary<int, PlayerSkeletalClip> unrestricted, IEnumerable<int> joints)
+    {
+        if (!LeftArmFree || LeftArmJoints is not { Count: > 0 } left) return unrestricted;
+        if (cache is not null) return cache;
+        var kept = joints.Where(joint => !left.Contains(joint)).ToArray();
+        return cache = Asset.Clips.ToDictionary(pair => pair.Key, pair => Subset(pair.Value, kept));
     }
 
     public double[] SampleLayers(Rac1AnimationFrameClock.Sample basis, PlayerSkeleton sourceSkeleton,
@@ -308,4 +367,17 @@ public sealed class Rac1RatchetEquipmentRig
 
     private static PlayerSkeletalSample Sample(Rac1AnimationFrameClock.Sample sample) => new(sample.CurrentFrame, sample.NextFrame, sample.Fraction);
     public PlayerAvatarAttachmentPose Attachment(int joint) => _sampler.Attachment(joint);
+
+    internal Rac1RatchetHandPose HandPose(Rac1AnimationFrameClock.Sample basis, PlayerSkeletalPose? body,
+        IReadOnlyList<Rac1RatchetJointEases.Offset> offsets)
+    {
+        if (GloveJoints is null) throw new InvalidOperationException("The native R&C1 glove joint map is unavailable.");
+        var target = basis.IsBlending ? basis with { CurrentFrame = basis.NextFrame, Fraction = 0 } : basis;
+        if (body is not null) _sampler.LoadPose(body);
+        else _sampler.Reset(Asset.Clips[target.Sequence], Sample(target));
+        ApplyArmHold(target.Sequence, Sample(target), record: false);
+        foreach (var offset in offsets)
+            _sampler.ComposeLocalRotation(Asset.Skeleton.Attachments[offset.AttachmentId].Joint, offset.Rotation);
+        return new(GloveJoints.Select(_sampler.GetLocal).ToArray(), _coordinateScale);
+    }
 }

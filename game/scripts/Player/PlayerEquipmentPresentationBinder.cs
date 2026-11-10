@@ -216,7 +216,8 @@ internal sealed class PlayerEquipmentPresentationBinder
         {
             controller.ClearSourceEquipment();
             avatar.Sink?.SetAnimationPresentation(controller.ApplyEquipmentPose(equipmentPose,
-                walloper ? walloperAge / 60d : useAge / 60d, !walloper, fullBody: walloper || !moving));
+                walloper ? walloperAge / 60d : useAge / 60d, !walloper, fullBody: walloper || !moving,
+                leftArmFree: holdGun && OBP.RAC1.Gameplay.Rac1ArsenalRules.LeavesLeftArmFree(hand.Inventory.Equipped)));
         }
     }
 
@@ -225,7 +226,17 @@ internal sealed class PlayerEquipmentPresentationBinder
         NativeViews.RefreshVisibility(item => IsRac1HandEquipmentVisible(item, state));
         var (glove, stagedBomb, wrench) = _avatarViews(avatar);
         RefreshRac1HandNodes(state, glove, stagedBomb, wrench);
+        // OBP presentation choice (retail draws both): a held glove weapon brings its own complete glove,
+        // so Ratchet's own right hand is left out instead of showing through it.
+        bool ownGlove = GloveWeapons.Any(item => IsRac1HandEquipmentVisible(item, state));
+        if (avatar.View is { } view && GodotObject.IsInstanceValid(view))
+            view.SetHiddenVertices(ownGlove && avatar.Controller is Rac1PlayerAnimationPresentationController native
+                ? native.RightHandVertexMask : null);
     }
+
+    private static readonly Rac1WeaponId[] GloveWeapons =
+        [Rac1WeaponId.FirstRanged, Rac1WeaponId.MineGlove, Rac1WeaponId.GloveOfDoom, Rac1WeaponId.DecoyGlove,
+            Rac1WeaponId.Walloper];
 
     // The Godot node boundary is also exercised with source-free scene nodes.
     // All three views stay owned by the existing player-avatar presentation.

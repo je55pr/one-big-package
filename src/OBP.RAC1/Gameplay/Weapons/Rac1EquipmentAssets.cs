@@ -17,7 +17,10 @@ public static class Rac1EquipmentAssets
         float[] Positions, int? DirectSound, IReadOnlyList<Rac1MobyAnimation.TimedSoundCue> Sounds,
         IReadOnlyDictionary<int, Vector3[]>? SocketOrigins = null);
     public sealed record Model(int NativeClass, IReadOnlyList<RuntimeObjectMesh> Surfaces,
-        IReadOnlyDictionary<int, Clip> Clips, int VertexCount, int TriangleCount, string SourceSha256);
+        IReadOnlyDictionary<int, Clip> Clips, int VertexCount, int TriangleCount, string SourceSha256)
+    {
+        public Rac1GloveSkin? GloveSkin { get; init; }
+    }
     public sealed record Catalogue(IReadOnlyDictionary<int, Model> Models, IReadOnlyList<RuntimeTexture> Textures,
         IReadOnlyDictionary<int, RuntimeTexture> ParticleTextures)
     {
@@ -53,6 +56,12 @@ public static class Rac1EquipmentAssets
                 Rac1MobyAttachment.ReadJoint(source.Payload, 0), hash,
                 profile.Item == Rac1WeaponId.Ryno ? Enumerable.Range(0, Rac1ArsenalRules.RynoBarrels)
                     .Select(socket => Rac1MobyAttachment.ReadJoint(source.Payload, socket)).ToArray() : null));
+            if (profile.Item is Rac1WeaponId.MineGlove or Rac1WeaponId.GloveOfDoom or Rac1WeaponId.DecoyGlove)
+                models[profile.ModelClass] = models[profile.ModelClass] with
+                {
+                    GloveSkin = Rac1GloveSkin.Decode(source.Payload, mesh, Rac1MobyAttachment.ReadJoint(source.Payload, 0),
+                        GlovePayloadOffset(profile.Item)),
+                };
         }
         foreach (int id in new[] { 74, 186, 230, 153, 172, 203, 270, 479, 457 })
         {
@@ -70,6 +79,14 @@ public static class Rac1EquipmentAssets
         var effects = Rac1EffectAssets.Decode(core);
         return new(models, textures, effects.ParticleChoices.ToDictionary(pair => pair.Key, pair => effects.PartTextures[pair.Value[0]]))
         { Effects = effects };
+    }
+
+    /// <summary>Glove-local payload origin added by the native update: Mine 0x2c1ad0, Doom 0x2c7a58.</summary>
+    private static Vector3 GlovePayloadOffset(Rac1WeaponId item)
+    {
+        if (item == Rac1WeaponId.MineGlove) return new(0, -.09f, -.02f);
+        if (item == Rac1WeaponId.GloveOfDoom) return new(.01f, -.14f, -.05f);
+        return Vector3.Zero;
     }
 
     private static Model Bake(int id, Rac1Moby.Mesh mesh, IReadOnlyList<Rac1Moby.SkeletonJoint> joints,

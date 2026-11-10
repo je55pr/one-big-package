@@ -71,9 +71,14 @@ internal sealed class Rac1EquipmentViewPresentation
             avatarView.AddChild(view); view.Visible = false; _views.Add(profile.Item, view);
             if (profile.Item is Rac1WeaponId.MineGlove or Rac1WeaponId.GloveOfDoom)
             {
-                var staged = new Rac1EquipmentView(_assets.Models[profile.Item == Rac1WeaponId.MineGlove ? 74 : 230], _materials);
-                view.AddChild(staged); staged.Rotation = new(0, MathF.PI, 0);
-                if (profile.Item == Rac1WeaponId.GloveOfDoom) staged.Scale = Vector3.One * Rac1ArsenalRules.DoomCanisterHeldScale;
+                var staged = new Rac1EquipmentView(_assets.Models[profile.Item == Rac1WeaponId.MineGlove ? 74 : 230], _materials,
+                    profile.Item == Rac1WeaponId.MineGlove ? avatar : null);
+                view.AddChild(staged);
+                if (profile.Item == Rac1WeaponId.GloveOfDoom)
+                {
+                    staged.Rotation = new(0, MathF.PI, 0);
+                    staged.Scale = Vector3.One * Rac1ArsenalRules.DoomCanisterHeldScale;
+                }
                 if (profile.Item == Rac1WeaponId.MineGlove) staged.Play(0);
                 _staged.Add(profile.Item, staged);
             }
@@ -114,7 +119,9 @@ internal sealed class Rac1EquipmentViewPresentation
         // A hidden weapon has not been stepping. Refresh its attachment before
         // the first shot reads its muzzle, without advancing its clock.
         var profile = Rac1WeaponProfiles.Get(weapon);
-        view.RefreshAttachment(controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(profile.HandSemantic)));
+        var hand = controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(profile.HandSemantic));
+        bool glove = _assets!.Models[profile.ModelClass].GloveSkin is not null;
+        view.RefreshAttachment(hand, glove ? controller.CurrentHandPose() : null);
     }
 
     internal void RefreshVisibility(Func<Rac1WeaponId, bool> visible)
@@ -149,12 +156,20 @@ internal sealed class Rac1EquipmentViewPresentation
                 else if (view.Sequence != 5)
                     view.Play(native?.Cargo.Count > 0 ? 6 : 1);
             }
-            foreach (int sound in view.Step(controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(profile.HandSemantic))))
+            var hand = controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(profile.HandSemantic));
+            bool glove = _assets!.Models[profile.ModelClass].GloveSkin is not null;
+            foreach (int sound in view.Step(hand, glove ? controller.CurrentHandPose() : null))
                 if (audio.Bank?.Sounds?.TryGetValue((profile.ModelClass, sound), out var voice) != true || voice?.Loop != true)
                     audio.PlaySound(profile.ModelClass, sound, audio.Player.GlobalPosition);
             if (_staged.TryGetValue(profile.Item, out var staged))
             {
-                staged.Position = view.MuzzleLocal; staged.Step();
+                if (profile.Item == Rac1WeaponId.MineGlove && view.PayloadPose is { } payload)
+                {
+                    // 0x2a9ed0: half class scale. 0x2aa884: socket orientation turned pi about native X.
+                    static PlayerAvatarPoint Scale(PlayerAvatarPoint p, double scale) => new(p.X * scale, p.Y * scale, p.Z * scale);
+                    staged.Step(payload with { X = Scale(payload.X, .5), Y = Scale(payload.Y, -.5), Z = Scale(payload.Z, -.5) });
+                }
+                else { staged.Position = view.MuzzleLocal; staged.Step(); }
                 staged.Visible = inventory.GetAmmo((int)profile.Item) > 0 &&
                     (profile.Item != Rac1WeaponId.MineGlove || native?.MineRearmTicks == 0);
             }
@@ -166,6 +181,9 @@ internal sealed class Rac1EquipmentViewPresentation
         if (_views.TryGetValue(weapon, out var view) &&
             avatar.TryEquipmentMuzzle(view, socket, out var muzzle))
         {
+            // Ordinary native Visibomb launch uses the held Moby's root, not its animated tip socket.
+            if (weapon == Rac1WeaponId.VisibombGun && avatar.TryEquipmentHandOrigin(view, out var hand))
+                muzzle = hand + forward * Rac1ArsenalRules.VisibombLaunchForward;
             var start = player.GlobalPosition + Vector3.Up * .8f;
             var ray = PhysicsRayQueryParameters3D.Create(start, muzzle); ray.Exclude = [player.GetRid()];
             var hit = player.GetWorld3D().DirectSpaceState.IntersectRay(ray);

@@ -17,12 +17,14 @@ public sealed partial class Rac1BombGloveView : Node3D
     private readonly Vector3[] _convertedPositions;
     private long _generation;
     private int _sequence = 1;
+    private readonly PlayerSkeletalSampler? _gloveSampler;
     public Vector3 BombLocal { get; private set; }
     public int NativeSequence => _sequence;
 
     public Rac1BombGloveView(Rac1BombGloveAssets.Asset asset, PlayerAvatar avatar, WorldMaterialFactory materials)
     {
         _asset = asset; _avatar = avatar;
+        if (asset.GloveSkin is { } skin) _gloveSampler = new(skin.Skeleton, skin.Skin);
         _convertedPositions = new Vector3[asset.Clips[1].Frames[0].Length / 3];
         Name = "Rac1RetailBombGlove_Joint54";
         _clock = new(asset.Clips.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<double>)pair.Value.Durations), 1, 0, 1);
@@ -39,7 +41,7 @@ public sealed partial class Rac1BombGloveView : Node3D
         }
     }
 
-    public void StepAttached(PlayerAvatarAttachmentPose hand, long firingGeneration)
+    public void StepAttached(PlayerAvatarAttachmentPose hand, long firingGeneration, Rac1RatchetHandPose? handPose = null)
     {
         if (firingGeneration != _generation)
         {
@@ -60,8 +62,10 @@ public sealed partial class Rac1BombGloveView : Node3D
         }
         var sample = _clock.Current;
         var clip = _asset.Clips[_sequence];
-        var source = clip.Frames[sample.CurrentFrame];
-        var target = clip.Frames[sample.NextFrame];
+        var copied = _asset.GloveSkin?.Pose(_gloveSampler!, handPose ??
+            throw new InvalidOperationException("The held Bomb Glove needs Ratchet's current hand pose."));
+        var source = copied?.Positions ?? clip.Frames[sample.CurrentFrame];
+        var target = copied?.Positions ?? clip.Frames[sample.NextFrame];
         var vertices = new double[source.Length];
         for (int i = 0; i < vertices.Length; i += 3)
         {
@@ -71,6 +75,7 @@ public sealed partial class Rac1BombGloveView : Node3D
             vertices[i] = point.X; vertices[i + 1] = point.Y; vertices[i + 2] = point.Z;
         }
         var origin = System.Numerics.Vector3.Lerp(clip.BombOrigins[sample.CurrentFrame], clip.BombOrigins[sample.NextFrame], sample.Fraction);
+        if (copied is not null) origin = new((float)copied.PayloadPose.Origin.X, (float)copied.PayloadPose.Origin.Y, (float)copied.PayloadPose.Origin.Z);
         BombLocal = PlayerAvatarView.ToGodotLocal(hand.Transform(new(origin.X, origin.Y, origin.Z)),
             _avatar.Axes, _avatar.BaseHeight, true);
         PlayerAvatarView.ConvertFrameInto(vertices, _avatar.Axes, _avatar.BaseHeight, true, _convertedPositions);

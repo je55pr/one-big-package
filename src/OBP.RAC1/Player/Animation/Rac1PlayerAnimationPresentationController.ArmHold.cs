@@ -9,6 +9,10 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     private PlayerAnimationPresentation? _armHoldBase;
 
     internal Rac1RatchetEquipmentRig? EquipmentRig => _equipmentRig;
+    /// <summary>Resolved local finger channels for the source held-glove pose-copy path.</summary>
+    public Rac1RatchetHandPose CurrentHandPose() =>
+        (_equipmentRig ?? throw new InvalidOperationException("The native R&C1 equipment rig is unavailable."))
+        .HandPose(EquipmentBaseSample(), ResolvedBodyPose(), _easeOffsets);
 
     /// <summary>Hold layer weights (right arm, left arm), for diagnostics and tests.</summary>
     public (float Right, float Left) ArmHoldWeights => (_armHoldWeight[0], _armHoldWeight[1]);
@@ -37,7 +41,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     // this update (before the hold or the eases replaced them).
     private PlayerSkeletalPose? ResolvedBodyPose()
     {
-        var body = _equipmentBase ?? _armHoldBase ?? Current;
+        var body = _equipmentBase ?? _armHoldBase ?? _easeBase ?? Current;
         return body.SampledPose is { } sampled && _bodySkeletalPoses.TryGetValue(sampled.LocalPositions, out var resolved)
             ? resolved.Pose : null;
     }
