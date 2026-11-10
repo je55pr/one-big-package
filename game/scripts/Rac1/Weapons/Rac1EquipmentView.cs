@@ -106,8 +106,9 @@ public sealed partial class Rac1EquipmentView : Node3D
         bool wrapped = sample.CurrentFrame < previousFrame.CurrentFrame ||
             clip.Frames.Length == 1 && _clock.WrappedThisUpdate;
         _position = PositionAt(clip, sample);
-        foreach (var cue in clip.Sounds.Where(cue => CueCrossed(cue.PositionFrames, before, wrapped)))
-            sounds.Add(cue.SoundId);
+        // A plain loop: this runs every equipment step, so it avoids a LINQ iterator and delegate allocation.
+        foreach (var cue in clip.Sounds)
+            if (CueCrossed(cue.PositionFrames, before, wrapped)) sounds.Add(cue.SoundId);
         if (!_loop && wrapped) ReturnToLoop();
         Sample(hand, handPose);
         return sounds;

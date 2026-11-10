@@ -51,9 +51,10 @@ The decompilation is a reference; the local retail data remains authority.
   retained separately from the model's feedback tip. Pitched and hidden-hero
   launch modes remain host approximations; this does not recover those branches.
 
-No calibrated grip offsets, replacement animations or hand-removal masks were
-introduced. This correction is confined to held presentation and payload-origin
-queries; the existing thrown-mine scale and flight adapter are separate work.
+No calibrated grip offsets or replacement animations were introduced. The
+hand-removal mask is a separate OBP presentation choice, described below. The
+native correction is confined to held presentation and payload-origin queries;
+the existing thrown-mine scale and flight adapter are separate work.
 
 The ordinary held-Moby matrix and native smoothed gun-orientation ring remain
 outside this correction. The plain native branch normalizes its matrix columns,
