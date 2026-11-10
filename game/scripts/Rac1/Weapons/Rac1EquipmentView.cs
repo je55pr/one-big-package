@@ -106,8 +106,8 @@ public sealed partial class Rac1EquipmentView : Node3D
         bool wrapped = sample.CurrentFrame < previousFrame.CurrentFrame ||
             clip.Frames.Length == 1 && _clock.WrappedThisUpdate;
         _position = PositionAt(clip, sample);
-        foreach (var cue in clip.Sounds)
-            if (CueCrossed(cue.PositionFrames, before, wrapped)) sounds.Add(cue.SoundId);
+        foreach (var cue in clip.Sounds.Where(cue => CueCrossed(cue.PositionFrames, before, wrapped)))
+            sounds.Add(cue.SoundId);
         if (!_loop && wrapped) ReturnToLoop();
         Sample(hand, handPose);
         return sounds;
@@ -157,7 +157,7 @@ public sealed partial class Rac1EquipmentView : Node3D
         if (hand is not null) muzzle = hand.Transform(muzzle);
         MuzzleLocal = ToLocal(muzzle);
         PayloadPose = null;
-        if (copied is not null) PayloadPose = hand is null ? copied.PayloadPose : PlaceOnHand(copied.PayloadPose, hand);
+        if (copied is not null && hand is not null) PayloadPose = PlaceOnHand(copied.PayloadPose, hand);
         UpdateSocketOrigins(clip, sample.CurrentFrame, next, sample.Fraction, hand);
         UploadSurfaces(vertices);
     }
