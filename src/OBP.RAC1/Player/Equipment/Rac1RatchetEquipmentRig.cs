@@ -287,10 +287,16 @@ public sealed class Rac1RatchetEquipmentRig
 
     private Dictionary<int, PlayerSkeletalClip>? _bodyClipsLeftFree, _armClipsLeftFree;
 
+    /// <summary>
+    /// The clips to apply: <paramref name="unrestricted"/> normally, or while <see cref="LeftArmFree"/> a copy
+    /// restricted to <paramref name="joints"/> without the left arm. The copy is always cut from
+    /// <see cref="Asset"/> clips on purpose: <see cref="Subset"/> indexes frame channels by absolute joint id,
+    /// whereas <c>_armClips</c> is already narrowed to its layer joints and cannot be sliced again.
+    /// </summary>
     private IReadOnlyDictionary<int, PlayerSkeletalClip> UseClips(ref Dictionary<int, PlayerSkeletalClip>? cache,
-        IReadOnlyDictionary<int, PlayerSkeletalClip> all, IEnumerable<int> joints)
+        IReadOnlyDictionary<int, PlayerSkeletalClip> unrestricted, IEnumerable<int> joints)
     {
-        if (!LeftArmFree || LeftArmJoints is not { Count: > 0 } left) return all;
+        if (!LeftArmFree || LeftArmJoints is not { Count: > 0 } left) return unrestricted;
         if (cache is not null) return cache;
         var kept = joints.Where(joint => !left.Contains(joint)).ToArray();
         return cache = Asset.Clips.ToDictionary(pair => pair.Key, pair => Subset(pair.Value, kept));

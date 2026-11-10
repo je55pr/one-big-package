@@ -32,12 +32,14 @@ public sealed record Rac1GloveSkin(PlayerSkeleton Skeleton, PlayerSkinnedMesh Sk
         {
             var source = hand.Joints[i];
             var q = source.Rotation;
-            var rawTranslation = Quantized(source.Translation!.Value / hand.CoordinateScale, 1);
+            var sourceTranslation = source.Translation ?? throw new InvalidDataException("A copied R&C1 hand joint lacks its translation.");
+            var sourceScale = source.Scale ?? throw new InvalidDataException("A copied R&C1 hand joint lacks its scale.");
+            var rawTranslation = Quantized(sourceTranslation / hand.CoordinateScale, 1);
             var bind = Skeleton.Joints[i + 1].Translation;
             // Encoding omits a translation record when its packed value agrees with the glove bind.
             var translation = rawTranslation == Quantized(bind / CoordinateScale, 1) ? bind : rawTranslation * CoordinateScale;
             sampler.SetLocal(i + 1, new(new(Quantize(q.X, 32768), Quantize(q.Y, 32768), Quantize(q.Z, 32768), Quantize(q.W, 32768)),
-                Quantized(source.Scale!.Value, 4096), translation));
+                Quantized(sourceScale, 4096), translation));
         }
         var positions = sampler.Skin();
         var socket = sampler.Attachment(SocketJoint);
